@@ -3,7 +3,16 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient } from '@cafm/db';
 import { SIGN_IN_FAILED } from '@cafm/shared';
-import { createTestAccount, DEMO_TENANT, seedId, signIn, startApp, STARTER_TENANT } from './helpers';
+import {
+  createTestAccount,
+  createTestTenant,
+  DEMO_TENANT,
+  seedId,
+  sessionCookie,
+  signIn,
+  startApp,
+  STARTER_TENANT,
+} from './helpers';
 
 let app: NestExpressApplication;
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
@@ -63,7 +72,6 @@ describe('POST /api/auth/login', () => {
       const events = await db.authEvent.findMany({ where: { accountId: t.account.id }, select: { type: true } });
       expect(events.map((e) => e.type)).toContain('account_locked');
     } finally {
-      await db.authEvent.deleteMany({ where: { accountId: t.account.id } });
       await t.cleanup();
     }
   });
@@ -128,26 +136,68 @@ describe('choosing an organisation', () => {
       const other = seedId('membership:demo-estates:superuser');
       await agent.post('/api/auth/select-organisation').send({ membershipId: other }).expect(401);
 
-      const first = String(res.headers['set-cookie']);
+      const first = sessionCookie(res);
       const chosen = await agent
         .post('/api/auth/select-organisation')
         .send({ membershipId: t.memberships[1] })
         .expect(200);
-      expect(String(chosen.headers['set-cookie'])).not.toBe(first);
+      expect(sessionCookie(chosen)).not.toBe(first);
       const after = await agent.get('/api/auth/me').expect(200);
       expect(after.body.tenant.name).toBe('Starter Demo Ltd');
+      // The pre-rotation token no longer works.
+      await http().get('/api/auth/me').set('Cookie', first).expect(401);
     } finally {
-      await db.session.deleteMany({ where: { accountId: t.account.id } });
-      await db.authEvent.deleteMany({ where: { accountId: t.account.id } });
       await t.cleanup();
     }
   });
 });
 
-describe('POST /api/auth/logout', () => {
-  it('ends the session', async () => {
-    const { agent } = await signIn(app, 'manager@demo.example');
-    await agent.post('/api/auth/logout').send({}).expect(204);
+describe('sessions', () => {
+  it('signing in again ends the previous session', async () => {
+    const { agent, res } = await signIn(app, 'planner@demo.example');
+    const first = sessionCookie(res);
+    await agent
+      .post('/api/auth/login')
+      .send({ identifier: 'planner@demo.example', password: 'CafmDemo!2026' })
+      .expect(200);
+    await http().get('/api/auth/me').set('Cookie', first).expect(401);
+    await agent.get('/api/auth/me').expect(200);
+  });
+
+  it('rejects and removes an expired session', async () => {
+    const { agent } = await signIn(app, 'stores@demo.example');
+    const accountId = seedId('account:stores');
+    await db.session.updateMany({ where: { accountId }, data: { expiresAt: new Date(Date.now() - 1000) } });
     await agent.get('/api/auth/me').expect(401);
+    expect(await db.session.count({ where: { accountId } })).toBe(0);
+  });
+
+  it('stops working when the organisation is suspended', async () => {
+    const tt = await createTestTenant(db);
+    const t = await createTestAccount(db, [tt.tenant.id]);
+    try {
+      const { agent } = await signIn(app, t.email, t.password);
+      await agent.get('/api/auth/me').expect(200);
+      await db.tenant.update({ where: { id: tt.tenant.id }, data: { status: 'suspended' } });
+      const me = await agent.get('/api/auth/me').expect(403);
+      expect(me.body.code).toBe('organisation_required');
+    } finally {
+      await t.cleanup();
+      await tt.cleanup();
+    }
+  });
+});
+
+describe('POST /api/auth/logout', () => {
+  it('ends the session and clears the cookie', async () => {
+    const { agent } = await signIn(app, 'manager@demo.example');
+    const res = await agent.post('/api/auth/logout').send({}).expect(204);
+    expect(String(res.headers['set-cookie'])).toMatch(/cafm_session=;.*Expires=Thu, 01 Jan 1970/);
+    await agent.get('/api/auth/me').expect(401);
+  });
+
+  it('succeeds without a session, so signing out never gets stuck', async () => {
+    await http().post('/api/auth/logout').send({}).expect(204);
+    await http().post('/api/auth/logout').set('Cookie', 'cafm_session=not-a-real-token').send({}).expect(204);
   });
 });

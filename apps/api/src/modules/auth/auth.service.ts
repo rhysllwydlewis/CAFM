@@ -1,16 +1,18 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import argon2 from 'argon2';
 import { withAccount, type Account } from '@cafm/db';
 import {
-  ROLE_LABELS,
+  roleLabel,
   SIGN_IN_FAILED,
+  TOO_MANY_ATTEMPTS,
   type CurrentUser,
   type LoginRequest,
   type LoginResponse,
   type OrganisationOption,
 } from '@cafm/shared';
 import { PrismaService } from '../../core/prisma.service';
-import { type AuthContext, LONG_SESSION_MS, newSessionToken, SHORT_SESSION_MS } from '../../core/session';
+import { type AuthContext, hashToken, LONG_SESSION_MS, newSessionToken, SHORT_SESSION_MS } from '../../core/session';
+import { LoginRateLimiter } from './login-rate-limiter';
 
 const MAX_FAILURES = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
@@ -31,9 +33,24 @@ export class AuthService {
   /** Verified against when the account doesn't exist, so timing doesn't reveal which emails are registered. */
   private readonly dummyHash = argon2.hash('not-a-real-password', { type: argon2.argon2id });
 
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly limiter: LoginRateLimiter,
+  ) {}
 
-  async login(input: LoginRequest, client: ClientInfo): Promise<{ response: LoginResponse; session: SessionIssued }> {
+  /**
+   * Checks the password and issues a new session. Any session the browser
+   * already had is ended, so a sign-in always starts from a fresh token.
+   */
+  async login(
+    input: LoginRequest,
+    client: ClientInfo,
+    previousToken?: string,
+  ): Promise<{ response: LoginResponse; session: SessionIssued }> {
+    if (this.limiter.isBlocked(client.ip)) {
+      await this.event('sign_in_rate_limited', { ip: client.ip });
+      throw new HttpException(TOO_MANY_ATTEMPTS, HttpStatus.TOO_MANY_REQUESTS);
+    }
     const identifier = input.identifier.toLowerCase();
     const account = await this.db.account.findFirst({
       where: { OR: [{ email: identifier }, { username: identifier }] },
@@ -41,14 +58,17 @@ export class AuthService {
 
     if (!account) {
       await argon2.verify(await this.dummyHash, input.password);
+      this.limiter.recordFailure(client.ip);
       await this.event('sign_in_failed', { identifier, ip: client.ip });
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
     if (account.lockedUntil && account.lockedUntil > new Date()) {
+      this.limiter.recordFailure(client.ip);
       await this.event('sign_in_locked', { accountId: account.id, ip: client.ip });
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
     if (!(await argon2.verify(account.passwordHash, input.password))) {
+      this.limiter.recordFailure(client.ip);
       await this.recordFailure(account, client);
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
@@ -59,6 +79,7 @@ export class AuthService {
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
     await this.db.account.update({ where: { id: account.id }, data: { failedAttempts: 0, lockedUntil: null } });
+    if (previousToken) await this.db.session.deleteMany({ where: { tokenHash: hashToken(previousToken) } });
 
     const only = organisations.length === 1 ? organisations[0] : undefined;
     const session = await this.issueSession(
@@ -91,11 +112,15 @@ export class AuthService {
     return (await this.organisations(accountId)).map(toOption);
   }
 
-  async logout(auth: AuthContext, client: ClientInfo): Promise<void> {
-    await this.db.session.deleteMany({ where: { id: auth.session.id } });
+  /** Ends the session for this token, if there is one. Safe to call with an expired or unknown token. */
+  async logout(token: string | undefined, client: ClientInfo): Promise<void> {
+    if (!token) return;
+    const session = await this.db.session.findUnique({ where: { tokenHash: hashToken(token) } });
+    if (!session) return;
+    await this.db.session.deleteMany({ where: { id: session.id } });
     await this.event('sign_out', {
-      accountId: auth.account.id,
-      tenantId: auth.session.tenantId ?? undefined,
+      accountId: session.accountId,
+      tenantId: session.tenantId ?? undefined,
       ip: client.ip,
     });
   }
@@ -110,7 +135,7 @@ export class AuthService {
       membershipId: m.id,
       tenant: { id: m.tenant.id, name: m.tenant.name, plan: m.tenant.plan },
       role: m.role,
-      roleLabel: ROLE_LABELS[m.role] ?? m.role,
+      roleLabel: roleLabel(m.role),
       licence: m.licence,
     };
   }
@@ -157,13 +182,20 @@ export class AuthService {
   }
 
   private async recordFailure(account: Account, client: ClientInfo): Promise<void> {
-    const failures = account.failedAttempts + 1;
-    // Demo accounts never lock: their password is public, and a lockout would let anyone break the demo.
-    const lock = !account.isDemo && failures >= MAX_FAILURES;
-    await this.db.account.update({
+    // Atomic increment, so parallel attempts can't slip past the limit.
+    const { failedAttempts } = await this.db.account.update({
       where: { id: account.id },
-      data: lock ? { failedAttempts: 0, lockedUntil: new Date(Date.now() + LOCKOUT_MS) } : { failedAttempts: failures },
+      data: { failedAttempts: { increment: 1 } },
+      select: { failedAttempts: true },
     });
+    // Demo accounts never lock: their password is public, and a lockout would let anyone break the demo.
+    const lock = !account.isDemo && failedAttempts >= MAX_FAILURES;
+    if (lock) {
+      await this.db.account.update({
+        where: { id: account.id },
+        data: { failedAttempts: 0, lockedUntil: new Date(Date.now() + LOCKOUT_MS) },
+      });
+    }
     await this.event(lock ? 'account_locked' : 'sign_in_failed', { accountId: account.id, ip: client.ip });
   }
 
@@ -177,6 +209,6 @@ function toOption(o: { membershipId: string; tenantName: string; plan: string; r
     membershipId: o.membershipId,
     tenantName: o.tenantName,
     plan: o.plan,
-    roleLabel: ROLE_LABELS[o.role] ?? o.role,
+    roleLabel: roleLabel(o.role),
   };
 }

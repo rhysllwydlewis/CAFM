@@ -16,6 +16,22 @@ export async function startApp(): Promise<NestExpressApplication> {
   return app;
 }
 
+/** The session token from a response's Set-Cookie header. */
+export function sessionCookie(res: { headers: Record<string, unknown> }): string {
+  const header = ([] as string[]).concat((res.headers['set-cookie'] as string[] | string | undefined) ?? []);
+  const cookie = header.find((c) => c.startsWith('cafm_session='));
+  if (!cookie) throw new Error('No session cookie set');
+  return cookie.split(';')[0]!;
+}
+
+/** Creates a throwaway tenant, as the app role. */
+export async function createTestTenant(db: PrismaClient) {
+  const tenant = await db.tenant.create({
+    data: { slug: `test-${randomUUID()}`, name: 'Test Tenant Ltd', plan: 'starter' },
+  });
+  return { tenant, cleanup: () => db.tenant.delete({ where: { id: tenant.id } }) };
+}
+
 /** Signs in and returns a supertest agent carrying the session cookie. */
 export async function signIn(app: NestExpressApplication, identifier: string, password = DEMO_PASSWORD) {
   const agent = request.agent(app.getHttpServer());
@@ -38,6 +54,8 @@ export async function createTestAccount(db: PrismaClient, tenants: string[], pas
     memberships.push(m.id);
   }
   const cleanup = async () => {
+    await db.session.deleteMany({ where: { accountId: account.id } });
+    await db.authEvent.deleteMany({ where: { accountId: account.id } });
     for (const tenantId of tenants) {
       await withTenant(db, tenantId, (tx) => tx.membership.deleteMany({ where: { accountId: account.id } }));
     }

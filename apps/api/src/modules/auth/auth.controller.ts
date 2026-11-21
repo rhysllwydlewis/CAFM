@@ -28,12 +28,18 @@ function client(req: Request): ClientInfo {
   return { ip: req.ip, userAgent: req.get('user-agent') };
 }
 
+function sessionToken(req: Request): string | undefined {
+  const token: unknown = req.cookies?.[SESSION_COOKIE];
+  return typeof token === 'string' && token ? token : undefined;
+}
+
+function cookieOptions() {
+  return { httpOnly: true, sameSite: 'lax' as const, secure: process.env.NODE_ENV === 'production', path: '/' };
+}
+
 function setSessionCookie(res: Response, s: SessionIssued): void {
   res.cookie(SESSION_COOKIE, s.token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
+    ...cookieOptions(),
     // Without "Keep me signed in" the cookie ends with the browser; the server still expires it after 12 hours.
     ...(s.persistent ? { expires: s.expiresAt } : {}),
   });
@@ -46,7 +52,11 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const { response, session } = await this.auth.login(parse(loginRequestSchema, body), client(req));
+    const { response, session } = await this.auth.login(
+      parse(loginRequestSchema, body),
+      client(req),
+      sessionToken(req),
+    );
     setSessionCookie(res, session);
     return response;
   }
@@ -67,12 +77,12 @@ export class AuthController {
     return this.auth.listOrganisations(req.auth!.account.id);
   }
 
+  /** Always succeeds and clears the cookie, even if the session has already expired. */
   @Post('logout')
   @HttpCode(204)
-  @UseGuards(SessionGuard)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
-    await this.auth.logout(req.auth!, client(req));
-    res.clearCookie(SESSION_COOKIE, { path: '/' });
+    await this.auth.logout(sessionToken(req), client(req));
+    res.clearCookie(SESSION_COOKIE, cookieOptions());
   }
 
   @Get('me')

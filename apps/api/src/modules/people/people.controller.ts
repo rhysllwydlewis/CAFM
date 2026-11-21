@@ -1,7 +1,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
-import { ROLE_LABELS } from '@cafm/shared';
+import { roleLabel } from '@cafm/shared';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 
@@ -27,7 +27,7 @@ export class PeopleController {
       name: m.account.name,
       email: m.account.email,
       role: m.role,
-      roleLabel: ROLE_LABELS[m.role] ?? m.role,
+      roleLabel: roleLabel(m.role),
       status: m.status,
     }));
   }

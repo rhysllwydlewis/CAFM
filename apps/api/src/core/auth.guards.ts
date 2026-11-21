@@ -26,13 +26,17 @@ export class SessionGuard implements CanActivate {
       where: { tokenHash: hashToken(token) },
       include: { account: true },
     });
-    if (!session || session.expiresAt <= new Date()) throw new UnauthorizedException();
+    if (!session) throw new UnauthorizedException();
+    if (session.expiresAt <= new Date()) {
+      await this.db.session.deleteMany({ where: { id: session.id } });
+      throw new UnauthorizedException();
+    }
     const { account, ...rest } = session;
     const membership =
       session.membershipId && session.tenantId
         ? await withTenant(this.db, session.tenantId, (tx) =>
             tx.membership.findFirst({
-              where: { id: session.membershipId!, status: 'active' },
+              where: { id: session.membershipId!, status: 'active', tenant: { status: 'active' } },
               include: { tenant: true },
             }),
           )
