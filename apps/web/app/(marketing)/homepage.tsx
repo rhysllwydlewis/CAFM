@@ -9,10 +9,10 @@ const media = '/homepage';
 type DeviceFormat = 'compact' | 'tablet' | 'wide';
 const chapters = [
   { label: 'Overview', title: 'Run the estate.', start: 0, stop: 0 },
-  { label: 'At the desk', title: 'At the desk.', start: 0.075, stop: 0.13 },
-  { label: 'Plant room', title: 'In the plant room.', start: 0.245, stop: 0.4 },
-  { label: 'On the job', title: 'On the job.', start: 0.505, stop: 0.64 },
-  { label: 'Complete', title: 'Job complete.', start: 0.79, stop: 0.93 },
+  { label: 'At the desk', title: 'At the desk.', start: 0.11, stop: 0.19 },
+  { label: 'Plant room', title: 'In the plant room.', start: 0.27, stop: 0.46 },
+  { label: 'On the job', title: 'On the job.', start: 0.55, stop: 0.68 },
+  { label: 'Complete', title: 'Job complete.', start: 0.8, stop: 0.91 },
 ] as const;
 const fieldChapter = 3;
 const completeChapter = 4;
@@ -39,13 +39,21 @@ function useJourney() {
     const handset = matchMedia('(max-width: 560px)');
     let request = 0;
     let previous = -1;
-    let lastProgress = -1;
+    let visibleProgress = -1;
+    let lastFrame = 0;
     let completionShown = false;
 
-    function render() {
+    function render(now: number) {
       request = 0;
       const travel = track.offsetHeight - frame.offsetHeight;
-      const progress = still.matches || travel <= 0 ? 0 : clamp(-track.getBoundingClientRect().top / travel);
+      const target = still.matches || travel <= 0 ? 0 : clamp(-track.getBoundingClientRect().top / travel);
+      const elapsed = lastFrame ? Math.min(now - lastFrame, 34) : 1000 / 60;
+      lastFrame = now;
+      const remaining = target - visibleProgress;
+      // Only ease the artwork. Native scrolling and jumps out of the hero stay immediate.
+      const settle =
+        still.matches || travel <= 0 || visibleProgress < 0 || target === 1 || Math.abs(remaining) < 0.0015;
+      const progress = settle ? target : visibleProgress + remaining * (1 - Math.exp(-elapsed / 68));
       const next = chapters.reduce((chapter, scene, index) => (progress >= scene.start ? index : chapter), 0);
       // The job preview may finish during the story. A jump straight to #product skips it.
       if (!completionShown && next === completeChapter && progress < 1) {
@@ -62,29 +70,30 @@ function useJourney() {
         previous = next;
         setChapter(next);
       }
-      const dissolve = ease((progress - 0.205) / 0.16);
-      if (progress !== lastProgress) {
-        lastProgress = progress;
-        const fadeIn = next === 0 ? 1 : ease((progress - chapters[next]!.start) / 0.032);
+      const dissolve = ease((progress - 0.23) / 0.15);
+      if (progress !== visibleProgress) {
+        visibleProgress = progress;
+        const fadeIn = next === 0 ? 1 : ease((progress - chapters[next]!.start) / 0.024);
         const upcoming = chapters[next + 1];
-        const fadeOut = upcoming ? ease((upcoming.start - progress) / 0.032) : 1;
+        const fadeOut = upcoming ? ease((upcoming.start - progress) / 0.024) : 1;
         const variables = {
           progress,
           dissolve,
-          zoom: 1.015 + clamp((progress - 0.2) / 0.8) * 0.11,
+          zoom: 1.015 + clamp((progress - 0.23) / 0.77) * 0.085,
           'copy-alpha': Math.min(fadeIn, fadeOut),
-          equipment: clamp((progress - 0.337) / 0.065),
-          phone: clamp((progress - 0.54) / 0.065),
-          'equipment-alpha': 1 - ease((progress - 0.48) / 0.033),
-          'phone-alpha': 1 - ease((progress - 0.755) / 0.033),
+          equipment: ease((progress - 0.39) / 0.067),
+          phone: ease((progress - 0.59) / 0.07),
+          'equipment-alpha': 1 - ease((progress - 0.515) / 0.032),
+          'phone-alpha': 1 - ease((progress - 0.76) / 0.037),
         };
         for (const [name, value] of Object.entries(variables)) frame.style.setProperty(`--${name}`, String(value));
       }
       const clip = video.current;
-      if (clip && dissolve < 1 && Number.isFinite(clip.duration)) {
+      if (clip && !clip.seeking && dissolve < 1 && Number.isFinite(clip.duration)) {
         const time = clamp(progress / chapters[1].stop) * Math.max(0, clip.duration - 0.03);
         if (Math.abs(clip.currentTime - time) > 0.015) clip.currentTime = time;
       }
+      if (!settle) schedule();
     }
 
     function schedule() {
@@ -102,6 +111,7 @@ function useJourney() {
     still.addEventListener('change', resize);
     compact.addEventListener('change', resize);
     track.addEventListener('loadedmetadata', schedule, true);
+    track.addEventListener('seeked', schedule, true);
     return () => {
       cancelAnimationFrame(request);
       window.removeEventListener('scroll', schedule);
@@ -109,6 +119,7 @@ function useJourney() {
       still.removeEventListener('change', resize);
       compact.removeEventListener('change', resize);
       track.removeEventListener('loadedmetadata', schedule, true);
+      track.removeEventListener('seeked', schedule, true);
     };
   }, []);
 
@@ -384,27 +395,27 @@ export function Homepage() {
       >
         <div ref={stage} className={styles.stage} data-chapter={chapter}>
           <h1 className="sr-only">Run the estate. From anywhere.</h1>
-          <picture className={styles.devices} aria-hidden="true">
-            <source media="(max-width: 560px)" srcSet={`${media}/devices-compact.webp`} />
-            <source media="(max-width: 900px)" srcSet={`${media}/devices-tablet.webp`} />
-            <img src={`${media}/devices-wide.webp`} alt="" fetchPriority="high" />
-          </picture>
-          {format && (
-            <video
-              key={format}
-              ref={video}
-              className={styles.devices}
-              data-ready="false"
-              src={`${media}/devices-${format}.mp4`}
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-              onLoadedData={(event) => {
-                event.currentTarget.dataset.ready = 'true';
-              }}
-            />
-          )}
+          <div className={styles.devices} aria-hidden="true">
+            <picture>
+              <source media="(max-width: 560px)" srcSet={`${media}/devices-compact.webp`} />
+              <source media="(max-width: 900px)" srcSet={`${media}/devices-tablet.webp`} />
+              <img src={`${media}/devices-wide.webp`} alt="" fetchPriority="high" />
+            </picture>
+            {format && (
+              <video
+                key={format}
+                ref={video}
+                data-ready="false"
+                src={`${media}/devices-${format}.mp4`}
+                muted
+                playsInline
+                preload="auto"
+                onLoadedData={(event) => {
+                  event.currentTarget.dataset.ready = 'true';
+                }}
+              />
+            )}
+          </div>
           <div className={styles.plant} aria-hidden="true">
             <div className={styles.photo}>
               <div className={styles.assetCue}>
