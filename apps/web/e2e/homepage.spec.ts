@@ -51,6 +51,15 @@ test('direct product links land on the preview before any sample job is complete
   await expect(page.getByRole('row').filter({ hasText: 'WO 142' })).toContainText('In progress');
 });
 
+test('the product preview follows the narrated completion when visitors scroll through it', async ({ page }) => {
+  await page.goto('/');
+  const scenes = page.getByRole('navigation', { name: 'Work order sequence' });
+  await scenes.getByRole('button', { name: 'Complete', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Job complete.' })).toBeInViewport();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Product' }).click();
+  await expect(page.getByRole('row').filter({ hasText: 'WO 142' })).toContainText('Completed');
+});
+
 test('the short-screen controls and tall-phone callout fit inside the screen', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 546 });
   await page.goto('/');

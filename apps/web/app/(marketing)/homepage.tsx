@@ -26,6 +26,7 @@ function useJourney() {
   const stage = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [chapter, setChapter] = useState(0);
+  const [previewedCompletion, setPreviewedCompletion] = useState(false);
   const [presentation, setPresentation] = useState<DeviceFormat | 'static' | null>(null);
 
   useEffect(() => {
@@ -39,12 +40,18 @@ function useJourney() {
     let request = 0;
     let previous = -1;
     let lastProgress = -1;
+    let completionShown = false;
 
     function render() {
       request = 0;
       const travel = track.offsetHeight - frame.offsetHeight;
       const progress = still.matches || travel <= 0 ? 0 : clamp(-track.getBoundingClientRect().top / travel);
       const next = chapters.reduce((chapter, scene, index) => (progress >= scene.start ? index : chapter), 0);
+      // The job preview may finish during the story. A jump straight to #product skips it.
+      if (!completionShown && next === completeChapter && progress < 1) {
+        completionShown = true;
+        setPreviewedCompletion(true);
+      }
       if (next !== previous) {
         const focused = document.activeElement;
         const keepsWorkOrderLink =
@@ -117,7 +124,7 @@ function useJourney() {
   }
 
   const format = presentation === 'static' ? null : presentation;
-  return { journey, stage, video, chapter, format, interactive: presentation !== null, goTo };
+  return { journey, stage, video, chapter, format, interactive: presentation !== null, previewedCompletion, goTo };
 }
 
 function JobCard({
@@ -325,7 +332,16 @@ function Product({
 }
 
 export function Homepage() {
-  const { journey, stage, video, chapter: motionChapter, format, interactive, goTo } = useJourney();
+  const {
+    journey,
+    stage,
+    video,
+    chapter: motionChapter,
+    format,
+    interactive,
+    previewedCompletion,
+    goTo,
+  } = useJourney();
   const chapter = format ? motionChapter : 0;
   const [checked, setChecked] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -453,7 +469,12 @@ export function Homepage() {
           <div className={styles.still} role="img" aria-label="Technician beside an air handling unit" />
         </section>
       )}
-      <Product active={active} select={select} completed={completed} interactive={interactive} />
+      <Product
+        active={active}
+        select={select}
+        completed={completed || (chapter === completeChapter && previewedCompletion)}
+        interactive={interactive}
+      />
     </>
   );
 }
