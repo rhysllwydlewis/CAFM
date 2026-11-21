@@ -238,12 +238,26 @@ a.nav-item:hover:not(.active) {
   background: #1d3a40;
   color: #a8dce3;
 }
-.nav-foot .nav-signout {
-  color: var(--nav-text);
+.nav-foot {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
 }
-.nav-foot .nav-signout:hover {
+.nav-foot .nav-signout {
+  border-color: var(--nav-border);
   color: var(--nav-text-strong);
+}
+.nav-foot .nav-signout svg.i {
+  color: inherit;
+}
+.nav-foot .nav-signout[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: default;
+}
+.nav-foot .nav-signout:hover:not([aria-disabled='true']) {
   background: var(--nav-active-bg);
+}
+.nav-signout-error {
+  flex-basis: 100%;
 }
 
 /* Sprite icons: presentation attributes on the sprite root don't reach <use> instances */
@@ -299,5 +313,11 @@ svg.i {
   }
   .page {
     padding: var(--space-5) var(--space-4);
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-foot .nav-av {
+    display: none;
   }
 }

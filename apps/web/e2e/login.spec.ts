@@ -45,14 +45,64 @@ test.describe('sign in with a demo account', () => {
     await expect(page).toHaveURL(/\/app$/);
   });
 
-  test('signing out returns to the login page and protects the app', async ({ page }) => {
+  test('a Super User can sign out and sign back in as a Technician', async ({ page }) => {
     await page.goto('/login');
     await page.getByRole('button', { name: /^Super User\W+Sam Sutton/ }).click();
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('heading', { name: /, Sam$/ })).toBeVisible();
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    const signOut = page.getByRole('button', { name: 'Sign out' });
+    await expect(signOut).toBeInViewport({ ratio: 1 });
+    await expect(signOut).toHaveText('Sign out');
+    await signOut.press('Enter');
     await expect(page).toHaveURL(/\/login$/);
     await page.goto('/app');
     await expect(page).toHaveURL(/\/login$/);
+
+    await page.getByRole('button', { name: /^Technician\W+Tom Price/ }).click();
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(page.getByRole('heading', { name: /, Tom$/ })).toBeVisible();
+  });
+
+  test('a failed sign-out keeps the user on Home and allows a retry', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: /^Super User\W+Sam Sutton/ }).click();
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/app$/);
+
+    await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 503 }), { times: 1 });
+    const signOut = page.getByRole('button', { name: 'Sign out' });
+    await signOut.focus();
+    await page.keyboard.press('Enter');
+    const alert = page.getByRole('complementary', { name: 'Main' }).getByRole('alert');
+    await expect(alert).toHaveText('Could not sign out. Try again.');
+    await expect(alert).toBeInViewport();
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(signOut).toBeFocused();
+
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test('the account role stays clear of Sign out on a narrow screen', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Show all 16 demo roles ▾' }).click();
+    await page.getByRole('button', { name: /^Administrator\W+Alex Rowe/ }).click();
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await page.evaluate(() => document.fonts.ready);
+
+    const nav = page.getByRole('complementary', { name: 'Main' });
+    const signOut = nav.getByRole('button', { name: 'Sign out' });
+    await expect(signOut).toBeInViewport({ ratio: 1 });
+
+    const roleRight = await nav.getByText('Administrator', { exact: true }).evaluate((role) => {
+      const text = document.createRange();
+      text.selectNodeContents(role);
+      return text.getBoundingClientRect().right;
+    });
+    const signOutLeft = await signOut.evaluate((button) => button.getBoundingClientRect().left);
+    expect(roleRight).toBeLessThan(signOutLeft);
   });
 });
