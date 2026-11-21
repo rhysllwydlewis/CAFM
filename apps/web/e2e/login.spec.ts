@@ -51,7 +51,7 @@ test.describe('sign in with a demo account', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('heading', { name: /, Sam$/ })).toBeVisible();
     const signOut = page.getByRole('button', { name: 'Sign out' });
-    await expect(signOut).toBeInViewport();
+    await expect(signOut).toBeInViewport({ ratio: 1 });
     await expect(signOut).toHaveText('Sign out');
     await signOut.press('Enter');
     await expect(page).toHaveURL(/\/login$/);
@@ -73,7 +73,9 @@ test.describe('sign in with a demo account', () => {
     await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 503 }), { times: 1 });
     const signOut = page.getByRole('button', { name: 'Sign out' });
     await signOut.click();
-    await expect(page.getByRole('alert')).toHaveText('Could not sign out. Try again.');
+    const alert = page.getByRole('complementary', { name: 'Main' }).getByRole('alert');
+    await expect(alert).toHaveText('Could not sign out. Try again.');
+    await expect(alert).toBeInViewport();
     await expect(page).toHaveURL(/\/app$/);
 
     await signOut.click();
