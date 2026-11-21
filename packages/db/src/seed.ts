@@ -5,8 +5,21 @@
  */
 import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
-import { DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS } from '@cafm/shared';
+import { ALL_FEATURES, BUILTIN_ROLES, DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS, FEATURES } from '@cafm/shared';
 import { seedId } from './ids';
+
+/** Seeds (or refreshes) the built-in roles for one tenant. Custom roles are left alone. */
+export async function seedRoles(db: PrismaClient, tenantId: string): Promise<void> {
+  for (const r of BUILTIN_ROLES) {
+    const data = { name: r.name, description: r.description, permissions: [...r.permissions], scope: r.scope };
+    await db.role.upsert({
+      where: { tenantId_key: { tenantId, key: r.key } },
+      create: { id: seedId(`role:${tenantId}:${r.key}`), tenantId, key: r.key, builtin: true, ...data },
+      // Only the Super User role is reset on every seed; other built-ins are editable per tenant.
+      update: r.key === 'super_user' ? data : {},
+    });
+  }
+}
 
 export async function seed(db: PrismaClient): Promise<void> {
   const passwordHash = await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id });
@@ -17,6 +30,18 @@ export async function seed(db: PrismaClient): Promise<void> {
       where: { id },
       create: { id, slug: t.slug, name: t.name, plan: t.plan },
       update: { name: t.name, plan: t.plan, status: 'active' },
+    });
+    await seedRoles(db, id);
+  }
+
+  // Demo Estates Ltd shows everything: Enterprise plus every add-on (doc 06).
+  const demo = seedId('tenant:demo-estates');
+  const addons = ALL_FEATURES.filter((f) => 'addon' in FEATURES[f]);
+  for (const feature of addons) {
+    await db.tenantEntitlement.upsert({
+      where: { tenantId_feature: { tenantId: demo, feature } },
+      create: { tenantId: demo, feature, enabled: true, source: 'addon' },
+      update: { enabled: true },
     });
   }
 

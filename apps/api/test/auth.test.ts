@@ -185,9 +185,10 @@ describe('sessions', () => {
   it('rejects and removes an expired session', async () => {
     const { agent } = await signIn(app, 'stores@demo.example');
     const accountId = seedId('account:stores');
-    await db.session.updateMany({ where: { accountId }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    const latest = await db.session.findFirstOrThrow({ where: { accountId }, orderBy: { createdAt: 'desc' } });
+    await db.session.update({ where: { id: latest.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
     await agent.get('/api/auth/me').expect(401);
-    expect(await db.session.count({ where: { accountId } })).toBe(0);
+    expect(await db.session.count({ where: { id: latest.id } })).toBe(0);
   });
 
   it('stops working when the organisation is suspended', async () => {

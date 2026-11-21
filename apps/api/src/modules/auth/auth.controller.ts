@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   ForbiddenException,
@@ -12,17 +11,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import type { z } from 'zod';
 import { DEMO_PASSWORD, DEMO_PERSONAS, loginRequestSchema, selectOrganisationSchema } from '@cafm/shared';
 import { SessionGuard } from '../../core/auth.guards';
+import { parse } from '../../core/validation';
 import { SESSION_COOKIE } from '../../core/session';
 import { AuthService, type ClientInfo, type SessionIssued } from './auth.service';
-
-function parse<T extends z.ZodTypeAny>(schema: T, body: unknown): z.infer<T> {
-  const result = schema.safeParse(body);
-  if (!result.success) throw new BadRequestException(result.error.issues.map((i) => i.message));
-  return result.data;
-}
 
 function client(req: Request): ClientInfo {
   return { ip: req.ip, userAgent: req.get('user-agent') };

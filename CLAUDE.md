@@ -56,15 +56,18 @@ pnpm test              # unit and API tests (needs a migrated, seeded database)
 pnpm build
 pnpm e2e               # Playwright against the built apps
 pnpm dev               # API on :4000, web on :3000 (open http://localhost:3000)
+pnpm --filter @cafm/worker start   # background worker (needs REDIS_URL, after pnpm build)
 ```
 
 Copy `.env.example` to `.env` and export its variables (`set -a; . ./.env; set +a`). Local services: `docker compose up -d` (Postgres, Redis, MinIO, Mailpit); set `MINIO_ROOT_PASSWORD` in `.env` first.
 
 Deploying: see `docs/deploy/railway.md` (one Railway service; `pnpm start` sets up the database, then runs the app).
 
+Permissions and plans: add permission keys to `packages/shared/src/permissions.ts` and feature keys to `entitlements.ts`; guard endpoints with `@RequirePermission()` and `@RequireFeature()`; record changes with `audit()` and queue side effects with `enqueue()` in the same `withTenant` transaction. Worker handlers register a topic in `apps/worker/src/handlers.ts`.
+
 Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role.
 
-New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `SHADOW_DATABASE_URL=<empty scratch database> pnpm --filter @cafm/db -s migrate:diff`, plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.
+New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `pnpm --filter @cafm/db -s migrate:diff` (diffs your migrated `DATABASE_URL` against the schema), plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.
 
 Design tooling (run in `design/`):
 

@@ -7,8 +7,12 @@ model Tenant {
   name        String
   plan        String
   status      String       @default("active")
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  memberships Membership[]
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships  Membership[]
+  roles        Role[]
+  auditEvents  AuditEvent[]
+  outbox       OutboxMessage[]
+  entitlements TenantEntitlement[]
 
   @@map("tenant")
 }

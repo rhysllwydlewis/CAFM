@@ -1,11 +1,13 @@
 import 'reflect-metadata';
+import type { Type } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
-export async function createApp(): Promise<NestExpressApplication> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: ['error', 'warn'] });
+/** Builds the configured app. Tests may pass a module that imports AppModule plus extras. */
+export async function createApp(rootModule: Type<unknown> = AppModule): Promise<NestExpressApplication> {
+  const app = await NestFactory.create<NestExpressApplication>(rootModule, { logger: ['error', 'warn'] });
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.disable('x-powered-by');

@@ -9,7 +9,8 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
-import { type Permission, roleHas } from '@cafm/shared';
+import { type Feature, type Permission, planFor } from '@cafm/shared';
+import { loadAccess } from './access';
 import { PrismaService } from './prisma.service';
 import { hashToken, SESSION_COOKIE } from './session';
 
@@ -32,16 +33,24 @@ export class SessionGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     const { account, ...rest } = session;
-    const membership =
+    const tenantData =
       session.membershipId && session.tenantId
-        ? await withTenant(this.db, session.tenantId, (tx) =>
-            tx.membership.findFirst({
+        ? await withTenant(this.db, session.tenantId, async (tx) => {
+            const membership = await tx.membership.findFirst({
               where: { id: session.membershipId!, status: 'active', tenant: { status: 'active' } },
               include: { tenant: true },
-            }),
-          )
+            });
+            if (!membership) return null;
+            const access = await loadAccess(tx, membership.tenantId, membership.role, membership.tenant.plan);
+            return { membership, access };
+          })
         : null;
-    req.auth = { session: rest, account, membership };
+    req.auth = {
+      session: rest,
+      account,
+      membership: tenantData?.membership ?? null,
+      access: tenantData?.access ?? null,
+    };
     return true;
   }
 }
@@ -57,18 +66,29 @@ export class TenantGuard implements CanActivate {
 }
 
 const PERMISSION_KEY = 'cafm:permission';
+const FEATURE_KEY = 'cafm:feature';
+/** The member's role must grant this permission (doc 03). */
 export const RequirePermission = (permission: Permission) => SetMetadata(PERMISSION_KEY, permission);
+/** The tenant's plan or add-ons must include this feature (ADR 0006). */
+export const RequireFeature = (feature: Feature) => SetMetadata(FEATURE_KEY, feature);
 
-/** Checks the permission registry for the membership's role. Use after TenantGuard. */
+/**
+ * Checks @RequireFeature then @RequirePermission on the handler or its
+ * controller. Use after SessionGuard and TenantGuard.
+ */
 @Injectable()
 export class PermissionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const permission = this.reflector.get<Permission | undefined>(PERMISSION_KEY, context.getHandler());
-    if (!permission) return true;
-    const role = context.switchToHttp().getRequest<Request>().auth?.membership?.role;
-    if (!role || !roleHas(role, permission)) throw new ForbiddenException();
+    const targets = [context.getHandler(), context.getClass()];
+    const access = context.switchToHttp().getRequest<Request>().auth?.access;
+    const feature = this.reflector.getAllAndOverride<Feature | undefined>(FEATURE_KEY, targets);
+    if (feature && !access?.entitlements.features.includes(feature)) {
+      throw new ForbiddenException({ code: 'feature_locked', feature, plan: planFor(feature) ?? null });
+    }
+    const permission = this.reflector.getAllAndOverride<Permission | undefined>(PERMISSION_KEY, targets);
+    if (permission && !access?.permissions.has(permission)) throw new ForbiddenException();
     return true;
   }
 }

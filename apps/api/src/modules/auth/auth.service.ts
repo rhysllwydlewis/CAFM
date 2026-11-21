@@ -135,8 +135,11 @@ export class AuthService {
       membershipId: m.id,
       tenant: { id: m.tenant.id, name: m.tenant.name, plan: m.tenant.plan },
       role: m.role,
-      roleLabel: roleLabel(m.role),
+      roleLabel: auth.access?.roleName ?? roleLabel(m.role),
       licence: m.licence,
+      permissions: [...(auth.access?.permissions ?? [])].sort(),
+      scope: auth.access?.scope ?? 'own',
+      entitlements: auth.access?.entitlements ?? { plan: m.tenant.plan, features: [], limits: {} },
     };
   }
 

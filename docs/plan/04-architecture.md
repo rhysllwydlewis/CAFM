@@ -15,7 +15,7 @@
 |-------|--------|-----|
 | Monorepo | **pnpm workspaces + Turborepo** | Shared packages, fast cached builds |
 | Web front end | **Next.js (App Router) + React + TypeScript** | SSR for the portal and login, rich client app for back office |
-| UI | **Tailwind CSS + shadcn/ui (Radix)**, TanStack Table/Query, React Hook Form + Zod | Accessible components, fast data grids, shared validation |
+| UI | **Shared component stylesheet from `design/` via `packages/ui`** ([ADR 0009](../adr/0009-shared-component-stylesheet.md)), Radix primitives for complex behaviour, TanStack Table/Query, React Hook Form + Zod | Built screens and mockups share one stylesheet; accessible components; shared validation |
 | Charts/maps/plans | Apache ECharts, MapLibre GL + OpenStreetMap, SVG floor-plan viewer; That Open Engine (web-ifc) for IFC | Open source, no per-seat fees |
 | API | **NestJS (Node.js, TypeScript)**, REST + OpenAPI 3.1 | Modules, DI, guards for permissions, generated API docs |
 | ORM / migrations | **Prisma** (with raw SQL for RLS policies and reporting views) | Type-safe, good migration tooling |

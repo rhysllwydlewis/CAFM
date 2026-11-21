@@ -3,8 +3,6 @@
  * (docs/plan/06-login-and-demo.md). Used by the seed and by the login page's
  * demo panel. Never shown when DEMO_MODE is off.
  */
-import type { Role } from './permissions';
-
 export type PersonaGroup = 'office' | 'field' | 'other';
 export type Licence = 'full' | 'mobile' | 'requester' | 'contractor' | 'client' | 'read_only';
 
@@ -12,7 +10,8 @@ export interface DemoPersona {
   key: string;
   name: string;
   email: string;
-  role: Role;
+  /** A built-in role key (BUILTIN_ROLES). */
+  role: string;
   /** Short label for the demo card (auth-01); the app shows the full role name. */
   roleLabel: string;
   description: string;
@@ -26,7 +25,7 @@ export interface DemoPersona {
 const p = (
   key: string,
   name: string,
-  role: Role,
+  role: string,
   roleLabel: string,
   description: string,
   licence: Licence,

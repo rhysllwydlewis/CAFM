@@ -36,6 +36,10 @@ delete env.DATABASE_URL;
 
 const children = [
   spawn(process.execPath, [resolve(root, 'apps/api/dist/main.js')], { env, stdio: 'inherit' }),
+  // The background worker (outbox, scheduled jobs) needs Redis; without it the app still runs.
+  ...(env.REDIS_URL
+    ? [spawn(process.execPath, [resolve(root, 'apps/worker/dist/main.js')], { env, stdio: 'inherit' })]
+    : (console.warn('[start] REDIS_URL is not set, so the background worker is not running'), [])),
   spawn(resolve(root, 'apps/web/node_modules/.bin/next'), ['start', '--port', webPort, '--hostname', '0.0.0.0'], {
     cwd: resolve(root, 'apps/web'),
     env,

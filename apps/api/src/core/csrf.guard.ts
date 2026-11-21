@@ -4,9 +4,10 @@ import type { Request } from 'express';
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
- * CSRF defence for cookie sessions (doc 06). State-changing requests must be
- * JSON (a cross-site form can't send that without a CORS preflight, which we
- * never allow) and, when the browser sends an Origin, it must be this site:
+ * CSRF defence for cookie sessions (doc 06). A cross-site page can only send
+ * GET or POST without a CORS preflight (which we never allow), so POSTs must
+ * be JSON, which a cross-site form can't send. PUT, PATCH and DELETE always
+ * need a preflight. Any unsafe request with an Origin must also be this site:
  * the host the request was made to (forwarded by the web app's /api proxy),
  * or one listed in WEB_ORIGIN.
  */
@@ -15,7 +16,7 @@ export class CsrfGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
     if (SAFE.has(req.method)) return true;
-    if (!req.is('application/json')) throw new ForbiddenException('Requests must be JSON');
+    if (req.method === 'POST' && !req.is('application/json')) throw new ForbiddenException('Requests must be JSON');
     const origin = req.get('origin');
     if (origin && !this.allowed(origin, req)) throw new ForbiddenException('Origin not allowed');
     return true;

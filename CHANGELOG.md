@@ -10,6 +10,11 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Roles and permissions: 15 built-in roles per organisation (doc 03) plus custom roles, with data scopes (all or own). Super Users can create and edit roles; nobody can grant a permission they don't hold, change their own role or remove the last Super User.
+- Change someone's role or deactivate them; deactivated people are signed out straight away.
+- Audit log of role and people changes, append-only.
+- Plans and add-ons decide which features an organisation has (Free, Starter, Professional, Enterprise); locked features say which plan unlocks them.
+- Background worker for emails and scheduled jobs, fed by a transactional outbox.
 - Railway deployment: one service runs the API and web app, with database setup, migrations and demo reseeding before each deploy.
 - Sign-in page with email or username and password, "Keep me signed in" (30 days) and generic error messages.
 - Demo accounts panel (demo environments only): click a role to fill in its details; six roles shown, all 16 on request.
