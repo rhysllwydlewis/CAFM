@@ -1,17 +1,28 @@
-// Production start: runs the API on an internal port and the web app on $PORT
-// in one container. The web app proxies /api to the API (same site, so
+// Production start: sets up the database (scripts/release.mjs), then runs the
+// API on an internal port and the web app on $PORT in one container. The web app proxies /api to the API (same site, so
 // session cookies stay first-party). If either process exits, both stop so
 // the platform restarts the container.
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appDatabaseUrl, required } from './env.mjs';
+import { release } from './release.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const apiPort = process.env.API_PORT ?? '4000';
 const webPort = process.env.PORT ?? '3000';
 const appDb = appDatabaseUrl();
 if (!appDb) required('APP_DB_PASSWORD');
+
+// Database setup runs here rather than as a separate pre-deploy step, so its
+// output is in the deploy logs and the app never starts against a database
+// it can't use.
+try {
+  await release();
+} catch (err) {
+  console.error('[start] database setup failed, not starting:', err.message);
+  process.exit(1);
+}
 
 const env = {
   ...process.env,
