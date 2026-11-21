@@ -1,6 +1,31 @@
 import type { Prisma, Tx } from '@cafm/db';
-import { DEFAULT_SEQUENCES, formatNumber } from '@cafm/config-engine';
+import { DEFAULT_SEQUENCES, formatNumber, type FieldDefinition } from '@cafm/config-engine';
 import type { AuthContext } from './session';
+
+/** The definition as the validator and clients need it. */
+export function toFieldDefinition(row: Prisma.FieldDefinitionGetPayload<object>): FieldDefinition & {
+  id: string;
+  entityType: string;
+  helpText: string | null;
+  position: number;
+  active: boolean;
+} {
+  return {
+    id: row.id,
+    entityType: row.entityType,
+    key: row.key,
+    label: row.label,
+    type: row.type as FieldDefinition['type'],
+    required: row.required,
+    helpText: row.helpText,
+    options: (row.options as FieldDefinition['options']) ?? null,
+    min: row.min,
+    max: row.max,
+    maxLength: row.maxLength,
+    position: row.position,
+    active: row.active,
+  };
+}
 
 /**
  * Stores a configuration change as the next numbered version (doc 08 § Phase 0:

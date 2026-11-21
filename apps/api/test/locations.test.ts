@@ -60,6 +60,24 @@ it('maintains branch ancestry on moves, refuses cycles and stale edits, and audi
   }
 });
 
+it('searches names and codes for literal text', async () => {
+  const { agent, cleanup } = await estate();
+  try {
+    await agent.post(locations).send({ code: 'A_1', name: '100% occupied', kind: 'site' }).expect(201);
+    await agent.post(locations).send({ code: 'AB1', name: '100 people', kind: 'site' }).expect(201);
+    await agent
+      .post(locations)
+      .send({ code: 'ß'.repeat(32), name: 'Code too long', kind: 'site' })
+      .expect(400);
+    for (const q of ['A_1', '100%']) {
+      const response = await agent.get(locations).query({ q }).expect(200);
+      expect(response.body.items.map((row: { code: string }) => row.code)).toEqual(['A_1']);
+    }
+  } finally {
+    await cleanup();
+  }
+});
+
 it('restricts members to assigned branches, including writes and parent links', async () => {
   const { agent, tenant, cleanup } = await estate();
   try {
@@ -76,6 +94,12 @@ it('restricts members to assigned branches, including writes and parent links', 
       .send({ locationIds: [site.id] })
       .expect(200);
     expect((await restricted.get(`${locations}/${site.id}`).expect(200)).body.parentId).toBeNull();
+    const renamedSite = await restricted
+      .patch(`${locations}/${site.id}`)
+      .send({ version: 1, parentId: null, name: 'Renamed Site A' })
+      .expect(200);
+    expect(renamedSite.body).toMatchObject({ name: 'Renamed Site A', parentId: null });
+    expect((await agent.get(`${locations}/${site.id}`).expect(200)).body.parentId).toBe(region.id);
     await restricted.get(`${locations}/${sibling.id}`).expect(404);
     const floor = (
       await restricted.post(locations).send({ code: 'F', name: 'Floor', kind: 'floor', parentId: site.id }).expect(201)
@@ -85,6 +109,7 @@ it('restricts members to assigned branches, including writes and parent links', 
       .send({ code: 'OUT', name: 'Outside', kind: 'floor', parentId: sibling.id })
       .expect(404);
     await restricted.patch(`${locations}/${floor.id}`).send({ version: 1, parentId: sibling.id }).expect(403);
+    await restricted.patch(`${locations}/${floor.id}`).send({ version: 1, parentId: null }).expect(403);
     await restricted.patch(`${locations}/${sibling.id}`).send({ version: 1, name: 'Outside' }).expect(404);
     await restricted.put(access).send({ locationIds: null }).expect(403);
     const visible = (await restricted.get(locations).expect(200)).body.items;
@@ -100,6 +125,53 @@ it('restricts members to assigned branches, including writes and parent links', 
 
     await agent.put(access).send({ locationIds: null }).expect(200);
     await restricted.get(`${locations}/${sibling.id}`).expect(200);
+    const aliases = await agent
+      .put(access)
+      .send({ locationIds: [site.id, site.id.toUpperCase()] })
+      .expect(200);
+    expect(aliases.body.locationIds).toEqual([site.id]);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('keeps omitted custom values and hides retired fields while preserving their stored values', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const fields = '/api/config/fields';
+    for (const key of ['use_class', 'manager', 'retired']) {
+      await agent.post(fields).send({ entityType: 'location', key, label: key, type: 'text' }).expect(201);
+    }
+    const site = (
+      await agent
+        .post(locations)
+        .send({
+          code: 'A',
+          name: 'Site A',
+          kind: 'site',
+          custom: { use_class: 'Office', manager: 'Morgan', retired: 'Old value' },
+        })
+        .expect(201)
+    ).body;
+    const definitions = (await agent.get(fields).query({ entityType: 'location' }).expect(200)).body;
+    const retired = definitions.find((field: { key: string }) => field.key === 'retired');
+    await agent.delete(`${fields}/${retired.id}`).expect(204);
+
+    const updated = (
+      await agent
+        .patch(`${locations}/${site.id}`)
+        .send({
+          version: 1,
+          custom: { use_class: 'Clinic' },
+        })
+        .expect(200)
+    ).body;
+    expect(updated.custom).toEqual({ use_class: 'Clinic', manager: 'Morgan' });
+    const page = (await agent.get(locations).expect(200)).body;
+    expect(page.items[0].custom).toEqual(updated.custom);
+    expect((await agent.get(`${locations}/${site.id}`).expect(200)).body.custom).toEqual(updated.custom);
+    const stored = await withTenant(db, tenant.id, (tx) => tx.location.findUniqueOrThrow({ where: { id: site.id } }));
+    expect(stored.custom).toEqual({ ...updated.custom, retired: 'Old value' });
   } finally {
     await cleanup();
   }

@@ -1,5 +1,8 @@
-import { UnprocessableEntityException } from '@nestjs/common';
-import type { Prisma, Tx } from '@cafm/db';
+import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
+import { withTenant, type Prisma, type PrismaClient, type Tx } from '@cafm/db';
+import type { Permission } from '@cafm/shared';
+import { loadAccess } from '../../core/access';
+import { assertAccess } from '../../core/auth.guards';
 import type { AuthContext } from '../../core/session';
 
 export function allLocations(auth: AuthContext): boolean {
@@ -15,9 +18,25 @@ export function locationScope(auth: AuthContext): Prisma.LocationWhereInput {
   return { tenantId, ancestors: { some: { ancestor: { grants: { some: { tenantId, membershipId } } } } } };
 }
 
-/** Serialise tree edits, grant changes and site-limit checks for the same tenant. */
-export async function lockLocations(tx: Tx, tenantId: string): Promise<void> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`locations:${tenantId}`}))`;
+/** Serialise writes and recheck access after any grant change ahead of them. */
+export function withLocationWrite<T>(
+  db: PrismaClient,
+  auth: AuthContext,
+  permission: Permission,
+  fn: (tx: Tx, current: AuthContext) => Promise<T>,
+): Promise<T> {
+  const { tenantId, id } = auth.membership!;
+  return withTenant(db, tenantId, async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`locations:${tenantId}`}))`;
+    const membership = await tx.membership.findFirst({
+      where: { id, tenantId, status: 'active', tenant: { status: 'active' } },
+      include: { tenant: true },
+    });
+    if (!membership) throw new ForbiddenException({ code: 'organisation_required' });
+    const access = await loadAccess(tx, tenantId, membership.role, membership.tenant.plan);
+    assertAccess(access, 'locations', permission);
+    return fn(tx, { ...auth, membership, access });
+  });
 }
 
 /** The site boundary stays stable even when intermediate levels are omitted. */

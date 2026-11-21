@@ -18,11 +18,11 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { type FieldDefinition as Def, ENTITY_TYPES, fieldDefinitionInput, validateCustom } from '@cafm/config-engine';
+import { ENTITY_TYPES, fieldDefinitionInput, validateCustom } from '@cafm/config-engine';
 import { Prisma, type Tx, withTenant } from '@cafm/db';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
-import { recordVersion } from '../../core/config';
+import { recordVersion, toFieldDefinition } from '../../core/config';
 import type { Access } from '../../core/session';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
@@ -44,27 +44,6 @@ const updateSchema = z.object({
 const validateSchema = z.object({ entityType: z.enum(ENTITY_TYPES), values: z.record(z.unknown()) });
 
 type Row = Prisma.FieldDefinitionGetPayload<object>;
-
-/** The definition as the validator and clients need it. */
-function toDef(
-  r: Row,
-): Def & { id: string; entityType: string; helpText: string | null; position: number; active: boolean } {
-  return {
-    id: r.id,
-    entityType: r.entityType,
-    key: r.key,
-    label: r.label,
-    type: r.type as Def['type'],
-    required: r.required,
-    helpText: r.helpText,
-    options: (r.options as Def['options']) ?? null,
-    min: r.min,
-    max: r.max,
-    maxLength: r.maxLength,
-    position: r.position,
-    active: r.active,
-  };
-}
 
 /** The data kept in each version: everything an administrator can change. */
 function snapshot(r: Row): Prisma.InputJsonValue {
@@ -104,7 +83,7 @@ export class FieldsController {
         orderBy: [{ entityType: 'asc' }, { position: 'asc' }, { label: 'asc' }],
       }),
     );
-    return rows.map(toDef);
+    return rows.map(toFieldDefinition);
   }
 
   /** Validates an entity's custom values against the active definitions. */
@@ -116,7 +95,7 @@ export class FieldsController {
     const rows = await withTenant(this.db, tenantId, (tx) =>
       tx.fieldDefinition.findMany({ where: { tenantId, entityType: input.entityType, active: true } }),
     );
-    const result = validateCustom(rows.map(toDef), input.values);
+    const result = validateCustom(rows.map(toFieldDefinition), input.values);
     if (!result.success)
       throw new UnprocessableEntityException({ code: 'invalid_custom_fields', errors: result.errors });
     return { values: result.data };
@@ -150,7 +129,7 @@ export class FieldsController {
         { action: 'field.created', entityType: KIND, entityId: row.id, changes: { after: snapshot(row), version } },
         req.ip,
       );
-      return toDef(row);
+      return toFieldDefinition(row);
     });
   }
 
@@ -164,7 +143,8 @@ export class FieldsController {
       const before = await tx.fieldDefinition.findFirst({ where: { id, tenantId } });
       if (!before) throw new NotFoundException();
       // Re-check the whole definition with the change applied (e.g. a pick list keeps its options).
-      const merged = { ...toDef(before), ...input, options: input.options ?? toDef(before).options ?? undefined };
+      const definition = toFieldDefinition(before);
+      const merged = { ...definition, ...input, options: input.options ?? definition.options ?? undefined };
       const check = fieldDefinitionInput.safeParse({
         ...merged,
         helpText: merged.helpText ?? undefined,
@@ -189,7 +169,7 @@ export class FieldsController {
         },
         req.ip,
       );
-      return toDef(row);
+      return toFieldDefinition(row);
     });
   }
 
@@ -265,7 +245,7 @@ export class FieldsController {
         },
         req.ip,
       );
-      return toDef(row);
+      return toFieldDefinition(row);
     });
   }
 }

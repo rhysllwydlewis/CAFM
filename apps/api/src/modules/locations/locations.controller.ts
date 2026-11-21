@@ -22,6 +22,7 @@ import { createLocationSchema, listLocationsSchema, locationAccessSchema, update
 import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
+import { toFieldDefinition } from '../../core/config';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
@@ -30,15 +31,29 @@ import {
   allLocations,
   assertLocationParent,
   locationScope,
-  lockLocations,
   moveLocationPaths,
+  withLocationWrite,
 } from './location-tree';
 
 type Location = Prisma.LocationGetPayload<object>;
+type LocationFields = ReadonlyMap<string, FieldDefinition>;
 
-function publicFields(row: Location) {
+async function activeFields(tx: Tx, tenantId: string): Promise<LocationFields> {
+  const rows = await tx.fieldDefinition.findMany({ where: { tenantId, entityType: 'location', active: true } });
+  return new Map(rows.map((row) => [row.key, toFieldDefinition(row)]));
+}
+
+function customEntries(values: Prisma.JsonValue | undefined) {
+  return Object.entries((values ?? {}) as Prisma.JsonObject);
+}
+
+function activeValues(values: Prisma.JsonValue | undefined, fields: LocationFields) {
+  return Object.fromEntries(customEntries(values).filter(([key]) => fields.has(key)));
+}
+
+function publicFields(row: Location, fields: LocationFields) {
   const { id, name, code, kind, status, parentId, version, custom } = row;
-  return { id, name, code, kind, status, parentId, version, custom };
+  return { id, name, code, kind, status, parentId, version, custom: activeValues(custom, fields) };
 }
 
 function auditFields(row: Location) {
@@ -46,8 +61,10 @@ function auditFields(row: Location) {
   return { name, code, kind, status, parentId, version };
 }
 
-async function visibleLocations(tx: Tx, auth: AuthContext, rows: Location[]) {
-  if (allLocations(auth)) return rows.map(publicFields);
+async function visibleLocations(tx: Tx, auth: AuthContext, rows: Location[], fields?: LocationFields) {
+  if (!rows.length) return [];
+  const definitions = fields ?? (await activeFields(tx, auth.membership!.tenantId));
+  if (allLocations(auth)) return rows.map((row) => publicFields(row, definitions));
   const ids = rows.flatMap(({ parentId }) => (parentId ? [parentId] : []));
   const parents = new Set(
     (
@@ -58,7 +75,7 @@ async function visibleLocations(tx: Tx, auth: AuthContext, rows: Location[]) {
     ).map(({ id }) => id),
   );
   return rows.map((row) =>
-    publicFields({ ...row, parentId: row.parentId && parents.has(row.parentId) ? row.parentId : null }),
+    publicFields({ ...row, parentId: row.parentId && parents.has(row.parentId) ? row.parentId : null }, definitions),
   );
 }
 
@@ -68,13 +85,10 @@ async function requireLocation(tx: Tx, auth: AuthContext, id: string): Promise<L
   return row;
 }
 
-async function locationCustom(tx: Tx, tenantId: string, values: unknown, previous?: Prisma.JsonValue) {
-  const fields = await tx.fieldDefinition.findMany({ where: { tenantId, entityType: 'location', active: true } });
-  const result = validateCustom(fields as unknown as FieldDefinition[], values);
+function locationCustom(fields: LocationFields, values: Record<string, unknown>, previous?: Prisma.JsonValue) {
+  const result = validateCustom([...fields.values()], { ...activeValues(previous, fields), ...values });
   if (!result.success) throw new UnprocessableEntityException({ code: 'invalid_custom_fields', errors: result.errors });
-  const activeKeys = new Set(fields.map(({ key }) => key));
-  const oldValues = previous as Prisma.JsonObject | undefined;
-  const inactive = Object.fromEntries(Object.entries(oldValues ?? {}).filter(([key]) => !activeKeys.has(key)));
+  const inactive = Object.fromEntries(customEntries(previous).filter(([key]) => !fields.has(key)));
   return { ...inactive, ...result.data } as Prisma.InputJsonObject;
 }
 
@@ -94,6 +108,8 @@ export class LocationsController {
   @RequirePermission('locations.read')
   async list(@Query() query: unknown, @Req() req: Request) {
     const { after, q, limit, kind } = parse(listLocationsSchema, query);
+    // Prisma's contains uses a PostgreSQL LIKE pattern. Search for the text literally.
+    const search = q?.replace(/[\\%_]/g, '\\$&');
     const auth = req.auth!;
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
       const rows = await tx.location.findMany({
@@ -101,8 +117,8 @@ export class LocationsController {
           ...locationScope(auth),
           kind,
           id: after ? { gt: after } : undefined,
-          OR: q
-            ? [{ name: { contains: q, mode: 'insensitive' } }, { code: { contains: q, mode: 'insensitive' } }]
+          OR: search
+            ? [{ name: { contains: search, mode: 'insensitive' } }, { code: { contains: search, mode: 'insensitive' } }]
             : undefined,
         },
         orderBy: { id: 'asc' },
@@ -131,10 +147,8 @@ export class LocationsController {
   @RequirePermission('locations.manage')
   async create(@Body() body: unknown, @Req() req: Request) {
     const input = parse(createLocationSchema, body);
-    const auth = req.auth!;
-    const tenantId = auth.membership!.tenantId;
-    return withTenant(this.db, tenantId, async (tx) => {
-      await lockLocations(tx, tenantId);
+    return withLocationWrite(this.db, req.auth!, 'locations.manage', async (tx, auth) => {
+      const tenantId = auth.membership!.tenantId;
       if ((!input.parentId || input.kind === 'site') && !allLocations(auth)) throw new ForbiddenException();
       if (input.parentId) await requireLocation(tx, auth, input.parentId);
       await assertLocationParent(tx, tenantId, input.kind, input.parentId);
@@ -147,7 +161,8 @@ export class LocationsController {
         throw new ForbiddenException({ code: 'limit_reached', limit, message: `Your plan includes ${limit} sites.` });
       }
       await requireAvailableCode(tx, tenantId, input.code);
-      const custom = await locationCustom(tx, tenantId, input.custom);
+      const fields = await activeFields(tx, tenantId);
+      const custom = locationCustom(fields, input.custom);
       const row = await tx.location.create({ data: { ...input, tenantId, custom } });
       await addLocationPaths(tx, tenantId, row.id, row.parentId);
       await audit(
@@ -156,32 +171,47 @@ export class LocationsController {
         { action: 'location.created', entityType: 'location', entityId: row.id, changes: { after: auditFields(row) } },
         req.ip,
       );
-      return publicFields(row);
+      return publicFields(row, fields);
     });
   }
 
   @Patch(':id')
   @RequirePermission('locations.manage')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown, @Req() req: Request) {
-    const { version, custom, ...input } = parse(updateLocationSchema, body);
-    const auth = req.auth!;
-    const tenantId = auth.membership!.tenantId;
-    return withTenant(this.db, tenantId, async (tx) => {
-      await lockLocations(tx, tenantId);
+    const { version, custom, parentId: requestedParent, ...input } = parse(updateLocationSchema, body);
+    return withLocationWrite(this.db, req.auth!, 'locations.manage', async (tx, auth) => {
+      const tenantId = auth.membership!.tenantId;
       const before = await requireLocation(tx, auth, id);
       if (before.version !== version)
         throw new ConflictException({ code: 'location_changed', message: 'Reload this location and try again.' });
-      if (input.parentId !== undefined && input.parentId !== before.parentId) {
-        if (!allLocations(auth)) throw new ForbiddenException();
-        if (input.parentId) await requireLocation(tx, auth, input.parentId);
-        await moveLocationPaths(tx, tenantId, id, input.parentId);
-        await assertLocationParent(tx, tenantId, before.kind, input.parentId);
+      let parentId = requestedParent;
+      if (parentId !== undefined && parentId !== before.parentId) {
+        if (allLocations(auth)) {
+          if (parentId) await requireLocation(tx, auth, parentId);
+          await assertLocationParent(tx, tenantId, before.kind, parentId);
+          await moveLocationPaths(tx, tenantId, before.id, parentId);
+        } else {
+          const visibleParent =
+            before.parentId &&
+            (await tx.location.findFirst({
+              where: { ...locationScope(auth), id: before.parentId },
+              select: { id: true },
+            }));
+          if (parentId !== null || visibleParent) throw new ForbiddenException();
+          // A hidden parent is null in a scoped response. Keep the real link on save.
+          parentId = undefined;
+        }
       }
       if (input.code !== undefined && input.code !== before.code) await requireAvailableCode(tx, tenantId, input.code);
-      const fields = custom === undefined ? undefined : await locationCustom(tx, tenantId, custom, before.custom);
+      const fields = await activeFields(tx, tenantId);
       const updated = await tx.location.update({
-        where: { id },
-        data: { ...input, custom: fields, version: { increment: 1 } },
+        where: { id: before.id },
+        data: {
+          ...input,
+          parentId,
+          custom: custom === undefined ? undefined : locationCustom(fields, custom, before.custom),
+          version: { increment: 1 },
+        },
       });
       await audit(
         tx,
@@ -189,7 +219,7 @@ export class LocationsController {
         {
           action: 'location.updated',
           entityType: 'location',
-          entityId: id,
+          entityId: before.id,
           changes: {
             before: auditFields(before),
             after: auditFields(updated),
@@ -198,7 +228,7 @@ export class LocationsController {
         },
         req.ip,
       );
-      const [location] = await visibleLocations(tx, auth, [updated]);
+      const [location] = await visibleLocations(tx, auth, [updated], fields);
       return location;
     });
   }
@@ -211,13 +241,15 @@ export class LocationsController {
     @Req() req: Request,
   ) {
     const { locationIds } = parse(locationAccessSchema, body);
-    const auth = req.auth!;
-    const actor = auth.membership!;
-    const tenantId = actor.tenantId;
-    if (!auth.access!.permissions.has('locations.manage') || !allLocations(auth) || membershipId === actor.id)
-      throw new ForbiddenException();
-    return withTenant(this.db, tenantId, async (tx) => {
-      await lockLocations(tx, tenantId);
+    return withLocationWrite(this.db, req.auth!, 'people.manage', async (tx, auth) => {
+      const actor = auth.membership!;
+      const tenantId = actor.tenantId;
+      if (
+        !auth.access!.permissions.has('locations.manage') ||
+        !allLocations(auth) ||
+        membershipId.toLowerCase() === actor.id
+      )
+        throw new ForbiddenException();
       const member = await tx.membership.findFirst({
         where: { tenantId, id: membershipId },
         include: { account: { select: { isDemo: true } } },
@@ -231,18 +263,18 @@ export class LocationsController {
       const ids = [...new Set(locationIds ?? [])];
       if ((await tx.location.count({ where: { tenantId, id: { in: ids } } })) !== ids.length)
         throw new NotFoundException();
-      const where = { tenantId, membershipId };
+      const where = { tenantId, membershipId: member.id };
       const before = await tx.membershipSite.findMany({ where, select: { locationId: true } });
       await tx.membershipSite.deleteMany({ where });
       await tx.membershipSite.createMany({ data: ids.map((locationId) => ({ ...where, locationId })) });
-      await tx.membership.update({ where: { id: membershipId }, data: { locationScoped: locationIds !== null } });
+      await tx.membership.update({ where: { id: member.id }, data: { locationScoped: locationIds !== null } });
       await audit(
         tx,
         auth,
         {
           action: 'location.access_updated',
           entityType: 'membership',
-          entityId: membershipId,
+          entityId: member.id,
           changes: {
             before: { restricted: member.locationScoped, locationIds: before.map(({ locationId }) => locationId) },
             after: { restricted: locationIds !== null, locationIds: ids },
@@ -250,7 +282,7 @@ export class LocationsController {
         },
         req.ip,
       );
-      return { membershipId, locationIds: locationIds === null ? null : ids };
+      return { membershipId: member.id, locationIds: locationIds === null ? null : ids };
     });
   }
 }

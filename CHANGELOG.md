@@ -12,7 +12,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
-- Locations API: create and organise estate locations, search by name or code, and restrict access to assigned sites or branches of the hierarchy.
+- Locations API: create and organise estate locations, search by name or code, and restrict access to assigned sites or branches of the hierarchy. Edits carry forward custom fields you leave out.
 - On the Free plan, inviting a fourth full user (or changing someone's role to one) explains the plan's limit of 3. Lighter licences, such as technicians and requesters, don't count.
 - Custom fields (API): people who can change settings can add fields such as text, numbers, money, dates, pick lists and links to people or assets on requests, work orders, assets, locations, PPM schedules, contractors and people. How many depends on the plan. Every change is versioned and can be rolled back. Forms that show them arrive with each module in Phase 1.
 - Reference numbering: choose the format for work order, request, asset and PPM numbers, such as `JOB-{YYYY}-{0000}`. Numbers are unique and have no gaps.

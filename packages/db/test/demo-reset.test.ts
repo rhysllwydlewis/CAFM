@@ -18,9 +18,17 @@ describe('demo reset', () => {
       const visitor = await db.account.create({
         data: { email: `visitor-${Date.now()}@test.example`, name: 'Visitor', passwordHash: 'x' },
       });
-      await db.membership.create({
+      const member = await db.membership.create({
         data: { tenantId: tenant.id, accountId: visitor.id, role: 'helpdesk', licence: 'full' },
       });
+      const site = await db.location.create({
+        data: { tenantId: tenant.id, name: 'Site', kind: 'site', code: 'SITE' },
+      });
+      const floor = await db.location.create({
+        data: { tenantId: tenant.id, name: 'Floor', kind: 'floor', code: 'FLOOR', parentId: site.id },
+      });
+      await db.locationPath.create({ data: { tenantId: tenant.id, ancestorId: site.id, descendantId: floor.id } });
+      await db.membershipSite.create({ data: { tenantId: tenant.id, membershipId: member.id, locationId: site.id } });
       await db.role.create({ data: { tenantId: tenant.id, key: 'custom_x', name: 'X', permissions: [] } });
       await db.role.update({
         where: { tenantId_key: { tenantId: tenant.id, key: 'helpdesk' } },
@@ -49,7 +57,11 @@ describe('demo reset', () => {
       ).toContain('people.read');
       expect(await db.invite.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.auditEvent.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.location.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.locationPath.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.membershipSite.count({ where: { tenantId: tenant.id } })).toBe(0);
     } finally {
+      await db.location.deleteMany({ where: { tenantId: tenant.id } });
       await db.role.deleteMany({ where: { tenantId: tenant.id } });
       await db.tenant.delete({ where: { id: tenant.id } });
     }

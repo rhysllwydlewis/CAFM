@@ -12,7 +12,7 @@ import { withTenant } from '@cafm/db';
 import { type Feature, type Permission, planFor } from '@cafm/shared';
 import { loadAccess } from './access';
 import { PrismaService } from './prisma.service';
-import { hashToken, SESSION_COOKIE } from './session';
+import { hashToken, SESSION_COOKIE, type Access } from './session';
 
 /** Requires a valid, unexpired session. Attaches req.auth. */
 @Injectable()
@@ -72,6 +72,13 @@ export const RequirePermission = (permission: Permission) => SetMetadata(PERMISS
 /** The tenant's plan or add-ons must include this feature (ADR 0006). */
 export const RequireFeature = (feature: Feature) => SetMetadata(FEATURE_KEY, feature);
 
+export function assertAccess(access: Access | null | undefined, feature?: Feature, permission?: Permission): void {
+  if (feature && !access?.entitlements.features.includes(feature)) {
+    throw new ForbiddenException({ code: 'feature_locked', feature, plan: planFor(feature) ?? null });
+  }
+  if (permission && !access?.permissions.has(permission)) throw new ForbiddenException();
+}
+
 /**
  * Checks @RequireFeature then @RequirePermission on the handler or its
  * controller. Use after SessionGuard and TenantGuard.
@@ -84,11 +91,8 @@ export class PermissionGuard implements CanActivate {
     const targets = [context.getHandler(), context.getClass()];
     const access = context.switchToHttp().getRequest<Request>().auth?.access;
     const feature = this.reflector.getAllAndOverride<Feature | undefined>(FEATURE_KEY, targets);
-    if (feature && !access?.entitlements.features.includes(feature)) {
-      throw new ForbiddenException({ code: 'feature_locked', feature, plan: planFor(feature) ?? null });
-    }
     const permission = this.reflector.getAllAndOverride<Permission | undefined>(PERMISSION_KEY, targets);
-    if (permission && !access?.permissions.has(permission)) throw new ForbiddenException();
+    assertAccess(access, feature, permission);
     return true;
   }
 }
