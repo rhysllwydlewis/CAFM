@@ -1,6 +1,6 @@
 # 13 · Agent Schedule Strategy
 
-> Status: **Stage 0 live from 21 Nov 2026.** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)). Stage 0 scheduled tasks run in the "CAFM" cloud environment (see §7); later stages are added as their roadmap phase starts.
+> Status: **Stage 0 ready to switch on.** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)) and the "CAFM" cloud environment created. The Stage 0 routines are created from [docs/agents/routines.md](../agents/routines.md) (see §7); later stages are added as their roadmap phase starts.
 
 ## 1. The idea
 
@@ -173,22 +173,25 @@ Tasks for later stages are created **disabled** and enabled when their stage sta
 
 **Until A01's monorepo scaffold is merged on `main`**, every other agent limits its run to planning: reading its sections, refining its issues, and writing a short design note in its notebook PR. Agents must not create their own workspace or `package.json` files, so they never build competing scaffolds.
 
-### Stage 0 schedules (live from 21 Nov 2026)
+### Stage 0 schedules (to be created in the claude.ai routines page)
 
-**How the schedules are wired.** A scheduled task that starts a brand-new session has no GitHub write access, because repository access is chosen when a session starts. So each agent has **one long-lived session** created with the repository attached, and its identity, rules and standing brief are built into that session's system prompt. Its schedule wakes that session for each run. Long conversations are summarised automatically, and the agent's notebook still carries the important state between runs. Sessions are tagged `cafm-agent` and `stage-0`. Only the conductor sends push notifications (from inside its run).
+**Why they're created by hand.** Agents need GitHub write access to open issues, branches and pull requests. That access is only granted when the repository is selected as a source when the routine is created in the claude.ai routines page. On 21 Nov 2026 three approaches were tested from inside a Claude session, and all failed:
+- schedules that start a new session (read-only clone, GitHub API refused)
+- schedules that wake an existing session (started a new, empty session instead)
+- new sessions attaching the repository themselves (the tool isn't available to them)
 
-| Agent | Scheduled task | Cron (Europe/London) | State |
-|-------|----------------|----------------------|-------|
-| A00 Conductor | CAFM A00 Conductor | `41 7 * * *` | Enabled; first run started manually on 21 Nov |
-| A01 Foundations | CAFM A01 Foundations | `13 18 * * *` | Enabled |
-| A02 Identity | CAFM A02 Identity | `37 18 * * 1,3,5` | Enabled |
-| A03 Tenancy & access | CAFM A03 Tenancy & access | `13 18 * * 2,4,6` | Enabled |
-| A04 Configuration engine | CAFM A04 Configuration engine | `37 18 * * 2,4,6` | Paused until Phase 0 week 3 |
-| A05 Design system | CAFM A05 Design system | `7 19 * * 1,3,5` | Enabled |
-| A06 Demo data | CAFM A06 Demo data | `7 19 * * 2,5` | Enabled |
-| A90 QA | CAFM A90 QA | `13 4 * * *` | Enabled |
+So the eight Stage 0 routines are set up by the product owner from [docs/agents/routines.md](../agents/routines.md), which has each routine's name, schedule and full prompt ready to paste. They run in the "CAFM" environment.
 
-To pause an agent, disable its scheduled task. To change an agent's brief, its session must be recreated (the brief lives in the session's system prompt) and its scheduled task pointed at the new session.
+| Agent | Routine | Schedule (UK time) | State |
+|-------|---------|--------------------|-------|
+| A00 Conductor | CAFM A00 Conductor | Daily 07:41 | To create (push notifications on) |
+| A01 Foundations | CAFM A01 Foundations | Daily 18:13 | To create |
+| A02 Identity | CAFM A02 Identity | Mon/Wed/Fri 18:37 | To create |
+| A03 Tenancy & access | CAFM A03 Tenancy & access | Tue/Thu/Sat 18:13 | To create |
+| A04 Configuration engine | CAFM A04 Configuration engine | Tue/Thu/Sat 18:37 | To create, switched off until Phase 0 week 3 |
+| A05 Design system | CAFM A05 Design system | Mon/Wed/Fri 19:07 | To create |
+| A06 Demo data | CAFM A06 Demo data | Tue/Fri 19:07 | To create |
+| A90 QA | CAFM A90 QA | Daily 04:13 | To create |
 
 ---
 
