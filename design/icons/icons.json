@@ -1,0 +1,862 @@
+[
+  {
+    "name": "dashboard",
+    "category": "Modules & navigation",
+    "source": "lucide:layout-dashboard"
+  },
+  {
+    "name": "helpdesk",
+    "category": "Modules & navigation",
+    "source": "lucide:inbox"
+  },
+  {
+    "name": "work-order",
+    "category": "Modules & navigation",
+    "source": "lucide:clipboard-list"
+  },
+  {
+    "name": "reactive",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "ppm",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "asset",
+    "category": "Modules & navigation",
+    "source": "lucide:boxes"
+  },
+  {
+    "name": "location",
+    "category": "Modules & navigation",
+    "source": "lucide:map-pin"
+  },
+  {
+    "name": "site",
+    "category": "Modules & navigation",
+    "source": "lucide:building-2"
+  },
+  {
+    "name": "compliance",
+    "category": "Modules & navigation",
+    "source": "lucide:shield-check"
+  },
+  {
+    "name": "inspection",
+    "category": "Modules & navigation",
+    "source": "lucide:clipboard-check"
+  },
+  {
+    "name": "health-safety",
+    "category": "Modules & navigation",
+    "source": "lucide:hard-hat"
+  },
+  {
+    "name": "contractor",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "contract",
+    "category": "Modules & navigation",
+    "source": "lucide:handshake"
+  },
+  {
+    "name": "dispatch",
+    "category": "Modules & navigation",
+    "source": "lucide:calendar-range"
+  },
+  {
+    "name": "inventory",
+    "category": "Modules & navigation",
+    "source": "lucide:package"
+  },
+  {
+    "name": "procurement",
+    "category": "Modules & navigation",
+    "source": "lucide:shopping-cart"
+  },
+  {
+    "name": "finance",
+    "category": "Modules & navigation",
+    "source": "lucide:pound-sterling"
+  },
+  {
+    "name": "documents",
+    "category": "Modules & navigation",
+    "source": "lucide:folder"
+  },
+  {
+    "name": "space",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "booking",
+    "category": "Modules & navigation",
+    "source": "lucide:calendar-check"
+  },
+  {
+    "name": "visitor",
+    "category": "Modules & navigation",
+    "source": "lucide:id-card"
+  },
+  {
+    "name": "moves",
+    "category": "Modules & navigation",
+    "source": "lucide:move"
+  },
+  {
+    "name": "energy",
+    "category": "Modules & navigation",
+    "source": "lucide:zap"
+  },
+  {
+    "name": "sustainability",
+    "category": "Modules & navigation",
+    "source": "lucide:leaf"
+  },
+  {
+    "name": "iot",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "real-estate",
+    "category": "Modules & navigation",
+    "source": "lucide:landmark"
+  },
+  {
+    "name": "capital-planning",
+    "category": "Modules & navigation",
+    "source": "lucide:chart-column-big"
+  },
+  {
+    "name": "projects",
+    "category": "Modules & navigation",
+    "source": "lucide:git-branch"
+  },
+  {
+    "name": "soft-services",
+    "category": "Modules & navigation",
+    "source": "lucide:sparkles"
+  },
+  {
+    "name": "fleet",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "keys",
+    "category": "Modules & navigation",
+    "source": "lucide:key-round"
+  },
+  {
+    "name": "continuity",
+    "category": "Modules & navigation",
+    "source": "lucide:siren"
+  },
+  {
+    "name": "reports",
+    "category": "Modules & navigation",
+    "source": "lucide:chart-pie"
+  },
+  {
+    "name": "ai-assistant",
+    "category": "Modules & navigation",
+    "source": "custom"
+  },
+  {
+    "name": "admin",
+    "category": "Modules & navigation",
+    "source": "lucide:settings"
+  },
+  {
+    "name": "integrations",
+    "category": "Modules & navigation",
+    "source": "lucide:blocks"
+  },
+  {
+    "name": "housing",
+    "category": "Modules & navigation",
+    "source": "lucide:house"
+  },
+  {
+    "name": "healthcare",
+    "category": "Modules & navigation",
+    "source": "lucide:hospital"
+  },
+  {
+    "name": "education",
+    "category": "Modules & navigation",
+    "source": "lucide:graduation-cap"
+  },
+  {
+    "name": "add",
+    "category": "Actions",
+    "source": "lucide:plus"
+  },
+  {
+    "name": "search",
+    "category": "Actions",
+    "source": "lucide:search"
+  },
+  {
+    "name": "filter",
+    "category": "Actions",
+    "source": "custom"
+  },
+  {
+    "name": "sort",
+    "category": "Actions",
+    "source": "lucide:arrow-up-down"
+  },
+  {
+    "name": "more",
+    "category": "Actions",
+    "source": "lucide:ellipsis"
+  },
+  {
+    "name": "edit",
+    "category": "Actions",
+    "source": "lucide:pencil"
+  },
+  {
+    "name": "delete",
+    "category": "Actions",
+    "source": "lucide:trash-2"
+  },
+  {
+    "name": "download",
+    "category": "Actions",
+    "source": "lucide:download"
+  },
+  {
+    "name": "upload",
+    "category": "Actions",
+    "source": "lucide:upload"
+  },
+  {
+    "name": "export",
+    "category": "Actions",
+    "source": "lucide:file-spreadsheet"
+  },
+  {
+    "name": "print",
+    "category": "Actions",
+    "source": "lucide:printer"
+  },
+  {
+    "name": "refresh",
+    "category": "Actions",
+    "source": "lucide:refresh-cw"
+  },
+  {
+    "name": "undo",
+    "category": "Actions",
+    "source": "lucide:undo-2"
+  },
+  {
+    "name": "link",
+    "category": "Actions",
+    "source": "lucide:link"
+  },
+  {
+    "name": "attach",
+    "category": "Actions",
+    "source": "lucide:paperclip"
+  },
+  {
+    "name": "send",
+    "category": "Actions",
+    "source": "lucide:send"
+  },
+  {
+    "name": "scan",
+    "category": "Actions",
+    "source": "lucide:scan-line"
+  },
+  {
+    "name": "qr-code",
+    "category": "Actions",
+    "source": "lucide:qr-code"
+  },
+  {
+    "name": "camera",
+    "category": "Actions",
+    "source": "lucide:camera"
+  },
+  {
+    "name": "signature",
+    "category": "Actions",
+    "source": "lucide:signature"
+  },
+  {
+    "name": "assign",
+    "category": "Actions",
+    "source": "lucide:user-round-check"
+  },
+  {
+    "name": "approve",
+    "category": "Actions",
+    "source": "lucide:badge-check"
+  },
+  {
+    "name": "view",
+    "category": "Actions",
+    "source": "lucide:eye"
+  },
+  {
+    "name": "hide",
+    "category": "Actions",
+    "source": "lucide:eye-off"
+  },
+  {
+    "name": "settings",
+    "category": "Actions",
+    "source": "lucide:sliders-horizontal"
+  },
+  {
+    "name": "notifications",
+    "category": "Actions",
+    "source": "lucide:bell"
+  },
+  {
+    "name": "chevron-down",
+    "category": "Actions",
+    "source": "lucide:chevron-down"
+  },
+  {
+    "name": "chevron-right",
+    "category": "Actions",
+    "source": "lucide:chevron-right"
+  },
+  {
+    "name": "log-out",
+    "category": "Actions",
+    "source": "lucide:log-out"
+  },
+  {
+    "name": "theme-light",
+    "category": "Actions",
+    "source": "lucide:sun"
+  },
+  {
+    "name": "theme-dark",
+    "category": "Actions",
+    "source": "lucide:moon"
+  },
+  {
+    "name": "success",
+    "category": "Status & feedback",
+    "source": "lucide:circle-check"
+  },
+  {
+    "name": "warning",
+    "category": "Status & feedback",
+    "source": "lucide:triangle-alert"
+  },
+  {
+    "name": "error",
+    "category": "Status & feedback",
+    "source": "lucide:circle-x"
+  },
+  {
+    "name": "info",
+    "category": "Status & feedback",
+    "source": "lucide:info"
+  },
+  {
+    "name": "alert",
+    "category": "Status & feedback",
+    "source": "lucide:circle-alert"
+  },
+  {
+    "name": "sla",
+    "category": "Status & feedback",
+    "source": "custom"
+  },
+  {
+    "name": "clock",
+    "category": "Status & feedback",
+    "source": "lucide:clock"
+  },
+  {
+    "name": "timer",
+    "category": "Status & feedback",
+    "source": "lucide:timer"
+  },
+  {
+    "name": "history",
+    "category": "Status & feedback",
+    "source": "lucide:history"
+  },
+  {
+    "name": "offline",
+    "category": "Status & feedback",
+    "source": "custom"
+  },
+  {
+    "name": "synced",
+    "category": "Status & feedback",
+    "source": "custom"
+  },
+  {
+    "name": "locked",
+    "category": "Status & feedback",
+    "source": "lucide:lock"
+  },
+  {
+    "name": "blocked",
+    "category": "Status & feedback",
+    "source": "lucide:ban"
+  },
+  {
+    "name": "priority-high",
+    "category": "Status & feedback",
+    "source": "custom"
+  },
+  {
+    "name": "ahu",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "boiler",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "chiller",
+    "category": "Building services & assets",
+    "source": "lucide:thermometer-snowflake"
+  },
+  {
+    "name": "fan",
+    "category": "Building services & assets",
+    "source": "lucide:fan"
+  },
+  {
+    "name": "pump",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "valve",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "water-tank",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "lift",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "electrical",
+    "category": "Building services & assets",
+    "source": "lucide:plug-zap"
+  },
+  {
+    "name": "lighting",
+    "category": "Building services & assets",
+    "source": "lucide:lightbulb"
+  },
+  {
+    "name": "meter",
+    "category": "Building services & assets",
+    "source": "lucide:gauge"
+  },
+  {
+    "name": "sensor",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "thermometer",
+    "category": "Building services & assets",
+    "source": "lucide:thermometer"
+  },
+  {
+    "name": "plumbing",
+    "category": "Building services & assets",
+    "source": "lucide:shower-head"
+  },
+  {
+    "name": "cctv",
+    "category": "Building services & assets",
+    "source": "lucide:cctv"
+  },
+  {
+    "name": "door-access",
+    "category": "Building services & assets",
+    "source": "lucide:door-closed"
+  },
+  {
+    "name": "it-equipment",
+    "category": "Building services & assets",
+    "source": "lucide:monitor"
+  },
+  {
+    "name": "catering",
+    "category": "Building services & assets",
+    "source": "lucide:utensils"
+  },
+  {
+    "name": "tool",
+    "category": "Building services & assets",
+    "source": "lucide:wrench"
+  },
+  {
+    "name": "calibration",
+    "category": "Building services & assets",
+    "source": "custom"
+  },
+  {
+    "name": "gas-safety",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "electrical-cert",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "pat-test",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "fire",
+    "category": "Compliance & safety",
+    "source": "lucide:flame"
+  },
+  {
+    "name": "fire-extinguisher",
+    "category": "Compliance & safety",
+    "source": "lucide:fire-extinguisher"
+  },
+  {
+    "name": "fire-alarm",
+    "category": "Compliance & safety",
+    "source": "lucide:alarm-smoke"
+  },
+  {
+    "name": "fire-door",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "emergency-lighting",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "sprinkler",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "water-hygiene",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "asbestos",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "permit",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "loto",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "risk",
+    "category": "Compliance & safety",
+    "source": "lucide:shield-alert"
+  },
+  {
+    "name": "incident",
+    "category": "Compliance & safety",
+    "source": "lucide:octagon-alert"
+  },
+  {
+    "name": "golden-thread",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "certificate",
+    "category": "Compliance & safety",
+    "source": "lucide:file-check"
+  },
+  {
+    "name": "audit",
+    "category": "Compliance & safety",
+    "source": "lucide:list-checks"
+  },
+  {
+    "name": "damp-mould",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "void-property",
+    "category": "Compliance & safety",
+    "source": "custom"
+  },
+  {
+    "name": "floor-plan",
+    "category": "Workplace",
+    "source": "custom"
+  },
+  {
+    "name": "desk",
+    "category": "Workplace",
+    "source": "custom"
+  },
+  {
+    "name": "room",
+    "category": "Workplace",
+    "source": "lucide:presentation"
+  },
+  {
+    "name": "parking",
+    "category": "Workplace",
+    "source": "lucide:parking-meter"
+  },
+  {
+    "name": "kiosk",
+    "category": "Workplace",
+    "source": "custom"
+  },
+  {
+    "name": "room-panel",
+    "category": "Workplace",
+    "source": "custom"
+  },
+  {
+    "name": "wayfinding",
+    "category": "Workplace",
+    "source": "lucide:compass"
+  },
+  {
+    "name": "cleaning",
+    "category": "Workplace",
+    "source": "lucide:spray-can"
+  },
+  {
+    "name": "waste",
+    "category": "Workplace",
+    "source": "lucide:recycle"
+  },
+  {
+    "name": "mail",
+    "category": "Workplace",
+    "source": "lucide:mail"
+  },
+  {
+    "name": "accessibility",
+    "category": "Workplace",
+    "source": "lucide:accessibility"
+  },
+  {
+    "name": "purchase-order",
+    "category": "Commercial & finance",
+    "source": "lucide:receipt"
+  },
+  {
+    "name": "invoice",
+    "category": "Commercial & finance",
+    "source": "lucide:receipt-pound-sterling"
+  },
+  {
+    "name": "budget",
+    "category": "Commercial & finance",
+    "source": "lucide:wallet"
+  },
+  {
+    "name": "quote",
+    "category": "Commercial & finance",
+    "source": "lucide:calculator"
+  },
+  {
+    "name": "cost-centre",
+    "category": "Commercial & finance",
+    "source": "lucide:coins"
+  },
+  {
+    "name": "approval-chain",
+    "category": "Commercial & finance",
+    "source": "lucide:workflow"
+  },
+  {
+    "name": "user",
+    "category": "People & communication",
+    "source": "lucide:user"
+  },
+  {
+    "name": "users",
+    "category": "People & communication",
+    "source": "lucide:users"
+  },
+  {
+    "name": "team",
+    "category": "People & communication",
+    "source": "lucide:contact"
+  },
+  {
+    "name": "role",
+    "category": "People & communication",
+    "source": "lucide:user-cog"
+  },
+  {
+    "name": "requester",
+    "category": "People & communication",
+    "source": "lucide:hand"
+  },
+  {
+    "name": "comment",
+    "category": "People & communication",
+    "source": "lucide:message-square"
+  },
+  {
+    "name": "phone",
+    "category": "People & communication",
+    "source": "lucide:phone"
+  },
+  {
+    "name": "email",
+    "category": "People & communication",
+    "source": "lucide:mail"
+  },
+  {
+    "name": "broadcast",
+    "category": "People & communication",
+    "source": "lucide:megaphone"
+  },
+  {
+    "name": "document",
+    "category": "Data, files & integrations",
+    "source": "lucide:file-text"
+  },
+  {
+    "name": "files",
+    "category": "Data, files & integrations",
+    "source": "lucide:files"
+  },
+  {
+    "name": "image",
+    "category": "Data, files & integrations",
+    "source": "lucide:image"
+  },
+  {
+    "name": "archive",
+    "category": "Data, files & integrations",
+    "source": "lucide:archive"
+  },
+  {
+    "name": "chart-bar",
+    "category": "Data, files & integrations",
+    "source": "lucide:chart-bar"
+  },
+  {
+    "name": "chart-line",
+    "category": "Data, files & integrations",
+    "source": "lucide:chart-line"
+  },
+  {
+    "name": "trend-up",
+    "category": "Data, files & integrations",
+    "source": "lucide:trending-up"
+  },
+  {
+    "name": "trend-down",
+    "category": "Data, files & integrations",
+    "source": "lucide:trending-down"
+  },
+  {
+    "name": "api",
+    "category": "Data, files & integrations",
+    "source": "lucide:webhook"
+  },
+  {
+    "name": "database",
+    "category": "Data, files & integrations",
+    "source": "lucide:database"
+  },
+  {
+    "name": "workflow",
+    "category": "Data, files & integrations",
+    "source": "lucide:git-fork"
+  },
+  {
+    "name": "map",
+    "category": "Data, files & integrations",
+    "source": "lucide:map"
+  },
+  {
+    "name": "layers",
+    "category": "Data, files & integrations",
+    "source": "lucide:layers"
+  },
+  {
+    "name": "star",
+    "category": "Data, files & integrations",
+    "source": "lucide:star"
+  },
+  {
+    "name": "calendar",
+    "category": "Data, files & integrations",
+    "source": "lucide:calendar-days"
+  },
+  {
+    "name": "home-building",
+    "category": "Data, files & integrations",
+    "source": "lucide:building"
+  },
+  {
+    "name": "route",
+    "category": "Data, files & integrations",
+    "source": "lucide:route"
+  },
+  {
+    "name": "globe",
+    "category": "Data, files & integrations",
+    "source": "lucide:globe"
+  },
+  {
+    "name": "carbon",
+    "category": "Data, files & integrations",
+    "source": "custom"
+  },
+  {
+    "name": "security",
+    "category": "Data, files & integrations",
+    "source": "lucide:fingerprint"
+  },
+  {
+    "name": "audit-log",
+    "category": "Data, files & integrations",
+    "source": "lucide:scroll-text"
+  },
+  {
+    "name": "billing",
+    "category": "Data, files & integrations",
+    "source": "lucide:credit-card"
+  }
+]

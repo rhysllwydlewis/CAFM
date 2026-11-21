@@ -28,7 +28,8 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - RBAC: permission registry, roles, scopes, API guards, `can()` helper in UI, no-privilege-escalation rule.
 - **Entitlements** model and `feature()` gating.
 - Config engine v1: field definitions + custom field storage/validation, numbering sequences, config versioning (every change stored as a version).
-- App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, design tokens + core components, i18n framework (en-GB).
+- App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, i18n framework (en-GB).
+- Design system in code: Tailwind theme generated from `design/tokens/tokens.json`, icon sprite, and the core components from [doc 11](11-design-system.md), matched against the [screen catalogue](12-screen-catalogue.md).
 - Audit log infrastructure; outbox + worker skeleton.
 - Deterministic demo seed + nightly reset job.
 - ADRs 1–6 written.
@@ -144,6 +145,6 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 
 ## Working method
 
-- Each phase is broken into GitHub issues (epics per module, stories per feature) generated from the feature catalogue.
+- Each phase is broken into GitHub issues (epics per module, stories per feature) generated from the feature catalogue, each linking to its screens in the screen catalogue.
 - Short iterations; each merged PR deploys to staging; demo environment updated at the end of each iteration.
 - Product owner reviews on the demo site at each iteration boundary.

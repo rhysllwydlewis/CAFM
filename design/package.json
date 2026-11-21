@@ -1,0 +1,14 @@
+{
+  "name": "cafm-design",
+  "private": true,
+  "type": "module",
+  "description": "Design system, icon set and screen mockups for the CAFM platform",
+  "scripts": {
+    "icons": "node tools/build-icons.js",
+    "render": "node tools/render.js && python3 -I tools/compress.py mockups/png",
+    "contrast": "node tools/contrast.js"
+  },
+  "devDependencies": {
+    "lucide-static": "0.499.0"
+  }
+}

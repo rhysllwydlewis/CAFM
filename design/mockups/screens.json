@@ -1,0 +1,794 @@
+[
+  {
+    "id": "ds-01-colour",
+    "group": "Design system",
+    "title": "Colour",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-02-typography",
+    "group": "Design system",
+    "title": "Typography",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-03-components",
+    "group": "Design system",
+    "title": "Core components",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-04-layout",
+    "group": "Design system",
+    "title": "Layout, spacing & elevation",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-05-logo",
+    "group": "Design system",
+    "title": "Logo (placeholder)",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-06-icons",
+    "group": "Design system",
+    "title": "Icons: full set",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-07-icons-dark",
+    "group": "Design system",
+    "title": "Icons (dark theme)",
+    "viewport": "sheet",
+    "theme": "dark",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-08-icons-custom",
+    "group": "Design system",
+    "title": "Custom CAFM icons",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "ds-09-icons-usage",
+    "group": "Design system",
+    "title": "Icons in use",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "00-foundations.js"
+  },
+  {
+    "id": "auth-01-login",
+    "group": "Sign in",
+    "title": "Login with demo accounts",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "auth-02-login-autofill",
+    "group": "Sign in",
+    "title": "Login: demo role selected (autofilled)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "auth-03-login-dark",
+    "group": "Sign in",
+    "title": "Login (dark theme)",
+    "viewport": "desktop",
+    "theme": "dark",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "auth-04-mfa",
+    "group": "Sign in",
+    "title": "Two-step verification",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "auth-05-select-org",
+    "group": "Sign in",
+    "title": "Choose organisation",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "home-01-dashboard",
+    "group": "Home & navigation",
+    "title": "Home dashboard (FM manager)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "home-02-executive",
+    "group": "Home & navigation",
+    "title": "Executive dashboard",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "home-03-command-palette",
+    "group": "Home & navigation",
+    "title": "Command palette (⌘K)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "home-04-notifications",
+    "group": "Home & navigation",
+    "title": "Notifications panel",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "home-05-dashboard-dark",
+    "group": "Home & navigation",
+    "title": "Home dashboard (dark theme)",
+    "viewport": "desktop",
+    "theme": "dark",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "helpdesk-01-queue",
+    "group": "Helpdesk",
+    "title": "Helpdesk queue",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "helpdesk-02-log-request",
+    "group": "Helpdesk",
+    "title": "Log request (with AI triage)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "helpdesk-03-requester-portal",
+    "group": "Helpdesk",
+    "title": "Requester self-service portal",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "wo-01-list",
+    "group": "Work orders",
+    "title": "Work order list",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "wo-02-detail",
+    "group": "Work orders",
+    "title": "Work order detail",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "wo-03-board",
+    "group": "Work orders",
+    "title": "Work order board (kanban)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "wo-04-job-sheet",
+    "group": "Work orders",
+    "title": "Job sheet (PDF)",
+    "viewport": "a4",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
+    "id": "ppm-01-planner",
+    "group": "Planned maintenance",
+    "title": "52-week PPM planner",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "ppm-02-schedule",
+    "group": "Planned maintenance",
+    "title": "PPM schedule detail (SFG20 tasks)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "assets-01-register",
+    "group": "Assets & locations",
+    "title": "Asset register",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "assets-02-detail",
+    "group": "Assets & locations",
+    "title": "Asset detail",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "locations-01-site",
+    "group": "Assets & locations",
+    "title": "Location hierarchy & site detail",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "locations-02-map",
+    "group": "Assets & locations",
+    "title": "Portfolio map",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "compliance-01-matrix",
+    "group": "Compliance & safety",
+    "title": "Compliance matrix (sites × disciplines)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "compliance-02-certificate-ai",
+    "group": "Compliance & safety",
+    "title": "Certificate with AI extraction",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "compliance-03-inspection-builder",
+    "group": "Compliance & safety",
+    "title": "Inspection form builder",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "compliance-04-remedials",
+    "group": "Compliance & safety",
+    "title": "Remedial actions",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "safety-01-incident",
+    "group": "Compliance & safety",
+    "title": "Incident investigation",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "safety-02-permit",
+    "group": "Compliance & safety",
+    "title": "Permit to work",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "safety-03-risk-register",
+    "group": "Compliance & safety",
+    "title": "Risk register & heat map",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "04-compliance-safety.js"
+  },
+  {
+    "id": "contractors-01-directory",
+    "group": "Contractors & contracts",
+    "title": "Contractor directory",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "contractors-02-profile",
+    "group": "Contractors & contracts",
+    "title": "Contractor profile & scorecard",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "contractors-03-portal",
+    "group": "Contractors & contracts",
+    "title": "Contractor portal",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "contractors-04-rfq",
+    "group": "Contractors & contracts",
+    "title": "Request for quote: comparison",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "contracts-01-performance",
+    "group": "Contractors & contracts",
+    "title": "Contract KPIs & service credits",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "dispatch-01-board",
+    "group": "Scheduling & workforce",
+    "title": "Dispatch board",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "dispatch-02-workforce",
+    "group": "Scheduling & workforce",
+    "title": "Workforce qualifications",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "inventory-01-stock",
+    "group": "Inventory & purchasing",
+    "title": "Stock levels",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "inventory-02-tools",
+    "group": "Inventory & purchasing",
+    "title": "Tools & calibration",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "purchasing-01-po-approval",
+    "group": "Inventory & purchasing",
+    "title": "Purchase order approval",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "purchasing-02-invoice-match",
+    "group": "Inventory & purchasing",
+    "title": "Invoice three-way match",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "finance-01-budgets",
+    "group": "Finance",
+    "title": "Budgets vs actuals",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "finance-02-quote",
+    "group": "Finance",
+    "title": "Quote builder",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "finance-03-client-billing",
+    "group": "Finance",
+    "title": "Client billing (FM providers)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "documents-01-library",
+    "group": "Documents",
+    "title": "Document library",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "05-commercial.js"
+  },
+  {
+    "id": "space-01-floor-plan",
+    "group": "Space & workplace",
+    "title": "Interactive floor plan",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "space-02-utilisation",
+    "group": "Space & workplace",
+    "title": "Space utilisation analytics",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "space-03-scenario",
+    "group": "Space & workplace",
+    "title": "Stacking & scenario planning",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "space-04-moves",
+    "group": "Space & workplace",
+    "title": "Move plan",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "booking-01-desk",
+    "group": "Space & workplace",
+    "title": "Desk booking on floor plan",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "booking-02-rooms",
+    "group": "Space & workplace",
+    "title": "Meeting room calendar",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "booking-03-room-panel",
+    "group": "Space & workplace",
+    "title": "Room panel (tablet)",
+    "viewport": "tablet",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "visitors-01-today",
+    "group": "Space & workplace",
+    "title": "Visitor management",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "visitors-02-kiosk",
+    "group": "Space & workplace",
+    "title": "Visitor kiosk (tablet)",
+    "viewport": "tablet",
+    "theme": "light",
+    "file": "06-workplace.js"
+  },
+  {
+    "id": "energy-01-dashboard",
+    "group": "Energy, IoT & sustainability",
+    "title": "Energy dashboard with anomalies",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "07-strategic.js"
+  },
+  {
+    "id": "energy-02-carbon",
+    "group": "Energy, IoT & sustainability",
+    "title": "Carbon & ESG reporting (SECR)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "07-strategic.js"
+  },
+  {
+    "id": "iot-01-live",
+    "group": "Energy, IoT & sustainability",
+    "title": "IoT sensors & alarms",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "07-strategic.js"
+  },
+  {
+    "id": "capital-01-forecast",
+    "group": "Capital, projects & real estate",
+    "title": "Capital planning & lifecycle forecast",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "07-strategic.js"
+  },
+  {
+    "id": "projects-01-gantt",
+    "group": "Capital, projects & real estate",
+    "title": "Project programme (Gantt)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "07-strategic.js"
+  },
+  {
+    "id": "leases-01-critical-dates",
+    "group": "Capital, projects & real estate",
+    "title": "Leases & critical dates",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "07-strategic.js"
+  },
+  {
+    "id": "soft-01-cleaning",
+    "group": "Services & operations",
+    "title": "Cleaning audits & on-demand cleaning",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "08-services-sector.js"
+  },
+  {
+    "id": "fleet-01-vehicles",
+    "group": "Services & operations",
+    "title": "Fleet",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "08-services-sector.js"
+  },
+  {
+    "id": "keys-01-register",
+    "group": "Services & operations",
+    "title": "Key register",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "08-services-sector.js"
+  },
+  {
+    "id": "continuity-01-incident",
+    "group": "Services & operations",
+    "title": "Business continuity: live incident",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "08-services-sector.js"
+  },
+  {
+    "id": "housing-01-damp-mould",
+    "group": "Sector packs",
+    "title": "Housing: damp & mould case (Awaab's Law)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "08-services-sector.js"
+  },
+  {
+    "id": "housing-02-voids",
+    "group": "Sector packs",
+    "title": "Housing: void properties",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "08-services-sector.js"
+  },
+  {
+    "id": "reports-01-builder",
+    "group": "Reports & AI",
+    "title": "Report builder",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "ai-01-ask-the-estate",
+    "group": "Reports & AI",
+    "title": "Ask the estate (AI assistant)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-01-overview",
+    "group": "Super User administration",
+    "title": "Admin overview & setup checklist",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-02-users",
+    "group": "Super User administration",
+    "title": "Users & licences",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-03-roles",
+    "group": "Super User administration",
+    "title": "Role permission matrix",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-04-workflow",
+    "group": "Super User administration",
+    "title": "Automation / workflow builder",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-05-forms",
+    "group": "Super User administration",
+    "title": "Fields & form designer",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-06-sla",
+    "group": "Super User administration",
+    "title": "SLAs & priority matrix",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-07-branding",
+    "group": "Super User administration",
+    "title": "Branding & white-label",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-08-security",
+    "group": "Super User administration",
+    "title": "Security & sign-in",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-09-audit",
+    "group": "Super User administration",
+    "title": "Audit log",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-10-integrations",
+    "group": "Super User administration",
+    "title": "Integrations & API",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-11-modules",
+    "group": "Super User administration",
+    "title": "Modules & terminology",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "admin-12-subscription",
+    "group": "Super User administration",
+    "title": "Subscription & billing",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "platform-01-tenants",
+    "group": "Platform (vendor) admin",
+    "title": "Tenant management",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
+    "id": "mobile-01-technician-jobs",
+    "group": "Mobile apps",
+    "title": "Technician: jobs, job detail, checklist",
+    "viewport": "board",
+    "theme": "light",
+    "file": "10-mobile.js"
+  },
+  {
+    "id": "mobile-02-technician-complete",
+    "group": "Mobile apps",
+    "title": "Technician: complete, scan, offline sync",
+    "viewport": "board",
+    "theme": "light",
+    "file": "10-mobile.js"
+  },
+  {
+    "id": "mobile-03-requester",
+    "group": "Mobile apps",
+    "title": "Requester: QR report, track, bookings",
+    "viewport": "board",
+    "theme": "light",
+    "file": "10-mobile.js"
+  },
+  {
+    "id": "mobile-04-inspections-contractor",
+    "group": "Mobile apps",
+    "title": "Rounds, meter reading, contractor app",
+    "viewport": "board",
+    "theme": "light",
+    "file": "10-mobile.js"
+  },
+  {
+    "id": "dark-01-work-orders",
+    "group": "Dark theme",
+    "title": "Work order list (dark)",
+    "viewport": "desktop",
+    "theme": "dark",
+    "file": "11-dark.js"
+  },
+  {
+    "id": "dark-02-work-order-detail",
+    "group": "Dark theme",
+    "title": "Work order detail (dark)",
+    "viewport": "desktop",
+    "theme": "dark",
+    "file": "11-dark.js"
+  },
+  {
+    "id": "dark-03-compliance-matrix",
+    "group": "Dark theme",
+    "title": "Compliance matrix (dark)",
+    "viewport": "desktop",
+    "theme": "dark",
+    "file": "11-dark.js"
+  },
+  {
+    "id": "dark-04-floor-plan",
+    "group": "Dark theme",
+    "title": "Floor plan (dark)",
+    "viewport": "desktop",
+    "theme": "dark",
+    "file": "11-dark.js"
+  },
+  {
+    "id": "dark-05-mobile",
+    "group": "Dark theme",
+    "title": "Technician app (dark)",
+    "viewport": "board",
+    "theme": "dark",
+    "file": "11-dark.js"
+  }
+]

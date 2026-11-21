@@ -18,6 +18,8 @@ This folder is the single source of truth for what we are building, how, in what
 | 08 | [Delivery roadmap](08-roadmap.md) | Phases, milestones, and the definition of done for each |
 | 09 | [Quality, security & compliance](09-quality-security-compliance.md) | NFRs, security, testing, DevOps, certifications |
 | 10 | [Risks & open decisions](10-risks-and-decisions.md) | Risks, mitigations, and decisions the product owner needs to make |
+| 11 | [Design system](11-design-system.md) | Colour research and palette, typography, icons, logo, components, how the build uses them |
+| 12 | [Screen catalogue](12-screen-catalogue.md) | 99 rendered screens covering every module, desktop, tablet, mobile and dark theme |
 
 ## Executive summary
 
