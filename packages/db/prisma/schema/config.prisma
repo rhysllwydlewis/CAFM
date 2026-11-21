@@ -1,0 +1,55 @@
+// Configuration engine v1 (doc 02 § 0, ADR 0003, issue #17).
+
+/// A custom field on an entity type. Values live in the entity's `custom` JSONB column. Tenant-owned (RLS).
+model FieldDefinition {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  entityType String   @map("entity_type")
+  key        String
+  label      String
+  type       String
+  required   Boolean  @default(false)
+  helpText   String?  @map("help_text")
+  options    Json?
+  min        Float?
+  max        Float?
+  maxLength  Int?     @map("max_length")
+  position   Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, entityType, key])
+  @@map("field_definition")
+}
+
+/// A numbering sequence (e.g. work orders: WO-{00000}). Numbers are issued under a row lock, gap-free. Tenant-owned (RLS).
+model NumberSequence {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  key       String
+  format    String
+  nextValue Int      @default(1) @map("next_value")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key])
+  @@map("number_sequence")
+}
+
+/// Every configuration change, stored as a numbered version so it can be audited and rolled back. Tenant-owned (RLS).
+model ConfigVersion {
+  id                  String   @id @default(uuid(7)) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  kind                String
+  entityId            String   @map("entity_id") @db.Uuid
+  version             Int
+  data                Json
+  createdByMembership String?  @map("created_by_membership_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, kind, entityId, version])
+  @@map("config_version")
+}

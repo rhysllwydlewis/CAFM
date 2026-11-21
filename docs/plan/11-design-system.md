@@ -82,11 +82,11 @@ Three stacked "floors" read as both a building and a work list. This is a placeh
 - **States:** every list and page uses the shared empty, loading, error, no-permission, plan-locked, offline and toast patterns ([states sheet](../../design/mockups/png/ds-10-states.png)).
 - **Radius:** 4 badges · 6 controls · 8 menus · 12 cards · 16 modals. **Elevation:** four subtle shadows.
 - **Mobile:** 50px buttons, 16px card radius, bottom tab bar, offline status always visible.
-- **Implementation:** shadcn/ui (Radix) components themed with Tailwind from `tokens.css`. The mockup CSS (`design/mockups/src/styles.css`) is the visual reference for each component.
+- **Implementation:** `packages/ui` React components using the mockups' own component stylesheet (`design/mockups/src/styles.css`, built on `tokens.css`), with Radix primitives for complex behaviour ([ADR 0009](../adr/0009-shared-component-stylesheet.md)).
 
 ## How the build uses this
 
-1. **Phase 0:** import `tokens.css` into the web app and generate the Tailwind theme from `tokens.json`. Build the shell, the components above and the state patterns in `packages/ui`, and match them against the mockups.
+1. **Phase 0:** import the shared component stylesheet (and so `tokens.css`) into the web app through `packages/ui`. Build the shell, the components above and the state patterns in `packages/ui`, and match them against the mockups.
 2. **Each module:** start from its screens in the [screen catalogue](12-screen-catalogue.md) and keep the layout, hierarchy and components. Where real requirements differ, update the mockup source and re-render, so the catalogue stays the single picture of the product.
 3. **Visual regression:** Playwright screenshots of built screens can be compared with the mockups during review.
 

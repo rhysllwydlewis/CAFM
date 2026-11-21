@@ -40,9 +40,12 @@ BEGIN
   END IF;
 END
 $$;`);
+    // Only the password and LOGIN are set here: changing SUPERUSER or BYPASSRLS
+    // needs a superuser, which managed databases (such as RDS) don't give the
+    // owner. The connection check below refuses a role that bypasses RLS.
     // format(%L) quotes the password safely; it is never interpolated into SQL here.
     const [{ sql }] =
-      await db.$queryRaw`SELECT format('ALTER ROLE cafm_app WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD %L', ${appPassword}) AS sql`;
+      await db.$queryRaw`SELECT format('ALTER ROLE cafm_app WITH LOGIN PASSWORD %L', ${appPassword}) AS sql`;
     await db.$executeRawUnsafe(sql);
     console.log('[release] app role cafm_app is ready');
   } finally {
@@ -62,8 +65,8 @@ $$;`);
   const app = new PrismaClient({ datasourceUrl: appUrl });
   try {
     const [{ user, bypass }] =
-      await app.$queryRaw`SELECT current_user AS user, rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`;
-    if (bypass) throw new Error(`${user} can bypass row-level security`);
+      await app.$queryRaw`SELECT current_user AS user, (rolbypassrls OR rolsuper) AS bypass FROM pg_roles WHERE rolname = current_user`;
+    if (bypass) throw new Error(`${user} can bypass row-level security (it is a superuser or has BYPASSRLS)`);
     console.log(`[release] app connects as ${user}, row-level security applies`);
   } finally {
     await app.$disconnect();

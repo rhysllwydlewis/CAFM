@@ -25,13 +25,6 @@ export default async function HomePage() {
   const firstName = user.name.split(' ')[0];
   return (
     <>
-      <header className="topbar">
-        <div className="crumbs">
-          <span>{user.tenant.name}</span>
-          <Icon name="chevron-right" />
-          <b>Home</b>
-        </div>
-      </header>
       <div className="page">
         <div className="page-head">
           <div>
@@ -44,8 +37,9 @@ export default async function HomePage() {
         <div className="callout">
           <Icon name="info" />
           <div className="grow">
-            You&apos;re signed in to <b>{user.tenant.name}</b> as {user.roleLabel}. The helpdesk, work orders, assets
-            and the rest of the modules are added here as they&apos;re built.
+            You&apos;re signed in to <b>{user.tenant.name}</b> as {user.roleLabel}. The menu shows every module your
+            role can use; each one fills in as it&apos;s built. Press <span className="kbd">Ctrl K</span> to jump to any
+            page.
           </div>
         </div>
       </div>

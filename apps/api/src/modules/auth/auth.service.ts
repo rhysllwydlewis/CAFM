@@ -133,10 +133,13 @@ export class AuthService {
       name: auth.account.name,
       email: auth.account.email,
       membershipId: m.id,
-      tenant: { id: m.tenant.id, name: m.tenant.name, plan: m.tenant.plan },
+      tenant: { id: m.tenant.id, name: m.tenant.name, plan: m.tenant.plan, demo: m.tenant.demo },
       role: m.role,
-      roleLabel: roleLabel(m.role),
+      roleLabel: auth.access?.roleName ?? roleLabel(m.role),
       licence: m.licence,
+      permissions: [...(auth.access?.permissions ?? [])].sort(),
+      scope: auth.access?.scope ?? 'own',
+      entitlements: auth.access?.entitlements ?? { plan: m.tenant.plan, features: [], limits: {} },
     };
   }
 
@@ -158,7 +161,7 @@ export class AuthService {
     }));
   }
 
-  private async issueSession(
+  async issueSession(
     accountId: string,
     membershipId: string | null,
     tenantId: string | null,
@@ -199,7 +202,7 @@ export class AuthService {
     await this.event(lock ? 'account_locked' : 'sign_in_failed', { accountId: account.id, ip: client.ip });
   }
 
-  private async event(type: string, data: { accountId?: string; tenantId?: string; identifier?: string; ip?: string }) {
+  async event(type: string, data: { accountId?: string; tenantId?: string; identifier?: string; ip?: string }) {
     await this.db.authEvent.create({ data: { type, ...data } });
   }
 }

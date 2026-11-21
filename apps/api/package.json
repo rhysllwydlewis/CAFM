@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cafm/config-engine": "workspace:*",
     "@cafm/db": "workspace:*",
     "@cafm/shared": "workspace:*",
     "@nestjs/common": "11.2.8",

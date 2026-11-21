@@ -5,6 +5,8 @@ const L = h => { const [r,g,b] = hex(h).map(lin); return 0.2126*r + 0.7152*g + 0
 const ratio = (a,b) => { const [x,y] = [L(a),L(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
 const pairs = [
   ['Body text on surface', '#151A22', '#FFFFFF', 4.5],
+  ['Nav section label on nav', '#8A94A0', '#10151C', 4.5],
+  ['Nav lock icon on nav (non-text)', '#7F8995', '#10151C', 3],
   ['Muted text on surface', '#4D5562', '#FFFFFF', 4.5],
   ['Faint text on surface', '#656E7A', '#FFFFFF', 4.5],
   ['Faint text on app bg', '#656E7A', '#F6F7F9', 4.5],

@@ -5,8 +5,24 @@
  */
 import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
-import { DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS } from '@cafm/shared';
+import { ALL_FEATURES, BUILTIN_ROLES, DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS, FEATURES } from '@cafm/shared';
 import { seedId } from './ids';
+
+/**
+ * Seeds (or refreshes) the built-in roles for one tenant. Custom roles are left
+ * alone. With reset, every built-in role goes back to its default.
+ */
+export async function seedRoles(db: PrismaClient, tenantId: string, reset = false): Promise<void> {
+  for (const r of BUILTIN_ROLES) {
+    const data = { name: r.name, description: r.description, permissions: [...r.permissions], scope: r.scope };
+    await db.role.upsert({
+      where: { tenantId_key: { tenantId, key: r.key } },
+      create: { id: seedId(`role:${tenantId}:${r.key}`), tenantId, key: r.key, builtin: true, ...data },
+      // Only the Super User role is reset on every seed; other built-ins are editable per tenant.
+      update: reset || r.key === 'super_user' ? data : {},
+    });
+  }
+}
 
 export async function seed(db: PrismaClient): Promise<void> {
   const passwordHash = await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id });
@@ -15,8 +31,53 @@ export async function seed(db: PrismaClient): Promise<void> {
     const id = seedId(`tenant:${t.slug}`);
     await db.tenant.upsert({
       where: { id },
-      create: { id, slug: t.slug, name: t.name, plan: t.plan },
-      update: { name: t.name, plan: t.plan, status: 'active' },
+      create: { id, slug: t.slug, name: t.name, plan: t.plan, demo: true },
+      update: { name: t.name, plan: t.plan, status: 'active', demo: true },
+    });
+    await seedRoles(db, id);
+  }
+
+  // A few custom fields, so forms show the configuration engine at work (doc 06 demo data).
+  const demoFields = [
+    {
+      entityType: 'work_order',
+      key: 'cost_code',
+      label: 'Cost code',
+      type: 'text',
+      required: false,
+      helpText: 'Finance cost centre, e.g. CC-1042',
+    },
+    {
+      entityType: 'asset',
+      key: 'criticality',
+      label: 'Criticality',
+      type: 'picklist',
+      required: false,
+      options: [
+        { value: 'low', label: 'Low' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'high', label: 'High' },
+      ],
+    },
+    { entityType: 'asset', key: 'warranty_expires', label: 'Warranty expires', type: 'date', required: false },
+  ];
+  for (const [i, f] of demoFields.entries()) {
+    const tenantId = seedId('tenant:demo-estates');
+    await db.fieldDefinition.upsert({
+      where: { tenantId_entityType_key: { tenantId, entityType: f.entityType, key: f.key } },
+      create: { id: seedId(`field:${f.entityType}:${f.key}`), tenantId, position: i, ...f },
+      update: { ...f, active: true },
+    });
+  }
+
+  // Demo Estates Ltd shows everything: Enterprise plus every add-on (doc 06).
+  const demo = seedId('tenant:demo-estates');
+  const addons = ALL_FEATURES.filter((f) => 'addon' in FEATURES[f]);
+  for (const feature of addons) {
+    await db.tenantEntitlement.upsert({
+      where: { tenantId_feature: { tenantId: demo, feature } },
+      create: { tenantId: demo, feature, enabled: true, source: 'addon' },
+      update: { enabled: true },
     });
   }
 

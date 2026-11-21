@@ -12,5 +12,6 @@ Significant technical decisions, one file each. To change a decision, add a new 
 | [0006](0006-entitlements-independent-of-billing.md) | Entitlements are independent of Stripe | Accepted |
 | [0007](0007-design-source-of-truth.md) | Design tokens and rendered mockups are the visual source of truth | Accepted |
 | [0008](0008-scheduled-agents.md) | Build with scheduled agents that own paths, with human merge | Accepted |
+| [0009](0009-shared-component-stylesheet.md) | The web app uses the mockups' component stylesheet, not Tailwind (amends 0007) | Accepted |
 
 Template: copy any ADR and keep the headings: Status, Context, Decision, Consequences.

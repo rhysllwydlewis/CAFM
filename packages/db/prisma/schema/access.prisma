@@ -1,0 +1,70 @@
+// Access, audit and entitlements (doc 03, doc 07, ADR 0006).
+
+/// A role inside one tenant: the built-in roles (seeded per tenant) and custom roles. Tenant-owned (RLS).
+model Role {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  key         String
+  name        String
+  description String?
+  permissions String[]
+  scope       String   @default("all")
+  builtin     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key])
+  @@map("role")
+}
+
+/// Append-only record of who changed what. Tenant-owned (RLS); the app role can't update or delete it.
+model AuditEvent {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  actorAccountId    String?  @map("actor_account_id") @db.Uuid
+  actorMembershipId String?  @map("actor_membership_id") @db.Uuid
+  action            String
+  entityType        String   @map("entity_type")
+  entityId          String?  @map("entity_id")
+  changes           Json?
+  ip                String?
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("audit_event")
+}
+
+/// Messages written in the same transaction as a change, published by the worker. Tenant-owned (RLS);
+/// platform messages (no tenant, e.g. password reset email) are written through enqueue_platform().
+model OutboxMessage {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  topic       String
+  payload     Json
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(3)
+  processedAt DateTime? @map("processed_at") @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([processedAt, availableAt])
+  @@map("outbox")
+}
+
+/// Per-tenant add-ons and overrides on top of the plan (ADR 0006). Written by the platform only.
+model TenantEntitlement {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  feature   String
+  enabled   Boolean  @default(true)
+  limit     Int?
+  source    String   @default("override")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, feature])
+  @@map("tenant_entitlement")
+}

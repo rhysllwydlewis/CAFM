@@ -1,36 +1,25 @@
 import { Injectable } from '@nestjs/common';
+import { SlidingWindowLimiter } from '../../core/rate-limiter';
 
-/**
- * Per-IP limit on failed sign-ins (doc 06). Per-account protection is the
- * lockout in AuthService. In memory, so each API instance counts on its own;
- * moves to Redis when the API runs on more than one instance.
- */
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+/** Per-IP limit on failed sign-ins (doc 06). Per-account protection is the lockout in AuthService. */
 @Injectable()
 export class LoginRateLimiter {
-  private readonly max = Number(process.env.LOGIN_FAILURES_PER_IP ?? 30);
-  private readonly windowMs = 15 * 60 * 1000;
-  private readonly failures = new Map<string, number[]>();
+  private readonly limiter = new SlidingWindowLimiter(Number(process.env.LOGIN_FAILURES_PER_IP ?? 30), FIFTEEN_MINUTES);
 
   isBlocked(ip: string | undefined): boolean {
-    return this.recent(ip ?? 'unknown').length >= this.max;
+    return this.limiter.isBlocked(ip);
   }
 
   recordFailure(ip: string | undefined): void {
-    const key = ip ?? 'unknown';
-    this.failures.set(key, [...this.recent(key), Date.now()]);
-    if (this.failures.size > 10_000) this.prune();
+    this.limiter.record(ip);
   }
+}
 
-  private recent(key: string): number[] {
-    const since = Date.now() - this.windowMs;
-    return (this.failures.get(key) ?? []).filter((t) => t > since);
-  }
-
-  private prune(): void {
-    for (const key of this.failures.keys()) {
-      const recent = this.recent(key);
-      if (recent.length) this.failures.set(key, recent);
-      else this.failures.delete(key);
-    }
-  }
+/** Limits password reset requests per IP and per account (doc 06, issue #10). */
+@Injectable()
+export class ResetRateLimiter {
+  readonly perIp = new SlidingWindowLimiter(Number(process.env.RESET_REQUESTS_PER_IP ?? 10), FIFTEEN_MINUTES);
+  readonly perAccount = new SlidingWindowLimiter(3, FIFTEEN_MINUTES);
 }

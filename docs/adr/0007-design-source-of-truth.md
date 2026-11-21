@@ -9,7 +9,7 @@ Many agents will build UI in parallel. Without a shared reference, screens drift
 
 ## Decision
 
-`design/tokens/tokens.css` (and the generated `tokens.json`) define every colour, size and radius. `design/mockups/` renders every screen from shared components, and `docs/plan/12-screen-catalogue.md` is generated from those definitions. The web app's Tailwind theme is generated from the tokens. New UI patterns are drawn as mockups before they are built, and A92 compares built screens against them.
+`design/tokens/tokens.css` (and the generated `tokens.json`) define every colour, size and radius. `design/mockups/` renders every screen from shared components, and `docs/plan/12-screen-catalogue.md` is generated from those definitions. The web app uses the same component stylesheet as the mockups (see [ADR 0009](0009-shared-component-stylesheet.md), which replaced the original plan of a Tailwind theme generated from the tokens). New UI patterns are drawn as mockups before they are built, and A92 compares built screens against them.
 
 ## Consequences
 
