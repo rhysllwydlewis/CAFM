@@ -8,4 +8,6 @@ A cloud-based, multi-tenant Computer-Aided Facilities Management platform: helpd
 
 **Working in this repo:** read [CLAUDE.md](CLAUDE.md). Architecture decisions are in [docs/adr/](docs/adr/README.md); the scheduled-agent build strategy is [docs/plan/13-agent-schedules.md](docs/plan/13-agent-schedules.md).
 
-Status: planning and design complete (draft v1). Phase 0 (foundations + login page with demo credentials) is next.
+Status: Phase 0 under way. The monorepo, Postgres with row-level security, sign-in and the login page with demo accounts are built; see [CHANGELOG.md](CHANGELOG.md).
+
+**Run it locally:** Node 22, pnpm 10 and Postgres 16 (or `docker compose up -d`), then follow the commands in [CLAUDE.md](CLAUDE.md#commands) and open http://localhost:3000. Pick any demo account on the login page; the password for all of them is shown there.

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Icon, Logo, initials } from '@cafm/ui';
 import { currentUser } from '@/lib/session';
 import { SignOutButton } from './sign-out-button';
@@ -30,10 +31,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
         <nav className="nav-scroll">
           <div className="nav-sec">
-            <a className="nav-item active" href="/app" aria-current="page">
+            <Link className="nav-item active" href="/app" aria-current="page">
               <Icon name="dashboard" />
               <span>Home</span>
-            </a>
+            </Link>
           </div>
         </nav>
         <div className="nav-foot">

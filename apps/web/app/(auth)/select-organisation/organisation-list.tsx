@@ -64,3 +64,20 @@ export function OrganisationList({ organisations }: { organisations: Organisatio
     </div>
   );
 }
+
+export function SignOutLink() {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      className="link sm medium"
+      onClick={async () => {
+        await postJson('/auth/logout');
+        router.push('/login');
+        router.refresh();
+      }}
+    >
+      Sign out
+    </button>
+  );
+}

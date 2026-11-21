@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { Logo } from '@cafm/ui';
 import { apiGet } from '@/lib/api';
 import { LoginForm, type DemoAccounts } from './login-form';
@@ -21,7 +22,16 @@ const STATS = [
   ['12', 'Sites live'],
 ];
 
+async function signedIn(): Promise<boolean> {
+  try {
+    return (await apiGet('/auth/me')).ok;
+  } catch {
+    return false;
+  }
+}
+
 export default async function LoginPage() {
+  if (await signedIn()) redirect('/app');
   const demo = await demoAccounts();
   return (
     <div className="auth">

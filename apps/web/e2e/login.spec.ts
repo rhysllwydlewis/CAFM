@@ -6,15 +6,15 @@ test.describe('sign in with a demo account', () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 
-    await page.getByRole('button', { name: /^Technician: Tom Price/ }).click();
+    await page.getByRole('button', { name: /^Technician\W+Tom Price/ }).click();
     await expect(page.getByLabel('Email or username')).toHaveValue('technician@demo.example');
     await expect(page.getByLabel('Password', { exact: true })).toHaveValue('CafmDemo!2026');
-    await expect(page.getByRole('button', { name: /^Technician: Tom Price/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: /^Technician\W+Tom Price/ })).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/app$/);
     await expect(page.getByRole('heading', { name: /^Good (morning|afternoon|evening), Tom$/ })).toBeVisible();
-    await expect(page.getByText('Demo Estates Ltd').first()).toBeVisible();
+    await expect(page.getByText('Demo Estates Ltd').filter({ visible: true }).first()).toBeVisible();
   });
 
   test('all 16 demo roles can be shown', async ({ page }) => {
@@ -36,9 +36,18 @@ test.describe('sign in with a demo account', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
+  test('a signed-in user visiting the login page goes straight to Home', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: /^Contractor\W+Cara Lloyd/ }).click();
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await page.goto('/login');
+    await expect(page).toHaveURL(/\/app$/);
+  });
+
   test('signing out returns to the login page and protects the app', async ({ page }) => {
     await page.goto('/login');
-    await page.getByRole('button', { name: /^Super User: Sam Sutton/ }).click();
+    await page.getByRole('button', { name: /^Super User\W+Sam Sutton/ }).click();
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('heading', { name: /, Sam$/ })).toBeVisible();
     await page.getByRole('button', { name: 'Sign out' }).click();

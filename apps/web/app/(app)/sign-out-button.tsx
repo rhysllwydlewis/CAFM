@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { Icon } from '@cafm/ui';
 import { postJson } from '@/lib/client';
 
 export function SignOutButton() {
@@ -17,9 +18,7 @@ export function SignOutButton() {
         router.refresh();
       }}
     >
-      <svg className="i s14" aria-hidden="true">
-        <use href="/icons.svg#i-log-out" />
-      </svg>
+      <Icon name="log-out" size={14} />
     </button>
   );
 }

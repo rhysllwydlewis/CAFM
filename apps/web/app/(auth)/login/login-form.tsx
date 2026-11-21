@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Checkbox, Field, Icon, TextInput } from '@cafm/ui';
 import type { LoginResponse } from '@cafm/shared';
@@ -72,7 +73,11 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
       }
       const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
       const message = Array.isArray(body?.message) ? body.message[0] : body?.message;
-      setError(res.status === 401 && message ? message : 'Something went wrong. Try again in a moment.');
+      setError(
+        (res.status === 401 || res.status === 429) && message
+          ? message
+          : 'Something went wrong. Try again in a moment.',
+      );
     } catch {
       setError('We could not reach the server. Check your connection and try again.');
     }
@@ -92,7 +97,7 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
 
       <form className="stack g3" onSubmit={onSubmit} noValidate>
         {error && (
-          <div className="callout danger" role="alert">
+          <div className="callout danger" role="alert" id="login-error">
             <Icon name="warning" />
             <div className="grow">{error}</div>
           </div>
@@ -106,6 +111,7 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
             placeholder="name@organisation.co.uk"
             value={identifier}
             invalid={!!error}
+            aria-describedby={error ? 'login-error' : undefined}
             onChange={(e) => {
               setIdentifier(e.target.value);
               setSelected(null);
@@ -121,6 +127,7 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
             autoComplete="current-password"
             value={password}
             invalid={!!error}
+            aria-describedby={error ? 'login-error' : undefined}
             onChange={(e) => setPassword(e.target.value)}
             end={
               <button
@@ -142,9 +149,9 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
             checked={keepSignedIn}
             onChange={(e) => setKeepSignedIn(e.target.checked)}
           />
-          <a className="medium" href="/forgot-password">
+          <Link className="medium" href="/forgot-password">
             Forgot password?
-          </a>
+          </Link>
         </div>
         <Button ref={submitRef} type="submit" variant="primary" size="lg" block disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
@@ -170,8 +177,6 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
                 type="button"
                 className={`demo-card ${selected === p.key ? 'on' : ''}`}
                 aria-pressed={selected === p.key}
-                aria-label={`${p.roleLabel}: ${p.name}, ${p.email}`}
-                title={p.name}
                 onClick={() => fill(p)}
               >
                 <span className="row between">
@@ -180,6 +185,7 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
                       <Icon name={ICONS[p.key] ?? 'user'} size={14} />
                     </span>
                     {p.roleLabel}
+                    <span className="sr-only">: {p.name}</span>
                   </span>
                   <span className="u">{p.email}</span>
                 </span>
