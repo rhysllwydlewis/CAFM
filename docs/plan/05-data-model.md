@@ -2,7 +2,7 @@
 
 The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma`. Conventions:
 
-- Every tenant-owned table has `id` (UUID v7), `tenant_id`, `created_at/by`, `updated_at/by`, `deleted_at` (soft delete), `version` (optimistic locking), and `custom` (JSONB custom fields) where configurable.
+- Every tenant-owned table has `id` (UUID v7, generated in the application because Postgres only gains a native `uuidv7()` in version 18), `tenant_id`, `created_at/by`, `updated_at/by`, `deleted_at` (soft delete), `version` (optimistic locking), and `custom` (JSONB custom fields) where configurable.
 - Money is stored as integer minor units + currency code. Times are stored in UTC; site time zone is applied for SLA calculations.
 - Human-friendly references (`WO-000123`) come from per-tenant sequences.
 
@@ -13,9 +13,12 @@ The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma
 | `tenant` | name, slug, status (trial/active/suspended), plan, region, branding, settings |
 | `plan`, `entitlement`, `tenant_entitlement_override`, `addon_subscription` | feature keys and limits |
 | `usage_meter` | tenant, meter key, period, quantity |
-| `user` | email (unique per tenant), name, status, licence_type, locale, time zone, MFA settings |
-| `credential`, `session`, `mfa_factor`, `password_reset`, `sso_connection` | auth |
-| `role`, `permission`, `role_permission`, `user_role` (with scope) | RBAC + scope |
+| `account` | **global (not tenant-scoped)**: email (globally unique, nullable for username-only accounts), name, password hash, MFA factors, locale |
+| `membership` | account × tenant: status, licence_type, username (unique per tenant, optional), default site, time zone, landing page. Most "user" references in other tables point at `membership` |
+| `session`, `oauth_token`, `mfa_factor`, `password_reset`, `sso_connection`, `terms_acceptance` | auth |
+| `role`, `permission`, `role_permission`, `membership_role` (with scope) | RBAC + scope |
+| `support_access_grant` | vendor support access requests: tenant approval, expiry, audit |
+| `subscription`, `billing_invoice`, `feature_flag` | mirror of Stripe state; internal feature flags |
 | `team`, `team_member` | groups for assignment and scoping |
 | `organisation` | contractor companies, suppliers, clients (type flag) |
 | `api_key`, `oauth_client`, `webhook_endpoint`, `webhook_delivery` | integration |
@@ -32,6 +35,10 @@ The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma
 | `sla_policy`, `sla_target`, `business_calendar`, `holiday` | |
 | `priority`, `category`, `problem_code` | request catalogue |
 | `numbering_sequence`, `picklist`, `term_override`, `notification_template` | |
+| `saved_view`, `dashboard`, `dashboard_widget`, `report_definition`, `report_schedule` | user/shared views and reports |
+| `notification`, `notification_preference`, `announcement`, `knowledge_article` | communications |
+| `import_job`, `export_job`, `record_link`, `tag`, `legal_hold`, `retention_policy` | platform services |
+| `inbound_mailbox` | email-to-ticket addresses and routing |
 | `config_version` | snapshot/diff of any config object |
 
 ## Estate & assets
@@ -59,6 +66,10 @@ The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma
 | `quote`, `quote_line` | |
 | `comment`, `attachment`, `signature`, `activity` | polymorphic link to any entity |
 | `sla_clock` | per record: target type, due, paused intervals, breached_at |
+| `qualification`, `training_record`, `shift`, `availability`, `leave`, `timesheet` | workforce |
+| `inspection_round`, `round_checkpoint` | building rounds |
+| `outage` | planned shutdowns and affected assets/spaces |
+| `asset_serves` | asset → spaces/assets it serves |
 
 ## Compliance & safety
 
@@ -77,26 +88,27 @@ The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma
 |--------|-------|
 | `contract`, `contract_sla`, `kpi`, `kpi_result`, `deduction` | |
 | `accreditation`, `insurance_policy` | for organisations |
-| `part`, `store`, `stock_level`, `stock_movement`, `kit` | inventory |
+| `part`, `store`, `stock_level`, `stock_movement`, `kit`, `tool`, `calibration` | inventory, tools and test equipment |
 | `requisition`, `purchase_order`, `po_line`, `goods_receipt`, `supplier_invoice` | procurement |
 | `cost_centre`, `budget`, `budget_line`, `rate_card`, `sor_item` | finance |
 | `client_invoice`, `client_invoice_line` | billing (FM providers) |
 
 ## Workplace, energy, real estate, other
 
-`booking`, `bookable_resource`, `visitor`, `visit`, `move_request`, `utility_meter`, `consumption`, `utility_bill`, `emission_factor`, `carbon_record`, `waste_record`, `property`, `lease`, `lease_event`, `rent_schedule`, `service_charge`, `project`, `project_task`, `capital_request`, `vehicle`, `key`, `key_issue`, `device`, `telemetry` (time-series), `alert_rule`, `alert`, `survey`, `survey_response`, `ai_interaction`.
+`booking`, `bookable_resource`, `visitor`, `visit`, `move_request`, `utility_meter`, `consumption`, `utility_bill`, `emission_factor`, `carbon_record`, `waste_record`, `property`, `lease`, `lease_event`, `rent_schedule`, `service_charge`, `project`, `project_task`, `capital_request`, `vehicle`, `key`, `key_issue`, `device`, `telemetry` (time-series), `alert_rule`, `alert`, `survey`, `survey_response`, `insurance_claim`, `lost_property`, `hazard_case` (housing: Awaab's Law/HHSRS), `void`, `ai_interaction`, `support_ticket`.
 
 ## Relationship overview
 
 ```mermaid
 erDiagram
-  TENANT ||--o{ USER : has
+  ACCOUNT ||--o{ MEMBERSHIP : has
+  TENANT ||--o{ MEMBERSHIP : has
   TENANT ||--o{ LOCATION : owns
   LOCATION ||--o{ LOCATION : contains
   LOCATION ||--o{ ASSET : houses
   ASSET ||--o{ ASSET : "parent of"
   ASSET_CLASS ||--o{ ASSET : classifies
-  USER ||--o{ REQUEST : raises
+  MEMBERSHIP ||--o{ REQUEST : raises
   REQUEST ||--o{ WORK_ORDER : "converted to"
   PPM_SCHEDULE ||--o{ WORK_ORDER : generates
   WORK_ORDER }o--|| LOCATION : at
@@ -111,6 +123,6 @@ erDiagram
   REMEDIAL_ACTION ||--o| WORK_ORDER : fixed_by
   CONTRACT ||--o{ WORK_ORDER : governs
   PURCHASE_ORDER ||--o{ PO_LINE : contains
-  WORK_ORDER ||--o{ PURCHASE_ORDER : "funded by"
-  USER }o--o{ ROLE : "assigned (scoped)"
+  WORK_ORDER ||--o{ PURCHASE_ORDER : raises
+  MEMBERSHIP }o--o{ ROLE : "assigned (scoped)"
 ```

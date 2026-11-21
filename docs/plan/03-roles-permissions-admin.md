@@ -20,7 +20,7 @@ Permission = Resource × Action × Scope (+ optional Conditions)
 ```
 
 - **Resources:** every module entity (work_order, asset, location, ppm_schedule, certificate, purchase_order, invoice, booking, visitor, user, role, config…), plus admin areas (branding, security, billing, integrations, audit_log).
-- **Actions:** `view`, `create`, `edit`, `delete`, `assign`, `approve`, `close`, `export`, `import`, `comment`, `view_costs`, `configure`, `impersonate`.
+- **Actions:** `view`, `create`, `edit`, `delete`, `assign`, `approve`, `close`, `reopen`, `cancel`, `export`, `import`, `comment`, `view_costs`, `configure`, `administer_users`, `impersonate`.
 - **Scopes:** `own` (created by/assigned to me) → `team` → `location subtree` (e.g. "Wales region") → `client` / `contract` → `all`.
 - **Conditions (ABAC)** `[P]`: e.g. "approve POs **≤ £5,000**", "edit work orders **while status ≠ Closed**", "view only requests in category Cleaning".
 - **Field-level security:** hide or make fields read-only per role (e.g. costs, rates, access codes, bank details, personal data).
@@ -39,14 +39,15 @@ Every check is enforced in the API (never only in the UI), and tenant isolation 
 | Supervisor / Planner | Full | Schedule and dispatch, manage team, PPM planning |
 | Technician | Mobile | Own assigned jobs, record time/parts/readings, raise defects |
 | Contractor | Contractor (free) | Jobs assigned to their company, quotes, invoices, certificates; portal only |
-| Requester / Occupant | Requester (free) | Log/track own requests, book rooms/desks, register visitors |
+| Requester / Occupant | Requester (free) | Log/track own requests, book rooms/desks, register visitors; approve or reject items routed to them (e.g. a department head approving a request) |
 | Compliance / H&S Officer | Full | Compliance, audits, incidents, permits, risk |
 | Finance | Full | Budgets, POs, invoices, approvals, cost views |
 | Stores Clerk | Full | Inventory and goods receipt |
 | Space Planner | Full | Space, floor plans, moves |
 | Client Viewer | Client (free, FM-provider edition) | Read-only view of their contract's jobs, reports, quote approvals |
 | Auditor (read-only) | Read-only (free, time-limited) | View compliance evidence, no edit |
-| Executive | Full (view) | Dashboards and reports |
+| Executive | Read-only | Dashboards and reports |
+| Site / Regional Admin | Full | Delegated admin: users and settings for their own sites only |
 
 Licence types matter for pricing: see [07-monetisation](07-monetisation.md).
 
@@ -63,6 +64,9 @@ Licence types matter for pricing: see [07-monetisation](07-monetisation.md).
 - Delegation and out-of-office rules for approvals.
 - Manage contractor companies and their users; client organisations and their users (FM-provider edition).
 - Time-limited guest/auditor access links.
+- **Delegate administration**: give other people limited admin rights (e.g. a regional admin who manages users only for their sites, or a finance admin who manages only approval limits).
+- Create **username-only accounts** for staff without email, and reset their passwords.
+- Review **licence and adoption reports**: seats used by licence type, last login, inactive users, feature usage.
 
 ### Shaping the system
 - **Modules:** switch modules on/off (within plan), reorder and rename navigation, choose default landing page per role.
@@ -76,6 +80,8 @@ Licence types matter for pricing: see [07-monetisation](07-monetisation.md).
 - **Numbering formats**, default values, units of measure, currencies, tax rates.
 - **Dashboards:** set defaults per role; publish shared dashboards and reports.
 - **Location hierarchy levels** and asset classification scheme.
+- **Requester portal**: which request types, booking options and help articles each requester group sees; email-to-ticket inbound addresses and routing.
+- **Sector packs** and compliance template packs: switch on, then tailor.
 
 ### Brand & experience
 - Logo, colours, favicon, login page message; requester portal look and feel.
@@ -101,5 +107,7 @@ Licence types matter for pricing: see [07-monetisation](07-monetisation.md).
 ## Security guardrails on admin power
 - Sensitive actions (role changes, SSO changes, data export, owner transfer, API key creation) require **re-authentication** and are notified to all Super Users.
 - Separation of duties option: e.g. a user cannot approve their own PO.
+- **No privilege escalation**: an admin can only grant permissions and scopes they hold themselves; only Super Users can create or edit roles containing admin permissions.
+- The last active Super User cannot be deactivated, demoted or deleted.
 - Configuration changes are versioned and reversible.
 - Rate-limited bulk destructive operations with confirmation and undo window (soft delete).

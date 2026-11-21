@@ -2,7 +2,7 @@
 
 The complete list of capabilities the Platform will provide, benchmarked against leading CAFM, IWMS, CMMS and workplace products. Each module states:
 
-- **Phase**: when it is built (see [08-roadmap](08-roadmap.md)).
+- **Phase**: when it is built: 0, 1, 2A, 2B, 3, 4 or 5 (see [08-roadmap](08-roadmap.md)).
 - **Tier**: lowest plan that includes it (see [07-monetisation](07-monetisation.md)). `F` Free · `S` Starter · `P` Professional · `E` Enterprise · `A` paid Add-on. Inline tags override the module default.
 
 Every module is built on the shared platform services in §0, so every module automatically gets custom fields, configurable statuses and workflows, permissions, audit, attachments, comments, notifications, search, import/export, saved views and API access.
@@ -11,10 +11,10 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 0. Shared platform services (apply to every module)
 
-**Phase 0–1 · Tier F**
+**Phase 0–2A · Tier F**
 
-- **Custom fields** on every entity: text, number, currency, date/time, picklist, multi-select, lookup, user, location, asset, checkbox, file, signature, formula/calculated, geo-point. Field validation, defaults, conditional visibility, required-by-status.
-- **Form designer**: drag-and-drop layouts per entity, per role, per request type; sections, tabs, conditional logic.
+- **Custom fields** on every entity: text, number, currency, date/time, picklist, multi-select, lookup, user, location, asset, checkbox, file, signature, formula/calculated, geo-point. Field validation, defaults, conditional visibility, required-by-status. (Count limited by plan: 5 Free, 25 Starter, unlimited Professional+.)
+- **Form designer**: drag-and-drop layouts per entity, per role, per request type; sections, tabs, conditional logic. `[P]` (lower tiers get standard layouts with custom fields appended).
 - **Configurable statuses and workflow** per entity type: states, transitions, guards (who and under what conditions), required fields per transition, side effects.
 - **Automation rules** (when → if → then): triggers on create/update/status change/schedule/date reached/SLA breach/IoT event; actions such as assign, notify, set field, create linked record, call webhook, start approval. `[P]`
 - **Approvals engine**: single, multi-stage, parallel, threshold-based (spend limits), delegation, out-of-office. `[P]`
@@ -34,7 +34,9 @@ Every module is built on the shared platform services in §0, so every module au
 - **Dark/light theme**, responsive layout, keyboard shortcuts, command palette (Ctrl/Cmd-K).
 - **Offline support** for mobile workflows (see §21).
 - **Help and onboarding**: contextual help, guided tours, setup checklist, in-app changelog.
-- **Recycle bin and soft delete** with restore; retention policies.
+- **Recycle bin and soft delete** with restore; retention policies; **legal hold** on records (e.g. incidents under investigation) that blocks deletion and retention purges.
+- **Magic-link actions**: approve a quote, sign off a job or answer a survey from an emailed secure link, without a full login (single-use, expiring, audited).
+- **Print and share**: print-friendly views and PDF export of any record.
 
 ---
 
@@ -48,7 +50,8 @@ Every module is built on the shared platform services in §0, so every module au
 - Location QR codes for "report a fault here".
 - Location-based access scoping (users see only their sites).
 - Site access info: parking, key safes, access codes (permission-protected), hazards, asbestos warnings shown before attendance.
-- Business hours and holiday calendars per site (used by SLA clocks).
+- Business hours and holiday calendars per site (used by SLA clocks), pre-loaded with UK bank holidays for each nation (England & Wales, Scotland, Northern Ireland), plus custom closures (e.g. school term dates).
+- Jurisdiction per site (England, Wales, Scotland, Northern Ireland, or other country), which selects the right compliance templates and legislation references.
 - Site status (open/closed/mothballed/sold) and history.
 
 ## 2. Helpdesk & Service Requests
@@ -69,13 +72,15 @@ Every module is built on the shared platform services in §0, so every module au
 - Convert request → work order (one or many), quote request, incident, project, or reject with reason.
 - Customer satisfaction (CSAT) survey on completion; NPS campaigns `[P]`.
 - Announcements/banner messages to requesters (e.g. "Lift 2 out of service").
+- **Requester appointment self-booking**: the requester (e.g. a housing resident) picks an available slot for attendance from the planner's capacity. `[P]`
+- Request on behalf of someone else; VIP/priority requesters; requester satisfaction history.
 
 ## 3. Reactive Work Orders
 
 **Phase 1 · Tier F**
 
 - Full lifecycle with configurable statuses (e.g. Logged → Assigned → Accepted → Travelling → On site → Paused/Awaiting parts → Completed → Verified → Closed → Invoiced).
-- Assign to individuals, teams, internal trades or contractors; multi-resource jobs; sub-tasks.
+- Assign to individuals, teams, internal trades or contractors; multi-resource jobs; sub-tasks. (On Free/Starter, a contractor can be assigned and emailed the job with a magic link to update it; the full contractor portal, accreditation and RFQ features are in §8 `[P]`.)
 - **SLA clocks**: response, attendance, temporary fix, permanent fix; business hours aware; pause reasons; breach alerts and escalation chains.
 - Scheduling: appointment slots, requester-agreed times, access windows.
 - Labour time capture (start/stop, travel, on-site, overtime codes), parts used, materials, sub-contract costs, expenses.
@@ -102,7 +107,7 @@ Every module is built on the shared platform services in §0, so every module au
 - Auto-generation of PPM work orders N days ahead; batching to contractors.
 - PPM compliance KPIs: % completed on time by site/contract/discipline; overdue list; missed-visit reasons.
 - Reactive-from-PPM: defects found during PPM raise linked reactive jobs/quotes.
-- Seasonal and shutdown planning (e.g. school holidays).
+- Seasonal and shutdown planning (e.g. school holidays); **planned outage management**: schedule shutdowns of plant/services, see which spaces and assets are affected, and notify occupants automatically.
 - Asset-condition update captured at each PPM visit.
 
 ## 5. Asset Management
@@ -110,6 +115,8 @@ Every module is built on the shared platform services in §0, so every module au
 **Phase 1 · Tier F** (lifecycle and capital features `[P]`/`[E]`)
 
 - Asset register with unlimited hierarchy (system → asset → component), parent/child, linked to location.
+- **"Serves" relationships**: which spaces and other assets an asset serves (e.g. AHU-1 serves floors 2–4), used for impact analysis, outage planning and IoT alert routing.
+- Furniture, fittings and equipment (FF&E) and IT/AV registers alongside building services assets.
 - Asset classification: **Uniclass 2015**, **NRM 3**, **SFG20** classes, or custom; class-specific attribute templates.
 - Attributes: make, model, serial, install date, supplier, cost, warranty, expected life, criticality, condition, refrigerant type/charge (F-Gas), capacity, nameplate photo.
 - Tags: QR, barcode, **NFC**, RFID; bulk label printing; scan to view/raise job/record reading.
@@ -130,15 +137,18 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 6. Statutory Compliance & Inspections
 
-**Phase 2 · Tier P** (core certificate tracking `[S]`)
+**Phase 2A · Tier P** (core certificate tracking `[S]`)
 
 - **Compliance register**: what is required where (by location and asset), frequency, responsible person, contractor, legislation reference.
-- Pre-built UK templates: gas safety (Gas Safety (Installation and Use) Regulations), fixed-wire electrical (EICR / BS 7671), PAT, fire risk assessment (Regulatory Reform (Fire Safety) Order 2005), fire alarms (BS 5839), emergency lighting (BS 5266), sprinklers, dry/wet risers, fire doors, extinguishers, **legionella/water hygiene (ACoP L8, HSG274)**, **asbestos (CAR 2012)** register and re-inspection, **LOLER** (lifts and lifting equipment), **PSSR** (pressure systems), **F-Gas**, TM44 air-con inspections, EPC/DEC, lightning protection, playground equipment, kitchen extract (TR19), radon, gutter/roof safety, fall-arrest systems, and more. Templates are editable and the Super User can add their own.
+- Templates are **jurisdiction-aware** (England, Wales, Scotland, Northern Ireland differ on fire, housing and building-safety law), versioned, carry the legislation/guidance reference, and are reviewed by a qualified person before publishing (see risk R12 in doc 10).
+- Pre-built UK templates: gas safety (Gas Safety (Installation and Use) Regulations), fixed-wire electrical (EICR / BS 7671), PAT, fire risk assessment (Regulatory Reform (Fire Safety) Order 2005), fire alarms (BS 5839), emergency lighting (BS 5266), sprinklers, dry/wet risers, fire doors, extinguishers, **legionella/water hygiene (ACoP L8, HSG274)**, **asbestos (CAR 2012)** register and re-inspection, **LOLER** (lifts and lifting equipment), **PSSR** (pressure systems), **F-Gas**, TM44 air-con inspections, EPC/DEC, lightning protection, playground equipment, kitchen extract (TR19), radon, gutter/roof safety, fall-arrest systems, **Fire Safety (England) Regulations 2022** duties (fire door checks, lift checks, secure information box for high-rise residential), and more. Templates are editable and the Super User can add their own.
+- Sector compliance packs (see §35): housing (Awaab's Law, HHSRS, Decent Homes), healthcare (HTMs), education (GEMS).
 - Certificate upload with **AI extraction**: issue date, expiry, result (pass/fail/C1/C2/C3/FI), defects → automatic remedial actions `[A: AI]`.
 - Remedial action tracking with priority by severity code (e.g. EICR C1 = immediate).
 - **Compliance matrix**: sites × compliance types, RAG status, drill-down to evidence.
 - Expiry alerts and automatic PPM/work order generation ahead of due dates.
 - Audits and inspections: configurable inspection forms (scoring, pass/fail, N/A, photos, comments, mandatory evidence), scheduled or ad hoc, mobile capture, actions from failed items.
+- **Building rounds / walkarounds**: recurring routes of quick checks (daily site checks, weekly fire alarm test, monthly emergency light flick test) with QR/NFC checkpoint proof of attendance.
 - **Building Safety Act 2022 golden thread** `[E]`: structured, versioned, auditable building information for higher-risk buildings; safety case evidence; mandatory occurrence reporting.
 - Logbooks: digital fire logbook, water hygiene logbook (temperature readings, flushing), asbestos register with locations on floor plans.
 - Auditor/insurer read-only access with time-limited links.
@@ -146,7 +156,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 7. Health, Safety & Risk
 
-**Phase 4 · Tier P**
+**Phase 4 · Tier P** (Permit to Work and RAMS are pulled forward to Phase 2A, because contractor work depends on them)
 
 - Incident, accident, near-miss and hazard reporting (web/mobile/QR, anonymous option).
 - **RIDDOR** classification and report data capture.
@@ -159,10 +169,11 @@ Every module is built on the shared platform services in §0, so every module au
 - Toolbox talks and safety briefings with attendance sign-off.
 - COSHH register and data sheets.
 - First-aider/fire-warden rosters.
+- **Insurance claims**: log claims arising from incidents or damage, link evidence, track insurer, status and settlement; insurer engineering-inspection reports (LOLER/PSSR) feed the compliance register.
 
 ## 8. Contractor & Supplier Management
 
-**Phase 2 · Tier P**
+**Phase 2A · Tier P**
 
 - Supplier/contractor database: trades, coverage areas, rates, contacts, banking (permission-protected).
 - **Accreditation and compliance**: insurance certificates (PL/EL/PI) with expiry, CHAS, SafeContractor, Constructionline, Gas Safe, NICEIC and similar; auto-suspend non-compliant contractors.
@@ -177,7 +188,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 9. Contracts, SLAs & Performance (incl. FM-provider features)
 
-**Phase 2 · Tier P** (multi-client `[E]` or FM-provider edition)
+**Phase 2B · Tier P** (multi-client `[E]` or FM-provider edition)
 
 - Contract register: client contracts (for FM providers) and supplier contracts; value, term, renewal/break dates, notice periods, scope, documents.
 - Contract-specific SLAs, priority matrices, rates, business hours, escalation contacts.
@@ -190,7 +201,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 10. Scheduling, Dispatch & Workforce
 
-**Phase 2 · Tier P** (basic assignment `[F]`)
+**Phase 2B · Tier P** (basic assignment `[F]`)
 
 - **Dispatch board**: drag-and-drop jobs onto people/time, live map of technicians (GPS from app, opt-in), colour-coded by SLA risk.
 - Skills, trades and certification matching; availability, shifts, rotas, on-call rotas, leave/absence.
@@ -204,7 +215,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 11. Inventory, Stores & Parts
 
-**Phase 2 · Tier P**
+**Phase 2B · Tier P**
 
 - Part catalogue with categories, manufacturer part numbers, alternates, suppliers, prices, photos.
 - Multiple stores, bins and **van stock**; stock levels per location.
@@ -215,10 +226,11 @@ Every module is built on the shared platform services in §0, so every module au
 - Stock takes / cycle counts with mobile scanning.
 - Valuation (FIFO, weighted average) and stock reports.
 - Parts reservations for scheduled work.
+- **Tools and test equipment**: register of tools and instruments (multimeters, gas analysers, torque wrenches), assignment to people/vans, **calibration due dates and certificates**; block use on jobs when calibration has lapsed.
 
 ## 12. Procurement & Purchasing
 
-**Phase 2 · Tier P**
+**Phase 2B · Tier P**
 
 - Purchase requisitions → approval → purchase orders (from job, from stock replenishment, or standalone).
 - Approval rules by value, cost centre, category, site; delegation of authority matrix.
@@ -230,12 +242,13 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 13. Finance, Budgets & Billing
 
-**Phase 2 · Tier P**
+**Phase 2B · Tier P**
 
 - Cost centres, GL codes, budget lines by site/discipline/year.
 - Budgets vs commitments (open POs) vs actuals, with forecasts and variance alerts.
 - Job costing roll-up (labour, parts, subcontract, expenses).
-- **Quotes/estimates**: build from SOR/labour/parts, send for approval, convert to job.
+- **Quotes/estimates**: build from SOR/labour/parts, send for approval (in-app or magic link), convert to job.
+- **Contract profitability** (FM providers): revenue vs cost by contract, site and job type; margin alerts.
 - **Client billing** (FM providers): recharge rules, markups, fixed-price vs time & materials, consolidated monthly invoicing, credit notes, VAT handling incl. domestic reverse charge (CIS) `[E]`.
 - Rate cards per client/contract.
 - Finance integrations: **Xero, Sage, QuickBooks**, and enterprise **SAP, Oracle, Microsoft Dynamics** `[E]`.
@@ -243,7 +256,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 14. Documents & Drawings
 
-**Phase 2 · Tier S**
+**Phase 2A · Tier S**
 
 - Document library linked to any record; folders and metadata; version control; check-in/out.
 - Document types with mandatory metadata and **expiry/review dates**.
@@ -264,6 +277,7 @@ Every module is built on the shared platform services in §0, so every module au
 - Stacking and blocking diagrams; scenario planning (what-if reorganisations).
 - Space standards and benchmarking (m² per person, desk ratio).
 - Wayfinding (find a room/desk/colleague) `[E]`.
+- **Digital twin view** `[E]`: 3D BIM model combined with live data (open jobs, sensor readings, compliance status) per space and asset.
 
 ## 16. Capital Planning & Lifecycle
 
@@ -283,13 +297,14 @@ Every module is built on the shared platform services in §0, so every module au
 - Budgets, commitments, variations/change orders, cash-flow.
 - Link to work orders, POs, contractors, documents, risks.
 - CDM 2015 roles and documentation (client, principal designer, principal contractor; F10 notification data).
-- Snagging lists with mobile capture; practical completion and handover packs.
+- Snagging lists with mobile capture; practical completion and handover packs (O&M manuals, asset data, COBie into the asset register).
+- Defects liability period tracking and retention release dates.
 
 ## 18. Room, Desk & Resource Booking (Workplace)
 
 **Phase 3 · Tier A (Workplace add-on)**
 
-- Room booking with floor-plan picker, capacity and equipment filters.
+- Room booking with floor-plan picker (the add-on includes the floor-plan viewer for booking even on plans without the Space module), capacity and equipment filters.
 - **Desk booking / hot-desking**, neighbourhoods, team days, recurring bookings.
 - Resource booking (parking spaces, lockers, equipment, vehicles).
 - Outlook/Microsoft 365 and Google Calendar sync; Teams add-in `[E]`.
@@ -333,6 +348,8 @@ Every module is built on the shared platform services in §0, so every module au
 - Push notifications for new/urgent jobs; SLA countdown.
 - Requester mode: report a fault (QR), track jobs, book desk/room.
 - Biometric login, device management (remote wipe of app data) `[E]`.
+- **Remote assist** `[E]`: live video call from the technician to a colleague or specialist, with screenshots saved to the job.
+- Multi-language app (technician picks own language); large-touch-target mode for gloved use.
 - Native iOS/Android (React Native) with background location (opt-in) and better offline storage in Phase 5.
 
 ## 22. Energy, Utilities & Sustainability
@@ -359,7 +376,7 @@ Every module is built on the shared platform services in §0, so every module au
 - Security: guard tours/patrol checkpoints (NFC/QR), incident logs, key holding.
 - Porterage and task requests; mail room (parcel logging and collection notifications).
 - Grounds maintenance and winter gritting schedules; pest control logs.
-- Reception and front-of-house tasks.
+- Reception and front-of-house tasks; lost property log (found/claimed/disposed).
 
 ## 24. Fleet & Vehicles
 
@@ -372,7 +389,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 25. Keys & Access Control
 
-**Phase 2 · Tier P**
+**Phase 2B · Tier P**
 
 - Key/fob/access-card register, key safes, master-key hierarchies.
 - Issue/return with signature; overdue alerts; lost-key workflow.
@@ -416,7 +433,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 29. AI Suite
 
-**Phase 4 (some earlier) · Tier A (AI add-on), with fair-use credits included in higher tiers**
+**Phase 4 (some earlier) · Tier A (AI add-on), with fair-use credits included in every paid tier**
 
 - **Smart triage**: suggest category, priority, location, asset and assignee from free text/photo; flag duplicates.
 - **Certificate and document reading**: extract dates, results, defects → remedial actions.
@@ -431,7 +448,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 30. Communications & Engagement
 
-**Phase 2 · Tier P**
+**Phase 2B · Tier P**
 
 - Notification template editor (email/SMS/push) with merge fields and branding.
 - Broadcast and mass notifications (e.g. site closure, emergency) by site/group.
@@ -448,7 +465,7 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 32. Integrations & Developer Platform
 
-**Phase 2 (API, webhooks) → Phase 5 (marketplace) · Tier P (API) / E (enterprise connectors)**
+**Phase 2A (API, webhooks) → Phase 5 (marketplace) · Tier S (read-only API) / P (full API, webhooks) / E (enterprise connectors, higher limits)**
 
 - **Public REST API** (OpenAPI 3.1 documented), API keys and OAuth2 client credentials, rate limits, sandbox tenants `[E]`.
 - **Webhooks** for all record events, with retries and signing.
@@ -465,9 +482,13 @@ Every module is built on the shared platform services in §0, so every module au
 
 ## 33. Super User Administration & Configuration
 
-**Phase 0–2 · Tier F (core) / P / E (advanced)**. Full detail in [03-roles-permissions-admin](03-roles-permissions-admin.md).
+**Phase 0–2B · Tier F (core) / P / E (advanced)**. Full detail in [03-roles-permissions-admin](03-roles-permissions-admin.md).
 
 - User management: invite, create, bulk import, deactivate, reset password/MFA, impersonate ("view as") with audit, licences/seat types.
+- **Delegated administration**: grant limited admin rights to others (e.g. a regional admin who can manage users and settings only for their sites), never beyond the granter's own rights.
+- **Adoption and licence reports**: active users by licence type, last login, unused seats, feature usage.
+- Email intake configuration: inbound addresses per category/site for email-to-ticket, sender domain settings.
+- Requester portal configuration: which request types, booking options and knowledge-base articles each requester group sees.
 - Roles and permissions builder; teams and groups; data scoping by location/client/contract.
 - Module on/off and navigation customisation; terminology overrides.
 - Branding / white-label: logo, colours, custom domain, email sender domain, branded PDFs `[E]`.
@@ -488,6 +509,22 @@ Every module is built on the shared platform services in §0, so every module au
 - Global templates library (compliance templates, task libraries, forms) published to tenants.
 - System announcements, maintenance windows, release notes.
 - Data residency assignment per tenant (UK/EU) `[E]`.
+- **Customer support desk** for our own customers: in-app help widget and chat, support tickets linked to the tenant, help-centre articles, product feedback and feature-request voting.
+
+## 35. Sector Packs
+
+**Phase 4 · Tier P** (templates, workflows, reports and dashboards layered on the modules above, switched on per tenant)
+
+- **Social & residential housing**:
+  - **Awaab's Law** damp and mould (and other hazard) case management with statutory investigation and repair timescales built into SLAs. Timescales are configurable, because the law is being phased in.
+  - **HHSRS** hazard assessment, **Decent Homes** tracking, and "Big 6" compliance (gas, electrical, fire, water, asbestos, lifts) by property and block.
+  - **Resident portal** with repairs reporting and appointment booking; **void management** (void works, key handover, re-let readiness); stock condition surveys.
+  - **Tenant Satisfaction Measures (TSM)** reporting for the Regulator of Social Housing.
+- **Healthcare estates**: Health Technical Memoranda (HTM) templates (e.g. water safety, electrical, ventilation, medical gases); Premises Assurance Model (PAM) evidence; **ERIC** annual return data; National Standards of Healthcare Cleanliness cleaning audits; clinical-area risk categories.
+- **Education**: term-time aware scheduling, DfE **Good Estate Management for Schools (GEMS)** alignment, condition data for capital bids, multi-academy-trust roll-up reporting, and safeguarding-aware contractor sign-in (DBS check records).
+- **Retail & hospitality**: store-manager portal, multi-site roll-out programmes (e.g. refit across 200 stores), opening-hours-aware SLAs, food safety checks.
+- **Commercial property / managing agents**: occupier portal, service-charge recovery codes, landlord vs tenant repair responsibility per lease clause.
+- **Public sector**: Welsh-language interface and notifications (Welsh Language Standards), G-Cloud-ready documentation, Public Sector Bodies Accessibility Regulations statement.
 
 ---
 
@@ -501,6 +538,7 @@ Every module is built on the shared platform services in §0, so every module au
 | Workplace | Space, Floor plans, Booking, Visitors, Moves |
 | Strategic | Capital planning, Projects, Real estate, Energy/ESG |
 | Services | Soft services, Fleet, Keys, Business continuity |
-| Platform | Config engine, Workflow, Automation, Reporting, AI, Integrations, Admin, Billing |
+| Platform | Config engine, Workflow, Automation, Reporting, AI, Integrations, Admin, Billing, Support desk |
+| Sector packs | Housing, Healthcare, Education, Retail & hospitality, Commercial property, Public sector |
 
 When a new feature request arrives, add it to the relevant module here with phase and tier before building it.

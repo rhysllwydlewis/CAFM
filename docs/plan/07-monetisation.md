@@ -18,32 +18,37 @@
 |---------|-----|-------------|
 | **Full user** | Office-based staff using the back office (managers, helpdesk, planners, finance, admins) | Full tier price |
 | **Mobile user** | Technicians who mainly use the app | ~50% of full price |
-| **Requester** | Anyone logging requests, booking rooms, registering visitors | **Free, unlimited** |
+| **Requester** | Anyone logging requests, booking rooms, registering visitors, and approving items routed to them | **Free, unlimited** |
 | **Contractor** | External contractor company users | **Free** |
 | **Client viewer** | Clients of FM providers | **Free** (included in FM-provider edition) |
-| **Read-only / auditor** | View-only, time-limited | Free (up to a limit per tier) |
+| **Read-only** | View-only users such as executives and auditors (auditor links can be time-limited) | Free up to 5 (Starter), 20 (Professional) or 50 (Enterprise); then £5/user/mo |
 
-## Tiers (indicative GBP, per user per month, billed annually; monthly billing +20%)
+## Tiers (indicative GBP excluding VAT, per user per month, billed annually; monthly billing +20%)
 
 | | **Free** | **Starter** | **Professional** | **Enterprise** |
 |---|---|---|---|---|
 | Full user | £0 (max 3) | **£29** | **£59** | **from £89** (custom) |
 | Mobile user | £0 (max 3) | £15 | £29 | from £45 |
 | Sites / assets | 1 site / 100 assets | 10 sites / 2,500 assets | Unlimited | Unlimited |
+| File storage included | 2 GB | 50 GB | 250 GB | 1 TB |
 | Helpdesk, reactive WOs, assets, locations, mobile app, requester portal | ✓ | ✓ | ✓ | ✓ |
 | PPM, task libraries, documents, basic compliance certificates | | ✓ | ✓ | ✓ |
 | Standard reports | Basic | ✓ | ✓ | ✓ |
-| Full compliance & inspections, contractors & portal, inventory, purchasing, finance & budgets, contracts/SLAs, scheduling/dispatch, H&S, permits, keys, soft services | | | ✓ | ✓ |
+| Assign jobs to contractors by email/magic link | ✓ | ✓ | ✓ | ✓ |
+| Full compliance & inspections, contractors & portal, inventory, tools & calibration, purchasing, finance & budgets, contracts/SLAs, scheduling/dispatch, H&S, permits, keys, soft services, sector packs | | | ✓ | ✓ |
+| Form designer | | | ✓ | ✓ |
 | Custom fields & forms | 5 fields | 25 fields | Unlimited | Unlimited |
 | Workflow builder, automation, approvals | | | ✓ | ✓ (advanced) |
 | Dashboards & report builder | | | ✓ | ✓ |
 | API & webhooks | | Read-only API | ✓ | ✓ (higher limits) |
-| Space & floor plans, moves, capital planning, projects, real estate & leases, business continuity | | | | ✓ |
+| Space & floor plans, moves, capital planning, projects, real estate & leases, business continuity, Building Safety Act golden thread | | | | ✓ |
 | Multi-client (FM-provider features) | | | | ✓ |
 | SSO/SCIM, IP allow-list, custom domain, white-label, sandbox, data residency, BI connector | | | | ✓ |
 | AI credits included | — | 100/mo | 1,000/mo | 5,000/mo (custom) |
 | Support | Community/docs | Email, next business day | Email + chat, 4h response | Named CSM, phone, 99.9% uptime SLA |
 | Minimum annual commitment | — | — | — | **£12,000/yr** |
+
+**Downgrades:** data in modules no longer included becomes read-only (never deleted) for 90 days, with export available, and returns in full on re-upgrade.
 
 Prices are a starting hypothesis to validate (see "Validation" below). Market reference points: modern CMMS tools list roughly £15–£70 per user per month; enterprise CAFM/IWMS contracts typically run £20k–£250k+ per year plus implementation.
 
@@ -51,16 +56,28 @@ Prices are a starting hypothesis to validate (see "Validation" below). Market re
 
 | Add-on | Price (indicative) | Notes |
 |--------|--------------------|-------|
-| **Workplace** (room & desk booking, visitors, kiosks, room panels) | £2 per bookable desk/room/mo, or £1.50 per employee/mo | Common workplace-app pricing |
-| **Sustainability & Energy** (meters, AMR, carbon, SECR/ESOS packs) | £150/site/mo (volume tiers) | |
+| **Workplace** (room & desk booking, visitors, kiosks, room panels, floor-plan viewer for booking) | £2 per bookable desk/room/mo, or £1.50 per employee/mo | Common workplace-app pricing |
+| **Sustainability & Energy** (meters, AMR, carbon, SECR/ESOS packs) | From £150/site/mo, falling with volume (e.g. £60/site above 25 sites); a "Lite" version (manual meter readings and carbon report) at £30/site/mo for small estates | Keeps it affordable for multi-site schools and retailers |
 | **IoT & Condition Monitoring** | £3 per device/mo | Plus partner hardware margin |
 | **AI Pro** (extra credits, predictive maintenance, Ask-the-estate) | £10 per full user/mo, or credit packs (£50 / 1,000 credits) | Credits cover LLM costs with ≥ 70% margin |
 | **SFG20 Connector** | £50/mo integration fee | Customer holds their own SFG20 licence |
 | **Fleet** | £5 per vehicle/mo | |
 | **SMS credits** | Pass-through + 30% | |
-| **Extra storage** | £10 per 100 GB/mo | Included: 50 GB Starter, 250 GB Pro, 1 TB Ent. |
+| **Extra storage** | £10 per 100 GB/mo | Included amounts are in the tier table |
 | **Additional sandbox** | £500/mo | Enterprise |
 | **Premium support / dedicated environment / UK data-residency guarantee** | Quoted | Enterprise |
+
+## Discounts and commercial terms
+
+| Term | Policy |
+|------|--------|
+| Education, charity and NHS | 20% off subscription (verified) |
+| Multi-year | 2-year prepaid −5%, 3-year prepaid −10% |
+| Design partners | 50% off Professional for year 1 (first 5 customers) |
+| Annual price change | Price list reviewed yearly; existing contracts uplift by no more than CPI at renewal |
+| Contract | Monthly plans cancel anytime; annual plans are 12-month commitments, no refunds mid-term; seats can be added anytime (pro-rated), reduced at renewal |
+| Currency | GBP at launch; EUR and USD price lists when selling internationally |
+| VAT | All prices exclude VAT; Stripe Tax applies UK VAT and handles reverse charge for EU business customers |
 
 ## FM-Provider Edition
 
@@ -91,6 +108,10 @@ Target: services ≤ 20% of revenue. Services exist to make subscriptions succee
 3. **Integration marketplace**: partner-built apps with 20–30% revenue share.
 4. **Benchmarking data product**: anonymised, aggregated, opt-in benchmarks (cost/m², PPM compliance by sector) sold as a premium insight add-on.
 5. **Hardware bundles**: QR/NFC tags, kiosks, sensors via partners at a margin.
+
+## Early revenue (before self-serve billing)
+
+Payments through Stripe go live in Phase 5, but revenue should not wait that long. From Phase 1, design partners and pilot customers sign a simple order form and are **invoiced manually** (annual or quarterly). Their entitlements are set by platform admin, and they move onto Stripe when it launches.
 
 ## Billing implementation
 
@@ -134,7 +155,17 @@ Target: services ≤ 20% of revenue. Services exist to make subscriptions succee
 | FM provider | 60 full + 200 mobile, 40 client contracts | £9,000 + £42,480 + £69,600 + £19,200 = **£140,280** |
 | Enterprise (university) | 80 full + 150 mobile on Enterprise + Energy (20 sites) + AI Pro | £85,440 + £81,000 + £36,000 + £9,600 = **£212,040** |
 
-Year-3 aspiration (to validate): ~150 customers, £3–5m ARR.
+Year-3 aspiration (to validate), built bottom-up from the customer mix rather than a headline number:
+
+| Segment | Customers | Average ARR | ARR |
+|---------|-----------|-------------|-----|
+| Small (Free → Starter) | 150 | £4,000 | £0.6m |
+| Mid-market (Professional) | 100 | £25,000 | £2.5m |
+| FM providers | 10 | £120,000 | £1.2m |
+| Enterprise | 3 | £200,000 | £0.6m |
+| **Total** | **~263** | | **~£4.9m** |
+
+The plan should still work at half this (≈ £2.5m). That is the planning case for hiring and spend.
 
 ## Validation plan (before Phase 5 pricing goes live)
 1. 15–20 discovery interviews across target segments; run Van Westendorp price-sensitivity questions.

@@ -23,12 +23,14 @@
 | Cache / queues | **Redis + BullMQ** | Background jobs: PPM generation, notifications, imports, SLA timers, webhooks |
 | Search | Postgres full-text search (phase 1) → Meilisearch/OpenSearch (when needed) | Start simple |
 | Files | S3-compatible object storage, presigned uploads, ClamAV scanning, image thumbnails | Scalable, cheap |
-| Realtime | WebSockets (Socket.IO) / SSE | Dispatch board, live SLA counters, notifications |
+| Realtime | WebSockets (Socket.IO with Redis adapter, so it scales across API instances) / SSE | Dispatch board, live SLA counters, notifications |
 | PDF | Headless Chromium (Playwright) rendering HTML templates | Branded job sheets and reports |
 | Email | Transactional provider (e.g. Postmark/SES) + inbound parsing for email-to-ticket | Reliable delivery, inbound routing |
 | SMS / push | Twilio (SMS), Web Push + FCM/APNs | Alerts |
 | Mobile | **PWA first** (offline via service worker + IndexedDB), then **React Native (Expo)** sharing TS packages | Fast to ship, native later |
-| Auth | In-house session auth (Argon2id hashing, httpOnly secure cookies, CSRF protection), TOTP + WebAuthn MFA; SAML/OIDC later via a library (or WorkOS) | Simple now, enterprise-ready later |
+| Auth | In-house: cookie sessions for the web app (Argon2id hashing, httpOnly secure cookies, CSRF protection); OAuth 2.0 + PKCE access/refresh tokens for mobile, offline PWA and API clients; TOTP then WebAuthn MFA; SAML/OIDC later via a library (or WorkOS) | Simple now, enterprise-ready later |
+| i18n | `next-intl` (web), shared message catalogues; ICU formatting | Translation and tenant terminology overrides from day one |
+| Document preview | Gotenberg/LibreOffice conversion service for Office files → PDF previews | In-browser preview of uploads |
 | Billing | **Stripe Billing** + in-house entitlements service | Subscriptions, seats, usage, invoices, VAT |
 | AI | LLM API (vision + text) behind an internal AI gateway; pgvector for retrieval | Triage, OCR, Q&A with permission-aware retrieval |
 | Observability | OpenTelemetry → logs/metrics/traces (e.g. Grafana stack or Sentry + hosted provider), uptime checks | |
@@ -56,8 +58,10 @@
 ## Multi-tenancy
 
 - **Shared database, shared schema**, `tenant_id` on every tenant-owned table.
-- Each request sets `SET app.tenant_id = …` inside its transaction; **RLS policies** restrict all queries to that tenant. Platform-admin access uses a separate DB role and is audited.
-- Tenant resolved from the session (and custom domain/subdomain for portals).
+- Each request runs its queries inside a transaction that first calls `set_config('app.tenant_id', $1, true)` (transaction-local, the equivalent of `SET LOCAL`). **RLS policies** restrict all queries to that tenant. Using the transaction-local form matters: a plain `SET` would stay on a pooled connection and could leak one tenant's context into the next request. This is implemented once, as a Prisma client extension, and is compatible with PgBouncer in transaction mode. Queries with no tenant context set return no rows (fail closed).
+- The application connects as a non-owner DB role, so RLS cannot be bypassed. Migrations use a separate owner role; platform-admin access uses a third role and is audited.
+- Identity: a global `account` (email, password, MFA) with one `membership` per tenant (see [06](06-login-and-demo.md)). Accounts are not tenant-scoped; memberships and everything else are.
+- Tenant resolved from the session's active membership (and custom domain/subdomain for portals and tenant login URLs).
 - File storage keys prefixed by tenant; presigned URLs checked against permissions.
 - **Enterprise options**: dedicated database (same code, different connection) and **data residency** (UK vs EU region).
 - FM-provider edition adds an in-tenant **client** dimension (`client_id`) used for data scoping, branding and reporting.
@@ -96,6 +100,14 @@ flowchart LR
   WO --> RPT[Dashboards & SLA reports]
 ```
 
+## Offline sync (mobile/PWA)
+
+- The device keeps a local store (IndexedDB in the PWA, SQLite in the native app) of the user's assigned jobs and the reference data they need (assets, locations, checklists, forms, parts), downloaded in a scoped "work pack".
+- Changes are recorded as an ordered **mutation queue**; each mutation carries an idempotency key and the record version it was based on.
+- On reconnect: mutations are replayed in order; the server applies them through the normal API (so permissions, workflow guards and validation still apply). Field-level merge where safe; **status transitions and approvals are server-authoritative**. Rejected mutations are shown to the user with the reason.
+- Photos and files upload in the background with resumable uploads.
+- Delta sync downloads only records changed since the last sync token.
+
 ## Integrations architecture
 
 - **Outbound**: webhooks (signed, retried with exponential backoff, delivery log); connector workers per integration with per-tenant credentials encrypted (envelope encryption, KMS).
@@ -110,9 +122,13 @@ flowchart LR
 | Preview | Per-PR | Ephemeral, seeded demo data |
 | Staging | Pre-release | Production-like |
 | **Demo** | Public sales demo | Demo credentials on login page, **reset nightly** |
-| Production | Customers | UK region; PITR backups; later AWS eu-west-2 for enterprise/ISO |
+| Production | Customers | Point-in-time recovery backups; UK hosting once required (see below) |
 
 Early hosting on **Railway** (managed Postgres, Redis, buckets, per-PR environments) for speed; everything is containerised so it moves to AWS (ECS/RDS/ElastiCache/S3) when enterprise contracts require it.
+
+Two things to check when the Railway project is set up, rather than assume:
+- **Region.** Use the closest European region Railway offers. If there is no London region, data sits in the EU, which UK GDPR allows (UK adequacy decision), but many UK public-sector and NHS buyers require UK-only hosting. Those customers trigger the move to AWS `eu-west-2` (London).
+- **Backups.** If the managed Postgres does not provide point-in-time recovery to our RPO target (15 minutes, see doc 09), add continuous WAL archiving (e.g. WAL-G or pgBackRest) to object storage in a second region.
 
 ## Architecture Decision Records
 
@@ -120,6 +136,6 @@ Record significant decisions in `/docs/adr/NNNN-title.md` (context, decision, co
 1. Modular monolith with NestJS + Next.js.
 2. Shared-schema multi-tenancy with Postgres RLS.
 3. JSONB custom fields with metadata registry.
-4. In-house session auth now, SSO later.
+4. Global accounts with per-tenant memberships; cookie sessions for web, OAuth tokens for mobile/API; SSO later.
 5. PWA-first mobile.
 6. Entitlements model independent of Stripe.

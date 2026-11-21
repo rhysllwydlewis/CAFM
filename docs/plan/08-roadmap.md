@@ -1,102 +1,136 @@
 # 08 · Delivery Roadmap
 
-Six phases. Each ends with a deployable, demo-able increment on the demo environment, with the demo seed data extended to show the new modules. Durations are indicative for a small team assisted by AI, and are re-estimated at the start of each phase.
+Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, demo-able increment on the demo environment, with the demo seed data extended to show the new modules. Durations are indicative for a small team assisted by AI, and are re-estimated at the start of each phase.
 
-## Phase 0 · Foundations (≈ 3–4 weeks)
+**Indicative total: about 14–17 months** to deliver the full feature catalogue. The product becomes sellable to pilot customers at the end of Phase 1 (about month 3), and commercially strong for mid-market at the end of Phase 2B (about month 7).
 
-**Goal:** a working, secure skeleton: the login page with demo credentials, landing on an (empty-ish) app shell.
+| Phase | Weeks | Cumulative (approx.) |
+|-------|-------|----------------------|
+| 0 Foundations | 4 | Month 1 |
+| 1 Core CAFM MVP | 8–10 | Month 3 |
+| 2A Comply | 8 | Month 5 |
+| 2B Commercial operations | 8–10 | Month 7 |
+| 3 Workplace & sustainability | 10 | Month 9–10 |
+| 4 Enterprise depth & sectors | 12–14 | Month 13 |
+| 5 Commercialise & scale | 10–12 (starts during Phase 4) | Month 14–17 |
+
+## Phase 0 · Foundations
+
+**Goal:** a working, secure skeleton. The login page with demo credentials lands on an (empty-ish) app shell.
 
 - Monorepo (pnpm + Turborepo), lint/format, TypeScript strict, commit conventions.
 - Docker Compose local stack (Postgres, Redis, MinIO, Mailpit).
 - CI: typecheck, lint, unit, API, e2e (Playwright), build, container images; preview deploys.
-- Database: Prisma schema for platform + identity + config tables, **RLS policies**, migration pipeline.
-- **Auth**: login, logout, sessions, password reset, invite acceptance, lockout, rate limiting, audit events.
-- **Login page with demo credentials panel and autofill** (gated by `DEMO_MODE`).
-- Tenancy: tenant resolution, tenant context middleware, platform-admin bootstrap CLI.
-- RBAC: permission registry, roles, scopes, API guards, `can()` helper in UI.
+- Database: Prisma schema for platform + identity + config tables, **RLS policies** with transaction-local tenant context, separate DB roles, migration pipeline.
+- **Auth**: global accounts + tenant memberships, login, logout, organisation picker, sessions, password reset, invite acceptance, terms acceptance, lockout, rate limiting, audit events.
+- **Login page with demo credentials panel and autofill** (gated by `DEMO_MODE`), demo guard rails (locked credentials, captured outbound email).
+- Tenancy: tenant resolution, tenant context middleware, platform-admin bootstrap CLI (create tenant, set plan/entitlements).
+- RBAC: permission registry, roles, scopes, API guards, `can()` helper in UI, no-privilege-escalation rule.
 - **Entitlements** model and `feature()` gating.
-- Config engine v1: field definitions + custom field storage/validation, numbering sequences.
-- App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, design tokens + core components.
+- Config engine v1: field definitions + custom field storage/validation, numbering sequences, config versioning (every change stored as a version).
+- App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, design tokens + core components, i18n framework (en-GB).
 - Audit log infrastructure; outbox + worker skeleton.
 - Deterministic demo seed + nightly reset job.
 - ADRs 1–6 written.
 
-**Done when:** you can open the demo site, click "Super User" under demo accounts, sign in, see the app shell, and every API call is tenant-isolated and permission-checked (tests prove it).
+**Done when:** you can open the demo site, click "Super User" under demo accounts, sign in, see the app shell, and every API call is tenant-isolated and permission-checked (automated tests prove it).
 
-## Phase 1 · Core CAFM MVP (≈ 8–10 weeks)
+## Phase 1 · Core CAFM MVP
 
-- Location hierarchy + site map; QR codes.
-- Asset register, classes and attributes, tags, meters, warranties, documents.
-- Helpdesk: request catalogue, priority matrix, portal, QR reporting, email-to-ticket, queue.
-- Reactive work orders: lifecycle, assignment, SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
+- Location hierarchy + site map; UK bank holiday calendars by nation; QR codes and label printing.
+- Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
+- Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT.
+- Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
 - PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
-- Mobile PWA for technicians (offline my-jobs, checklists, photos, signatures, scan).
+- Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - Notifications (in-app, email, push) with templates.
-- Super User admin console v1: users, invites, roles matrix, teams, scopes, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories.
+- List views: filters, saved views, bulk actions, kanban and calendar views.
+- Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
 - Standard reports + role default dashboards (fixed widgets).
-- Import/export for locations, assets, users.
+- Import/export for locations, assets, users, PPM schedules.
 - MFA (TOTP).
+- First design-partner tenants live, invoiced manually.
 
 **Done when:** a pilot customer could run day-to-day reactive and planned maintenance end to end.
 
-## Phase 2 · Operate & Comply (≈ 10–12 weeks)
+## Phase 2A · Comply
 
-- Statutory compliance register, UK templates, certificates, remedial actions, compliance matrix, inspections/audits builder.
-- Contractor management, accreditations/insurance, **contractor portal**, quotes/RFQ.
+- Statutory compliance register, jurisdiction-aware UK templates, certificates, remedial actions, compliance matrix.
+- Inspections/audits builder, building rounds with checkpoints.
+- Contractor management, accreditations/insurance, auto-suspension, **contractor portal**, quotes/RFQ, contractor site sign-in.
+- **Permit to Work and RAMS** (moved forward from Phase 4: contractor work needs them).
+- Documents module (versions, expiry, previews, external sharing).
+- Workflow builder UI + automation rules + approvals engine; form designer.
+- Config history UI with diff and rollback; config export/import.
+- Data retention policies, legal hold, DSAR export/erasure tools.
+- Public REST API v1 + API keys + webhooks.
+- Passkeys (WebAuthn); SMS notifications; Teams/Slack notifications.
+- AI certificate reading (early AI feature, because it directly supports compliance).
+- **Cyber Essentials** certification.
+
+## Phase 2B · Commercial Operations
+
 - Contracts, SLAs, KPIs, performance deductions; schedule of rates.
-- Scheduling & dispatch board, skills/qualifications, shifts/leave, timesheets.
-- Inventory & stores, van stock.
-- Procurement (requisition → PO → receipt → invoice match), approvals engine.
-- Finance: cost centres, budgets, quotes, job costing; Xero/QuickBooks/Sage connectors.
-- Workflow builder UI + automation rules + approval chains.
-- Form designer.
-- Documents module; keys register.
-- Dashboards (configurable widgets).
-- Public REST API v1 + API keys + webhooks; Teams/Slack notifications.
-- Communications: broadcast messages, CSAT surveys.
+- Scheduling & dispatch board, skills/qualifications, shifts/leave/on-call, timesheets.
+- Inventory & stores, van stock, tools and test-equipment calibration.
+- Procurement (requisition → PO → receipt → invoice match).
+- Finance: cost centres, budgets, quotes (with magic-link approval), job costing; Xero/QuickBooks/Sage connectors.
+- Keys register.
+- Configurable dashboards.
+- Communications: broadcast messages, announcements, knowledge base, surveys.
+- Requester appointment self-booking.
+- Basic platform admin UI (tenants, plans, overrides, support-access grants).
 
-## Phase 3 · Workplace & Sustainability (≈ 10 weeks)
+## Phase 3 · Workplace & Sustainability
 
-- Floor plans (DWG/DXF/PDF → SVG; IFC viewer), space inventory, allocation, chargeback, occupancy analytics.
+- Floor plans (DWG/DXF/PDF → SVG; IFC viewer), space inventory, allocation, chargeback, occupancy analytics, stacking/blocking and scenarios, wayfinding.
 - Room/desk/resource booking + Microsoft 365/Google calendar sync + check-in + room panels.
 - Visitor management + kiosk + evacuation roll-call.
 - Moves (MAC).
+- Planned outage management (uses floor plans and "serves" relationships).
 - Energy & sustainability: meters, readings, bills, AMR import, carbon (Scope 1–2–3), SECR/ESOS packs, waste.
 - IoT ingestion, device registry, alert rules → auto work orders, condition-based PPM.
 
-## Phase 4 · Enterprise Depth (≈ 10–12 weeks)
+## Phase 4 · Enterprise Depth & Sector Packs
 
 - Real estate & leases, critical dates, service charges, IFRS 16 outputs.
 - Condition surveys → backlog → capital planning & lifecycle forecasting.
-- Projects & minor works (Gantt, CDM, snagging).
-- Health & safety: incidents, RIDDOR, investigations, CAPA, risk register, RAMS, permits to work, LOTO, lone worker.
-- Soft services: cleaning specs & audits (NSHC 2021), on-demand cleaning, guard tours, mail room, grounds.
+- Asset depth: depreciation and valuation, FMEA/RCM library, BIM/COBie import.
+- Route optimisation for dispatch; punch-out catalogues and framework call-offs in procurement; CIS domestic reverse charge in client billing.
+- Projects & minor works (Gantt, CDM, snagging, defects liability, handover/COBie).
+- Health & safety: incidents, RIDDOR, investigations, CAPA, risk register, LOTO, lone worker, insurance claims.
+- Soft services: cleaning specs & audits (NSHC 2021), on-demand cleaning, guard tours, mail room, grounds, lost property.
 - Fleet; business continuity.
-- **AI suite**: triage, certificate OCR, nameplate recognition, job summaries, Ask-the-estate, anomaly detection (some of these can move earlier where they support Phase 1–2 modules).
+- **Sector packs**: housing (Awaab's Law, HHSRS, Decent Homes, voids, TSMs, resident portal), healthcare (HTM, PAM, ERIC), education (GEMS, MAT reporting), retail, commercial property, public sector.
+- **AI suite**: triage, nameplate recognition, job summaries, Ask-the-estate, anomaly detection, predictive maintenance, invoice OCR.
 - Report builder + scheduled report packs; BI connector.
-- Multi-client FM-provider edition: client dimension, client portal, per-client branding, client billing.
+- Multi-client FM-provider edition: client dimension, client portal, per-client branding, client billing, contract profitability.
 - Building Safety Act golden thread.
+- **Cyber Essentials Plus**; first CREST penetration test before the first enterprise go-live.
 
-## Phase 5 · Commercialise & Scale (≈ 8–10 weeks, overlaps Phase 4)
+## Phase 5 · Commercialise & Scale (starts during Phase 4)
 
-- **Stripe billing** live: plans, seats, add-ons, metered usage, VAT, dunning, customer billing portal.
-- **Marketing homepage** (in front of `/login`): product pages, pricing, demo CTA, sign-up, blog/SEO, comparison pages.
-- Self-serve sign-up, trial, onboarding wizard, template packs per industry, personal demo clone.
-- Platform admin console: tenants, plans, overrides, support access, health, revenue metrics.
-- SSO (SAML/OIDC), SCIM, IP allow-lists, custom domains, white-label, sandbox + config promotion, data residency.
-- Native mobile apps (Expo) to App Store / Play Store.
-- Integration marketplace, Zapier/Make connectors; contractor marketplace beta.
-- Security certifications: Cyber Essentials Plus → ISO 27001 (→ SOC 2 Type II for international).
-- G-Cloud listing.
+- **Stripe billing** live: plans, seats, add-ons, metered usage, VAT, dunning, customer billing portal; migrate manually invoiced customers.
+- **Marketing homepage** (in front of `/login`): product pages, pricing, demo CTA, sign-up, blog/SEO, comparison pages, cookie consent (PECR).
+- Self-serve sign-up, trial, onboarding wizard, industry template packs, personal demo clone.
+- Platform admin console complete: health, revenue metrics, global template publishing, announcements.
+- Customer support desk: in-app help widget/chat, help centre, feature-request voting.
+- SSO (SAML/OIDC), SCIM, IP allow-lists, custom domains, white-label, sandbox + config promotion, data residency (UK/EU).
+- Native mobile apps (Expo) to App Store / Play Store; remote assist video.
+- Integration marketplace, Zapier/Make/Power Automate connectors; contractor marketplace beta.
+- Enterprise connectors: SAP, Oracle, Dynamics 365, HR systems, access control, Autodesk (CAD/BIM), CTI telephony.
+- Digital twin view; cross-tenant benchmarking (opt-in).
+- Welsh-language interface (first additional language).
+- **ISO 27001** certification (ISMS started in Phase 3); G-Cloud listing.
 
 ## Cross-cutting, every phase
 
 - Accessibility audit of new screens (axe + manual).
 - Performance budget checks; load test of new heavy endpoints.
-- Security review of new modules (threat model, authZ tests).
+- Security review of new modules (threat model, authZ and cross-tenant tests).
 - Docs: user guide pages, API reference, changelog.
 - Demo seed updated so every new feature has realistic demo data.
-- Feature catalogue ([02](02-feature-catalogue.md)) ticked off as features ship.
+- Feature catalogue ([02](02-feature-catalogue.md)) ticked off as features ship. **Every catalogue feature must map to a phase above.** When a feature is added to the catalogue, add it here too.
 
 ## Definition of Done (per feature)
 

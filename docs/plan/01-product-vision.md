@@ -20,7 +20,7 @@
 | **FM service providers** (hard/soft/TFM) | Need multi-client, contractor and SLA/penalty features; high willingness to pay; each provider brings many sites | 20–500 users |
 | **Education** (multi-academy trusts, independent schools, FE/HE) | Many sites, heavy compliance, small teams, budget-conscious → strong fit for self-serve tiers | 5–100 users |
 | **Commercial property / managing agents** | Tenants, service charges, lease dates, contractors | 10–200 users |
-| **Housing associations** (communal areas, compliance "Big 6") | Regulator pressure, Building Safety Act | 20–500 users |
+| **Housing associations** (repairs, voids, compliance "Big 6") | Regulator pressure, Awaab's Law, Building Safety Act | 20–500 users |
 | **Healthcare (private, primary care)**, **retail & hospitality estates** | Multi-site reactive and compliance | 10–300 users |
 
 ### Expansion: enterprise and public sector
@@ -41,16 +41,22 @@ NHS trusts, local authorities, universities, central government via **G-Cloud** 
 | **Finance / Procurement** | Control spend; match invoices; recharge clients | POs, approvals, invoices, budgets |
 | **Space Planner / Workplace Lead** | Optimise space and occupancy | Floor plans, occupancy analytics, moves |
 | **Client (of an FM provider)** | See performance against contract | Client portal, SLA reports |
+| **Resident (housing)** | Report a repair, book an appointment, know when it will be fixed | Resident portal, appointment booking |
+| **Visitor** | Sign in quickly and know where to go | Pre-registration email, kiosk |
 | **Executive** | Headline performance, risk and cost | Executive dashboard, scheduled PDF packs |
 
 ## Competitive landscape
 
 | Category | Examples | Strengths | Gaps we exploit |
 |----------|----------|-----------|-----------------|
-| Enterprise IWMS/CAFM | Planon, Eptura (Archibus), MRI Evolution (Concept), IBM Maximo, Spacewell | Deep functionality | Expensive, slow to implement, consultant-led, dated UX |
-| UK mid-market CAFM | QFM, Agility CAFM, Joblogic, Simpro, Trimble, Ivanti/Concerto | UK compliance familiarity | Patchy UX/mobile, limited self-configuration, limited AI |
+| Enterprise IWMS/CAFM | Planon, Eptura (Archibus), Concept Evolution, IBM Maximo, Spacewell, Trimble Manhattan | Deep functionality | Expensive, slow to implement, consultant-led, dated UX |
+| UK mid-market CAFM / compliance | QFM, Elogbooks, Concerto, Agility | UK compliance familiarity, FM-provider and managing-agent workflows | Patchy UX/mobile, limited self-configuration, limited AI |
+| Field service management | Joblogic, Simpro, BigChange | Job scheduling and invoicing for contractors | Built for contractors, not estate owners; thin on assets, space and compliance oversight |
+| Housing repairs & compliance | Specialist housing platforms | Housing workflows | Housing-only |
 | Modern CMMS | MaintainX, UpKeep, Limble, Fiix, Facilio | Great UX, self-serve | Maintenance-only; weak UK compliance, space, contracts, multi-client |
 | Workplace apps | Robin, Envoy, Condeco | Booking and visitors | Not CAFM |
+
+Competitor names and ownership change often (there has been a lot of consolidation). Verify this list during the Phase 0 discovery interviews before it is used in any sales or marketing material.
 
 ## Differentiators (how we win)
 

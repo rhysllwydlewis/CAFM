@@ -9,7 +9,8 @@
 | Page load | First load < 2.5 s (LCP) on 4G; in-app navigation < 500 ms |
 | Mobile offline | Full day of work offline; sync of 100 queued actions < 30 s |
 | Scale (design target) | 5,000 tenants; largest tenant 2,000 full users, 50k mobile/requester users, 500k assets, 10M work orders, 1B telemetry points |
-| Backups | Continuous PITR (7–35 days), daily snapshots retained 35 days, encrypted, restore tested quarterly |
+| Backups | Continuous PITR (7–35 days), daily snapshots retained 35 days, encrypted, copied to a second region, restore tested quarterly |
+| Disaster recovery | Documented runbook to restore the full platform into a second region; rehearsed twice a year |
 | RPO / RTO | ≤ 15 min / ≤ 4 h |
 | Accessibility | WCAG 2.2 AA |
 | Browsers | Last 2 versions of Chrome, Edge, Safari, Firefox; iOS 16+, Android 10+ |
@@ -19,7 +20,7 @@
 
 ### Application
 - Follow **OWASP ASVS Level 2**; OWASP Top 10 covered by design and tests.
-- AuthN: Argon2id, MFA (TOTP + WebAuthn/passkeys), SSO, session rotation, idle and absolute timeouts, device/session management.
+- AuthN: Argon2id, MFA (TOTP from Phase 1, WebAuthn/passkeys from Phase 2A; no SMS one-time codes because of SIM-swap risk), SSO (Phase 5), session rotation, idle and absolute timeouts, device/session management, revocable mobile refresh tokens.
 - AuthZ: deny-by-default permission guards on every endpoint; **automated cross-tenant access tests** for every resource; field-level filtering in serializers.
 - Postgres **RLS** as defence in depth; separate DB roles for app, migrations, platform admin, read-replica reporting.
 - Input validation with shared Zod schemas; output encoding; strict CSP; secure headers; CSRF protection.
@@ -28,7 +29,8 @@
 - Rate limiting and abuse detection (login, API, public forms).
 - Webhooks signed (HMAC); SSRF protections on outbound calls.
 - Dependency scanning (Dependabot/Renovate), SAST (CodeQL), secret scanning, container image scanning.
-- Annual third-party penetration test (CREST-accredited), plus a test before first enterprise go-live.
+- Third-party penetration test (CREST-accredited) before the first enterprise go-live, then annually and after major architectural change. Internal OWASP ZAP scans in CI from Phase 1.
+- Responsible disclosure policy and `security.txt` from first public launch.
 
 ### Data protection (UK GDPR / EU GDPR)
 - We are **processor**; customer is controller. Standard DPA, sub-processor list, UK/EU hosting.
@@ -38,6 +40,9 @@
 - Personal data inventory (RoPA) maintained; DPIA for AI features and location tracking.
 - Technician GPS tracking is opt-in, only during working status, and clearly disclosed.
 - AI: no customer data used to train models; providers under zero-retention terms where available; tenant toggle.
+- Legal documents ready before the first paying customer: terms of service, DPA, privacy notice, acceptable use policy, sub-processor list, SLA. Acceptance recorded per account.
+- Marketing site (Phase 5): cookie consent that meets PECR, with no non-essential cookies before consent. The app itself uses only strictly necessary cookies.
+- Accessibility statement published, as public-sector customers require under the Public Sector Bodies Accessibility Regulations.
 
 ### Operational
 - Least-privilege access for staff; MFA everywhere; production access via audited break-glass.
@@ -46,7 +51,7 @@
 - Logging without personal data where possible; log retention 90 days (security logs 1 year).
 
 ### Certifications roadmap
-1. **Cyber Essentials** (Phase 2) → **Cyber Essentials Plus** (Phase 4): required for UK public sector.
+1. **Cyber Essentials** (Phase 2A) → **Cyber Essentials Plus** (Phase 4): required for UK public sector.
 2. **ISO/IEC 27001** (Phase 5, ~6–9 months of operation of the ISMS).
 3. **SOC 2 Type II** for international enterprise (later).
 4. Alignment with **ISO 41001** (FM) and **ISO 55001** (asset management) in product features and marketing.
@@ -65,11 +70,12 @@
 | Migration | Test migrations against anonymised production-like snapshot | Before each release |
 
 Critical journeys always covered by e2e:
-1. Demo login via autofill → dashboard (and the demo panel is absent when `DEMO_MODE` is off).
-2. Requester scans QR → logs request → helpdesk converts to WO → technician completes offline → syncs → requester notified → CSAT.
-3. PPM schedule generates WOs → contractor completes in portal → certificate uploaded → compliance matrix turns green.
-4. Super User creates custom field + workflow change + role → affected user sees the change.
-5. PO over approval limit → multi-stage approval → receipt → invoice match.
+1. Demo login via autofill → dashboard (and the demo panel and its credentials are absent from the page when `DEMO_MODE` is off).
+2. A user with memberships in two tenants signs in, picks a tenant, and cannot see or reach any of the other tenant's data.
+3. Requester scans QR → logs request → helpdesk converts to WO → technician completes offline → syncs → requester notified → CSAT.
+4. PPM schedule generates WOs → contractor completes in portal → certificate uploaded → compliance matrix turns green.
+5. Super User creates custom field + workflow change + role → affected user sees the change.
+6. PO over approval limit → multi-stage approval → receipt → invoice match.
 
 ## DevOps
 
