@@ -1,0 +1,83 @@
+// Identity and tenancy (ADR 0004: global account, per-tenant membership).
+
+/// A customer organisation. Platform-level table (no RLS); only exposed through memberships.
+model Tenant {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  slug        String       @unique
+  name        String
+  plan        String
+  status      String       @default("active")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships Membership[]
+
+  @@map("tenant")
+}
+
+/// A person who can sign in. Global; one account can belong to several tenants.
+model Account {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  email          String?      @unique
+  username       String?      @unique
+  name           String
+  passwordHash   String       @map("password_hash")
+  failedAttempts Int          @default(0) @map("failed_attempts")
+  lockedUntil    DateTime?    @map("locked_until") @db.Timestamptz(3)
+  isDemo         Boolean      @default(false) @map("is_demo")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships    Membership[]
+  sessions       Session[]
+
+  @@map("account")
+}
+
+/// An account's role and licence inside one tenant. Tenant-owned (RLS).
+model Membership {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  accountId   String    @map("account_id") @db.Uuid
+  role        String
+  licence     String
+  title       String?
+  landingPage String    @default("/app") @map("landing_page")
+  status      String    @default("active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  account     Account   @relation(fields: [accountId], references: [id])
+  sessions    Session[]
+
+  @@unique([tenantId, accountId])
+  @@index([accountId])
+  @@map("membership")
+}
+
+/// A signed-in browser session. Only the SHA-256 of the token is stored.
+model Session {
+  id           String      @id @default(uuid(7)) @db.Uuid
+  tokenHash    String      @unique @map("token_hash")
+  accountId    String      @map("account_id") @db.Uuid
+  membershipId String?     @map("membership_id") @db.Uuid
+  tenantId     String?     @map("tenant_id") @db.Uuid
+  expiresAt    DateTime    @map("expires_at") @db.Timestamptz(3)
+  ip           String?
+  userAgent    String?     @map("user_agent")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  account      Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  membership   Membership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("session")
+}
+
+/// Sign-in audit trail (success, failure, lockout, sign-out). No passwords, ever.
+model AuthEvent {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  type       String
+  accountId  String?  @map("account_id") @db.Uuid
+  tenantId   String?  @map("tenant_id") @db.Uuid
+  identifier String?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([accountId])
+  @@map("auth_event")
+}

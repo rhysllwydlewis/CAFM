@@ -1,0 +1,28 @@
+{
+  "name": "@cafm/db",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:diff": "prisma migrate diff --from-migrations prisma/schema/migrations --to-schema-datamodel prisma/schema --shadow-database-url \"$SHADOW_DATABASE_URL\" --script",
+    "seed": "tsx src/seed.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cafm/shared": "workspace:*",
+    "@prisma/client": "6.19.3",
+    "argon2": "0.45.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "prisma": "6.19.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}
