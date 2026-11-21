@@ -60,7 +60,7 @@ pnpm dev               # API on :4000, web on :3000 (open http://localhost:3000)
 
 Copy `.env.example` to `.env` and export its variables (`set -a; . ./.env; set +a`). Local services: `docker compose up -d` (Postgres, Redis, MinIO, Mailpit); set `MINIO_ROOT_PASSWORD` in `.env` first.
 
-Deploying: see `docs/deploy/railway.md` (one Railway service; `pnpm release` before each deploy, `pnpm start` to run).
+Deploying: see `docs/deploy/railway.md` (one Railway service; `pnpm start` sets up the database, then runs the app).
 
 Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role.
 
