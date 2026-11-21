@@ -6,7 +6,7 @@ Guidance for anyone (human or AI agent) working in this repository. Read this fi
 
 A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`.
 
-**Where the build is:** [`docs/PROGRESS.md`](docs/PROGRESS.md) has the current phase, a checklist for every phase, what's in progress and what's waiting on the product owner. Phase 0 (foundations) is done. Phase 1 starts on the product owner's go-ahead.
+**Where the build is:** [`docs/PROGRESS.md`](docs/PROGRESS.md) has the current and approved phases, a checklist for every phase, what's in progress and what's waiting on the product owner.
 
 ## How to work here (every agent, every session)
 
