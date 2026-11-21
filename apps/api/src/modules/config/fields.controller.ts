@@ -19,10 +19,11 @@ import {
 import type { Request } from 'express';
 import { z } from 'zod';
 import { type FieldDefinition as Def, ENTITY_TYPES, fieldDefinitionInput, validateCustom } from '@cafm/config-engine';
-import { Prisma, withTenant } from '@cafm/db';
+import { Prisma, type Tx, withTenant } from '@cafm/db';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { recordVersion } from '../../core/config';
+import type { Access } from '../../core/session';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 
@@ -71,6 +72,21 @@ function snapshot(r: Row): Prisma.InputJsonValue {
   return rest as unknown as Prisma.InputJsonValue;
 }
 
+/** Plan limit on active custom fields (doc 07): 5 Free, 25 Starter, unlimited above. */
+async function assertFieldSlot(tx: Tx, access: Access, tenantId: string): Promise<void> {
+  const limit = access.entitlements.limits.custom_fields;
+  if (limit === null) return;
+  // One at a time per tenant, so parallel requests can't overshoot the limit.
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`custom_fields:${tenantId}`}))`;
+  if ((await tx.fieldDefinition.count({ where: { tenantId, active: true } })) >= limit) {
+    throw new ForbiddenException({
+      code: 'limit_reached',
+      limit,
+      message: `Your plan includes ${limit} custom fields. Deactivate one, or ask your Super User about upgrading.`,
+    });
+  }
+}
+
 /** Custom fields on every entity (doc 02 § 0, ADR 0003). */
 @Controller('config/fields')
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
@@ -113,15 +129,7 @@ export class FieldsController {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
-      // Plan limit on custom fields (doc 07): 5 Free, 25 Starter, unlimited above.
-      const limit = auth.access!.entitlements.limits.custom_fields;
-      if (limit !== null && (await tx.fieldDefinition.count({ where: { tenantId, active: true } })) >= limit) {
-        throw new ForbiddenException({
-          code: 'limit_reached',
-          limit,
-          message: `Your plan includes ${limit} custom fields. Deactivate one, or ask your Super User about upgrading.`,
-        });
-      }
+      await assertFieldSlot(tx, auth.access!, tenantId);
       if (
         await tx.fieldDefinition.findUnique({
           where: { tenantId_entityType_key: { tenantId, entityType: input.entityType, key: input.key } },
@@ -227,6 +235,10 @@ export class FieldsController {
       const target = await tx.configVersion.findFirst({ where: { tenantId, kind: KIND, entityId: id, version } });
       if (!target) throw new NotFoundException({ code: 'version_not_found' });
       const data = target.data as Record<string, unknown>;
+      const current = await tx.fieldDefinition.findFirst({ where: { id, tenantId } });
+      if (!current) throw new NotFoundException();
+      // Bringing a deactivated field back takes a slot on the plan, like creating one.
+      if (data.active === true && !current.active) await assertFieldSlot(tx, auth.access!, tenantId);
       const row = await tx.fieldDefinition.update({
         where: { id },
         data: {

@@ -38,7 +38,9 @@ export async function nextNumber(
   key: string,
   context: Record<string, string> = {},
 ): Promise<string> {
-  const format = DEFAULT_SEQUENCES[key] ?? `${key.toUpperCase().slice(0, 4)}-{00000}`;
+  const format = Object.hasOwn(DEFAULT_SEQUENCES, key)
+    ? DEFAULT_SEQUENCES[key]!
+    : `${key.toUpperCase().slice(0, 4)}-{00000}`;
   await tx.$executeRaw`
     INSERT INTO number_sequence (id, tenant_id, key, format, next_value, updated_at)
     VALUES (gen_random_uuid(), ${tenantId}::uuid, ${key}, ${format}, 1, now())

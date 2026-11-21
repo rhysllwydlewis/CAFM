@@ -35,7 +35,7 @@ export type Permission = keyof typeof PERMISSIONS;
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
 
 export function isPermission(value: string): value is Permission {
-  return value in PERMISSIONS;
+  return Object.hasOwn(PERMISSIONS, value);
 }
 
 export function isAdminPermission(permission: Permission): boolean {

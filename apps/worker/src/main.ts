@@ -19,7 +19,11 @@ console.log('[worker] started');
 const ownerUrl = process.env.OWNER_DATABASE_URL;
 const owner = process.env.DEMO_MODE === 'true' && ownerUrl ? new PrismaClient({ datasourceUrl: ownerUrl }) : null;
 if (owner) {
-  void scheduleDemoReset(worker.queue, owner, log).then(() => log('nightly demo reset scheduled for 03:00 UK time'));
+  scheduleDemoReset(worker.queue, owner, log).then(
+    () => log('nightly demo reset scheduled for 03:00 UK time'),
+    (err: unknown) =>
+      log(`could not schedule the nightly demo reset: ${err instanceof Error ? err.message : String(err)}`),
+  );
 }
 
 async function shutdown(): Promise<void> {

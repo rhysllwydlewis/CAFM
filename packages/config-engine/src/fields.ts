@@ -96,6 +96,12 @@ export interface FieldDefinition {
   maxLength?: number | null;
 }
 
+/** True for a YYYY-MM-DD string that names a real day (not 2026-02-31). */
+function isCalendarDate(value: string): boolean {
+  const d = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+}
+
 const uuid = () => z.string().uuid('Choose a valid record');
 
 function valueSchema(f: FieldDefinition): z.ZodTypeAny {
@@ -120,7 +126,10 @@ function valueSchema(f: FieldDefinition): z.ZodTypeAny {
         currency: z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code'),
       });
     case 'date':
-      return z.string().regex(/^\d{4}-\d{2}-\d{2}$/, `${f.label} must be a date (YYYY-MM-DD)`);
+      return z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, `${f.label} must be a date (YYYY-MM-DD)`)
+        .refine(isCalendarDate, `${f.label} must be a real date`);
     case 'datetime':
       // Stored in UTC (CLAUDE.md).
       return z.string().datetime({ message: `${f.label} must be a date and time in UTC` });

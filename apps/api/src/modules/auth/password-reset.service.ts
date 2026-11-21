@@ -92,16 +92,26 @@ export class PasswordResetService {
     if (problem) throw new UnprocessableEntityException({ code: 'weak_password', message: problem });
 
     const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
-    await this.db.$transaction([
-      this.db.passwordReset.update({ where: { id: reset.id }, data: { usedAt: new Date() } }),
-      this.db.passwordReset.deleteMany({ where: { accountId: reset.accountId, usedAt: null } }),
-      this.db.account.update({
+    await this.db.$transaction(async (tx) => {
+      // Claim the link: only one request can mark it used, so two at once can't both set a password.
+      const claimed = await tx.passwordReset.updateMany({
+        where: { id: reset.id, usedAt: null, expiresAt: { gt: new Date() } },
+        data: { usedAt: new Date() },
+      });
+      if (claimed.count !== 1) {
+        throw new GoneException({
+          code: 'reset_link_invalid',
+          message: 'This link has expired or has already been used. Ask for a new one.',
+        });
+      }
+      await tx.passwordReset.deleteMany({ where: { accountId: reset.accountId, usedAt: null } });
+      await tx.account.update({
         where: { id: reset.accountId },
         data: { passwordHash, failedAttempts: 0, lockedUntil: null },
-      }),
+      });
       // A new password signs the account out everywhere.
-      this.db.session.deleteMany({ where: { accountId: reset.accountId } }),
-    ]);
+      await tx.session.deleteMany({ where: { accountId: reset.accountId } });
+    });
     await this.auth.event('password_reset', { accountId: reset.accountId, ip: client.ip });
   }
 }

@@ -14,6 +14,8 @@ describe('numbering formats', () => {
     expect(validateFormat('WO-{YYYY}')).toBe('Include exactly one sequence, like {00000}');
     expect(validateFormat('WO-{000}-{000}')).toBe('Include exactly one sequence, like {00000}');
     expect(validateFormat('WO-{00000')).toBe('Check the braces: use tokens like {YYYY} or {00000}');
+    expect(validateFormat('WO-{SITE}-{YY}{MM}-{0000}')).toBeNull();
+    expect(validateFormat('WO-{REGION}-{00000}')).toMatch(/^\{REGION\} isn’t a token you can use/);
   });
 
   it('needs every context token', () => {

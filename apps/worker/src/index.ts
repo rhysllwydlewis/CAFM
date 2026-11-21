@@ -51,6 +51,10 @@ export function createWorker({ db, redisUrl, pollMs = 1000, log = console.log }:
     { connection, concurrency: 5 },
   );
   worker.on('failed', (job, err) => log(`job ${job?.name} (${job?.id}) failed: ${err.message}`));
+  // Without these, a Redis connection error is an unhandled 'error' event and crashes the process.
+  // BullMQ reconnects by itself, so logging is enough.
+  worker.on('error', (err) => log(`worker error: ${err.message}`));
+  queue.on('error', (err) => log(`queue error: ${err.message}`));
 
   /** Claims due outbox messages and queues them. Returns how many were queued. */
   async function dispatchOnce(batchSize = 50): Promise<number> {

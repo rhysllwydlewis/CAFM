@@ -69,7 +69,7 @@ export type Feature = keyof typeof FEATURES;
 export const ALL_FEATURES = Object.keys(FEATURES) as Feature[];
 
 export function isFeature(value: string): value is Feature {
-  return value in FEATURES;
+  return Object.hasOwn(FEATURES, value);
 }
 
 /** Usage limits per plan. null means unlimited. */
@@ -115,7 +115,7 @@ export function resolveEntitlements(planValue: string, overrides: readonly Entit
     number | null
   >;
   for (const o of overrides) {
-    if (o.feature in LIMITS) {
+    if (Object.hasOwn(LIMITS, o.feature)) {
       limits[o.feature as Limit] = o.limit;
       continue;
     }

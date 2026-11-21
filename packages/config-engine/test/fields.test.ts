@@ -79,6 +79,14 @@ describe('custom field values', () => {
     expect(validateCustom(fields, { contract_ref: 'C-1', notes: null })).toMatchObject({ success: true });
   });
 
+  it('refuses dates that don’t exist', () => {
+    expect(validateCustom(fields, { contract_ref: 'C-1', installed_on: '2028-02-29' }).success).toBe(true);
+    expect(validateCustom(fields, { contract_ref: 'C-1', installed_on: '2026-02-31' })).toEqual({
+      success: false,
+      errors: { installed_on: 'Installed on must be a real date' },
+    });
+  });
+
   it('enforces text length', () => {
     expect(validateCustom(fields, { contract_ref: 'C-123456789012345' }).success).toBe(false);
   });

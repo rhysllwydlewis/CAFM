@@ -12,8 +12,13 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
-import { updateMemberSchema } from '@cafm/shared';
-import { assertCanGrant, assertNotDemoLocked, assertNotLastSuperUser } from '../../core/access-rules';
+import { licenceForRole, updateMemberSchema } from '@cafm/shared';
+import {
+  assertCanGrant,
+  assertFullUserSeat,
+  assertNotDemoLocked,
+  assertNotLastSuperUser,
+} from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -93,13 +98,16 @@ export class PeopleController {
         target.role === 'super_user' &&
         target.status === 'active' &&
         ((changes.role !== undefined && changes.role !== 'super_user') || changes.status === 'deactivated');
-      if (leavesSuperUser) {
-        assertNotLastSuperUser(
-          await tx.membership.count({ where: { tenantId: actor.tenantId, role: 'super_user', status: 'active' } }),
-        );
-      }
+      if (leavesSuperUser) await assertNotLastSuperUser(tx, actor.tenantId);
 
-      const updated = await tx.membership.update({ where: { id: target.id }, data: changes });
+      // The licence follows the role (doc 07), and a full licence needs a seat on the plan.
+      const licence = changes.role !== undefined ? licenceForRole(changes.role) : target.licence;
+      const status = changes.status ?? target.status;
+      const takesFullSeat =
+        licence === 'full' && status === 'active' && !(target.licence === 'full' && target.status === 'active');
+      if (takesFullSeat) await assertFullUserSeat(tx, auth.access!, actor.tenantId);
+
+      const updated = await tx.membership.update({ where: { id: target.id }, data: { ...changes, licence } });
       await audit(
         tx,
         auth,
@@ -108,8 +116,8 @@ export class PeopleController {
           entityType: 'membership',
           entityId: target.id,
           changes: {
-            before: { role: target.role, status: target.status },
-            after: { role: updated.role, status: updated.status },
+            before: { role: target.role, status: target.status, licence: target.licence },
+            after: { role: updated.role, status: updated.status, licence: updated.licence },
           },
         },
         req.ip,

@@ -156,12 +156,12 @@ button.link {
 }
 .auth-stat-label {
   font-size: 12.5px;
-  color: #7f8995;
+  color: #8a94a0; /* .nav-label in the mockup stylesheet, contrast-checked */
 }
 .auth-foot {
   margin-top: 56px;
   font-size: 12px;
-  color: #7f8995;
+  color: #8a94a0; /* .nav-label in the mockup stylesheet, contrast-checked */
 }
 .auth-title {
   margin: 0;
@@ -347,7 +347,7 @@ button.tb-icon:hover {
 }
 .nav-item .nav-lock {
   margin-left: auto;
-  color: #7f8995;
+  color: #8a94a0; /* .nav-label in the mockup stylesheet, contrast-checked */
   display: flex;
 }
 .nav-foot {

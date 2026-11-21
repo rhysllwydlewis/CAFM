@@ -15,7 +15,7 @@ import {
 import type { Request } from 'express';
 import { newToken, withTenant } from '@cafm/db';
 import { inviteCreateSchema, licenceForRole } from '@cafm/shared';
-import { assertCanGrant } from '../../core/access-rules';
+import { assertCanGrant, assertFullUserSeat } from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { appUrl, queueTenantEmail } from '../../core/mail';
@@ -65,6 +65,8 @@ export class InvitesController {
           message: 'That person is already in this organisation.',
         });
       }
+      const licence = licenceForRole(role.key);
+      if (licence === 'full') await assertFullUserSeat(tx, auth.access!, tenantId, input.email);
       // A new invite replaces any earlier pending one to the same address.
       await tx.invite.updateMany({
         where: { tenantId, email: input.email, acceptedAt: null, revokedAt: null },
@@ -75,7 +77,7 @@ export class InvitesController {
           tenantId,
           email: input.email,
           role: role.key,
-          licence: licenceForRole(role.key),
+          licence,
           tokenHash,
           expiresAt: new Date(Date.now() + INVITE_TTL_MS),
           invitedByMembershipId: membership.id,

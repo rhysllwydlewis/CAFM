@@ -85,6 +85,22 @@ describe('password reset', () => {
     }
   });
 
+  it('a link can only be used once, even by two requests at the same moment', async () => {
+    const t = await createTestAccount(db, [DEMO_TENANT]);
+    try {
+      await http().post('/api/auth/password-reset').send({ identifier: t.email }).expect(202);
+      const token = linkToken((await latestEmail(t.email))!.text, 'reset-password');
+      const results = await Promise.all(
+        [NEW_PASSWORD, OTHER_PASSWORD].map((password) =>
+          http().post('/api/auth/password-reset/confirm').send({ token, password }),
+        ),
+      );
+      expect(results.map((r) => r.status).sort()).toEqual([204, 410]);
+    } finally {
+      await t.cleanup();
+    }
+  });
+
   it('refuses an expired link', async () => {
     const t = await createTestAccount(db, [DEMO_TENANT]);
     try {

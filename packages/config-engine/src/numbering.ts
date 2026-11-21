@@ -1,15 +1,20 @@
 /**
  * Numbering formats (doc 02 § 0), e.g. `WO-{YYYY}-{00000}` or `WO-{SITE}-{00000}`.
- * Tokens: {YYYY}, {YY}, {MM}, a run of zeros for the padded sequence, and any
- * other {NAME} taken from the context (e.g. SITE). Dates use the UK calendar.
+ * Tokens: {YYYY}, {YY}, {MM}, a run of zeros for the padded sequence, and
+ * {SITE}, the site code passed in by the caller. Dates use the UK calendar.
  */
 
 const TOKEN = /\{([A-Z]+|0+)\}/g;
+/** Tokens a format may use besides the sequence. Each context token must be supplied by every caller. */
+export const FORMAT_TOKENS = ['YYYY', 'YY', 'MM', 'SITE'] as const;
 
 export function validateFormat(format: string): string | null {
   if (format.length < 3 || format.length > 60) return 'Use between 3 and 60 characters';
   if (/[{}]/.test(format.replace(TOKEN, ''))) return 'Check the braces: use tokens like {YYYY} or {00000}';
   const tokens = [...format.matchAll(TOKEN)].map((m) => m[1]!);
+  const unknown = tokens.find((t) => !/^0+$/.test(t) && !(FORMAT_TOKENS as readonly string[]).includes(t));
+  if (unknown)
+    return `{${unknown}} isn’t a token you can use. Use {YYYY}, {YY}, {MM}, {SITE} or a sequence like {00000}`;
   const seq = tokens.filter((t) => /^0+$/.test(t));
   if (seq.length !== 1) return 'Include exactly one sequence, like {00000}';
   if (seq[0]!.length > 10) return 'The sequence can be at most 10 digits';

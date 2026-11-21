@@ -36,7 +36,7 @@ export class NumberingController {
   @Put(':key')
   @RequirePermission('settings.manage')
   async setFormat(@Param('key') key: string, @Body() body: unknown, @Req() req: Request) {
-    if (!(key in DEFAULT_SEQUENCES)) throw new UnprocessableEntityException({ code: 'unknown_sequence' });
+    if (!Object.hasOwn(DEFAULT_SEQUENCES, key)) throw new UnprocessableEntityException({ code: 'unknown_sequence' });
     const { format } = parse(z.object({ format: z.string().trim() }), body);
     const problem = validateFormat(format);
     if (problem) throw new UnprocessableEntityException({ code: 'invalid_format', message: problem });

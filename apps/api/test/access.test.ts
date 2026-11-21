@@ -5,7 +5,6 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { ALL_PERMISSIONS, BUILTIN_ROLES, DEMO_PERSONAS } from '@cafm/shared';
 import { AppModule } from '../src/app.module';
-import { assertNotLastSuperUser } from '../src/core/access-rules';
 import { PermissionGuard, RequireFeature, SessionGuard, TenantGuard } from '../src/core/auth.guards';
 import { createTestAccount, createTestTenant, DEMO_TENANT, seedId, signIn, startApp, testPassword } from './helpers';
 
@@ -248,9 +247,71 @@ describe('changing people', () => {
     }
   });
 
-  it('refuses to remove the last active Super User', () => {
-    expect(() => assertNotLastSuperUser(1)).toThrow(/at least one active Super User/);
-    expect(() => assertNotLastSuperUser(2)).not.toThrow();
+  it('two Super Users demoting each other at once leaves one Super User', async () => {
+    const t = await createTestTenant(db);
+    try {
+      const a = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const b = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const [{ agent: asA }, { agent: asB }] = await Promise.all([
+        signIn(app, a.email, a.password),
+        signIn(app, b.email, b.password),
+      ]);
+      const results = await Promise.all([
+        asA.patch(`/api/people/${b.memberships[0]}`).send({ role: 'administrator' }),
+        asB.patch(`/api/people/${a.memberships[0]}`).send({ role: 'administrator' }),
+      ]);
+      expect(results.filter((r) => r.status === 200)).toHaveLength(1);
+      const left = await withTenant(db, t.tenant.id, (tx) =>
+        tx.membership.count({ where: { tenantId: t.tenant.id, role: 'super_user', status: 'active' } }),
+      );
+      expect(left).toBe(1);
+    } finally {
+      await t.cleanup();
+    }
+  });
+
+  it('the licence follows the role', async () => {
+    const t = await createTestTenant(db);
+    try {
+      const boss = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const tech = await createTestAccount(db, [t.tenant.id], testPassword(), 'technician');
+      const { agent } = await signIn(app, boss.email, boss.password);
+      await agent.patch(`/api/people/${tech.memberships[0]}`).send({ role: 'fm_manager' }).expect(200);
+      const m = await withTenant(db, t.tenant.id, (tx) =>
+        tx.membership.findUniqueOrThrow({ where: { id: tech.memberships[0] } }),
+      );
+      expect(m).toMatchObject({ role: 'fm_manager', licence: 'full' });
+    } finally {
+      await t.cleanup();
+    }
+  });
+
+  it('the Free plan’s full-user limit covers invites and role changes', async () => {
+    const t = await createTestTenant(db, 'free');
+    try {
+      // Free includes 3 full users: the Super User plus two invited Administrators.
+      const boss = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const requester = await createTestAccount(db, [t.tenant.id], testPassword(), 'requester');
+      const { agent } = await signIn(app, boss.email, boss.password);
+      for (const n of [1, 2]) {
+        await agent
+          .post('/api/people/invites')
+          .send({ email: `admin${n}@test.example`, role: 'administrator' })
+          .expect(201);
+      }
+      // Re-inviting the same address replaces the earlier invite, so it doesn't take a second seat.
+      await agent.post('/api/people/invites').send({ email: 'admin2@test.example', role: 'helpdesk' }).expect(201);
+      const full = await agent
+        .post('/api/people/invites')
+        .send({ email: 'admin3@test.example', role: 'planner' })
+        .expect(403);
+      expect(full.body).toMatchObject({ code: 'limit_reached', limit: 3 });
+      // Lighter licences don't count.
+      await agent.post('/api/people/invites').send({ email: 'tech@test.example', role: 'technician' }).expect(201);
+      await agent.patch(`/api/people/${requester.memberships[0]}`).send({ role: 'fm_manager' }).expect(403);
+    } finally {
+      await t.cleanup();
+    }
   });
 
   it('cross-tenant: can’t change a member of another organisation', async () => {

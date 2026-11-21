@@ -12,6 +12,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- On the Free plan, inviting a fourth full user (or changing someone's role to one) explains the plan's limit of 3. Lighter licences, such as technicians and requesters, don't count.
 - Custom fields (API): people who can change settings can add fields such as text, numbers, money, dates, pick lists and links to people or assets on requests, work orders, assets, locations, PPM schedules, contractors and people. How many depends on the plan. Every change is versioned and can be rolled back. Forms that show them arrive with each module in Phase 1.
 - Reference numbering: choose the format for work order, request, asset and PPM numbers, such as `JOB-{YYYY}-{0000}`. Numbers are unique and have no gaps.
 - The full app shell: a menu of every module your role can use (locked modules say which plan includes them; modules still to come say which phase), a command palette (Ctrl K) to jump to any page, a notifications drawer, light, dark or system theme, and a menu drawer on phones.
@@ -22,7 +23,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 - Emails are queued and sent by the background worker. Email from demo organisations, or when no mail server is set up, is captured instead of sent.
 - Tenant command-line tool for the platform team: create an organisation (with its first Super User invite), change its plan, suspend or reactivate it.
 - Roles and permissions: 15 built-in roles per organisation (doc 03) plus custom roles, with data scopes (all or own). Super Users can create and edit roles; nobody can grant a permission they don't hold, change their own role or remove the last Super User.
-- Change someone's role or deactivate them; deactivated people are signed out straight away.
+- Change someone's role or deactivate them; their licence follows the role, and deactivated people are signed out straight away.
 - Audit log of role and people changes, append-only.
 - Plans and add-ons decide which features an organisation has (Free, Starter, Professional, Enterprise); locked features say which plan unlocks them.
 - Background worker for emails and scheduled jobs, fed by a transactional outbox.
