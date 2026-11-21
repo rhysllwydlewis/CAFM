@@ -41,6 +41,9 @@ export async function resetDemo(
     db.capturedEmail.deleteMany({ where }),
     db.membership.deleteMany({ where: { id: { in: visitorMemberships.map((m) => m.id) } } }),
     db.role.deleteMany({ where: { ...where, builtin: false } }),
+    db.configVersion.deleteMany({ where }),
+    db.fieldDefinition.deleteMany({ where }),
+    db.numberSequence.deleteMany({ where }),
   ]);
   const orphans = await db.account.findMany({
     where: { id: { in: visitorAccounts }, memberships: { none: {} } },

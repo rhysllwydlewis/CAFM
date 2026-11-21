@@ -2,20 +2,23 @@
 
 /// A customer organisation. Platform-level table (no RLS); only exposed through memberships.
 model Tenant {
-  id           String              @id @default(uuid(7)) @db.Uuid
-  slug         String              @unique
-  name         String
-  plan         String
-  status       String              @default("active")
+  id             String              @id @default(uuid(7)) @db.Uuid
+  slug           String              @unique
+  name           String
+  plan           String
+  status         String              @default("active")
   /// Demo tenants never send email or SMS: it is captured instead (doc 06).
-  demo         Boolean             @default(false)
-  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
-  memberships  Membership[]
-  invites      Invite[]
-  roles        Role[]
-  auditEvents  AuditEvent[]
-  outbox       OutboxMessage[]
-  entitlements TenantEntitlement[]
+  demo           Boolean             @default(false)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships    Membership[]
+  invites        Invite[]
+  fields         FieldDefinition[]
+  sequences      NumberSequence[]
+  configVersions ConfigVersion[]
+  roles          Role[]
+  auditEvents    AuditEvent[]
+  outbox         OutboxMessage[]
+  entitlements   TenantEntitlement[]
 
   @@map("tenant")
 }

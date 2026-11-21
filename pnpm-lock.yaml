@@ -32,6 +32,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@cafm/config-engine':
+        specifier: workspace:*
+        version: link:../../packages/config-engine
       '@cafm/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -164,6 +167,19 @@ importers:
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 3.2.7
+        version: 3.2.7(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.4)(tsx@4.23.15)
+
+  packages/config-engine:
+    dependencies:
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+    devDependencies:
       typescript:
         specifier: 5.9.3
         version: 5.9.3

@@ -37,6 +37,39 @@ export async function seed(db: PrismaClient): Promise<void> {
     await seedRoles(db, id);
   }
 
+  // A few custom fields, so forms show the configuration engine at work (doc 06 demo data).
+  const demoFields = [
+    {
+      entityType: 'work_order',
+      key: 'cost_code',
+      label: 'Cost code',
+      type: 'text',
+      required: false,
+      helpText: 'Finance cost centre, e.g. CC-1042',
+    },
+    {
+      entityType: 'asset',
+      key: 'criticality',
+      label: 'Criticality',
+      type: 'picklist',
+      required: false,
+      options: [
+        { value: 'low', label: 'Low' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'high', label: 'High' },
+      ],
+    },
+    { entityType: 'asset', key: 'warranty_expires', label: 'Warranty expires', type: 'date', required: false },
+  ];
+  for (const [i, f] of demoFields.entries()) {
+    const tenantId = seedId('tenant:demo-estates');
+    await db.fieldDefinition.upsert({
+      where: { tenantId_entityType_key: { tenantId, entityType: f.entityType, key: f.key } },
+      create: { id: seedId(`field:${f.entityType}:${f.key}`), tenantId, position: i, ...f },
+      update: { ...f, active: true },
+    });
+  }
+
   // Demo Estates Ltd shows everything: Enterprise plus every add-on (doc 06).
   const demo = seedId('tenant:demo-estates');
   const addons = ALL_FEATURES.filter((f) => 'addon' in FEATURES[f]);
