@@ -63,7 +63,7 @@ for (const [g, list] of Object.entries(groups)) {
 }
 md += `## Known gaps (to design during the build)
 
-- Marketing homepage and product pages (Phase 5): designed once the product is named (decision D1). The pricing page draft is included above.
+- Marketing product pages (Phase 5): designed once the product is named (decision D1). The homepage and pricing draft are included above.
 - Retail, commercial-property and public-sector pack screens (§35): reuse the healthcare and education patterns with their own templates.
 - Second-level screens inside each module (e.g. every settings tab, every report): built from the components and patterns shown here; the owning agent adds a mockup when a new pattern is needed (see doc 13).
 `;

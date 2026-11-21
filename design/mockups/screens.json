@@ -846,5 +846,14 @@
     "viewport": "wide",
     "theme": "light",
     "file": "12-gaps.js"
+  },
+  {
+    "id": "marketing-02-homepage",
+    "group": "Marketing site (Phase 5 draft)",
+    "title": "CAFM homepage",
+    "desc": "Public home: device sequence, plant room work order and product preview.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "13-marketing.js"
   }
 ]

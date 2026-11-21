@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test';
 test.describe('sign in with a demo account', () => {
   test('a demo card fills the form, and signing in lands on Home', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('heading', { name: 'Run the estate. From anywhere.' })).toBeVisible();
+    await page.getByRole('link', { name: 'Choose a demo account' }).click();
+    await expect(page).toHaveURL(/\/login#demo-heading$/);
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 
     await page.getByRole('button', { name: /^Technician\W+Tom Price/ }).click();
