@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Railway deployment: one service runs the API and web app, with database setup, migrations and demo reseeding before each deploy.
 - Sign-in page with email or username and password, "Keep me signed in" (30 days) and generic error messages.
 - Demo accounts panel (demo environments only): click a role to fill in its details; six roles shown, all 16 on request.
 - Choose an organisation, for people who belong to more than one.

@@ -89,6 +89,24 @@ describe('CSRF protection', () => {
     await http().post('/api/auth/login').type('form').send('identifier=a&password=b').expect(403);
   });
 
+  it('accepts a request from the site it was made to', async () => {
+    await http()
+      .post('/api/auth/login')
+      .set('Origin', 'https://cafm.example')
+      .set('X-Forwarded-Host', 'cafm.example')
+      .send({ identifier: 'executive@demo.example', password: 'CafmDemo!2026' })
+      .expect(200);
+  });
+
+  it('refuses a request whose origin is not the site it was made to', async () => {
+    await http()
+      .post('/api/auth/login')
+      .set('Origin', 'https://evil.example')
+      .set('X-Forwarded-Host', 'cafm.example')
+      .send({ identifier: 'executive@demo.example', password: 'CafmDemo!2026' })
+      .expect(403);
+  });
+
   it('refuses a request from another origin', async () => {
     await http()
       .post('/api/auth/login')
