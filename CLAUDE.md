@@ -57,6 +57,7 @@ pnpm build
 pnpm e2e               # Playwright against the built apps
 pnpm dev               # API on :4000, web on :3000 (open http://localhost:3000)
 pnpm --filter @cafm/worker start   # background worker (needs REDIS_URL, after pnpm build)
+pnpm cafm tenant:list   # platform tenant CLI (owner role): tenant:create, tenant:set-plan, tenant:suspend, tenant:activate
 ```
 
 Copy `.env.example` to `.env` and export its variables (`set -a; . ./.env; set +a`). Local services: `docker compose up -d` (Postgres, Redis, MinIO, Mailpit); set `MINIO_ROOT_PASSWORD` in `.env` first.

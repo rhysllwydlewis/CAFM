@@ -4,20 +4,22 @@ import { handlers, type JobContext } from './handlers';
 import { redisConnection } from './redis';
 
 export { register, handlers } from './handlers';
+// Job handlers register themselves on import.
+import './jobs/email';
 export type { Handler, JobContext } from './handlers';
 
 export const QUEUE = 'cafm';
 
 interface OutboxRow {
   id: string;
-  tenant_id: string;
+  tenant_id: string | null;
   topic: string;
   payload: unknown;
 }
 
 export interface JobData {
   messageId: string;
-  tenantId: string;
+  tenantId: string | null;
   payload: unknown;
 }
 

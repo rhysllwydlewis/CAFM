@@ -55,3 +55,59 @@ export const createRoleSchema = z.object({
   scope: z.enum(['all', 'own']).default('all'),
 });
 export const updateRoleSchema = createRoleSchema.partial();
+
+/** Version of the terms of service people accept when they join (doc 06). */
+export const TERMS_VERSION = '2026-11';
+
+const COMMON_PASSWORDS = new Set([
+  'password1234',
+  'password12345',
+  'qwertyuiop12',
+  '123456789012',
+  'letmein12345',
+  'welcome12345',
+  'iloveyou1234',
+  'administrator',
+  'passw0rd1234',
+  'changeme1234',
+  'cafmdemo2026',
+]);
+
+/**
+ * Password rules (NCSC guidance): at least 12 characters, no arbitrary
+ * complexity rules, not a common password, not built from the email name.
+ */
+export function passwordProblem(password: string, email?: string | null): string | null {
+  if (password.length < 12) return 'Use at least 12 characters';
+  if (password.length > 256) return 'Use 256 characters or fewer';
+  const lower = password.toLowerCase();
+  if (COMMON_PASSWORDS.has(lower.replace(/[^a-z0-9]/g, ''))) return 'Choose a less common password';
+  const name = email?.split('@')[0]?.toLowerCase();
+  if (name && name.length >= 4 && lower.includes(name)) return 'Don’t include your email name in your password';
+  return null;
+}
+
+export const resetRequestSchema = z.object({
+  identifier: z.string().trim().min(1, 'Enter your email or username').max(254),
+});
+export const resetConfirmSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: z.string().min(1, 'Enter a new password').max(512),
+});
+export const inviteCreateSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email address').max(254),
+  role: z.string().min(1).max(64),
+});
+export const acceptInviteSchema = z.object({
+  name: z.string().trim().min(1, 'Enter your name').max(120).optional(),
+  password: z.string().max(512).optional(),
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Accept the terms to continue' }) }),
+});
+
+export interface InviteDetails {
+  tenantName: string;
+  email: string;
+  roleLabel: string;
+  accountExists: boolean;
+  status: 'pending' | 'accepted' | 'expired' | 'revoked';
+}

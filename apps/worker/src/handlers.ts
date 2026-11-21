@@ -3,7 +3,8 @@ import type { PrismaClient } from '@cafm/db';
 /** What a job handler receives: the outbox message and shared services. */
 export interface JobContext {
   db: PrismaClient;
-  tenantId: string;
+  /** Null for platform messages, e.g. password reset email. */
+  tenantId: string | null;
   messageId: string;
   log: (message: string) => void;
 }

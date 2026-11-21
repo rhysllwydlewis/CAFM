@@ -8,7 +8,7 @@ if (!appUrl) throw new Error('APP_DATABASE_URL is required for the worker tests'
 
 const db = new PrismaClient({ datasourceUrl: appUrl });
 const tenantId = seedId('tenant:starter-demo');
-const seen: { payload: unknown; tenantId: string }[] = [];
+const seen: { payload: unknown; tenantId: string | null }[] = [];
 let failNext = true;
 
 register('test.echo', async (payload, ctx) => {
@@ -71,5 +71,30 @@ describe('outbox worker', () => {
     const job = await worker.queue.getJob(msg.id);
     expect(job?.failedReason).toBe('No handler for topic test.unhandled');
     expect(await job?.getState()).toBe('delayed');
+  });
+});
+
+describe('email.send', () => {
+  it('captures a platform email when no mail server is configured', async () => {
+    const to = `reset-${Date.now()}@test.example`;
+    await db.$queryRaw`SELECT enqueue_platform('email.send', ${JSON.stringify({ to, subject: 'Reset', text: 'link' })}::jsonb)`;
+    await worker.dispatchOnce();
+    await waitFor(async () => (await db.capturedEmail.count({ where: { to } })) === 1);
+    expect(await db.capturedEmail.findFirst({ where: { to } })).toMatchObject({
+      tenantId: null,
+      reason: 'no_mail_server',
+    });
+  });
+
+  it('always captures demo-tenant email', async () => {
+    const to = `invite-${Date.now()}@test.example`;
+    await withTenant(db, tenantId, (tx) =>
+      tx.outboxMessage.create({
+        data: { tenantId, topic: 'email.send', payload: { to, subject: 'Invite', text: 'link', capture: true } },
+      }),
+    );
+    await worker.dispatchOnce();
+    await waitFor(async () => (await db.capturedEmail.count({ where: { to } })) === 1);
+    expect(await db.capturedEmail.findFirst({ where: { to } })).toMatchObject({ tenantId, reason: 'demo' });
   });
 });

@@ -60,6 +60,8 @@ export async function createTestTenant(db: PrismaClient, plan = 'starter') {
       await owner.auditEvent.deleteMany({ where });
       await owner.outboxMessage.deleteMany({ where });
       await owner.tenantEntitlement.deleteMany({ where });
+      await owner.invite.deleteMany({ where });
+      await owner.capturedEmail.deleteMany({ where });
       const accounts = (await owner.membership.findMany({ where, select: { accountId: true } })).map(
         (m) => m.accountId,
       );

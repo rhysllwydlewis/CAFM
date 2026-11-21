@@ -129,3 +129,42 @@ describe('row-level security on access, audit and outbox tables', () => {
     await expect(write).rejects.toThrow(/permission denied/);
   });
 });
+
+describe('every tenant table is protected', () => {
+  // Platform tables with an optional tenant_id that are deliberately not RLS-scoped
+  // (ADR 0004: accounts, sessions and sign-in events are global). Adding to this
+  // list needs a reason in review.
+  const PLATFORM_TABLES = ['auth_event', 'captured_email', 'session'];
+
+  it('has row-level security on every table with a tenant_id column', async () => {
+    const rows = await db.$queryRaw<{ table_name: string; rls: boolean }[]>`
+      SELECT c.table_name, cl.relrowsecurity AS rls
+      FROM information_schema.columns c
+      JOIN pg_class cl ON cl.relname = c.table_name
+      JOIN pg_namespace n ON n.oid = cl.relnamespace AND n.nspname = c.table_schema
+      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id'`;
+    const unprotected = rows.filter((r) => !r.rls && !PLATFORM_TABLES.includes(r.table_name)).map((r) => r.table_name);
+    expect(rows.length).toBeGreaterThan(5);
+    expect(unprotected).toEqual([]);
+  });
+
+  it('invites are isolated per tenant and only findable by exact token hash', async () => {
+    const invite = await withTenant(db, demo, (tx) =>
+      tx.invite.create({
+        data: {
+          tenantId: demo,
+          email: 'rls@test.example',
+          role: 'requester',
+          licence: 'requester',
+          tokenHash: `rls-${Date.now()}`,
+          expiresAt: new Date(Date.now() + 60_000),
+        },
+      }),
+    );
+    expect(await withTenant(db, starter, (tx) => tx.invite.findUnique({ where: { id: invite.id } }))).toBeNull();
+    const found = await db.$queryRaw<{ tenant_id: string }[]>`SELECT tenant_id FROM find_invite(${invite.tokenHash})`;
+    expect(found).toEqual([{ tenant_id: demo }]);
+    expect(await db.$queryRaw<unknown[]>`SELECT * FROM find_invite('nope')`).toEqual([]);
+    await withTenant(db, demo, (tx) => tx.invite.delete({ where: { id: invite.id } }));
+  });
+});

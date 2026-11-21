@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Logo } from '@cafm/ui';
 import { apiGet } from '@/lib/api';
+import { safeNext } from '@/lib/next-path';
 import { LoginForm, type DemoAccounts } from './login-form';
 
 export const metadata: Metadata = { title: 'Sign in' };
@@ -30,8 +31,9 @@ async function signedIn(): Promise<boolean> {
   }
 }
 
-export default async function LoginPage() {
-  if (await signedIn()) redirect('/app');
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const next = safeNext((await searchParams).next);
+  if (await signedIn()) redirect(next ?? '/app');
   const demo = await demoAccounts();
   return (
     <div className="auth">
@@ -73,7 +75,7 @@ export default async function LoginPage() {
         </svg>
       </aside>
       <main className="auth-main">
-        <LoginForm demo={demo} />
+        <LoginForm demo={demo} next={next} />
       </main>
     </div>
   );

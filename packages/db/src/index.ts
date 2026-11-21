@@ -1,9 +1,11 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 
 export { Prisma, PrismaClient };
-export type { Tenant, Account, Membership, Session, AuthEvent } from '@prisma/client';
+export type { Tenant, Account, Membership, Session, AuthEvent, Role, Invite } from '@prisma/client';
 
 export { seedId } from './ids';
+export { hashToken, newToken } from './tokens';
+export { createTenant, listTenants, setTenantPlan, setTenantStatus } from './tenants';
 
 export type Tx = Prisma.TransactionClient;
 

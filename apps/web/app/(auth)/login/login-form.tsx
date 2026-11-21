@@ -33,7 +33,7 @@ const ICONS: Record<string, string> = {
   space: 'space',
 };
 
-export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
+export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: string | null }) {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -67,7 +67,7 @@ export function LoginForm({ demo }: { demo: DemoAccounts | null }) {
       const res = await postJson('/auth/login', { identifier, password, keepSignedIn });
       if (res.ok) {
         const body = (await res.json()) as LoginResponse;
-        router.push(body.status === 'signed_in' ? body.landingPage : '/select-organisation');
+        router.push(body.status === 'signed_in' ? (next ?? body.landingPage) : '/select-organisation');
         router.refresh();
         return;
       }

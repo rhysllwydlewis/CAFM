@@ -161,7 +161,7 @@ export class AuthService {
     }));
   }
 
-  private async issueSession(
+  async issueSession(
     accountId: string,
     membershipId: string | null,
     tenantId: string | null,
@@ -202,7 +202,7 @@ export class AuthService {
     await this.event(lock ? 'account_locked' : 'sign_in_failed', { accountId: account.id, ip: client.ip });
   }
 
-  private async event(type: string, data: { accountId?: string; tenantId?: string; identifier?: string; ip?: string }) {
+  async event(type: string, data: { accountId?: string; tenantId?: string; identifier?: string; ip?: string }) {
     await this.db.authEvent.create({ data: { type, ...data } });
   }
 }

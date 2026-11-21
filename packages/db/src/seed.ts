@@ -28,8 +28,8 @@ export async function seed(db: PrismaClient): Promise<void> {
     const id = seedId(`tenant:${t.slug}`);
     await db.tenant.upsert({
       where: { id },
-      create: { id, slug: t.slug, name: t.name, plan: t.plan },
-      update: { name: t.name, plan: t.plan, status: 'active' },
+      create: { id, slug: t.slug, name: t.name, plan: t.plan, demo: true },
+      update: { name: t.name, plan: t.plan, status: 'active', demo: true },
     });
     await seedRoles(db, id);
   }

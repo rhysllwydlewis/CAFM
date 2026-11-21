@@ -1,26 +1,35 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Logo } from '@cafm/ui';
+import { apiGet } from '@/lib/api';
+import { AuthCard } from '../auth-card';
+import { ForgotForm } from './forgot-form';
 
 export const metadata: Metadata = { title: 'Forgot password' };
 
-// Self-service reset by email is a later Phase 0 item (doc 06). Until then, say plainly what to do.
-export default function ForgotPasswordPage() {
+async function demoMode(): Promise<boolean> {
+  try {
+    return (await apiGet('/auth/demo-accounts')).ok;
+  } catch {
+    return false;
+  }
+}
+
+export default async function ForgotPasswordPage() {
+  const demo = await demoMode();
   return (
-    <div className="center-screen">
-      <div className="card" style={{ width: 420, maxWidth: '100%', boxShadow: 'var(--shadow-md)' }}>
-        <div className="card-b stack" style={{ padding: 28 }}>
-          <Logo size={28} />
-          <h1 className="dialog-title">Reset your password</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Resetting a password by email isn&apos;t available yet. Ask your organisation&apos;s Super User or an
-            administrator to set a new one for you.
-          </p>
-          <Link href="/login" className="medium">
-            Back to sign in
-          </Link>
+    <AuthCard title="Reset your password">
+      {demo && (
+        <div className="callout">
+          <div className="grow">
+            This is the demo, so the demo accounts&apos; passwords can&apos;t be reset. They all use the password shown
+            on the sign-in page.
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+      <ForgotForm />
+      <Link href="/login" className="medium">
+        Back to sign in
+      </Link>
+    </AuthCard>
   );
 }

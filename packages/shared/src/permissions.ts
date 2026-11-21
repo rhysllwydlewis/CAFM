@@ -205,3 +205,22 @@ export function escalations(actor: Iterable<string>, requested: Iterable<string>
 export function can(user: { permissions: readonly string[] } | null | undefined, permission: Permission): boolean {
   return !!user && user.permissions.includes(permission);
 }
+
+/** Licence type a role implies (doc 07 § Licence types). */
+export function licenceForRole(role: string): string {
+  switch (role) {
+    case 'technician':
+      return 'mobile';
+    case 'contractor':
+      return 'contractor';
+    case 'requester':
+      return 'requester';
+    case 'client_viewer':
+      return 'client';
+    case 'auditor':
+    case 'executive':
+      return 'read_only';
+    default:
+      return 'full';
+  }
+}
