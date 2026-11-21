@@ -153,7 +153,7 @@ Payments through Stripe go live in Phase 5, but revenue should not wait that lon
 | Small school trust | 4 full + 6 mobile on Starter | 4×£29×12 + 6×£15×12 = **£2,472** |
 | Mid-size commercial estate | 15 full + 25 mobile on Pro + Workplace (300 desks) | £10,620 + £8,700 + £7,200 = **£26,520** |
 | FM provider | 60 full + 200 mobile, 40 client contracts | £9,000 + £42,480 + £69,600 + £19,200 = **£140,280** |
-| Enterprise (university) | 80 full + 150 mobile on Enterprise + Energy (20 sites) + AI Pro | £85,440 + £81,000 + £36,000 + £9,600 = **£212,040** |
+| Enterprise (the demo tenant, Demo Estates Ltd) | 90 full + 150 mobile on Enterprise + Sustainability (20 sites) + Workplace (300 desks); AI credits included | £96,120 + £81,000 + £36,000 + £7,200 = **£220,320** |
 
 Year-3 aspiration (to validate), built bottom-up from the customer mix rather than a headline number:
 

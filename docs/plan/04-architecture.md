@@ -132,10 +132,13 @@ Two things to check when the Railway project is set up, rather than assume:
 
 ## Architecture Decision Records
 
-Record significant decisions in `/docs/adr/NNNN-title.md` (context, decision, consequences). Initial ADRs to write in Phase 0:
-1. Modular monolith with NestJS + Next.js.
-2. Shared-schema multi-tenancy with Postgres RLS.
-3. JSONB custom fields with metadata registry.
-4. Global accounts with per-tenant memberships; cookie sessions for web, OAuth tokens for mobile/API; SSO later.
-5. PWA-first mobile.
-6. Entitlements model independent of Stripe.
+Significant decisions are recorded in [`docs/adr/`](../adr/README.md) (context, decision, consequences). The planning baseline:
+
+1. [0001](../adr/0001-modular-monolith.md) Modular monolith with NestJS + Next.js.
+2. [0002](../adr/0002-multi-tenancy-rls.md) Shared-schema multi-tenancy with Postgres RLS.
+3. [0003](../adr/0003-custom-fields-jsonb.md) JSONB custom fields with metadata registry.
+4. [0004](../adr/0004-identity-accounts-memberships.md) Global accounts with per-tenant memberships; cookie sessions for web, OAuth tokens for mobile/API; SSO later.
+5. [0005](../adr/0005-pwa-first-mobile.md) PWA-first mobile.
+6. [0006](../adr/0006-entitlements-independent-of-billing.md) Entitlements independent of Stripe.
+7. [0007](../adr/0007-design-source-of-truth.md) Design tokens and rendered mockups as the visual source of truth.
+8. [0008](../adr/0008-scheduled-agents.md) Build with scheduled agents that own paths, with human merge.

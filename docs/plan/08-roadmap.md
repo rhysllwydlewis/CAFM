@@ -32,7 +32,7 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - Design system in code: Tailwind theme generated from `design/tokens/tokens.json`, icon sprite, and the core components from [doc 11](11-design-system.md), matched against the [screen catalogue](12-screen-catalogue.md).
 - Audit log infrastructure; outbox + worker skeleton.
 - Deterministic demo seed + nightly reset job.
-- ADRs 1–6 written.
+- ADRs 0001–0008 reviewed and confirmed (written during planning).
 
 **Done when:** you can open the demo site, click "Super User" under demo accounts, sign in, see the app shell, and every API call is tenant-isolated and permission-checked (automated tests prove it).
 
@@ -103,7 +103,7 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - Soft services: cleaning specs & audits (NSHC 2021), on-demand cleaning, guard tours, mail room, grounds, lost property.
 - Fleet; business continuity.
 - **Sector packs**: housing (Awaab's Law, HHSRS, Decent Homes, voids, TSMs, resident portal), healthcare (HTM, PAM, ERIC), education (GEMS, MAT reporting), retail, commercial property, public sector.
-- **AI suite**: triage, nameplate recognition, job summaries, Ask-the-estate, anomaly detection, predictive maintenance, invoice OCR.
+- **AI suite**: triage, nameplate recognition, job summaries, Ask-the-estate, anomaly detection, predictive maintenance, invoice OCR, auto-schedule suggestions, repeat-failure insights, meter-photo checks, survey comment themes.
 - Report builder + scheduled report packs; BI connector.
 - Multi-client FM-provider edition: client dimension, client portal, per-client branding, client billing, contract profitability.
 - Building Safety Act golden thread.
@@ -148,3 +148,4 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - Each phase is broken into GitHub issues (epics per module, stories per feature) generated from the feature catalogue, each linking to its screens in the screen catalogue.
 - Short iterations; each merged PR deploys to staging; demo environment updated at the end of each iteration.
 - Product owner reviews on the demo site at each iteration boundary.
+- Build work is carried out by scheduled agents, one per element, as described in [doc 13](13-agent-schedules.md). The roadmap phase decides which agents are active.

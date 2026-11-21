@@ -186,7 +186,7 @@ export function floorPlan({ w = 900, h = 520, rooms = [], desks = [], pins = [],
 
 // ── App shell ──────────────────────────────────────────────
 const NAV = [
-  ['', [['home', 'Home', 'dashboard'], ['helpdesk', 'Helpdesk', 'helpdesk', 12], ['work-orders', 'Work orders', 'work-order', 48], ['ppm', 'Planned maintenance', 'ppm'], ['dispatch', 'Scheduling', 'dispatch']]],
+  ['', [['home', 'Home', 'dashboard'], ['helpdesk', 'Helpdesk', 'helpdesk', 11], ['work-orders', 'Work orders', 'work-order', 11, true], ['ppm', 'Planned maintenance', 'ppm'], ['dispatch', 'Scheduling', 'dispatch']]],
   ['Estate', [['assets', 'Assets', 'asset'], ['locations', 'Locations', 'location'], ['space', 'Space & floor plans', 'floor-plan'], ['documents', 'Documents', 'documents']]],
   ['Compliance', [['compliance', 'Compliance', 'compliance', '3', true], ['inspections', 'Inspections & audits', 'inspection'], ['safety', 'Health & safety', 'health-safety']]],
   ['Commercial', [['contractors', 'Contractors', 'contractor'], ['contracts', 'Contracts & SLAs', 'contract'], ['inventory', 'Inventory', 'inventory'], ['purchasing', 'Purchasing', 'procurement'], ['finance', 'Finance', 'finance']]],

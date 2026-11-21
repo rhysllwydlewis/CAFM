@@ -1,0 +1,72 @@
+# CLAUDE.md
+
+Guidance for anyone (human or AI agent) working in this repository. Read this first, every session.
+
+## What this is
+
+A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Code does not exist yet; Phase 0 builds the foundations.
+
+## Sources of truth (in this order)
+
+1. `docs/plan/02-feature-catalogue.md`: what each module must do, with phase and pricing tier.
+2. `docs/plan/12-screen-catalogue.md` and `design/mockups/`: what each screen must look like.
+3. `docs/plan/03` roles and permissions, `04` architecture, `05` data model, `06` login and demo, `09` quality and security.
+4. `docs/adr/`: architecture decisions. Do not contradict an accepted ADR. Propose a new one instead.
+5. `docs/plan/13-agent-schedules.md`: if you are a scheduled agent, your section defines your scope.
+
+If two sources disagree, flag it in your PR and on an issue labelled `docs`. Do not guess.
+
+## Non-negotiable rules
+
+- **Tenant isolation:** every tenant-owned table has `tenant_id` and an RLS policy. The tenant context is set with `set_config('app.tenant_id', $1, true)` inside the request's transaction. Every endpoint gets a cross-tenant denial test.
+- **Permissions:** checked in the API (never only in the UI) using the permission registry. The data scope and field security from doc 03 apply.
+- **Entitlements:** plan-gated features are checked with `feature()` in the API, the UI and workers.
+- **Money:** integer minor units plus a currency code. Never floats.
+- **Time:** stored in UTC. SLA maths uses the site's business calendar.
+- **Design:** use tokens and `packages/ui` components only. No new colours or one-off styles. A new UI pattern needs a mockup in `design/mockups/screens/` first.
+- **Tests:** never skip, disable or weaken a test to get a green build. Fix the cause.
+- **Secrets and data:** no secrets in code, logs or fixtures. No real personal data in seed or tests. Demo personas only (doc 06).
+- **Git:** never push to the default branch, never force-push shared branches, never merge your own PR. Keep PRs small: about 400 hand-written lines.
+- **Writing style:** UK English, sentence case, plain and specific wording (see doc 11 "Voice").
+
+## Repository layout
+
+```
+apps/api        NestJS API (modules in src/modules/<module>, core in src/core)
+apps/web        Next.js web app: (auth), (app)/<module>, (mobile), (marketing), (platform)
+apps/worker     BullMQ jobs (src/jobs/<module>)
+packages/db     Prisma schema (prisma/schema/<module>.prisma), migrations, RLS, seed
+packages/shared Zod schemas and types
+packages/ui     Shared components (from design/)
+packages/config-engine  Custom fields, forms, workflows, automation, SLA engine
+design/         Tokens, icons, mockups, render tools
+docs/           Plan, ADRs, agent notes and status
+```
+
+## Commands
+
+Application commands will be added in Phase 0. Design tooling (run in `design/`):
+
+```bash
+npm install
+npm run validate   # icon references, SVG structure, screen ids
+npm run render     # validate, render all screens, compress, regenerate the screen catalogue
+npm run contrast   # WCAG contrast check
+npm run icons      # rebuild icons, sprite, manifest, tokens.json
+```
+
+## Definition of done
+
+See `docs/plan/08-roadmap.md` § Definition of Done. In short:
+- permission- and entitlement-checked
+- cross-tenant test
+- unit, API and e2e tests
+- accessible and matches the mockup
+- audit events
+- custom fields and workflow where configurable
+- demo data
+- help text and changelog.
+
+## Demo personas
+
+Sam Sutton (Super User) · Alex Rowe (Administrator) · Morgan Ellis (FM Manager) · Hana Patel (Helpdesk) · Priya Shah (Planner) · Tom Price (Technician) · Cara Lloyd (Contractor, Sparks Electrical Ltd) · Riley Morgan (Requester) · Fiona Clarke (Finance) · Colin Baxter (Compliance). Full list in doc 06. Tenant: Demo Estates Ltd, 12 sites. Password in demo only: `CafmDemo!2026`.

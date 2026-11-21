@@ -65,6 +65,7 @@ The first screen we build. A deliberately simple login page now; the marketing h
 - Login audit events (success/failure, IP, user agent, method).
 - Terms of service and privacy notice acceptance recorded at first sign-in (and on material change).
 - MFA (TOTP) added in Phase 1, passkeys (WebAuthn) in Phase 2A, SSO in Phase 5.
+- MFA recovery: one-time recovery codes issued at enrolment; a Super User can reset a user's MFA (audited). The MFA screen offers "use a passkey instead" and "use a recovery code".
 
 ## Demo tenant: "Demo Estates Ltd"
 
@@ -72,37 +73,38 @@ The demo tenant runs on **Enterprise with every add-on and the FM-provider editi
 
 All demo accounts share the password **`CafmDemo!2026`** (demo environment only; seeded directly, so exempt from the breached-password check, but meets the 12-character rule).
 
-| Demo user | Username | Role | Lands on |
+| Demo persona | Username | Role | Lands on |
 |-----------|----------|------|----------|
-| Sam Super | `superuser@demo.example` | **Super User** (all rights) | Admin console + dashboard |
-| Alex Admin | `admin@demo.example` | Administrator | Admin console |
-| Morgan Manager | `manager@demo.example` | FM Manager | FM dashboard |
-| Evie Executive | `executive@demo.example` | Executive (read-only) | Executive dashboard |
-| Hana Helpdesk | `helpdesk@demo.example` | Helpdesk Operator | Helpdesk queue |
-| Priya Planner | `planner@demo.example` | Supervisor / Planner | Dispatch board |
-| Tom Technician | `technician@demo.example` | Technician | My jobs (mobile layout) |
-| Cara Contractor | `contractor@demo.example` | Contractor (Sparks Electrical Ltd) | Contractor portal |
-| Riley Requester | `requester@demo.example` | Requester / Occupant | Self-service portal |
-| Fiona Finance | `finance@demo.example` | Finance | Approvals + budgets |
-| Colin Compliance | `compliance@demo.example` | Compliance / H&S Officer | Compliance matrix |
-| Sid Stores | `stores@demo.example` | Stores Clerk | Stock levels |
-| Penny Planner | `space@demo.example` | Space Planner | Floor plans (from Phase 3) |
-| Clara Client | `client@demo.example` | Client Viewer (FM-provider edition) | Client portal |
-| Andy Auditor | `auditor@demo.example` | Auditor (read-only) | Compliance evidence |
+| Sam Sutton | `superuser@demo.example` | **Super User** (all rights) | Admin console + dashboard |
+| Alex Rowe | `admin@demo.example` | Administrator | Admin console |
+| Morgan Ellis | `manager@demo.example` | FM Manager | FM dashboard |
+| Evie Shaw | `executive@demo.example` | Executive (read-only) | Executive dashboard |
+| Hana Patel | `helpdesk@demo.example` | Helpdesk Operator | Helpdesk queue |
+| Priya Shah | `planner@demo.example` | Supervisor / Planner | Dispatch board |
+| Tom Price | `technician@demo.example` | Technician | My jobs (mobile layout) |
+| Cara Lloyd | `contractor@demo.example` | Contractor (Sparks Electrical Ltd) | Contractor portal |
+| Riley Morgan | `requester@demo.example` | Requester / Occupant | Self-service portal |
+| Fiona Clarke | `finance@demo.example` | Finance | Approvals + budgets |
+| Colin Baxter | `compliance@demo.example` | Compliance / H&S Officer | Compliance matrix |
+| Sid Malik | `stores@demo.example` | Stores Clerk | Stock levels |
+| Penny Jones | `space@demo.example` | Space Planner | Floor plans (from Phase 3) |
+| Clara Wynne | `client@demo.example` | Client Viewer (FM-provider edition) | Client portal |
+| Andy Fox | `auditor@demo.example` | Auditor (read-only) | Compliance evidence |
 | Starter tenant | `starter@demo.example` | Super User of the Starter-plan tenant | Dashboard with upgrade prompts |
 
-`demo.example` uses the `.example` top-level domain, which is reserved (RFC 2606) and can never be a real mailbox. It is replaced by the product's own demo domain once named.
+The same persona names are used throughout the screen mockups ([doc 12](12-screen-catalogue.md)) and the seed data, so demos, docs and tests tell one story. `demo.example` uses the `.example` top-level domain, which is reserved (RFC 2606) and can never be a real mailbox. It is replaced by the product's own demo domain once named.
 
 ### Seed data (realistic, UK-flavoured)
 - **12 sites** across the UK (e.g. Cardiff HQ, Bristol Office, Manchester Warehouse, 3 schools, 2 retail units, a clinic, a data centre, a depot, a residential block), each with buildings, floors, rooms, and floor plans for at least two buildings.
-- **~1,500 assets** across HVAC, electrical, plumbing, fire, lifts, security and catering, classified with Uniclass 2015 codes (with SFG20-style maintenance groupings), with warranties, meters and condition grades.
+- **~2,400 assets** (2,418 in the seed) across HVAC, electrical, plumbing, fire, lifts, security and catering, classified with Uniclass 2015 codes (with SFG20-style maintenance groupings), with warranties, meters and condition grades.
 - **PPM schedules** for every statutory and key asset; 12 months of completed history; upcoming 52-week forecast.
-- **~3,000 historical work orders** with a realistic mix of SLA hits and breaches, costs, photos and CSAT scores, so dashboards look real.
-- **Open queue** of ~60 requests/jobs in various statuses, some about to breach SLA.
+- **~3,600 historical work orders** (12 months, ~300 a month) with a realistic mix of SLA hits and breaches, costs, photos and CSAT scores, so dashboards look real.
+- **Open queue** of ~150 work orders and ~25 helpdesk requests in various statuses, some about to breach SLA.
 - **Compliance register** with certificates, including some expiring soon, some expired, and remedial actions from an EICR.
-- 8 contractors with accreditations (one with expired insurance, to demonstrate auto-suspension).
+- 42 suppliers, of which 8 core contractors have full accreditation, scorecard and job history (one with insurance about to expire, one suspended for expired insurance).
 - Inventory in 2 stores + 3 vans; open POs; budgets with variances.
-- 2 client contracts (FM-provider edition) with SLA scorecards.
+- 3 client contracts (FM-provider edition) with SLA scorecards.
+- ~1,280 users: 84 full, 142 mobile, ~1,060 requesters/contractors/clients, plus the demo personas above.
 - Bookings, visitors, energy, housing and other module data are added as each module ships.
 
 ### Demo operations and guard rails

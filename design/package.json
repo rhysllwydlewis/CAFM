@@ -5,7 +5,8 @@
   "description": "Design system, icon set and screen mockups for the CAFM platform",
   "scripts": {
     "icons": "node tools/build-icons.js",
-    "render": "node tools/render.js && python3 -I tools/compress.py mockups/png",
+    "validate": "node tools/validate.js",
+    "render": "node tools/validate.js && node tools/render.js && python3 -I tools/compress.py mockups/png && node tools/catalogue.js",
     "contrast": "node tools/contrast.js"
   },
   "devDependencies": {

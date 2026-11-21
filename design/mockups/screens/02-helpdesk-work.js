@@ -48,7 +48,7 @@ const wos = [
   ['WO-CBT-00207', 'Shutter motor fault', 'Cabot Circus Unit', 3, 'Verified', 'Dragon Roofing', ['Met', 'success'], '£680.00'],
 ];
 const woList = shell({ active: 'work-orders', crumbs: ['Work orders', 'All open'], title: 'Work orders', sub: '148 open · 11 overdue · £42,180 committed', acts: [btn('Export', { icon: 'export' }), btn('Bulk create', { icon: 'files' }), btn('New work order', { v: 'primary', icon: 'add' })], body: [
-  tabs([['All open', 148], ['Reactive', 96], ['Planned', 41], ['Projects', 11], ['Awaiting approval', 7], ['Completed (30d)', 1204]], 0),
+  tabs([['All open', 148], ['Reactive', 96], ['Planned', 41], ['Projects', 11], ['Awaiting approval', 7], ['Completed (30d)', 301]], 0),
   card('', [toolbar([search('Search by ref, title, asset…', 260), chip('Site', 'All', true), chip('Status', 'Open', true), chip('Priority'), chip('Assignee'), chip('Contractor'), `<span class="sm medium" style="color:var(--primary-text)">Save view</span>`], [seg([['List', 'chart-bar'], ['Board', 'dispatch'], ['Map', 'map'], ['Calendar', 'booking']], 0)]),
     table(['Reference', 'Title & location', 'Priority', 'Status', 'Assigned to', 'SLA', ['Cost', { num: 1 }]], wos.map(([r, t, l, p, s, a, [sl, st], c]) => [ref(r), cell2(`<span class="medium">${t}</span>`, l), prio(p), status(s), contractors.includes(a) ? `<span class="row">${av(a, { co: true, s: 's24' })}<span>${a}</span></span>` : `<span class="row">${av(a, { s: 's24' })}<span>${a}</span></span>`, sla(sl, st), `<span class="num">${c}</span>`]), { check: true, hover: 0, foot: `<span>1–11 of 148</span><span class="grow"></span>${btn('Previous', { sm: true })}${btn('Next', { sm: true })}` })], { flush: true }),
 ] });

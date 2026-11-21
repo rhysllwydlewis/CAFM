@@ -17,6 +17,7 @@ Every module is built on the shared platform services in §0, so every module au
 - **Form designer**: drag-and-drop layouts per entity, per role, per request type; sections, tabs, conditional logic. `[P]` (lower tiers get standard layouts with custom fields appended).
 - **Configurable statuses and workflow** per entity type: states, transitions, guards (who and under what conditions), required fields per transition, side effects.
 - **Automation rules** (when → if → then): triggers on create/update/status change/schedule/date reached/SLA breach/IoT event; actions such as assign, notify, set field, create linked record, call webhook, start approval. `[P]`
+- Automation actions include **phone-call escalation** (text-to-speech call to the on-call engineer, then the duty manager) for P1 out-of-hours work `[A: SMS/voice credits]`; every automation has a test run, run history and loop protection.
 - **Approvals engine**: single, multi-stage, parallel, threshold-based (spend limits), delegation, out-of-office. `[P]`
 - **Attachments**: photos, video, documents; drag-drop; mobile camera; image annotation; virus scanning; versioning.
 - **Comments and activity timeline** with @mentions, internal vs external (requester-visible) notes.
@@ -32,6 +33,8 @@ Every module is built on the shared platform services in §0, so every module au
 - **Localisation**: multi-language UI, tenant terminology overrides, multi-currency, time zones, date/number formats.
 - **Accessibility**: WCAG 2.2 AA, keyboard navigation, screen-reader support, high-contrast mode.
 - **Dark/light theme**, responsive layout, keyboard shortcuts, command palette (Ctrl/Cmd-K).
+- **Navigation badges**: a neutral count means items waiting for action (e.g. unassigned requests); a red count means overdue items. The same rule applies on every module.
+- **Standard states**: empty (first use, filtered, all done), loading skeletons, recoverable error with reference code, no-permission with "request access", plan-locked with trial offer, offline and back-online banners, toasts with undo, and confirmation dialogs (see the states sheet in doc 12).
 - **Offline support** for mobile workflows (see §21).
 - **Help and onboarding**: contextual help, guided tours, setup checklist, in-app changelog.
 - **Recycle bin and soft delete** with restore; retention policies; **legal hold** on records (e.g. incidents under investigation) that blocks deletion and retention purges.
@@ -84,6 +87,8 @@ Every module is built on the shared platform services in §0, so every module au
 - **SLA clocks**: response, attendance, temporary fix, permanent fix; business hours aware; pause reasons; breach alerts and escalation chains.
 - Scheduling: appointment slots, requester-agreed times, access windows.
 - Labour time capture (start/stop, travel, on-site, overtime codes), parts used, materials, sub-contract costs, expenses.
+- **Geo-verified arrival**: "arrived on site" is checked against the site location (opt-in, on shift only) and shown on the timeline.
+- **Board (kanban) view**: drag cards between statuses; workflow rules and required fields still apply.
 - **Not-to-exceed (NTE)** spend limits with approval for variations; quote-required flag.
 - Job checklists, risk assessment and RAMS acknowledgement before start, permit-to-work link.
 - Before/after photos, annotated images, video, voice notes (transcribed `[A: AI]`).
@@ -121,11 +126,12 @@ Every module is built on the shared platform services in §0, so every module au
 - Attributes: make, model, serial, install date, supplier, cost, warranty, expected life, criticality, condition, refrigerant type/charge (F-Gas), capacity, nameplate photo.
 - Tags: QR, barcode, **NFC**, RFID; bulk label printing; scan to view/raise job/record reading.
 - **Asset onboarding by photo**: AI reads nameplate → make/model/serial `[A: AI]`.
-- Meter readings (manual, mobile, IoT), meter types, rollover handling.
+- Meter readings (manual, mobile, IoT), meter types, rollover handling. Readings captured by photo are checked by AI against the entered value and the expected range `[A: AI]`.
 - Warranty tracking with claims and alerts before expiry.
 - Condition surveys: condition grades (A–D / 1–5), remaining life, photos, defects, cost to remedy; survey mode on mobile. `[P]`
 - Criticality and risk scoring (likelihood × consequence).
 - Reliability metrics: MTBF, MTTR, availability, downtime log, failure history, cost of ownership.
+- **Repeat-failure insight**: flags assets with repeated faults (e.g. "3 pressure faults in 90 days") and suggests a condition survey or replacement review `[A: AI]`.
 - **Failure mode and RCM analysis** (FMEA library) `[E]`.
 - Lifecycle replacement planning and capital forecasting (see §16) `[P]`.
 - Depreciation (straight-line, reducing balance) and asset valuation `[E]`.
@@ -145,6 +151,7 @@ Every module is built on the shared platform services in §0, so every module au
 - Sector compliance packs (see §35): housing (Awaab's Law, HHSRS, Decent Homes), healthcare (HTMs), education (GEMS).
 - Certificate upload with **AI extraction**: issue date, expiry, result (pass/fail/C1/C2/C3/FI), defects → automatic remedial actions `[A: AI]`.
 - Remedial action tracking with priority by severity code (e.g. EICR C1 = immediate).
+- Requirement statuses: Compliant · Compliant with actions (certificate in date but remedials open) · Due soon · Overdue · Not applicable, with the evidence behind each.
 - **Compliance matrix**: sites × compliance types, RAG status, drill-down to evidence.
 - Expiry alerts and automatic PPM/work order generation ahead of due dates.
 - Audits and inspections: configurable inspection forms (scoring, pass/fail, N/A, photos, comments, mandatory evidence), scheduled or ad hoc, mobile capture, actions from failed items.
@@ -179,6 +186,7 @@ Every module is built on the shared platform services in §0, so every module au
 - **Accreditation and compliance**: insurance certificates (PL/EL/PI) with expiry, CHAS, SafeContractor, Constructionline, Gas Safe, NICEIC and similar; auto-suspend non-compliant contractors.
 - Onboarding workflow with document requests and approval.
 - **Contractor portal** (web and mobile): receive and accept/reject jobs, update status, upload photos and certificates, submit quotes, submit invoices, see own performance. Contractor users are free.
+- **One login across customers**: a contractor who works for several organisations on the platform sees all of them from one account and switches between them (global accounts, doc 06).
 - Contractor site sign-in/sign-out (geo-fenced) with induction check.
 - RFQ/tender: send to multiple contractors, compare quotes, award.
 - Performance scorecards: SLA %, first-time fix, quote accuracy, CSAT, compliance.
@@ -206,6 +214,7 @@ Every module is built on the shared platform services in §0, so every module au
 - **Dispatch board**: drag-and-drop jobs onto people/time, live map of technicians (GPS from app, opt-in), colour-coded by SLA risk.
 - Skills, trades and certification matching; availability, shifts, rotas, on-call rotas, leave/absence.
 - **Route optimisation** and travel-time estimates `[E]`.
+- **Auto-schedule suggestions** `[A: AI]`: proposes who should take an unscheduled job and when, showing skills, travel time, SLA impact and what moves; the planner accepts or picks another option.
 - Capacity planning: demand vs available hours by trade/region.
 - Workforce records: employees, trades, labour rates (normal/overtime/call-out), cost centres.
 - **Qualifications and training records** with expiry alerts (e.g. Gas Safe, 18th Edition, IPAF, PASMA, asbestos awareness); block assignment if expired.
@@ -442,6 +451,7 @@ Every module is built on the shared platform services in §0, so every module au
 - **"Ask the estate" assistant**: natural-language Q&A over tenant data, permission-aware; can draft reports and create records with confirmation.
 - **Predictive maintenance and anomaly detection** (IoT, energy, failure patterns).
 - **PPM optimisation** suggestions (over-maintained assets, consolidation of visits).
+- **Auto-schedule suggestions** for dispatch, **repeat-failure insights** on assets, **meter-photo checks**, and **survey comment themes**.
 - Invoice/quote OCR and validation.
 - Translation of requests and job notes.
 - All AI features: tenant-level on/off, usage metering, human-in-the-loop for actions, no training on customer data, audit of AI actions.
@@ -451,8 +461,8 @@ Every module is built on the shared platform services in §0, so every module au
 **Phase 2B · Tier P**
 
 - Notification template editor (email/SMS/push) with merge fields and branding.
-- Broadcast and mass notifications (e.g. site closure, emergency) by site/group.
-- Occupant surveys and feedback forms; pulse surveys on workplace.
+- Broadcast and mass notifications (e.g. site closure, emergency) by site/group. Channels: email, push, SMS, Teams/Slack, portal banner and room panels; scheduled sends and reminders; emergency broadcasts bypass quiet hours.
+- Occupant surveys and feedback forms; pulse surveys on workplace. Results by site and question, NPS, and AI themes from free-text comments with one-click improvement actions `[A: AI]`.
 - Public status page per site (planned outages).
 
 ## 31. Business Continuity & Emergency Management
@@ -491,7 +501,7 @@ Every module is built on the shared platform services in §0, so every module au
 - Requester portal configuration: which request types, booking options and knowledge-base articles each requester group sees.
 - Roles and permissions builder; teams and groups; data scoping by location/client/contract.
 - Module on/off and navigation customisation; terminology overrides.
-- Branding / white-label: logo, colours, custom domain, email sender domain, branded PDFs `[E]`.
+- Branding / white-label: logo, colours, custom domain, email sender domain, branded PDFs `[E]`. Accent colours are checked for accessible contrast before they can be saved.
 - All configuration objects: fields, forms, statuses, workflows, automation, SLAs, calendars, priorities, categories, templates, numbering, picklists.
 - Security settings: password policy, MFA enforcement, SSO, session timeout, IP allow-lists `[E]`, data retention, audit log export.
 - **Sandbox/test environment** and config promotion (copy config sandbox → production) `[E]`.
@@ -520,8 +530,8 @@ Every module is built on the shared platform services in §0, so every module au
   - **HHSRS** hazard assessment, **Decent Homes** tracking, and "Big 6" compliance (gas, electrical, fire, water, asbestos, lifts) by property and block.
   - **Resident portal** with repairs reporting and appointment booking; **void management** (void works, key handover, re-let readiness); stock condition surveys.
   - **Tenant Satisfaction Measures (TSM)** reporting for the Regulator of Social Housing.
-- **Healthcare estates**: Health Technical Memoranda (HTM) templates (e.g. water safety, electrical, ventilation, medical gases); Premises Assurance Model (PAM) evidence; **ERIC** annual return data; National Standards of Healthcare Cleanliness cleaning audits; clinical-area risk categories.
-- **Education**: term-time aware scheduling, DfE **Good Estate Management for Schools (GEMS)** alignment, condition data for capital bids, multi-academy-trust roll-up reporting, and safeguarding-aware contractor sign-in (DBS check records).
+- **Healthcare estates**: Health Technical Memoranda (HTM) templates (e.g. water safety, electrical, ventilation, medical gases); Premises Assurance Model (PAM) evidence; **ERIC** annual return data; National Standards of Healthcare Cleanliness cleaning audits; clinical-area risk categories. Authorising Engineer appointments per discipline; Pseudomonas sampling for augmented-care outlets with flush-and-resample actions.
+- **Education**: term-time aware scheduling, DfE **Good Estate Management for Schools (GEMS)** alignment, condition data for capital bids, multi-academy-trust roll-up reporting, and safeguarding-aware contractor sign-in (DBS check records). Disruptive PPM is moved into school holidays automatically; unescorted-contractor alerts.
 - **Retail & hospitality**: store-manager portal, multi-site roll-out programmes (e.g. refit across 200 stores), opening-hours-aware SLAs, food safety checks.
 - **Commercial property / managing agents**: occupier portal, service-charge recovery codes, landlord vs tenant repair responsibility per lease clause.
 - **Public sector**: Welsh-language interface and notifications (Welsh Language Standards), G-Cloud-ready documentation, Public Sector Bodies Accessibility Regulations statement.

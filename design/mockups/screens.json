@@ -790,5 +790,61 @@
     "viewport": "board",
     "theme": "dark",
     "file": "11-dark.js"
+  },
+  {
+    "id": "ds-10-states",
+    "group": "Design system",
+    "title": "States & feedback patterns",
+    "viewport": "sheet",
+    "theme": "light",
+    "file": "12-gaps.js"
+  },
+  {
+    "id": "comms-01-broadcast",
+    "group": "Communications",
+    "title": "Broadcast message composer",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "12-gaps.js"
+  },
+  {
+    "id": "comms-02-survey",
+    "group": "Communications",
+    "title": "Survey results with AI themes",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "12-gaps.js"
+  },
+  {
+    "id": "healthcare-01-htm",
+    "group": "Sector packs",
+    "title": "Healthcare: HTM compliance & PAM",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "12-gaps.js"
+  },
+  {
+    "id": "education-01-trust",
+    "group": "Sector packs",
+    "title": "Education: trust estate overview",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "12-gaps.js"
+  },
+  {
+    "id": "admin-13-request-catalogue",
+    "group": "Super User administration",
+    "title": "Request catalogue & triage scripts",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "12-gaps.js"
+  },
+  {
+    "id": "marketing-01-pricing",
+    "group": "Marketing site (Phase 5 draft)",
+    "title": "Pricing page",
+    "viewport": "wide",
+    "theme": "light",
+    "file": "12-gaps.js"
   }
 ]

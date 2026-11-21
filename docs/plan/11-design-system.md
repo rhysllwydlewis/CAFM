@@ -62,6 +62,7 @@ Tenants can change the accent colour (white-label, [doc 03](03-roles-permissions
 
 - **172 icons** in 9 categories: Lucide (ISC licence, free for commercial use) plus **38 custom CAFM icons** drawn on the same 24px grid with 2px round strokes. The custom set covers boiler, AHU, lift, pump, valve, legionella, asbestos, gas safety, EICR, PAT, fire door, emergency lighting, sprinkler, permit to work, lock-out/tag-out, golden thread, damp and mould, void property, floor plan, desk, kiosk, room panel, IoT, SLA and others.
 - Files: one SVG per icon in `design/icons/svg/` (uses `currentColor`), a `<symbol>` sprite in `design/icons/sprite.svg`, and a manifest in `design/icons/icons.json`.
+- Icons next to text are decorative (`aria-hidden="true"`). Icon-only buttons need an accessible label. Status is never shown by an icon or colour alone.
 - Use 16px in tables, buttons and menus (1.75 stroke), 18px in the top bar, 20–24px on mobile. Use the muted text colour by default, the primary colour when active, and status colours only when showing status, always with text.
 - Sheets: [full set](../../design/mockups/png/ds-06-icons.png) · [dark](../../design/mockups/png/ds-07-icons-dark.png) · [custom icons at construction size](../../design/mockups/png/ds-08-icons-custom.png) · [usage](../../design/mockups/png/ds-09-icons-usage.png).
 
@@ -77,13 +78,15 @@ Three stacked "floors" read as both a building and a work list. This is a placeh
 
 - **Shell:** 248px dark navigation rail (collapsible to 64px), 56px top bar with breadcrumbs, ⌘K search, AI assistant and notifications. The page has 32px side padding and content up to 1440px.
 - **Core components:** buttons (primary, secondary, ghost, danger), badges and status pills, priority indicator (bars plus label), filter chips, segmented controls, tabs, data table with bulk actions, KPI tile with sparkline, card, description list, timeline, callout, stepper, kanban, planner grid, floor plan, map, modal, drawer, command palette.
+- **Navigation badges:** a neutral count shows items waiting for action (unassigned requests); a red count shows overdue items (overdue work orders, compliance).
+- **States:** every list and page uses the shared empty, loading, error, no-permission, plan-locked, offline and toast patterns ([states sheet](../../design/mockups/png/ds-10-states.png)).
 - **Radius:** 4 badges · 6 controls · 8 menus · 12 cards · 16 modals. **Elevation:** four subtle shadows.
 - **Mobile:** 50px buttons, 16px card radius, bottom tab bar, offline status always visible.
 - **Implementation:** shadcn/ui (Radix) components themed with Tailwind from `tokens.css`. The mockup CSS (`design/mockups/src/styles.css`) is the visual reference for each component.
 
 ## How the build uses this
 
-1. **Phase 0:** import `tokens.css` into the web app and generate the Tailwind theme from `tokens.json`. Build the shell and the components above in `packages/ui` and match them against the mockups. Add empty, loading and error state patterns.
+1. **Phase 0:** import `tokens.css` into the web app and generate the Tailwind theme from `tokens.json`. Build the shell, the components above and the state patterns in `packages/ui`, and match them against the mockups.
 2. **Each module:** start from its screens in the [screen catalogue](12-screen-catalogue.md) and keep the layout, hierarchy and components. Where real requirements differ, update the mockup source and re-render, so the catalogue stays the single picture of the product.
 3. **Visual regression:** Playwright screenshots of built screens can be compared with the mockups during review.
 
@@ -95,5 +98,6 @@ npm install
 npm run icons      # SVGs, sprite, manifest, tokens.json
 npm run render     # all screens → HTML + PNG (then compresses PNGs)
 npm run contrast   # WCAG contrast check
+npm run validate   # icon references, SVG structure, screen ids
 node tools/catalogue.js   # rebuilds docs/plan/12-screen-catalogue.md
 ```

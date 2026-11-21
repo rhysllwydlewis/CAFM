@@ -32,6 +32,8 @@ const covers = {
   'Super User administration': '§33 Super User administration, §32 integrations, doc 03',
   'Platform (vendor) admin': '§34 platform administration',
   'Mobile apps': '§21 mobile',
+  'Communications': '§30 communications & engagement',
+  'Marketing site (Phase 5 draft)': 'doc 07 pricing, Phase 5 marketing site',
   'Dark theme': 'Theme support (doc 11)',
 };
 
@@ -61,10 +63,9 @@ for (const [g, list] of Object.entries(groups)) {
 }
 md += `## Known gaps (to design during the build)
 
-- Broadcast message composer and survey builder (§30): follow the form-designer pattern.
-- Healthcare and education sector-pack screens (§35): reuse the compliance matrix, cleaning audit and contract scorecard patterns with sector templates.
-- Marketing homepage and pricing page (Phase 5): designed separately once the product is named.
-- Empty, loading and error states: a pattern sheet is to be added in Phase 0 alongside the component library.
+- Marketing homepage and product pages (Phase 5): designed once the product is named (decision D1). The pricing page draft is included above.
+- Retail, commercial-property and public-sector pack screens (§35): reuse the healthcare and education patterns with their own templates.
+- Second-level screens inside each module (e.g. every settings tab, every report): built from the components and patterns shown here; the owning agent adds a mockup when a new pattern is needed (see doc 13).
 `;
 fs.writeFileSync(path.resolve(root, '../docs/plan/12-screen-catalogue.md'), md);
 console.log(`catalogue: ${screens.length} screens in ${Object.keys(groups).length} groups`);

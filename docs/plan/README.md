@@ -19,7 +19,11 @@ This folder is the single source of truth for what we are building, how, in what
 | 09 | [Quality, security & compliance](09-quality-security-compliance.md) | NFRs, security, testing, DevOps, certifications |
 | 10 | [Risks & open decisions](10-risks-and-decisions.md) | Risks, mitigations, and decisions the product owner needs to make |
 | 11 | [Design system](11-design-system.md) | Colour research and palette, typography, icons, logo, components, how the build uses them |
-| 12 | [Screen catalogue](12-screen-catalogue.md) | 99 rendered screens covering every module, desktop, tablet, mobile and dark theme |
+| 12 | [Screen catalogue](12-screen-catalogue.md) | 106 rendered screens covering every module, desktop, tablet, mobile and dark theme |
+| 13 | [Agent schedule strategy](13-agent-schedules.md) | How the build is run by scheduled agents: one per element, each with its own section, cadence and guard rails |
+| 14 | [Glossary](14-glossary.md) | FM, compliance, commercial and platform terms |
+
+Also: [architecture decision records](../adr/README.md) · [agent working files](../agents/README.md) · [`CLAUDE.md`](../../CLAUDE.md) (rules for anyone working in the repo) · [design source](../../design/README.md)
 
 ## Executive summary
 
@@ -47,5 +51,7 @@ This folder is the single source of truth for what we are building, how, in what
 | 3. Workplace | Space & CAD/BIM floor plans, room/desk booking, visitors, moves, outages, energy & sustainability, IoT/BMS |
 | 4. Enterprise depth | Real estate & leases, capital planning & projects, H&S, soft services, sector packs, AI suite, report builder, FM-provider edition |
 | 5. Commercialise & scale | Stripe billing live, marketing homepage, self-serve onboarding, platform admin, SSO/SCIM, marketplace, native apps, ISO 27001 |
+
+**Build method:** scheduled agents, one per element (module or cross-cutting concern), each fixing, building and improving its own area in small draft PRs, coordinated by a conductor agent and reviewed by the product owner ([doc 13](13-agent-schedules.md)).
 
 Billing *entitlements* (which plan unlocks which feature) are built into Phase 0 so that each module is gated by plan from day one. Self-serve payments go live in Phase 5; until then, pilot customers are invoiced manually, so revenue starts from Phase 1.
