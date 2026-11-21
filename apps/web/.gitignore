@@ -1,0 +1,5 @@
+public/icons.svg
+public/favicon.svg
+next-env.d.ts
+test-results/
+playwright-report/

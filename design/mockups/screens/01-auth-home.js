@@ -18,7 +18,7 @@ const login = (sel = -1) => `<div class="auth">
       <div style="margin-top:16px;font-size:16px;line-height:24px;color:#A9B1BC">Helpdesk, maintenance, compliance, contractors, space and energy in one place, on any device.</div>
       <div class="row" style="gap:28px;margin-top:40px">${[['96.4%', 'PPM compliance'], ['2,418', 'Assets tracked'], ['12', 'Sites live']].map(([v, l]) => `<div><div style="font-family:var(--font-display);font-size:26px;font-weight:600;color:#F1F3F6">${v}</div><div style="font-size:12.5px;color:#7F8995">${l}</div></div>`).join('')}</div>
     </div>
-    <div style="margin-top:56px;font-size:12px;color:#5E6773">© 2026 · UK &amp; EU data centres · Cyber Essentials · ISO 27001 in progress</div>
+    <div style="margin-top:56px;font-size:12px;color:#7F8995">© 2026 · UK &amp; EU data centres · Cyber Essentials · ISO 27001 in progress</div>
     <svg style="position:absolute;right:-160px;top:120px;opacity:.045" width="520" height="520" viewBox="0 0 32 32"><rect x="8" y="8" width="16" height="4" rx="1.5" fill="#fff"/><rect x="8" y="14" width="12" height="4" rx="1.5" fill="#fff"/><rect x="8" y="20" width="8" height="4" rx="1.5" fill="#fff"/></svg>
   </div>
   <div class="auth-main">

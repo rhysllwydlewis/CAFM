@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: Lint, test, build, e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cafm
+          POSTGRES_PASSWORD: cafm
+          POSTGRES_DB: cafm_dev
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cafm" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Local CI credentials only, for the throwaway service container.
+      DATABASE_URL: postgresql://cafm:cafm@localhost:5432/cafm_dev
+      APP_DATABASE_URL: postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev
+      DEMO_MODE: 'true'
+      API_URL: http://localhost:4000
+      WEB_ORIGIN: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create the application database role
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f infra/postgres/init.sql
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm --filter @cafm/web exec playwright install --with-deps chromium
+      - run: pnpm e2e
+
+  design:
+    name: Design checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: design
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: design/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run validate
+      - run: npm run contrast

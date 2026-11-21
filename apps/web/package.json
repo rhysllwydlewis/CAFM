@@ -1,0 +1,30 @@
+{
+  "name": "@cafm/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "assets": "node scripts/copy-design-assets.mjs",
+    "dev": "pnpm assets && next dev --port 3000",
+    "build": "pnpm assets && next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test --trace off"
+  },
+  "dependencies": {
+    "@cafm/shared": "workspace:*",
+    "@cafm/ui": "workspace:*",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "next": "15.5.29",
+    "react": "19.1.10",
+    "react-dom": "19.1.10"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}

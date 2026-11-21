@@ -4,7 +4,7 @@ Guidance for anyone (human or AI agent) working in this repository. Read this fi
 
 ## What this is
 
-A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Code does not exist yet; Phase 0 builds the foundations.
+A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Phase 0 is under way: the monorepo, database with row-level security, sign-in and the login page exist; everything else is still to build.
 
 ## Sources of truth (in this order)
 
@@ -45,7 +45,26 @@ docs/           Plan, ADRs, agent notes and status
 
 ## Commands
 
-Application commands will be added in Phase 0. Design tooling (run in `design/`):
+Node 22 and pnpm 10 (`corepack enable`). From the repository root:
+
+```bash
+pnpm install
+pnpm db:migrate        # apply migrations (owner role, DATABASE_URL)
+pnpm db:seed           # demo tenants and the 16 demo personas
+pnpm lint && pnpm typecheck
+pnpm test              # unit and API tests (needs a migrated, seeded database)
+pnpm build
+pnpm e2e               # Playwright against the built apps
+pnpm dev               # API on :4000, web on :3000 (open http://localhost:3000)
+```
+
+Copy `.env.example` to `.env` and export its variables (`set -a; . ./.env; set +a`). Local services: `docker compose up -d` (Postgres, Redis, MinIO, Mailpit); set `MINIO_ROOT_PASSWORD` in `.env` first.
+
+Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role.
+
+New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `SHADOW_DATABASE_URL=<empty scratch database> pnpm --filter @cafm/db -s migrate:diff`, plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.
+
+Design tooling (run in `design/`):
 
 ```bash
 npm install
@@ -64,7 +83,11 @@ service postgresql start
 redis-server --daemonize yes
 su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='cafm'\" | grep -q 1 || psql -c \"CREATE ROLE cafm LOGIN PASSWORD 'cafm' CREATEDB\""
 su postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='cafm_dev'\" | grep -q 1 || createdb -O cafm cafm_dev"
-# DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev   REDIS_URL=redis://localhost:6379
+su postgres -c "psql -q -f infra/postgres/init.sql"   # the cafm_app role
+export DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev
+export APP_DATABASE_URL=postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev
+export REDIS_URL=redis://localhost:6379 DEMO_MODE=true
+corepack enable && pnpm install && pnpm db:migrate && pnpm db:seed
 ```
 
 These are local test credentials only, never used outside the container.
@@ -72,6 +95,7 @@ These are local test credentials only, never used outside the container.
 ## Definition of done
 
 See `docs/plan/08-roadmap.md` § Definition of Done. In short:
+
 - permission- and entitlement-checked
 - cross-tenant test
 - unit, API and e2e tests
