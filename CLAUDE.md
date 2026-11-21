@@ -4,14 +4,25 @@ Guidance for anyone (human or AI agent) working in this repository. Read this fi
 
 ## What this is
 
-A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Phase 0 (foundations) is built:
+A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`.
 
-- the monorepo, database with row-level security, and sign-in, password reset and invites
-- roles and permissions, entitlements, audit, the outbox and worker
-- the app shell, the demo guard rails and the configuration engine
-- CI/CD
+**Where the build is:** [`docs/PROGRESS.md`](docs/PROGRESS.md) has the current phase, a checklist for every phase, what's in progress and what's waiting on the product owner. Phase 0 (foundations) is done. Phase 1 starts on the product owner's go-ahead.
 
-Phase 1 modules (doc 08) are next.
+## Every session: start, work, stop
+
+1. **Start:**
+   - Read `docs/PROGRESS.md`, then this file. Scheduled agents also read their notebook, `docs/agents/notes/<ID>.md` (doc 13).
+   - Run `source scripts/agent-setup.sh`. It starts Postgres and Redis, creates the roles, installs, migrates, seeds the demo and exports the variables, and is safe to run again.
+   - Check your branch and any open PR (`git status`, `git log --oneline -5`).
+2. **Work:**
+   - Take the first unticked item in the current phase, or the issue or section you were given.
+   - Keep to the rules below. Run `pnpm lint && pnpm typecheck && pnpm test` before you push.
+3. **Stop, finished or not:**
+   - Tick finished items in `docs/PROGRESS.md` in the same PR.
+   - If you're stopping part-way, write a short note under its "In progress" heading: what's done, what's next, and the branch.
+   - Add a CHANGELOG line for anything users will notice. Commit and push, so nothing lives only in your session.
+
+The same rules apply to every agent and person: Claude, Codex or anyone else. `AGENTS.md` points here.
 
 ## Sources of truth (in this order)
 
@@ -93,21 +104,11 @@ npm run icons      # rebuild icons, sprite, manifest, tokens.json
 
 ## Agent environment
 
-Scheduled agents run in the personal cloud environment "CAFM". Its setup script installs Postgres 16, Redis and the design tooling, but cannot start background services, so start them in your session when you need them:
+Scheduled agents run in the personal cloud environment "CAFM". Its setup script installs Postgres 16, Redis and the design tooling, but can't start background services. `source scripts/agent-setup.sh` starts them and does the rest of the setup. It works the same in any container that has Postgres and Redis installed, or Docker (it falls back to `docker compose`).
 
-```bash
-service postgresql start
-redis-server --daemonize yes
-su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='cafm'\" | grep -q 1 || psql -c \"CREATE ROLE cafm LOGIN PASSWORD 'cafm' CREATEDB\""
-su postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='cafm_dev'\" | grep -q 1 || createdb -O cafm cafm_dev"
-su postgres -c "psql -q -f infra/postgres/init.sql"   # the cafm_app role
-export DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev
-export APP_DATABASE_URL=postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev
-export REDIS_URL=redis://localhost:6379 DEMO_MODE=true
-corepack enable && pnpm install && pnpm db:migrate && pnpm db:seed
-```
+It uses local test credentials only, never used outside the container: `DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev` (owner) and `APP_DATABASE_URL=postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev` (app role).
 
-These are local test credentials only, never used outside the container.
+To serve the built app the way Railway does, run `node scripts/start.mjs` with `DATABASE_URL`, `APP_DB_PASSWORD=cafm_app` and `PORT` set.
 
 ## Definition of done
 

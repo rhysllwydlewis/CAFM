@@ -19,11 +19,11 @@ This folder is the single source of truth for what we are building, how, in what
 | 09 | [Quality, security & compliance](09-quality-security-compliance.md) | NFRs, security, testing, DevOps, certifications |
 | 10 | [Risks & open decisions](10-risks-and-decisions.md) | Risks, mitigations, and decisions the product owner needs to make |
 | 11 | [Design system](11-design-system.md) | Colour research and palette, typography, icons, logo, components, how the build uses them |
-| 12 | [Screen catalogue](12-screen-catalogue.md) | 106 rendered screens covering every module, desktop, tablet, mobile and dark theme |
+| 12 | [Screen catalogue](12-screen-catalogue.md) | 111 rendered screens covering every module, desktop, tablet, mobile and dark theme |
 | 13 | [Agent schedule strategy](13-agent-schedules.md) | How the build is run by scheduled agents: one per element, each with its own section, cadence and guard rails |
 | 14 | [Glossary](14-glossary.md) | FM, compliance, commercial and platform terms |
 
-Also: [architecture decision records](../adr/README.md) · [agent working files](../agents/README.md) · [`CLAUDE.md`](../../CLAUDE.md) (rules for anyone working in the repo) · [design source](../../design/README.md)
+Also: [build progress](../PROGRESS.md) (where the build is, a checklist per phase) · [architecture decision records](../adr/README.md) · [agent working files](../agents/README.md) · [`CLAUDE.md`](../../CLAUDE.md) (rules for anyone working in the repo) · [design source](../../design/README.md)
 
 ## Executive summary
 
