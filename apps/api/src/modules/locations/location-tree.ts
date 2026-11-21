@@ -3,7 +3,9 @@ import type { Prisma, Tx } from '@cafm/db';
 import type { AuthContext } from '../../core/session';
 
 export function allLocations(auth: AuthContext): boolean {
-  return auth.access?.scope === 'all' && auth.membership?.locationScoped === false;
+  const member = auth.membership;
+  // A promotion grants full access. The saved branch restriction applies again after demotion.
+  return auth.access?.scope === 'all' && !!member && (member.role === 'super_user' || !member.locationScoped);
 }
 
 /** The same filter applies to detail, list and any location chosen for a write. */

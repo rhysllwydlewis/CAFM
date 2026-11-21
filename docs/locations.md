@@ -13,3 +13,5 @@ Use the signed-in organisation's session for all location requests. Locations ne
 A portfolio or region can contain sites. Buildings, floors, zones and spaces belong inside a site. Intermediate levels can be omitted. New sites count towards the organisation's site limit, even when their status changes. Members with organisation-wide location management can move a branch. Scoped location managers can add and edit locations within their assigned branches.
 
 Assigning access requires organisation-wide location access and both `locations.manage` and `people.manage`. The existing rules on who can manage roles and demo personas also apply. A location outside the current organisation or assigned branches returns `404`.
+
+Super Users have organisation-wide location access. Any saved branch restrictions apply again if they leave the Super User role.

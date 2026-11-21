@@ -91,6 +91,13 @@ it('restricts members to assigned branches, including writes and parent links', 
     expect(visible.map((row: { id: string }) => row.id).sort()).toEqual([site.id, floor.id].sort());
     await agent.put(access).send({ locationIds: [] }).expect(200);
     expect((await restricted.get(locations).expect(200)).body.items).toEqual([]);
+
+    const person = `/api/people/${manager.memberships[0]}`;
+    await agent.patch(person).send({ role: 'super_user' }).expect(200);
+    await restricted.get(`${locations}/${sibling.id}`).expect(200);
+    await agent.patch(person).send({ role: 'fm_manager' }).expect(200);
+    await restricted.get(`${locations}/${sibling.id}`).expect(404);
+
     await agent.put(access).send({ locationIds: null }).expect(200);
     await restricted.get(`${locations}/${sibling.id}`).expect(200);
   } finally {
