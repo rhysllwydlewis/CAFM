@@ -10,6 +10,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Public CAFM homepage with a scroll-driven plant room walkthrough, an interactive sample job and links to sign in or choose a demo account where enabled.
 - Railway deployment: one service runs the API and web app, with database setup, migrations and demo reseeding before each deploy.
 - Sign-in page with email or username and password, "Keep me signed in" (30 days) and generic error messages.
 - Demo accounts panel (demo environments only): click a role to fill in its details; six roles shown, all 16 on request.

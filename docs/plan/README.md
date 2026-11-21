@@ -38,7 +38,7 @@ Also: [architecture decision records](../adr/README.md) · [agent working files]
 4. **AI built in.** Auto-triage, certificate reading (OCR → expiry dates and remedial actions), predictive maintenance, and natural-language reporting.
 5. **Transparent pricing.** Self-serve tiers for SMB, sales-led enterprise deals, free unlimited requesters.
 
-**Build approach:** A TypeScript modular monolith (Next.js web + NestJS API + PostgreSQL), multi-tenant with row-level security, built so every module sits on a shared **configuration engine** (custom fields, forms, workflows, permissions). We build the foundations first, then deliver modules in priority order. The **first thing users see is a basic login page with one-click demo credentials**; the marketing homepage comes later.
+**Build approach:** A TypeScript modular monolith (Next.js web + NestJS API + PostgreSQL), multi-tenant with row-level security, built so every module sits on a shared **configuration engine** (custom fields, forms, workflows, permissions). We build the foundations first, then deliver modules in priority order. The public homepage introduces the product and links to sign-in and, on demo environments, the demo account chooser.
 
 **Delivery:** seven phases over roughly 14–17 months, sellable to pilots after about 3 (see [08-roadmap](08-roadmap.md)):
 

@@ -112,7 +112,7 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 ## Phase 5 · Commercialise & Scale (starts during Phase 4)
 
 - **Stripe billing** live: plans, seats, add-ons, metered usage, VAT, dunning, customer billing portal; migrate manually invoiced customers.
-- **Marketing homepage** (in front of `/login`): product pages, pricing, demo CTA, sign-up, blog/SEO, comparison pages, cookie consent (PECR).
+- **Marketing site expansion**: build on the public homepage and demo CTA with product pages, pricing, sign-up, blog/SEO, comparison pages and cookie consent (PECR).
 - Self-serve sign-up, trial, onboarding wizard, industry template packs, personal demo clone.
 - Platform admin console complete: health, revenue metrics, global template publishing, announcements.
 - Customer support desk: in-app help widget/chat, help centre, feature-request voting.
