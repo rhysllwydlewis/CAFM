@@ -17,6 +17,11 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
+    },
+    "@cafm/db#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "cache": false
     }
   },
   "globalPassThroughEnv": [
