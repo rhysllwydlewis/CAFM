@@ -7,7 +7,7 @@ import { ALL_PERMISSIONS, BUILTIN_ROLES, DEMO_PERSONAS } from '@cafm/shared';
 import { AppModule } from '../src/app.module';
 import { assertNotLastSuperUser } from '../src/core/access-rules';
 import { PermissionGuard, RequireFeature, SessionGuard, TenantGuard } from '../src/core/auth.guards';
-import { createTestAccount, createTestTenant, DEMO_TENANT, seedId, signIn, startApp } from './helpers';
+import { createTestAccount, createTestTenant, DEMO_TENANT, seedId, signIn, startApp, testPassword } from './helpers';
 
 /** A probe endpoint gated on a Professional feature, to test @RequireFeature. */
 @Controller('probe')
@@ -65,8 +65,8 @@ describe('built-in roles', () => {
           data: { permissions: ['people.read'] },
         }),
       );
-      const me = await createTestAccount(db, [t.tenant.id], 'Correct-Horse-9', 'requester');
-      await createTestAccount(db, [t.tenant.id], 'Correct-Horse-9', 'helpdesk');
+      const me = await createTestAccount(db, [t.tenant.id], testPassword(), 'requester');
+      await createTestAccount(db, [t.tenant.id], testPassword(), 'helpdesk');
       const { agent } = await signIn(app, me.email, me.password);
       const people = (await agent.get('/api/people').expect(200)).body;
       expect(people.map((p: { email: string }) => p.email)).toEqual([me.email]);
@@ -163,18 +163,41 @@ describe('roles', () => {
 
 describe('changing people', () => {
   it('a Super User can change someone’s role, and it is audited', async () => {
-    const { agent } = await signIn(app, 'superuser@demo.example');
-    const hana = seedId('membership:demo-estates:helpdesk');
-    await agent.patch(`/api/people/${hana}`).send({ role: 'planner' }).expect(200);
+    const t = await createTestTenant(db);
     try {
+      const boss = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const worker = await createTestAccount(db, [t.tenant.id], testPassword(), 'helpdesk');
+      const target = worker.memberships[0]!;
+      const { agent } = await signIn(app, boss.email, boss.password);
+      await agent.patch(`/api/people/${target}`).send({ role: 'planner' }).expect(200);
       const log = (await agent.get('/api/audit').expect(200)).body;
       expect(
-        log.find((e: { entityId: string; action: string }) => e.entityId === hana && e.action === 'membership.updated'),
+        log.find(
+          (e: { entityId: string; action: string }) => e.entityId === target && e.action === 'membership.updated',
+        ),
       ).toMatchObject({
         changes: { before: { role: 'helpdesk' }, after: { role: 'planner' } },
       });
     } finally {
-      await agent.patch(`/api/people/${hana}`).send({ role: 'helpdesk' }).expect(200);
+      await t.cleanup();
+    }
+  });
+
+  it('in the demo, the demo personas and built-in roles can’t be changed', async () => {
+    const original = process.env.DEMO_MODE;
+    process.env.DEMO_MODE = 'true';
+    try {
+      const { agent } = await signIn(app, 'superuser@demo.example');
+      const hana = seedId('membership:demo-estates:helpdesk');
+      expect((await agent.patch(`/api/people/${hana}`).send({ role: 'planner' }).expect(403)).body.code).toBe(
+        'demo_locked',
+      );
+      const helpdeskRole = seedId(`role:${DEMO_TENANT}:helpdesk`);
+      expect((await agent.patch(`/api/roles/${helpdeskRole}`).send({ name: 'Renamed' }).expect(403)).body.code).toBe(
+        'demo_locked',
+      );
+    } finally {
+      process.env.DEMO_MODE = original;
     }
   });
 
@@ -201,8 +224,8 @@ describe('changing people', () => {
   it('deactivating someone signs them out', async () => {
     const t = await createTestTenant(db);
     try {
-      const boss = await createTestAccount(db, [t.tenant.id], 'Correct-Horse-9', 'super_user');
-      const worker = await createTestAccount(db, [t.tenant.id], 'Correct-Horse-9', 'helpdesk');
+      const boss = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const worker = await createTestAccount(db, [t.tenant.id], testPassword(), 'helpdesk');
       const { agent: bossAgent } = await signIn(app, boss.email, boss.password);
       const { agent: workerAgent } = await signIn(app, worker.email, worker.password);
       await workerAgent.get('/api/auth/me').expect(200);
@@ -216,8 +239,8 @@ describe('changing people', () => {
   it('one Super User can demote another while two are active', async () => {
     const t = await createTestTenant(db);
     try {
-      const a = await createTestAccount(db, [t.tenant.id], 'Correct-Horse-9', 'super_user');
-      const b = await createTestAccount(db, [t.tenant.id], 'Correct-Horse-9', 'super_user');
+      const a = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
+      const b = await createTestAccount(db, [t.tenant.id], testPassword(), 'super_user');
       const { agent } = await signIn(app, a.email, a.password);
       await agent.patch(`/api/people/${b.memberships[0]}`).send({ role: 'administrator' }).expect(200);
     } finally {

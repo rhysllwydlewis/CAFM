@@ -133,7 +133,7 @@ export class AuthService {
       name: auth.account.name,
       email: auth.account.email,
       membershipId: m.id,
-      tenant: { id: m.tenant.id, name: m.tenant.name, plan: m.tenant.plan },
+      tenant: { id: m.tenant.id, name: m.tenant.name, plan: m.tenant.plan, demo: m.tenant.demo },
       role: m.role,
       roleLabel: auth.access?.roleName ?? roleLabel(m.role),
       licence: m.licence,

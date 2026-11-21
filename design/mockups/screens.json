@@ -855,5 +855,41 @@
     "viewport": "desktop",
     "theme": "light",
     "file": "13-marketing.js"
+  },
+  {
+    "id": "shell-01-user-menu",
+    "group": "App shell",
+    "title": "User menu: organisation and theme",
+    "desc": "Opened from the name at the foot of the side menu. Sign out stays a visible button beside it.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
+  },
+  {
+    "id": "shell-02-module-coming",
+    "group": "App shell",
+    "title": "Module not built yet",
+    "desc": "Menu items for modules that arrive in a later phase.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
+  },
+  {
+    "id": "shell-03-module-locked",
+    "group": "App shell",
+    "title": "Module not in the plan",
+    "desc": "Shown when the organisation’s plan doesn’t include the module (feature()).",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
+  },
+  {
+    "id": "shell-04-mobile-nav",
+    "group": "App shell",
+    "title": "Navigation on a phone",
+    "desc": "The side menu opens as a drawer from the top bar.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
   }
 ]

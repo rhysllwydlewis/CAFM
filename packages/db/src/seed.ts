@@ -8,15 +8,18 @@ import { PrismaClient } from '@prisma/client';
 import { ALL_FEATURES, BUILTIN_ROLES, DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS, FEATURES } from '@cafm/shared';
 import { seedId } from './ids';
 
-/** Seeds (or refreshes) the built-in roles for one tenant. Custom roles are left alone. */
-export async function seedRoles(db: PrismaClient, tenantId: string): Promise<void> {
+/**
+ * Seeds (or refreshes) the built-in roles for one tenant. Custom roles are left
+ * alone. With reset, every built-in role goes back to its default.
+ */
+export async function seedRoles(db: PrismaClient, tenantId: string, reset = false): Promise<void> {
   for (const r of BUILTIN_ROLES) {
     const data = { name: r.name, description: r.description, permissions: [...r.permissions], scope: r.scope };
     await db.role.upsert({
       where: { tenantId_key: { tenantId, key: r.key } },
       create: { id: seedId(`role:${tenantId}:${r.key}`), tenantId, key: r.key, builtin: true, ...data },
       // Only the Super User role is reset on every seed; other built-ins are editable per tenant.
-      update: r.key === 'super_user' ? data : {},
+      update: reset || r.key === 'super_user' ? data : {},
     });
   }
 }

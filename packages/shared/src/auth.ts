@@ -24,7 +24,7 @@ export interface CurrentUser {
   name: string;
   email: string | null;
   membershipId: string;
-  tenant: { id: string; name: string; plan: string };
+  tenant: { id: string; name: string; plan: string; demo: boolean };
   role: string;
   roleLabel: string;
   licence: string;

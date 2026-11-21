@@ -6,6 +6,8 @@ export type { Tenant, Account, Membership, Session, AuthEvent, Role, Invite } fr
 export { seedId } from './ids';
 export { hashToken, newToken } from './tokens';
 export { createTenant, listTenants, setTenantPlan, setTenantStatus } from './tenants';
+export { resetDemo, type DemoResetResult } from './demo-reset';
+export { seed, seedRoles } from './seed';
 
 export type Tx = Prisma.TransactionClient;
 

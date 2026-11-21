@@ -3,12 +3,23 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient } from '@cafm/db';
 import { DEMO_PASSWORD } from '@cafm/shared';
-import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, sessionCookie, signIn, startApp } from './helpers';
+import {
+  createTestAccount,
+  createTestTenant,
+  DEMO_TENANT,
+  ownerDb,
+  sessionCookie,
+  signIn,
+  startApp,
+  testPassword,
+} from './helpers';
 
 let app: NestExpressApplication;
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
 const owner = ownerDb();
 const http = () => request(app.getHttpServer());
+const NEW_PASSWORD = testPassword();
+const OTHER_PASSWORD = testPassword();
 
 beforeAll(async () => {
   app = await startApp();
@@ -64,16 +75,10 @@ describe('password reset', () => {
       const weak = await http().post('/api/auth/password-reset/confirm').send({ token, password: 'short' }).expect(422);
       expect(weak.body.message).toBe('Use at least 12 characters');
 
-      await http()
-        .post('/api/auth/password-reset/confirm')
-        .send({ token, password: 'A-much-better-one-2026' })
-        .expect(204);
+      await http().post('/api/auth/password-reset/confirm').send({ token, password: NEW_PASSWORD }).expect(204);
       await oldSession.get('/api/auth/me').expect(401);
-      await signIn(app, t.email, 'A-much-better-one-2026');
-      await http()
-        .post('/api/auth/password-reset/confirm')
-        .send({ token, password: 'Another-good-one-2026' })
-        .expect(410);
+      await signIn(app, t.email, NEW_PASSWORD);
+      await http().post('/api/auth/password-reset/confirm').send({ token, password: OTHER_PASSWORD }).expect(410);
       expect((await http().get(`/api/auth/password-reset/${token}`).expect(200)).body).toEqual({ valid: false });
     } finally {
       await t.cleanup();
@@ -89,10 +94,7 @@ describe('password reset', () => {
         where: { accountId: t.account.id },
         data: { expiresAt: new Date(Date.now() - 1000) },
       });
-      await http()
-        .post('/api/auth/password-reset/confirm')
-        .send({ token, password: 'A-much-better-one-2026' })
-        .expect(410);
+      await http().post('/api/auth/password-reset/confirm').send({ token, password: NEW_PASSWORD }).expect(410);
     } finally {
       await t.cleanup();
     }
@@ -126,13 +128,13 @@ describe('invites', () => {
         .expect(422);
       await http()
         .post(`/api/auth/invites/${token}/accept`)
-        .send({ name: 'New Person', password: 'A-strong-password-2026' })
+        .send({ name: 'New Person', password: NEW_PASSWORD })
         .expect(400);
 
       const newcomer = request.agent(app.getHttpServer());
       const accepted = await newcomer
         .post(`/api/auth/invites/${token}/accept`)
-        .send({ name: 'New Person', password: 'A-strong-password-2026', acceptTerms: true })
+        .send({ name: 'New Person', password: NEW_PASSWORD, acceptTerms: true })
         .expect(200);
       expect(accepted.body).toEqual({ status: 'signed_in', landingPage: '/app' });
       expect(sessionCookie(accepted)).toBeTruthy();
@@ -141,7 +143,7 @@ describe('invites', () => {
 
       await http()
         .post(`/api/auth/invites/${token}/accept`)
-        .send({ name: 'Again', password: 'A-strong-password-2026', acceptTerms: true })
+        .send({ name: 'Again', password: NEW_PASSWORD, acceptTerms: true })
         .expect(410);
       const log = (await agent.get('/api/audit').expect(200)).body as { entityId: string; action: string }[];
       expect(log.filter((e) => e.entityId === invite.id).map((e) => e.action)).toEqual(
@@ -160,7 +162,7 @@ describe('invites', () => {
 
   it('someone with an account must sign in as that account to accept', async () => {
     const tt = await createTestTenant(db);
-    const boss = await createTestAccount(db, [tt.tenant.id], 'Correct-Horse-9', 'super_user');
+    const boss = await createTestAccount(db, [tt.tenant.id], testPassword(), 'super_user');
     const other = await createTestAccount(db, [DEMO_TENANT]);
     try {
       const { agent } = await signIn(app, boss.email, boss.password);
@@ -214,7 +216,7 @@ describe('invites', () => {
     expect((await http().get(`/api/auth/invites/${token}`).expect(200)).body.status).toBe('revoked');
     await http()
       .post(`/api/auth/invites/${token}/accept`)
-      .send({ name: 'X', password: 'A-strong-password-2026', acceptTerms: true })
+      .send({ name: 'X', password: NEW_PASSWORD, acceptTerms: true })
       .expect(410);
   });
 

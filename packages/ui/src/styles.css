@@ -321,3 +321,270 @@ svg.i {
     display: none;
   }
 }
+
+/* App shell (mockups home-01, home-03, home-04, shell-01 to shell-04) */
+button.gsearch {
+  font: inherit;
+  color: var(--text-faint);
+  cursor: pointer;
+  text-align: left;
+}
+button.gsearch:hover {
+  border-color: var(--border-control);
+}
+button.tb-icon {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+button.tb-icon:hover {
+  background: var(--bg-muted);
+  color: var(--text);
+}
+.shell-menu-button,
+.shell-nav-close {
+  display: none;
+}
+.nav-item .nav-lock {
+  margin-left: auto;
+  color: #7f8995;
+  display: flex;
+}
+.nav-foot {
+  position: relative;
+}
+.user-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.user-menu-trigger:hover {
+  background: var(--nav-active-bg);
+}
+.user-menu-trigger .who,
+.user-menu-trigger .xs {
+  display: block;
+}
+.user-menu-panel {
+  left: 8px;
+  bottom: calc(100% + 8px);
+  width: 300px;
+  z-index: 30;
+  color: var(--text);
+}
+.user-menu-head {
+  padding: 14px 14px 12px;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.user-menu-section {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.user-menu-section:last-child {
+  border-bottom: 0;
+  padding: 8px 14px 12px;
+}
+.user-menu-label {
+  padding: 6px 4px;
+}
+.user-menu-item {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.user-menu-item:hover:not(:disabled) {
+  background: var(--bg-muted);
+}
+.user-menu-item:disabled {
+  cursor: default;
+}
+.seg button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.scrim {
+  z-index: 40;
+}
+.palette {
+  position: fixed;
+  left: 50%;
+  top: 110px;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - 32px));
+  z-index: 50;
+}
+.palette-input {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 10px;
+}
+.palette-input input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+}
+.palette-results {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.palette-results .menu-i {
+  cursor: pointer;
+}
+.shell-drawer {
+  position: fixed;
+  width: min(420px, 100vw);
+  z-index: 50;
+}
+.shell-scrim-light {
+  background: rgba(12, 16, 22, 0.18);
+}
+.shell-drawer-head {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.shell-drawer-head h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.shell-banner {
+  margin: var(--space-4) var(--space-8) 0;
+}
+.module-empty {
+  padding: 56px 32px;
+}
+.module-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: inline-grid;
+  place-items: center;
+}
+.module-empty-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 16px 0 6px;
+}
+.module-empty-text {
+  margin: 0 auto 16px;
+  max-width: 460px;
+}
+
+@media (max-width: 767px) {
+  .shell-menu-button {
+    display: grid;
+  }
+  .topbar .gsearch {
+    width: auto;
+    margin-left: auto;
+  }
+  .topbar .gsearch span:not(.kbd) {
+    /* Visually hidden but still the button's spoken name. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .topbar .gsearch .kbd {
+    display: none;
+  }
+  /* On a phone the side menu is a slim bar (name and Sign out stay visible); the Menu button
+     opens the full menu as a drawer (mockup shell-04). */
+  .app > .nav.shell-nav-open {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 85vw);
+    z-index: 50;
+    border-bottom: 0;
+  }
+  .app > .nav.shell-nav-open .nav-top {
+    flex-direction: column;
+    flex: none;
+  }
+  .app > .nav.shell-nav-open .nav-top .tenant,
+  .app > .nav.shell-nav-open .nav-scroll {
+    display: block;
+  }
+  .app > .nav.shell-nav-open .nav-scroll {
+    overflow-y: auto;
+    flex: 1;
+  }
+  .app > .nav.shell-nav-open .nav-foot {
+    border-top: 1px solid var(--nav-border);
+    flex-wrap: wrap;
+  }
+  .app > .nav.shell-nav-open .shell-nav-close {
+    display: inline-flex;
+  }
+  /* Closed: a slim bar where the name takes the spare width and truncates beside Sign out. */
+  .app > .nav:not(.shell-nav-open) .nav-top {
+    flex: 0 0 auto;
+  }
+  .app > .nav:not(.shell-nav-open) .nav-foot {
+    flex: 1;
+    min-width: 0;
+  }
+  .user-menu {
+    min-width: 0;
+  }
+  .user-menu-trigger .who,
+  .user-menu-trigger .xs {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .shell-banner {
+    margin: var(--space-4) var(--space-4) 0;
+  }
+}
+
+/* The side menu stays put at full height and scrolls on its own. */
+@media (min-width: 768px) {
+  .app > .nav {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .app > .nav .nav-scroll {
+    overflow-y: auto;
+  }
+}
+@media (max-width: 767px) {
+  .app > .nav.shell-nav-open {
+    align-items: stretch;
+  }
+}
+
+.nav .btn.ghost.shell-nav-close {
+  color: var(--nav-text-strong);
+}

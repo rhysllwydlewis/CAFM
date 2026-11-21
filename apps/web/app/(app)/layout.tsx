@@ -1,52 +1,46 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
-import { Icon, Logo, initials } from '@cafm/ui';
+import { can, feature, PLAN_LABELS, type OrganisationOption, type Plan } from '@cafm/shared';
+import { apiGet } from '@/lib/api';
+import { NAV } from '@/lib/nav';
 import { currentUser } from '@/lib/session';
+import { AppShell } from './shell/app-shell';
+import type { ShellNavSection } from './shell/types';
 import { SignOutButton } from './sign-out-button';
 
-const PLAN_LABELS: Record<string, string> = {
-  free: 'Free',
-  starter: 'Starter',
-  professional: 'Professional',
-  enterprise: 'Enterprise',
-};
+async function organisations(): Promise<OrganisationOption[]> {
+  const res = await apiGet('/auth/organisations');
+  return res.ok ? ((await res.json()) as OrganisationOption[]) : [];
+}
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
+  const orgs = await organisations();
+
+  // Menu items the member's role allows (can()); locked if the plan doesn't include them (feature()).
+  const sections: ShellNavSection[] = NAV.map((section) => ({
+    label: section.label,
+    items: section.items
+      .filter((item) => !item.permission || can(user, item.permission))
+      .map((item) => ({
+        key: item.key,
+        label: item.label,
+        icon: item.icon,
+        href: item.href,
+        locked: !!item.feature && !feature(user.entitlements, item.feature),
+      })),
+  })).filter((s) => s.items.length > 0);
+
   return (
-    <div className="app">
-      <aside className="nav" aria-label="Main">
-        <div className="nav-top">
-          <div className="brand">
-            <Logo size={28} />
-            <span>CAFM</span>
-          </div>
-          <div className="tenant">
-            <span className="t-logo">{initials(user.tenant.name)}</span>
-            <div className="grow">
-              <div className="t-name">{user.tenant.name}</div>
-              <div className="t-sub">{PLAN_LABELS[user.tenant.plan] ?? user.tenant.plan}</div>
-            </div>
-          </div>
-        </div>
-        <nav className="nav-scroll">
-          <div className="nav-sec">
-            <Link className="nav-item active" href="/app" aria-current="page">
-              <Icon name="dashboard" />
-              <span>Home</span>
-            </Link>
-          </div>
-        </nav>
-        <div className="nav-foot">
-          <span className="av nav-av">{initials(user.name)}</span>
-          <div className="grow">
-            <div className="who">{user.name}</div>
-            <div className="xs">{user.roleLabel}</div>
-          </div>
-          <SignOutButton />
-        </div>
-      </aside>
-      <main className="main">{children}</main>
-    </div>
+    <AppShell
+      sections={sections}
+      tenantName={user.tenant.name}
+      planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
+      demo={user.tenant.demo}
+      user={{ name: user.name, email: user.email, roleLabel: user.roleLabel }}
+      organisations={orgs.map((o) => ({ ...o, current: o.membershipId === user.membershipId }))}
+      footer={<SignOutButton />}
+    >
+      {children}
+    </AppShell>
   );
 }

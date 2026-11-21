@@ -13,7 +13,7 @@ import {
 import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
 import { updateMemberSchema } from '@cafm/shared';
-import { assertCanGrant, assertNotLastSuperUser } from '../../core/access-rules';
+import { assertCanGrant, assertNotDemoLocked, assertNotLastSuperUser } from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -68,7 +68,10 @@ export class PeopleController {
     if (membershipId === actor.id) throw new ForbiddenException({ code: 'cannot_change_self' });
 
     const result = await withTenant(this.db, actor.tenantId, async (tx) => {
-      const target = await tx.membership.findFirst({ where: { id: membershipId, tenantId: actor.tenantId } });
+      const target = await tx.membership.findFirst({
+        where: { id: membershipId, tenantId: actor.tenantId },
+        include: { account: { select: { isDemo: true } } },
+      });
       if (!target) throw new NotFoundException();
 
       const currentRole = await tx.role.findUnique({
@@ -83,6 +86,8 @@ export class PeopleController {
         if (!newRole) throw new NotFoundException({ code: 'unknown_role' });
         assertCanGrant(auth.access!, actor.role, newRole.permissions);
       }
+
+      assertNotDemoLocked(target.account.isDemo);
 
       const leavesSuperUser =
         target.role === 'super_user' &&

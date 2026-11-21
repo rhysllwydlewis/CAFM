@@ -17,6 +17,14 @@ export async function startApp(rootModule?: Type<unknown>): Promise<NestExpressA
   return app;
 }
 
+/**
+ * A fresh password that passes the rules, generated per run so no
+ * password-like literals live in the repository (secret scanners flag them).
+ */
+export function testPassword(): string {
+  return `Pw-${randomUUID()}`;
+}
+
 /** The session token from a response's Set-Cookie header. */
 export function sessionCookie(res: { headers: Record<string, unknown> }): string {
   const header = ([] as string[]).concat((res.headers['set-cookie'] as string[] | string | undefined) ?? []);
@@ -90,7 +98,7 @@ export async function signIn(app: NestExpressApplication, identifier: string, pa
 export async function createTestAccount(
   db: PrismaClient,
   tenants: string[],
-  password = 'Correct-Horse-9',
+  password = testPassword(),
   role = 'requester',
 ) {
   const email = `test-${randomUUID()}@test.example`;

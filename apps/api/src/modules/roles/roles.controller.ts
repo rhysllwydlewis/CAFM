@@ -17,7 +17,7 @@ import {
 import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
 import { createRoleSchema, updateRoleSchema } from '@cafm/shared';
-import { assertCanGrant } from '../../core/access-rules';
+import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -105,6 +105,7 @@ export class RolesController {
       const role = await tx.role.findFirst({ where: { id, tenantId } });
       if (!role) throw new NotFoundException();
       if (role.key === 'super_user') throw new ForbiddenException({ code: 'super_user_role_locked' });
+      assertNotDemoLocked(role.builtin);
       // Editing a role is granting its permissions: check both the old and the new set.
       assertCanGrant(auth.access!, auth.membership!.role, role.permissions);
       if (input.permissions) assertCanGrant(auth.access!, auth.membership!.role, input.permissions);

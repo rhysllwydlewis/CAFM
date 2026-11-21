@@ -1,0 +1,90 @@
+'use client';
+
+import { useEffect, useRef, type ReactNode } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Icon, Logo, initials } from '@cafm/ui';
+import { t } from '@/lib/i18n';
+import { UserMenu } from './user-menu';
+import type { ShellNavSection, ShellOrganisation } from './types';
+
+interface Props {
+  sections: ShellNavSection[];
+  tenantName: string;
+  planLabel: string;
+  user: { name: string; email: string | null; roleLabel: string };
+  organisations: ShellOrganisation[];
+  footer: ReactNode;
+  open: boolean;
+  onClose: () => void;
+}
+
+/** The side menu. On a phone it is a drawer opened from the top bar (mockup shell-04). */
+export function SideNav({ sections, tenantName, planLabel, user, organisations, footer, open, onClose }: Props) {
+  const pathname = usePathname();
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    ref.current?.querySelector<HTMLElement>('a, button')?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  return (
+    <>
+      {open && <div className="scrim shell-nav-scrim" onClick={onClose} aria-hidden="true" />}
+      <aside ref={ref} className={`nav ${open ? 'shell-nav-open' : ''}`} aria-label="Main">
+        <div className="nav-top">
+          <div className="row between">
+            <div className="brand">
+              <Logo size={28} />
+              <span>CAFM</span>
+            </div>
+            <button type="button" className="btn ghost sm shell-nav-close" onClick={onClose}>
+              {t('shell.closeMenu')}
+            </button>
+          </div>
+          <div className="tenant">
+            <span className="t-logo">{initials(tenantName)}</span>
+            <div className="grow">
+              <div className="t-name">{tenantName}</div>
+              <div className="t-sub">{planLabel}</div>
+            </div>
+          </div>
+        </div>
+        <nav className="nav-scroll" aria-label="Modules">
+          {sections.map((section) => (
+            <div className="nav-sec" key={section.label || 'main'}>
+              {section.label && <div className="nav-label">{section.label}</div>}
+              {section.items.map((item) => {
+                const active = item.href === '/app' ? pathname === '/app' : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.key}
+                    className={`nav-item ${active ? 'active' : ''}`}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <Icon name={item.icon} />
+                    <span>{item.label}</span>
+                    {item.locked && (
+                      <span className="nav-lock" title={t('shell.locked')}>
+                        <Icon name="locked" size={14} label={t('shell.locked')} />
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+        <div className="nav-foot">
+          <UserMenu user={user} organisations={organisations} />
+          {footer}
+        </div>
+      </aside>
+    </>
+  );
+}

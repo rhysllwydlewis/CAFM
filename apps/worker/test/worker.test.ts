@@ -98,3 +98,20 @@ describe('email.send', () => {
     expect(await db.capturedEmail.findFirst({ where: { to } })).toMatchObject({ tenantId, reason: 'demo' });
   });
 });
+
+describe('demo reset schedule', () => {
+  it('schedules the reset for 03:00 UK time', async () => {
+    const { scheduleDemoReset, DEMO_RESET_SCHEDULE } = await import('../src/jobs/demo-reset');
+    const owner = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL ?? appUrl });
+    try {
+      const { handlers } = await import('../src/handlers');
+      handlers.delete('demo.reset');
+      await scheduleDemoReset(worker.queue, owner, () => {});
+      const scheduler = await worker.queue.getJobScheduler('demo-reset');
+      expect(scheduler).toMatchObject({ pattern: DEMO_RESET_SCHEDULE.pattern, tz: 'Europe/London' });
+      await worker.queue.removeJobScheduler('demo-reset');
+    } finally {
+      await owner.$disconnect();
+    }
+  });
+});

@@ -6,10 +6,14 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- Menu section labels are lighter, so they meet WCAG AA contrast on the dark menu.
 - A labelled Sign out button appears next to your name and lets you retry if sign-out fails.
 
 ### Added
 
+- The full app shell: a menu of every module your role can use (locked modules say which plan includes them; modules still to come say which phase), a command palette (Ctrl K) to jump to any page, a notifications drawer, light, dark or system theme, and a menu drawer on phones.
+- Switch organisation from the user menu, for people who belong to more than one.
+- Demo guard rails: the demo personas and built-in roles can't be changed, and the demo resets every night at 03:00 UK time, with a warning banner 10 minutes before.
 - Password reset by email: a single-use link that works for 30 minutes and signs you out everywhere. The demo accounts can't be reset.
 - Invitations: invite someone into the organisation with a role; they set a password, accept the terms and land in the app. People who already have an account sign in to accept.
 - Emails are queued and sent by the background worker. Email from demo organisations, or when no mail server is set up, is captured instead of sent.

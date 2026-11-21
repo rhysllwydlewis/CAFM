@@ -38,7 +38,16 @@ const children = [
   spawn(process.execPath, [resolve(root, 'apps/api/dist/main.js')], { env, stdio: 'inherit' }),
   // The background worker (outbox, scheduled jobs) needs Redis; without it the app still runs.
   ...(env.REDIS_URL
-    ? [spawn(process.execPath, [resolve(root, 'apps/worker/dist/main.js')], { env, stdio: 'inherit' })]
+    ? [
+        spawn(process.execPath, [resolve(root, 'apps/worker/dist/main.js')], {
+          // Only the worker, and only in demo environments, gets the owner connection: for the nightly demo reset.
+          env: {
+            ...env,
+            ...(process.env.DEMO_MODE === 'true' ? { OWNER_DATABASE_URL: process.env.DATABASE_URL } : {}),
+          },
+          stdio: 'inherit',
+        }),
+      ]
     : (console.warn('[start] REDIS_URL is not set, so the background worker is not running'), [])),
   spawn(resolve(root, 'apps/web/node_modules/.bin/next'), ['start', '--port', webPort, '--hostname', '0.0.0.0'], {
     cwd: resolve(root, 'apps/web'),

@@ -28,6 +28,9 @@ async function noAxeViolations(page: Page) {
   expect(results.violations.map((v) => v.id)).toEqual([]);
 }
 
+const FIRST_PASSWORD = `Pw-${crypto.randomUUID()}`;
+const NEW_PASSWORD = `Pw-${crypto.randomUUID()}`;
+
 test.describe('invites and password reset', () => {
   test.describe.configure({ mode: 'serial' });
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.example`;
@@ -58,8 +61,8 @@ test.describe('invites and password reset', () => {
     await noAxeViolations(page);
 
     await page.getByLabel('Your name').fill('Eve Tester');
-    await page.getByLabel('New password', { exact: true }).fill('Lantern-orbit-harbour-7');
-    await page.getByLabel('Confirm new password').fill('Lantern-orbit-harbour-7');
+    await page.getByLabel('New password', { exact: true }).fill(FIRST_PASSWORD);
+    await page.getByLabel('Confirm new password').fill(FIRST_PASSWORD);
     await page.getByRole('button', { name: 'Accept and join' }).click();
     await expect(page.getByRole('alert').filter({ hasText: /\S/ })).toHaveText(
       'Accept the terms of service to continue.',
@@ -80,14 +83,14 @@ test.describe('invites and password reset', () => {
     await page.goto(await linkFromEmail(email, 'reset-password'));
     await expect(page.getByRole('heading', { name: 'Choose a new password' })).toBeVisible();
     await noAxeViolations(page);
-    await page.getByLabel('New password', { exact: true }).fill('Copper-meadow-lantern-9');
-    await page.getByLabel('Confirm new password').fill('Copper-meadow-lantern-9');
+    await page.getByLabel('New password', { exact: true }).fill(NEW_PASSWORD);
+    await page.getByLabel('Confirm new password').fill(NEW_PASSWORD);
     await page.getByRole('button', { name: 'Save new password' }).click();
     await expect(page.getByRole('status')).toContainText('Your password has been changed');
 
     await page.goto('/login');
     await page.getByLabel('Email or username').fill(email);
-    await page.getByLabel('Password', { exact: true }).fill('Copper-meadow-lantern-9');
+    await page.getByLabel('Password', { exact: true }).fill(NEW_PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/app$/);
   });

@@ -22,3 +22,13 @@ export const LAST_SUPER_USER = 'Every organisation needs at least one active Sup
 export function assertNotLastSuperUser(activeSuperUsers: number): void {
   if (activeSuperUsers <= 1) throw new ConflictException({ code: 'last_super_user', message: LAST_SUPER_USER });
 }
+
+/** In the demo, the shared demo personas and built-in roles stay as seeded (doc 06 § guard rails). */
+export function assertNotDemoLocked(locked: boolean): void {
+  if (locked && process.env.DEMO_MODE === 'true') {
+    throw new ForbiddenException({
+      code: 'demo_locked',
+      message: 'This is part of the demo and can’t be changed. The demo resets every night.',
+    });
+  }
+}
