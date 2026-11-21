@@ -23,7 +23,7 @@
 }
 .journey[data-motion] {
   --view: 100svh;
-  min-height: calc(var(--view) + min(99svh, 840px));
+  min-height: calc(var(--view) + clamp(1400px, 230svh, 2200px));
 }
 .stage {
   height: var(--view);
@@ -38,7 +38,9 @@
   top: 0;
 }
 .devices,
+.devices picture,
 .devices img,
+.devices video,
 .plant {
   position: absolute;
   inset: 0;
@@ -50,10 +52,10 @@
   object-fit: cover;
   pointer-events: none;
 }
-.devices img {
+.devices :is(img, video) {
   object-fit: cover;
 }
-video.devices[data-ready='false'] {
+.devices video[data-ready='false'] {
   visibility: hidden;
 }
 .plant {
@@ -475,10 +477,9 @@ video.devices[data-ready='false'] {
     --view: max(570px, 100svh);
   }
   .journey[data-motion] {
-    min-height: calc(var(--view) + min(70svh, 520px));
+    min-height: calc(var(--view) + clamp(1200px, 210svh, 1800px));
   }
-  .devices,
-  .devices img {
+  .devices :is(img, video) {
     object-position: center;
   }
   .plant {
