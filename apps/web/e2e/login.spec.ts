@@ -72,13 +72,37 @@ test.describe('sign in with a demo account', () => {
 
     await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 503 }), { times: 1 });
     const signOut = page.getByRole('button', { name: 'Sign out' });
-    await signOut.click();
+    await signOut.focus();
+    await page.keyboard.press('Enter');
     const alert = page.getByRole('complementary', { name: 'Main' }).getByRole('alert');
     await expect(alert).toHaveText('Could not sign out. Try again.');
     await expect(alert).toBeInViewport();
     await expect(page).toHaveURL(/\/app$/);
+    await expect(signOut).toBeFocused();
 
-    await signOut.click();
+    await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test('the account role stays clear of Sign out on a narrow screen', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Show all 16 demo roles ▾' }).click();
+    await page.getByRole('button', { name: /^Administrator\W+Alex Rowe/ }).click();
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await page.evaluate(() => document.fonts.ready);
+
+    const nav = page.getByRole('complementary', { name: 'Main' });
+    const signOut = nav.getByRole('button', { name: 'Sign out' });
+    await expect(signOut).toBeInViewport({ ratio: 1 });
+
+    const roleRight = await nav.getByText('Administrator', { exact: true }).evaluate((role) => {
+      const text = document.createRange();
+      text.selectNodeContents(role);
+      return text.getBoundingClientRect().right;
+    });
+    const signOutLeft = await signOut.evaluate((button) => button.getBoundingClientRect().left);
+    expect(roleRight).toBeLessThan(signOutLeft);
   });
 });

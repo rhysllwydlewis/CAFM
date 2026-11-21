@@ -240,6 +240,7 @@ a.nav-item:hover:not(.active) {
 }
 .nav-foot {
   flex-wrap: wrap;
+  overflow-wrap: anywhere;
 }
 .nav-foot .nav-signout {
   border-color: var(--nav-border);
@@ -248,7 +249,11 @@ a.nav-item:hover:not(.active) {
 .nav-foot .nav-signout svg.i {
   color: inherit;
 }
-.nav-foot .nav-signout:hover:not(:disabled) {
+.nav-foot .nav-signout[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: default;
+}
+.nav-foot .nav-signout:hover:not([aria-disabled='true']) {
   background: var(--nav-active-bg);
 }
 .nav-signout-error {
@@ -308,5 +313,11 @@ svg.i {
   }
   .page {
     padding: var(--space-5) var(--space-4);
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-foot .nav-av {
+    display: none;
   }
 }

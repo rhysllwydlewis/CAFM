@@ -9,6 +9,7 @@ export function SignOutButton() {
   const [failed, setFailed] = useState(false);
 
   async function signOut() {
+    if (busy) return;
     setBusy(true);
     setFailed(false);
     const response = await postJson('/auth/logout').catch(() => null);
@@ -27,7 +28,7 @@ export function SignOutButton() {
         size="sm"
         icon="log-out"
         className="nav-signout"
-        disabled={busy}
+        aria-disabled={busy}
         aria-busy={busy}
         onClick={signOut}
       >
