@@ -7,6 +7,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 ### Changed
 
 - Menu section labels are lighter, so they meet WCAG AA contrast on the dark menu.
+- The homepage uses sharper device and plant room media and gives each scroll scene more time on screen.
 - A labelled Sign out button appears next to your name and lets you retry if sign-out fails.
 
 ### Added

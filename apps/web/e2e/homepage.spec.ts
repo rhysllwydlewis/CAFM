@@ -1,6 +1,26 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
+test('small scrolls leave time to read the opening, desk and plant room', async ({ page }) => {
+  await page.goto('/');
+  const scenes = page.getByRole('navigation', { name: 'Work order sequence' });
+  const stage = page.locator('[data-chapter]');
+  await expect(scenes.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'step');
+
+  await page.mouse.wheel(0, 120);
+  await expect
+    .poll(() => stage.evaluate((el) => Number(el.style.getPropertyValue('--progress'))))
+    .toBeGreaterThan(0.045);
+  await expect(scenes.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'step');
+
+  await page.mouse.wheel(0, 250);
+  await expect(scenes.getByRole('button', { name: 'At the desk' })).toHaveAttribute('aria-current', 'step');
+  await page.mouse.wheel(0, 300);
+  await expect(scenes.getByRole('button', { name: 'Plant room' })).toHaveAttribute('aria-current', 'step');
+  await page.mouse.wheel(0, -300);
+  await expect(scenes.getByRole('button', { name: 'At the desk' })).toHaveAttribute('aria-current', 'step');
+});
+
 test('the homepage motion leads from the desk to the completed job and its asset', async ({ page }) => {
   await page.goto('/');
   const scenes = page.getByRole('navigation', { name: 'Work order sequence' });
