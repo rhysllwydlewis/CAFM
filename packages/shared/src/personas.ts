@@ -3,6 +3,8 @@
  * (docs/plan/06-login-and-demo.md). Used by the seed and by the login page's
  * demo panel. Never shown when DEMO_MODE is off.
  */
+import type { Role } from './permissions';
+
 export type PersonaGroup = 'office' | 'field' | 'other';
 export type Licence = 'full' | 'mobile' | 'requester' | 'contractor' | 'client' | 'read_only';
 
@@ -10,7 +12,8 @@ export interface DemoPersona {
   key: string;
   name: string;
   email: string;
-  role: string;
+  role: Role;
+  /** Short label for the demo card (auth-01); the app shows the full role name. */
   roleLabel: string;
   description: string;
   licence: Licence;
@@ -23,7 +26,7 @@ export interface DemoPersona {
 const p = (
   key: string,
   name: string,
-  role: string,
+  role: Role,
   roleLabel: string,
   description: string,
   licence: Licence,
@@ -86,6 +89,3 @@ export const DEMO_TENANTS: DemoTenant[] = [
 
 /** Demo password (doc 06). Only ever exposed when DEMO_MODE=true. */
 export const DEMO_PASSWORD = 'CafmDemo!2026';
-
-export const ROLE_LABELS: Record<string, string> = Object.fromEntries(DEMO_PERSONAS.map((x) => [x.role, x.roleLabel]));
-ROLE_LABELS.super_user = 'Super User';

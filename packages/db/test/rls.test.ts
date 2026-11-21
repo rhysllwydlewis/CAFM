@@ -56,6 +56,23 @@ describe('row-level security on membership', () => {
     expect(rows.map((r) => r.id)).toEqual([seedId('membership:demo-estates:technician')]);
   });
 
+  it('never lets the sign-in (account) context change memberships', async () => {
+    const accountId = seedId('account:technician');
+    const changed = await withAccount(db, accountId, async (tx) => ({
+      updated: (await tx.membership.updateMany({ where: { accountId }, data: { role: 'super_user' } })).count,
+      deleted: (await tx.membership.deleteMany({ where: { accountId } })).count,
+    }));
+    expect(changed).toEqual({ updated: 0, deleted: 0 });
+    const insert = withAccount(db, accountId, (tx) =>
+      tx.membership.create({ data: { tenantId: starter, accountId, role: 'super_user', licence: 'full' } }),
+    );
+    await expect(insert).rejects.toThrow(/row-level security/);
+  });
+
+  it('cannot read or change the migration history', async () => {
+    await expect(db.$queryRaw`SELECT count(*) FROM "_prisma_migrations"`).rejects.toThrow(/permission denied/);
+  });
+
   it('does not leak the tenant context to the next transaction', async () => {
     await withTenant(db, demo, (tx) => tx.membership.count());
     expect(await db.membership.count()).toBe(0);

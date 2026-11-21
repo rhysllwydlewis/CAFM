@@ -110,19 +110,32 @@ ALTER TABLE "session" ADD CONSTRAINT "session_membership_id_fkey" FOREIGN KEY ("
 
 -- Row-level security -------------------------------------------------------
 -- Tenant-owned tables are only visible inside the current tenant
--- (app.tenant_id, set transaction-locally by withTenant). Membership is also
--- visible to its own account (app.account_id) so sign-in can list the
--- account's organisations. With no context set, nothing is visible.
+-- (app.tenant_id, set transaction-locally by withTenant). With no context
+-- set, nothing is visible.
 ALTER TABLE "membership" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY membership_isolation ON "membership"
+
+-- Reads: the current tenant's rows, plus (during sign-in only, when
+-- app.account_id is set) the signed-in account's own memberships.
+CREATE POLICY membership_read ON "membership" FOR SELECT
   USING (
     tenant_id::text = current_setting('app.tenant_id', true)
     OR account_id::text = current_setting('app.account_id', true)
-  )
+  );
+
+-- Writes: only inside the current tenant. The account context never
+-- grants insert, update or delete.
+CREATE POLICY membership_insert ON "membership" FOR INSERT
   WITH CHECK (tenant_id::text = current_setting('app.tenant_id', true));
+CREATE POLICY membership_update ON "membership" FOR UPDATE
+  USING (tenant_id::text = current_setting('app.tenant_id', true))
+  WITH CHECK (tenant_id::text = current_setting('app.tenant_id', true));
+CREATE POLICY membership_delete ON "membership" FOR DELETE
+  USING (tenant_id::text = current_setting('app.tenant_id', true));
 
 -- The application role (cafm_app) owns nothing, so RLS always applies to it.
 -- It is created outside migrations (infra/postgres/init.sql).
 GRANT USAGE ON SCHEMA public TO cafm_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO cafm_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO cafm_app;
+-- Migration history is the owner's business only.
+REVOKE ALL ON "_prisma_migrations" FROM cafm_app;

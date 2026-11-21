@@ -32,3 +32,5 @@ export interface CurrentUser {
 
 /** Generic message for any failed sign-in, so accounts can't be enumerated. */
 export const SIGN_IN_FAILED = 'Email/username or password is incorrect';
+
+export const TOO_MANY_ATTEMPTS = 'Too many sign-in attempts. Wait a few minutes and try again.';
