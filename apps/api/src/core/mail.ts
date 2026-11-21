@@ -15,7 +15,10 @@ export interface EmailMessage {
  * request's Host header, so links can't be pointed at another site.
  */
 export function appUrl(): string {
-  return (process.env.APP_URL ?? process.env.WEB_ORIGIN?.split(',')[0] ?? 'http://localhost:3000').replace(/\/$/, '');
+  const { APP_URL, RAILWAY_PUBLIC_DOMAIN, WEB_ORIGIN } = process.env;
+  // On Railway, a PR preview environment has its own domain; links must point there, not at production.
+  const railway = RAILWAY_PUBLIC_DOMAIN ? `https://${RAILWAY_PUBLIC_DOMAIN}` : undefined;
+  return (APP_URL || railway || WEB_ORIGIN?.split(',')[0] || 'http://localhost:3000').replace(/\/$/, '');
 }
 
 /** Queues a tenant email in the current transaction. */

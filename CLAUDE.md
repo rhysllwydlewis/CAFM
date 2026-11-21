@@ -4,7 +4,14 @@ Guidance for anyone (human or AI agent) working in this repository. Read this fi
 
 ## What this is
 
-A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Phase 0 is under way: the monorepo, database with row-level security, sign-in and the login page exist; everything else is still to build.
+A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Phase 0 (foundations) is built:
+
+- the monorepo, database with row-level security, and sign-in, password reset and invites
+- roles and permissions, entitlements, audit, the outbox and worker
+- the app shell, the demo guard rails and the configuration engine
+- CI/CD
+
+Phase 1 modules (doc 08) are next.
 
 ## Sources of truth (in this order)
 
@@ -62,7 +69,11 @@ pnpm cafm tenant:list   # platform tenant CLI (owner role): tenant:create, tenan
 
 Copy `.env.example` to `.env` and export its variables (`set -a; . ./.env; set +a`). Local services: `docker compose up -d` (Postgres, Redis, MinIO, Mailpit); set `MINIO_ROOT_PASSWORD` in `.env` first.
 
-Deploying: see `docs/deploy/railway.md` (one Railway service; `pnpm start` sets up the database, then runs the app).
+Deploying: see `docs/deploy/railway.md` (one Railway service; `pnpm start` sets up the database, then runs the app; PR preview environments) and `docs/deploy/container.md` (the `Dockerfile`, built in CI).
+
+Commits, branches and PR titles: `docs/contributing/commits.md`. Imperative and sentence case, no `feat:` prefixes, 72 characters at most. CI checks PR titles.
+
+Configuration engine (`packages/config-engine`): custom fields per entity type (`/api/config/fields`, validate values with `validateCustom`), reference numbers from `nextNumber(tx, tenantId, key)` in `apps/api/src/core/config.ts`, and `recordVersion()` for any configuration change that needs history and rollback.
 
 Permissions and plans: add permission keys to `packages/shared/src/permissions.ts` and feature keys to `entitlements.ts`; guard endpoints with `@RequirePermission()` and `@RequireFeature()`; record changes with `audit()` and queue side effects with `enqueue()` in the same `withTenant` transaction. Worker handlers register a topic in `apps/worker/src/handlers.ts`.
 

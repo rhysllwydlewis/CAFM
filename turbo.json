@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "outputs": ["dist/**"],
       "env": ["API_URL", "NODE_ENV"]
     },
     "typecheck": {
@@ -22,6 +22,18 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
       "cache": false
+    },
+    "@cafm/web#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/design/icons/sprite.svg",
+        "$TURBO_ROOT$/design/icons/logo/logomark.svg",
+        "$TURBO_ROOT$/design/mockups/src/styles.css",
+        "$TURBO_ROOT$/design/tokens/**"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "public/icons.svg", "public/favicon.svg"],
+      "env": ["API_URL", "NODE_ENV"]
     }
   },
   "globalPassThroughEnv": [

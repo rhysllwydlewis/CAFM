@@ -1,0 +1,33 @@
+name: PR title
+
+# Squash merges use the PR title as the commit message on main, so it follows
+# the commit conventions in docs/contributing/commits.md.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  title:
+    name: Check PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the title
+        env:
+          # Passed through the environment, never interpolated into the script.
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          problems=()
+          [ ${#TITLE} -le 72 ] || problems+=("is ${#TITLE} characters; keep it to 72 or fewer")
+          [[ "$TITLE" =~ ^[A-Z0-9] ]] || problems+=("should start with a capital letter (sentence case)")
+          [[ "$TITLE" =~ [.]$ ]] && problems+=("shouldn't end with a full stop")
+          [[ "$TITLE" =~ ^(feat|fix|chore|docs|refactor|test|ci|build|perf|style)(\(.*\))?!?: ]] && problems+=("uses a type prefix; describe the change in plain words instead")
+          [[ "$TITLE" =~ ^(WIP|wip|Draft|draft)([^a-z]|$) ]] && problems+=("is marked work in progress; use a draft PR instead")
+          if [ ${#problems[@]} -gt 0 ]; then
+            for p in "${problems[@]}"; do echo "::error title=PR title::The title $p. See docs/contributing/commits.md."; done
+            exit 1
+          fi
+          echo "PR title follows the conventions."

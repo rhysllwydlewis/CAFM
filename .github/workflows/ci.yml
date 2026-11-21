@@ -77,3 +77,19 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run validate
       - run: npm run contrast
+
+  image:
+    name: Container image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Built to prove the image still builds; not pushed anywhere yet (#21).
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: cafm:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
