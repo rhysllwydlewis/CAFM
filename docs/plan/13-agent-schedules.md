@@ -1,6 +1,6 @@
 # 13 · Agent Schedule Strategy
 
-> Status: **Stage 0 being set up (21 Nov 2026).** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)). Stage 0 scheduled tasks run in the "CAFM" cloud environment (see §7); later stages are added as their roadmap phase starts.
+> Status: **Stage 0 live from 21 Nov 2026.** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)). Stage 0 scheduled tasks run in the "CAFM" cloud environment (see §7); later stages are added as their roadmap phase starts.
 
 ## 1. The idea
 
@@ -173,20 +173,22 @@ Tasks for later stages are created **disabled** and enabled when their stage sta
 
 **Until A01's monorepo scaffold is merged on `main`**, every other agent limits its run to planning: reading its sections, refining its issues, and writing a short design note in its notebook PR. Agents must not create their own workspace or `package.json` files, so they never build competing scaffolds.
 
-### Stage 0 schedules (being set up, 21 Nov 2026)
+### Stage 0 schedules (live from 21 Nov 2026)
 
-Scheduled sessions need GitHub write access (issues, branches, PRs) to `rhysllwydlewis/CAFM`. A first conductor run on 21 Nov could only read the repository, so the remaining schedules are on hold until that is fixed.
+**How the schedules are wired.** A scheduled task that starts a brand-new session has no GitHub write access, because repository access is chosen when a session starts. So each agent has **one long-lived session** created with the repository attached, and its identity, rules and standing brief are built into that session's system prompt. Its schedule wakes that session for each run. Long conversations are summarised automatically, and the agent's notebook still carries the important state between runs. Sessions are tagged `cafm-agent` and `stage-0`. Only the conductor sends push notifications (from inside its run).
 
 | Agent | Scheduled task | Cron (Europe/London) | State |
 |-------|----------------|----------------------|-------|
-| A00 Conductor | CAFM A00 Conductor | `41 7 * * *` | Created; first run blocked (no GitHub write access) |
-| A01 Foundations | CAFM A01 Foundations | `13 18 * * *` | Pending access fix |
-| A02 Identity | CAFM A02 Identity | `37 18 * * 1,3,5` | Pending access fix |
-| A03 Tenancy & access | CAFM A03 Tenancy & access | `13 18 * * 2,4,6` | Pending access fix |
-| A04 Configuration engine | CAFM A04 Configuration engine | `37 18 * * 2,4,6` | Pending; starts Phase 0 week 3 |
-| A05 Design system | CAFM A05 Design system | `7 19 * * 1,3,5` | Pending access fix |
-| A06 Demo data | CAFM A06 Demo data | `7 19 * * 2,5` | Pending access fix |
-| A90 QA | CAFM A90 QA | `13 4 * * *` | Pending access fix |
+| A00 Conductor | CAFM A00 Conductor | `41 7 * * *` | Enabled; first run started manually on 21 Nov |
+| A01 Foundations | CAFM A01 Foundations | `13 18 * * *` | Enabled |
+| A02 Identity | CAFM A02 Identity | `37 18 * * 1,3,5` | Enabled |
+| A03 Tenancy & access | CAFM A03 Tenancy & access | `13 18 * * 2,4,6` | Enabled |
+| A04 Configuration engine | CAFM A04 Configuration engine | `37 18 * * 2,4,6` | Paused until Phase 0 week 3 |
+| A05 Design system | CAFM A05 Design system | `7 19 * * 1,3,5` | Enabled |
+| A06 Demo data | CAFM A06 Demo data | `7 19 * * 2,5` | Enabled |
+| A90 QA | CAFM A90 QA | `13 4 * * *` | Enabled |
+
+To pause an agent, disable its scheduled task. To change an agent's brief, its session must be recreated (the brief lives in the session's system prompt) and its scheduled task pointed at the new session.
 
 ---
 
