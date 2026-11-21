@@ -41,9 +41,9 @@ Each has a recommended default so work can continue if no answer is given.
 | D10 | **Team**: solo with AI assistance, or hiring? | Plan assumes a small team with AI assistance; estimates re-baselined per phase |
 | D11 | **Which sector pack first** (housing, healthcare, education)? | Education or housing, whichever the first design partners come from |
 | D12 | **Compliance content reviewer** | Engage a qualified consultant part-time before Phase 2A templates are published |
-| D13 | **Agent autonomy**: may agents merge their own pull requests? | No. Agents open draft PRs; the product owner (or a named reviewer) merges. Revisit after Phase 1 for low-risk changes (docs, tests) |
-| D14 | **Agent cadence and budget** | Start with the Stage 1 agents in [doc 13](13-agent-schedules.md) (about 30 runs a week), review cost and output after two weeks, then add agents stage by stage |
-| D15 | **Agent environment**: how agents get Postgres and Redis for tests | A cloud environment with a setup script that installs Postgres 16 and Redis, created in Phase 0 and shared by all agent schedules |
+| D13 | **Agent autonomy**: may agents merge their own pull requests? | **Accepted 21 Nov 2026:** no. Agents open draft PRs; the product owner (or a named reviewer) merges. Revisit after Phase 1 for low-risk changes (docs, tests) |
+| D14 | **Agent cadence and budget** | **Accepted 21 Nov 2026:** start with the Stage 1 agents in [doc 13](13-agent-schedules.md) (about 30 runs a week), review cost and output after two weeks, then add agents stage by stage |
+| D15 | **Agent environment**: how agents get Postgres and Redis for tests | **Accepted and set up 21 Nov 2026:** the personal cloud environment "CAFM" (repository attached, package registries only, setup script installs Postgres 16, Redis and the design tooling); originally proposed as a cloud environment with a setup script that installs Postgres 16 and Redis, created in Phase 0 and shared by all agent schedules |
 
 ## Immediate next steps
 

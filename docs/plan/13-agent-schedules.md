@@ -1,6 +1,6 @@
 # 13 · Agent Schedule Strategy
 
-> Status: **strategy only.** No scheduled tasks have been created. This document defines how they will work so they can be switched on stage by stage (decisions D13–D15 in [doc 10](10-risks-and-decisions.md)).
+> Status: **Stage 0 ready to switch on.** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)) and the "CAFM" cloud environment created. The Stage 0 routines are created from [docs/agents/routines.md](../agents/routines.md) (see §7); later stages are added as their roadmap phase starts.
 
 ## 1. The idea
 
@@ -99,7 +99,7 @@ Every agent follows this protocol. Its own section only adds focus.
 
 - **Conductor (A00)** runs every morning. It:
   - reads all agent PRs, issues and check results
-  - updates `docs/agents/status.md`: per-agent state, PRs waiting for review, blocked items, the recommended merge order
+  - updates the pinned **"Agent status board"** GitHub issue (an issue rather than a file, so it doesn't need a pull request every day): per-agent state, PRs waiting for review, blocked items, the recommended merge order
   - opens the next feature issues for each active agent from the catalogue
   - flags overlaps between agents
   - posts a short daily digest to the product owner (push notification).
@@ -130,7 +130,7 @@ Repository layout follows [doc 04](04-architecture.md). `<module>` is the agent'
 | `apps/api/src/core/tenancy/**`, `apps/api/src/core/rbac/**`, `apps/api/src/core/audit/**`, `apps/api/src/core/entitlements/**` | A03 |
 | `.github/**`, `infra/**`, root config, `turbo.json` | A01 |
 | `docs/plan/**` | A94 (module agents may edit only their own catalogue §) |
-| `docs/agents/status.md` | A00 |
+| `docs/agents/status.md` (points to the status board issue) | A00 |
 | `docs/agents/notes/<ID>.md` | That agent only |
 
 Ownership is also written to `.github/CODEOWNERS` in Phase 0, mapped to agent labels for the conductor's checks.
@@ -170,6 +170,28 @@ Each agent becomes one scheduled task that **starts a fresh session on each run*
 > You are agent {ID} ({name}) on the CAFM project. Follow `CLAUDE.md` and the standard run protocol in `docs/plan/13-agent-schedules.md`, then your own section {ID}. Do one work item, open or update one draft PR, update `docs/agents/notes/{ID}.md`, and stop.
 
 Tasks for later stages are created **disabled** and enabled when their stage starts. Only the conductor sends push notifications; agents report through their PRs.
+
+**Until A01's monorepo scaffold is merged on `main`**, every other agent limits its run to planning: reading its sections, refining its issues, and writing a short design note in its notebook PR. Agents must not create their own workspace or `package.json` files, so they never build competing scaffolds.
+
+### Stage 0 schedules (to be created in the claude.ai routines page)
+
+**Why they're created by hand.** Agents need GitHub write access to open issues, branches and pull requests. That access is only granted when the repository is selected as a source when the routine is created in the claude.ai routines page. On 21 Nov 2026 three approaches were tested from inside a Claude session, and all failed:
+- schedules that start a new session (read-only clone, GitHub API refused)
+- schedules that wake an existing session (started a new, empty session instead)
+- new sessions attaching the repository themselves (the tool isn't available to them)
+
+So the eight Stage 0 routines are set up by the product owner from [docs/agents/routines.md](../agents/routines.md), which has each routine's name, schedule and full prompt ready to paste. They run in the "CAFM" environment.
+
+| Agent | Routine | Schedule (UK time) | State |
+|-------|---------|--------------------|-------|
+| A00 Conductor | CAFM A00 Conductor | Daily 07:41 | To create (push notifications on) |
+| A01 Foundations | CAFM A01 Foundations | Daily 18:13 | To create |
+| A02 Identity | CAFM A02 Identity | Mon/Wed/Fri 18:37 | To create |
+| A03 Tenancy & access | CAFM A03 Tenancy & access | Tue/Thu/Sat 18:13 | To create |
+| A04 Configuration engine | CAFM A04 Configuration engine | Tue/Thu/Sat 18:37 | To create, switched off until Phase 0 week 3 |
+| A05 Design system | CAFM A05 Design system | Mon/Wed/Fri 19:07 | To create |
+| A06 Demo data | CAFM A06 Demo data | Tue/Fri 19:07 | To create |
+| A90 QA | CAFM A90 QA | Daily 04:13 | To create |
 
 ---
 

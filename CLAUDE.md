@@ -55,6 +55,20 @@ npm run contrast   # WCAG contrast check
 npm run icons      # rebuild icons, sprite, manifest, tokens.json
 ```
 
+## Agent environment
+
+Scheduled agents run in the personal cloud environment "CAFM". Its setup script installs Postgres 16, Redis and the design tooling, but cannot start background services, so start them in your session when you need them:
+
+```bash
+service postgresql start
+redis-server --daemonize yes
+su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='cafm'\" | grep -q 1 || psql -c \"CREATE ROLE cafm LOGIN PASSWORD 'cafm' CREATEDB\""
+su postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='cafm_dev'\" | grep -q 1 || createdb -O cafm cafm_dev"
+# DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev   REDIS_URL=redis://localhost:6379
+```
+
+These are local test credentials only, never used outside the container.
+
 ## Definition of done
 
 See `docs/plan/08-roadmap.md` § Definition of Done. In short:
