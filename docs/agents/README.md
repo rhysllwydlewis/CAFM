@@ -4,7 +4,7 @@ Working files for the scheduled agents described in [docs/plan/13-agent-schedule
 
 | Path | Owner | Purpose |
 |------|-------|---------|
-| `status.md` | A00 Conductor | Daily status board: what each agent is doing, PRs waiting for review, blocked items, recommended merge order |
+| `status.md` | A00 Conductor | Points to the live status board, a pinned GitHub issue the conductor updates daily |
 | `notes/<ID>.md` | That agent only | The agent's notebook. Each run starts with no memory, so the notebook carries decisions, gotchas and the next candidate items between runs |
 | `notes/_template.md` | A00 | Template for a new notebook |
 | `labels.md` | A00 | GitHub labels the agents use |

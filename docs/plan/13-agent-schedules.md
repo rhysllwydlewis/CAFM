@@ -1,6 +1,6 @@
 # 13 · Agent Schedule Strategy
 
-> Status: **strategy only.** No scheduled tasks have been created. This document defines how they will work so they can be switched on stage by stage (decisions D13–D15 in [doc 10](10-risks-and-decisions.md)).
+> Status: **Stage 0 being set up (21 Nov 2026).** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)). Stage 0 scheduled tasks run in the "CAFM" cloud environment (see §7); later stages are added as their roadmap phase starts.
 
 ## 1. The idea
 
@@ -99,7 +99,7 @@ Every agent follows this protocol. Its own section only adds focus.
 
 - **Conductor (A00)** runs every morning. It:
   - reads all agent PRs, issues and check results
-  - updates `docs/agents/status.md`: per-agent state, PRs waiting for review, blocked items, the recommended merge order
+  - updates the pinned **"Agent status board"** GitHub issue (an issue rather than a file, so it doesn't need a pull request every day): per-agent state, PRs waiting for review, blocked items, the recommended merge order
   - opens the next feature issues for each active agent from the catalogue
   - flags overlaps between agents
   - posts a short daily digest to the product owner (push notification).
@@ -130,7 +130,7 @@ Repository layout follows [doc 04](04-architecture.md). `<module>` is the agent'
 | `apps/api/src/core/tenancy/**`, `apps/api/src/core/rbac/**`, `apps/api/src/core/audit/**`, `apps/api/src/core/entitlements/**` | A03 |
 | `.github/**`, `infra/**`, root config, `turbo.json` | A01 |
 | `docs/plan/**` | A94 (module agents may edit only their own catalogue §) |
-| `docs/agents/status.md` | A00 |
+| `docs/agents/status.md` (points to the status board issue) | A00 |
 | `docs/agents/notes/<ID>.md` | That agent only |
 
 Ownership is also written to `.github/CODEOWNERS` in Phase 0, mapped to agent labels for the conductor's checks.
@@ -170,6 +170,23 @@ Each agent becomes one scheduled task that **starts a fresh session on each run*
 > You are agent {ID} ({name}) on the CAFM project. Follow `CLAUDE.md` and the standard run protocol in `docs/plan/13-agent-schedules.md`, then your own section {ID}. Do one work item, open or update one draft PR, update `docs/agents/notes/{ID}.md`, and stop.
 
 Tasks for later stages are created **disabled** and enabled when their stage starts. Only the conductor sends push notifications; agents report through their PRs.
+
+**Until A01's monorepo scaffold is merged on `main`**, every other agent limits its run to planning: reading its sections, refining its issues, and writing a short design note in its notebook PR. Agents must not create their own workspace or `package.json` files, so they never build competing scaffolds.
+
+### Stage 0 schedules (being set up, 21 Nov 2026)
+
+Scheduled sessions need GitHub write access (issues, branches, PRs) to `rhysllwydlewis/CAFM`. A first conductor run on 21 Nov could only read the repository, so the remaining schedules are on hold until that is fixed.
+
+| Agent | Scheduled task | Cron (Europe/London) | State |
+|-------|----------------|----------------------|-------|
+| A00 Conductor | CAFM A00 Conductor | `41 7 * * *` | Created; first run blocked (no GitHub write access) |
+| A01 Foundations | CAFM A01 Foundations | `13 18 * * *` | Pending access fix |
+| A02 Identity | CAFM A02 Identity | `37 18 * * 1,3,5` | Pending access fix |
+| A03 Tenancy & access | CAFM A03 Tenancy & access | `13 18 * * 2,4,6` | Pending access fix |
+| A04 Configuration engine | CAFM A04 Configuration engine | `37 18 * * 2,4,6` | Pending; starts Phase 0 week 3 |
+| A05 Design system | CAFM A05 Design system | `7 19 * * 1,3,5` | Pending access fix |
+| A06 Demo data | CAFM A06 Demo data | `7 19 * * 2,5` | Pending access fix |
+| A90 QA | CAFM A90 QA | `13 4 * * *` | Pending access fix |
 
 ---
 
