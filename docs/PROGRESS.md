@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-01 | Codex | `codex/finish-locations` | 21 Nov 2026 | Finish site management, calendars, the portfolio map and QR labels in one PR. |
 
 ## Phase checklists
 
