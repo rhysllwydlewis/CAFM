@@ -9,8 +9,9 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.disable('x-powered-by');
-  // Behind the web app's /api proxy, trust the first hop for the client IP.
-  app.set('trust proxy', 1);
+  // How many proxies sit in front of the API, so req.ip is the real client:
+  // 1 locally (the web app's /api proxy), 2 on Railway (its edge, then the web app).
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
   app.enableShutdownHooks();
   return app;
 }
