@@ -8,21 +8,11 @@ A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for U
 
 **Where the build is:** [`docs/PROGRESS.md`](docs/PROGRESS.md) has the current phase, a checklist for every phase, what's in progress and what's waiting on the product owner. Phase 0 (foundations) is done. Phase 1 starts on the product owner's go-ahead.
 
-## Every session: start, work, stop
+## How to work here (every agent, every session)
 
-1. **Start:**
-   - Read `docs/PROGRESS.md`, then this file. Scheduled agents also read their notebook, `docs/agents/notes/<ID>.md` (doc 13).
-   - Run `source scripts/agent-setup.sh`. It starts Postgres and Redis, creates the roles, installs, migrates, seeds the demo and exports the variables, and is safe to run again.
-   - Check your branch and any open PR (`git status`, `git log --oneline -5`).
-2. **Work:**
-   - Take the first unticked item in the current phase, or the issue or section you were given.
-   - Keep to the rules below. Run `pnpm lint && pnpm typecheck && pnpm test` before you push.
-3. **Stop, finished or not:**
-   - Tick finished items in `docs/PROGRESS.md` in the same PR.
-   - If you're stopping part-way, write a short note under its "In progress" heading: what's done, what's next, and the branch.
-   - Add a CHANGELOG line for anything users will notice. Commit and push, so nothing lives only in your session.
+[AGENTS.md](AGENTS.md) is the agent handbook. It covers starting a session, choosing work, claiming items, the mandatory progress rules, ending a session, and what never to do. It applies to Claude, Codex and everyone else. Its contents are loaded below.
 
-The same rules apply to every agent and person: Claude, Codex or anyone else. `AGENTS.md` points here.
+@AGENTS.md
 
 ## Sources of truth (in this order)
 
@@ -32,7 +22,7 @@ The same rules apply to every agent and person: Claude, Codex or anyone else. `A
 4. `docs/adr/`: architecture decisions. Do not contradict an accepted ADR. Propose a new one instead.
 5. `docs/plan/13-agent-schedules.md`: if you are a scheduled agent, your section defines your scope.
 
-If two sources disagree, flag it in your PR and on an issue labelled `docs`. Do not guess.
+If two sources disagree, flag it in your PR and on an issue labelled `type:docs`. Do not guess.
 
 ## Non-negotiable rules
 

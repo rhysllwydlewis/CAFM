@@ -18,7 +18,8 @@
     "e2e": "pnpm --filter @cafm/web e2e",
     "start": "node scripts/start.mjs",
     "release": "node scripts/release.mjs",
-    "cafm": "node packages/db/dist/cli.js"
+    "cafm": "node packages/db/dist/cli.js",
+    "progress": "node scripts/progress.mjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

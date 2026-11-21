@@ -11,7 +11,10 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | **Current phase** | Phase 0 (Foundations) is **done**. Phase 1 hasn't started: wait for the product owner's go-ahead. |
 | **Overall progress** | **About 6%** of the planned build (Phase 0 is about 4 of roughly 64 planned weeks; 15 of 83 roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
+| **Approved to build** | Phase 0 only. Phase 1 starts when the product owner changes the marker below to 1 |
 | **Next up** | Phase 1, starting with the location hierarchy and the asset register (doc 08) |
+
+<!-- approved-phase: 0 -->
 
 | Phase | Items done | Status |
 |---|---|---|
@@ -33,21 +36,27 @@ These are decisions or paid resources, so agents don't do them:
 - [ ] **An email provider** (`SMTP_URL` on Railway). Until then, email is captured in the database, never sent.
 - [ ] **Railway PR environments** (Project Settings › Environments). These give each PR a preview link. The app is ready for them; see `docs/deploy/railway.md`.
 - [ ] **GitGuardian:** mark the flagged test passwords from PR #22 as test credentials. They're generated test fixtures, not real secrets.
-- [ ] **The go-ahead for Phase 1.**
+- [ ] **The go-ahead for Phase 1.** Change `<!-- approved-phase: 0 -->` above to `1`, or ask an agent to in a PR you merge.
 
 ## How to use this page
 
-- **Starting a session:** read this page, then `CLAUDE.md` (the rules), then the doc 08 section for the current phase. Run `source scripts/agent-setup.sh` to get a working database and demo data.
-- **Picking work:** take the first unticked item in the current phase that nobody has claimed. GitHub issues labelled with the phase (`phase:1`, and so on) break each item into steps. Scheduled agents follow their own section in doc 13.
-- **Finishing an item:** in the same PR, tick it here as `[x]`, add the PR link, and note anything partly done.
-  - An item is only ticked when it meets the Definition of Done in doc 08: permission and entitlement checks, a cross-tenant test, tests, accessibility, audit, demo data, help text and the changelog.
-  - Update the phase table and "Where we are".
-- **Stopping mid-way:** leave a short note under "In progress", saying what's done, what's next and the branch name. The next session (yours or another agent's) carries on from it.
-- **Changing scope:** doc 08 is the plan; this page tracks it. If an item is added, moved or split, change doc 08 first, then mirror it here.
+The full rules are in [AGENTS.md § Progress rules](../AGENTS.md#3-progress-rules-mandatory-checked-by-ci). CI checks them on every PR. In short:
+
+- **Start of session:** read this page and run `pnpm progress`. It lists the next unclaimed items in the approved phase.
+- **Before you build:** claim the item. Open a draft PR with `Progress: P1-02 in progress` and add a row to "In progress" below.
+- **When it's done:** in that PR, tick it `[x]`, remove its row, update the phase table and the percentage, and write `Progress: P1-02 done`. `node scripts/progress.mjs check` gives the right numbers.
+- **Stopping part-way:** update the row's "Next step" so anyone can carry on.
+- **Big items:** split them into sub-items (`P1-04a`, `P1-04b`), indented under the item.
+- **Changing scope:** change doc 08 first, then mirror it here.
 
 ## In progress
 
-Nothing in progress. Phase 1 starts on the product owner's go-ahead.
+Claim an item here before you start, in a draft PR you open straight away (see AGENTS.md § Progress rules). Remove the row when the item is ticked.
+
+| Item | Who | Branch | Started | Next step |
+|---|---|---|---|---|
+
+Nothing is in progress. Phase 1 starts on the product owner's go-ahead.
 
 ## Phase checklists
 
@@ -55,116 +64,116 @@ Nothing in progress. Phase 1 starts on the product owner's go-ahead.
 
 Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 
-- [x] Monorepo (pnpm + Turborepo), lint/format, TypeScript strict, commit conventions. (`docs/contributing/commits.md`, plus the PR title check in CI)
-- [x] Docker Compose local stack (Postgres, Redis, MinIO, Mailpit). (`docker-compose.yml`)
-- [x] CI: typecheck, lint, unit, API, e2e (Playwright), build, container images; preview deploys. (`.github/workflows/`, `Dockerfile`)
+- [x] **P0-01** Monorepo (pnpm + Turborepo), lint/format, TypeScript strict, commit conventions. (`docs/contributing/commits.md`, plus the PR title check in CI)
+- [x] **P0-02** Docker Compose local stack (Postgres, Redis, MinIO, Mailpit). (`docker-compose.yml`)
+- [x] **P0-03** CI: typecheck, lint, unit, API, e2e (Playwright), build, container images; preview deploys. (`.github/workflows/`, `Dockerfile`)
   - The image is built in CI but not pushed to a registry yet.
   - Preview deploys are ready but need Railway PR environments turned on (see above).
-- [x] Database: Prisma schema for platform + identity + config tables, RLS policies with transaction-local tenant context, separate DB roles, migration pipeline. (`packages/db`)
+- [x] **P0-04** Database: Prisma schema for platform + identity + config tables, RLS policies with transaction-local tenant context, separate DB roles, migration pipeline. (`packages/db`)
   - A test fails if any table with a `tenant_id` column lacks RLS.
-- [x] Auth: global accounts + tenant memberships, login, logout, organisation picker, sessions, password reset, invite acceptance, terms acceptance, lockout, rate limiting, audit events. (`apps/api/src/modules/auth`, `people`)
-- [x] Login page with demo credentials panel and autofill (gated by `DEMO_MODE`), demo guard rails (locked credentials, captured outbound email).
-- [x] Tenancy: tenant resolution, tenant context middleware, platform-admin bootstrap CLI (create tenant, set plan/entitlements). (`withTenant`, `pnpm cafm`)
-- [x] RBAC: permission registry, roles, scopes, API guards, `can()` helper in UI, no-privilege-escalation rule. (`packages/shared/src/permissions.ts`, `apps/api/src/core`)
-- [x] Entitlements model and `feature()` gating, including plan limits on custom fields and full users. (`packages/shared/src/entitlements.ts`)
-- [x] Config engine v1: field definitions + custom field storage/validation, numbering sequences, config versioning (every change stored as a version). (`packages/config-engine`, `/api/config`)
+- [x] **P0-05** Auth: global accounts + tenant memberships, login, logout, organisation picker, sessions, password reset, invite acceptance, terms acceptance, lockout, rate limiting, audit events. (`apps/api/src/modules/auth`, `people`)
+- [x] **P0-06** Login page with demo credentials panel and autofill (gated by `DEMO_MODE`), demo guard rails (locked credentials, captured outbound email).
+- [x] **P0-07** Tenancy: tenant resolution, tenant context middleware, platform-admin bootstrap CLI (create tenant, set plan/entitlements). (`withTenant`, `pnpm cafm`)
+- [x] **P0-08** RBAC: permission registry, roles, scopes, API guards, `can()` helper in UI, no-privilege-escalation rule. (`packages/shared/src/permissions.ts`, `apps/api/src/core`)
+- [x] **P0-09** Entitlements model and `feature()` gating, including plan limits on custom fields and full users. (`packages/shared/src/entitlements.ts`)
+- [x] **P0-10** Config engine v1: field definitions + custom field storage/validation, numbering sequences, config versioning (every change stored as a version). (`packages/config-engine`, `/api/config`)
   - API only. The settings screens come with the Phase 1 admin console.
-- [x] App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, i18n framework (en-GB). (`apps/web/app/(app)/shell`)
-- [x] Design system in code: icon sprite and the core components, matched against the screen catalogue. (`packages/ui`)
+- [x] **P0-11** App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, i18n framework (en-GB). (`apps/web/app/(app)/shell`)
+- [x] **P0-12** Design system in code: icon sprite and the core components, matched against the screen catalogue. (`packages/ui`)
   - Uses the mockups' component stylesheet, not a Tailwind theme (ADR 0009).
   - Phase 0 built the components the shell and sign-in pages need. The rest of doc 11's components arrive with the screens that use them.
-- [x] Audit log infrastructure; outbox + worker skeleton. (`apps/worker`)
-- [x] Deterministic demo seed + nightly reset job. (`packages/db/src/seed.ts`, `demo-reset.ts`)
+- [x] **P0-13** Audit log infrastructure; outbox + worker skeleton. (`apps/worker`)
+- [x] **P0-14** Deterministic demo seed + nightly reset job. (`packages/db/src/seed.ts`, `demo-reset.ts`)
   - The reset runs once Redis exists on Railway.
-- [x] ADRs 0001–0008 reviewed and confirmed (written during planning), plus ADR 0009. (`docs/adr/`)
+- [x] **P0-15** ADRs 0001–0008 reviewed and confirmed (written during planning), plus ADR 0009. (`docs/adr/`)
 
 **Done when** you can open the demo site, click "Super User" under demo accounts, sign in, see the app shell, and every API call is tenant-isolated and permission-checked, with automated tests proving it. **Met:** checked on the live demo on 21 Nov 2026. 121 unit and API tests and 59 e2e tests pass.
 
 ### Phase 1 · Core CAFM MVP
 
-- [ ] Location hierarchy + site map; UK bank holiday calendars by nation; QR codes and label printing.
-- [ ] Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
-- [ ] Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT.
-- [ ] Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
-- [ ] PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
-- [ ] Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
-- [ ] Notifications (in-app, email, push) with templates.
-- [ ] List views: filters, saved views, bulk actions, kanban and calendar views.
-- [ ] Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
-- [ ] Standard reports + role default dashboards (fixed widgets).
-- [ ] Import/export for locations, assets, users, PPM schedules.
-- [ ] MFA (TOTP).
-- [ ] First design-partner tenants live, invoiced manually.
+- [ ] **P1-01** Location hierarchy + site map; UK bank holiday calendars by nation; QR codes and label printing.
+- [ ] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
+- [ ] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT.
+- [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
+- [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
+- [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
+- [ ] **P1-07** Notifications (in-app, email, push) with templates.
+- [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
+- [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
+- [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
+- [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.
+- [ ] **P1-12** MFA (TOTP).
+- [ ] **P1-13** First design-partner tenants live, invoiced manually.
 
 ### Phase 2A · Comply
 
-- [ ] Statutory compliance register, jurisdiction-aware UK templates, certificates, remedial actions, compliance matrix.
-- [ ] Inspections/audits builder, building rounds with checkpoints.
-- [ ] Contractor management, accreditations/insurance, auto-suspension, **contractor portal**, quotes/RFQ, contractor site sign-in.
-- [ ] **Permit to Work and RAMS** (moved forward from Phase 4: contractor work needs them).
-- [ ] Documents module (versions, expiry, previews, external sharing).
-- [ ] Workflow builder UI + automation rules + approvals engine; form designer.
-- [ ] Config history UI with diff and rollback; config export/import.
-- [ ] Data retention policies, legal hold, DSAR export/erasure tools.
-- [ ] Public REST API v1 + API keys + webhooks.
-- [ ] Passkeys (WebAuthn); SMS notifications; Teams/Slack notifications.
-- [ ] AI certificate reading (early AI feature, because it directly supports compliance).
-- [ ] **Cyber Essentials** certification.
+- [ ] **P2A-01** Statutory compliance register, jurisdiction-aware UK templates, certificates, remedial actions, compliance matrix.
+- [ ] **P2A-02** Inspections/audits builder, building rounds with checkpoints.
+- [ ] **P2A-03** Contractor management, accreditations/insurance, auto-suspension, **contractor portal**, quotes/RFQ, contractor site sign-in.
+- [ ] **P2A-04** **Permit to Work and RAMS** (moved forward from Phase 4: contractor work needs them).
+- [ ] **P2A-05** Documents module (versions, expiry, previews, external sharing).
+- [ ] **P2A-06** Workflow builder UI + automation rules + approvals engine; form designer.
+- [ ] **P2A-07** Config history UI with diff and rollback; config export/import.
+- [ ] **P2A-08** Data retention policies, legal hold, DSAR export/erasure tools.
+- [ ] **P2A-09** Public REST API v1 + API keys + webhooks.
+- [ ] **P2A-10** Passkeys (WebAuthn); SMS notifications; Teams/Slack notifications.
+- [ ] **P2A-11** AI certificate reading (early AI feature, because it directly supports compliance).
+- [ ] **P2A-12** **Cyber Essentials** certification.
 
 ### Phase 2B · Commercial Operations
 
-- [ ] Contracts, SLAs, KPIs, performance deductions; schedule of rates.
-- [ ] Scheduling & dispatch board, skills/qualifications, shifts/leave/on-call, timesheets.
-- [ ] Inventory & stores, van stock, tools and test-equipment calibration.
-- [ ] Procurement (requisition → PO → receipt → invoice match).
-- [ ] Finance: cost centres, budgets, quotes (with magic-link approval), job costing; Xero/QuickBooks/Sage connectors.
-- [ ] Keys register.
-- [ ] Configurable dashboards.
-- [ ] Communications: broadcast messages, announcements, knowledge base, surveys.
-- [ ] Requester appointment self-booking.
-- [ ] Basic platform admin UI (tenants, plans, overrides, support-access grants).
+- [ ] **P2B-01** Contracts, SLAs, KPIs, performance deductions; schedule of rates.
+- [ ] **P2B-02** Scheduling & dispatch board, skills/qualifications, shifts/leave/on-call, timesheets.
+- [ ] **P2B-03** Inventory & stores, van stock, tools and test-equipment calibration.
+- [ ] **P2B-04** Procurement (requisition → PO → receipt → invoice match).
+- [ ] **P2B-05** Finance: cost centres, budgets, quotes (with magic-link approval), job costing; Xero/QuickBooks/Sage connectors.
+- [ ] **P2B-06** Keys register.
+- [ ] **P2B-07** Configurable dashboards.
+- [ ] **P2B-08** Communications: broadcast messages, announcements, knowledge base, surveys.
+- [ ] **P2B-09** Requester appointment self-booking.
+- [ ] **P2B-10** Basic platform admin UI (tenants, plans, overrides, support-access grants).
 
 ### Phase 3 · Workplace & Sustainability
 
-- [ ] Floor plans (DWG/DXF/PDF → SVG; IFC viewer), space inventory, allocation, chargeback, occupancy analytics, stacking/blocking and scenarios, wayfinding.
-- [ ] Room/desk/resource booking + Microsoft 365/Google calendar sync + check-in + room panels.
-- [ ] Visitor management + kiosk + evacuation roll-call.
-- [ ] Moves (MAC).
-- [ ] Planned outage management (uses floor plans and "serves" relationships).
-- [ ] Energy & sustainability: meters, readings, bills, AMR import, carbon (Scope 1–2–3), SECR/ESOS packs, waste.
-- [ ] IoT ingestion, device registry, alert rules → auto work orders, condition-based PPM.
+- [ ] **P3-01** Floor plans (DWG/DXF/PDF → SVG; IFC viewer), space inventory, allocation, chargeback, occupancy analytics, stacking/blocking and scenarios, wayfinding.
+- [ ] **P3-02** Room/desk/resource booking + Microsoft 365/Google calendar sync + check-in + room panels.
+- [ ] **P3-03** Visitor management + kiosk + evacuation roll-call.
+- [ ] **P3-04** Moves (MAC).
+- [ ] **P3-05** Planned outage management (uses floor plans and "serves" relationships).
+- [ ] **P3-06** Energy & sustainability: meters, readings, bills, AMR import, carbon (Scope 1–2–3), SECR/ESOS packs, waste.
+- [ ] **P3-07** IoT ingestion, device registry, alert rules → auto work orders, condition-based PPM.
 
 ### Phase 4 · Enterprise Depth & Sector Packs
 
-- [ ] Real estate & leases, critical dates, service charges, IFRS 16 outputs.
-- [ ] Condition surveys → backlog → capital planning & lifecycle forecasting.
-- [ ] Asset depth: depreciation and valuation, FMEA/RCM library, BIM/COBie import.
-- [ ] Route optimisation for dispatch; punch-out catalogues and framework call-offs in procurement; CIS domestic reverse charge in client billing.
-- [ ] Projects & minor works (Gantt, CDM, snagging, defects liability, handover/COBie).
-- [ ] Health & safety: incidents, RIDDOR, investigations, CAPA, risk register, LOTO, lone worker, insurance claims.
-- [ ] Soft services: cleaning specs & audits (NSHC 2021), on-demand cleaning, guard tours, mail room, grounds, lost property.
-- [ ] Fleet; business continuity.
-- [ ] **Sector packs**: housing (Awaab's Law, HHSRS, Decent Homes, voids, TSMs, resident portal), healthcare (HTM, PAM, ERIC), education (GEMS, MAT reporting), retail, commercial property, public sector.
-- [ ] **AI suite**: triage, nameplate recognition, job summaries, Ask-the-estate, anomaly detection, predictive maintenance, invoice OCR, auto-schedule suggestions, repeat-failure insights, meter-photo checks, survey comment themes.
-- [ ] Report builder + scheduled report packs; BI connector.
-- [ ] Multi-client FM-provider edition: client dimension, client portal, per-client branding, client billing, contract profitability.
-- [ ] Building Safety Act golden thread.
-- [ ] **Cyber Essentials Plus**; first CREST penetration test before the first enterprise go-live.
+- [ ] **P4-01** Real estate & leases, critical dates, service charges, IFRS 16 outputs.
+- [ ] **P4-02** Condition surveys → backlog → capital planning & lifecycle forecasting.
+- [ ] **P4-03** Asset depth: depreciation and valuation, FMEA/RCM library, BIM/COBie import.
+- [ ] **P4-04** Route optimisation for dispatch; punch-out catalogues and framework call-offs in procurement; CIS domestic reverse charge in client billing.
+- [ ] **P4-05** Projects & minor works (Gantt, CDM, snagging, defects liability, handover/COBie).
+- [ ] **P4-06** Health & safety: incidents, RIDDOR, investigations, CAPA, risk register, LOTO, lone worker, insurance claims.
+- [ ] **P4-07** Soft services: cleaning specs & audits (NSHC 2021), on-demand cleaning, guard tours, mail room, grounds, lost property.
+- [ ] **P4-08** Fleet; business continuity.
+- [ ] **P4-09** **Sector packs**: housing (Awaab's Law, HHSRS, Decent Homes, voids, TSMs, resident portal), healthcare (HTM, PAM, ERIC), education (GEMS, MAT reporting), retail, commercial property, public sector.
+- [ ] **P4-10** **AI suite**: triage, nameplate recognition, job summaries, Ask-the-estate, anomaly detection, predictive maintenance, invoice OCR, auto-schedule suggestions, repeat-failure insights, meter-photo checks, survey comment themes.
+- [ ] **P4-11** Report builder + scheduled report packs; BI connector.
+- [ ] **P4-12** Multi-client FM-provider edition: client dimension, client portal, per-client branding, client billing, contract profitability.
+- [ ] **P4-13** Building Safety Act golden thread.
+- [ ] **P4-14** **Cyber Essentials Plus**; first CREST penetration test before the first enterprise go-live.
 
 ### Phase 5 · Commercialise & Scale (starts during Phase 4)
 
-- [ ] **Stripe billing** live: plans, seats, add-ons, metered usage, VAT, dunning, customer billing portal; migrate manually invoiced customers.
-- [ ] **Marketing site expansion**: build on the public homepage and demo CTA with product pages, pricing, sign-up, blog/SEO, comparison pages and cookie consent (PECR).
-- [ ] Self-serve sign-up, trial, onboarding wizard, industry template packs, personal demo clone.
-- [ ] Platform admin console complete: health, revenue metrics, global template publishing, announcements.
-- [ ] Customer support desk: in-app help widget/chat, help centre, feature-request voting.
-- [ ] SSO (SAML/OIDC), SCIM, IP allow-lists, custom domains, white-label, sandbox + config promotion, data residency (UK/EU).
-- [ ] Native mobile apps (Expo) to App Store / Play Store; remote assist video.
-- [ ] Integration marketplace, Zapier/Make/Power Automate connectors; contractor marketplace beta.
-- [ ] Enterprise connectors: SAP, Oracle, Dynamics 365, HR systems, access control, Autodesk (CAD/BIM), CTI telephony.
-- [ ] Digital twin view; cross-tenant benchmarking (opt-in).
-- [ ] Welsh-language interface (first additional language).
-- [ ] **ISO 27001** certification (ISMS started in Phase 3); G-Cloud listing.
+- [ ] **P5-01** **Stripe billing** live: plans, seats, add-ons, metered usage, VAT, dunning, customer billing portal; migrate manually invoiced customers.
+- [ ] **P5-02** **Marketing site expansion**: build on the public homepage and demo CTA with product pages, pricing, sign-up, blog/SEO, comparison pages and cookie consent (PECR).
+- [ ] **P5-03** Self-serve sign-up, trial, onboarding wizard, industry template packs, personal demo clone.
+- [ ] **P5-04** Platform admin console complete: health, revenue metrics, global template publishing, announcements.
+- [ ] **P5-05** Customer support desk: in-app help widget/chat, help centre, feature-request voting.
+- [ ] **P5-06** SSO (SAML/OIDC), SCIM, IP allow-lists, custom domains, white-label, sandbox + config promotion, data residency (UK/EU).
+- [ ] **P5-07** Native mobile apps (Expo) to App Store / Play Store; remote assist video.
+- [ ] **P5-08** Integration marketplace, Zapier/Make/Power Automate connectors; contractor marketplace beta.
+- [ ] **P5-09** Enterprise connectors: SAP, Oracle, Dynamics 365, HR systems, access control, Autodesk (CAD/BIM), CTI telephony.
+- [ ] **P5-10** Digital twin view; cross-tenant benchmarking (opt-in).
+- [ ] **P5-11** Welsh-language interface (first additional language).
+- [ ] **P5-12** **ISO 27001** certification (ISMS started in Phase 3); G-Cloud listing.
 
 ### Every phase
 
