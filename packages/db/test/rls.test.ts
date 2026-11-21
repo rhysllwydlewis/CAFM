@@ -13,6 +13,30 @@ afterAll(() => db.$disconnect());
 const demo = seedId('tenant:demo-estates');
 const starter = seedId('tenant:starter-demo');
 
+it('isolates location records, paths and site grants and rejects a cross-tenant parent', async () => {
+  const site = seedId('location:demo-estates:CDF');
+  expect(await db.location.count()).toBe(0);
+  expect(await db.locationPath.count()).toBe(0);
+  expect(await db.membershipSite.count()).toBe(0);
+  const demoSite = await withTenant(db, demo, (tx) => tx.location.findUnique({ where: { id: site } }));
+  expect(demoSite?.code).toBe('CDF');
+  const starterRows = await withTenant(db, starter, async (tx) => ({
+    locations: await tx.location.findMany(),
+    paths: await tx.locationPath.findMany(),
+    grants: await tx.membershipSite.findMany(),
+  }));
+  expect(starterRows.locations.map(({ code }) => code)).toEqual(['ST-WH']);
+  expect(starterRows.paths).toHaveLength(1);
+  expect(starterRows.grants).toEqual([]);
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.location.create({
+        data: { tenantId: starter, parentId: site, code: 'OUTSIDE', name: 'Outside', kind: 'space' },
+      }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+});
+
 describe('row-level security on membership', () => {
   it('connects as a role that cannot bypass RLS', async () => {
     const [row] = await db.$queryRaw<{ rolbypassrls: boolean; rolsuper: boolean }[]>`

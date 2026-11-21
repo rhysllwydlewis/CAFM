@@ -7,6 +7,7 @@ import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
 import { ALL_FEATURES, BUILTIN_ROLES, DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS, FEATURES } from '@cafm/shared';
 import { seedId } from './ids';
+import { seedLocations } from './seed-locations';
 
 /**
  * Seeds (or refreshes) the built-in roles for one tenant. Custom roles are left
@@ -97,6 +98,7 @@ export async function seed(db: PrismaClient): Promise<void> {
       update: { ...data, status: 'active' },
     });
   }
+  await seedLocations(db);
 }
 
 if (require.main === module) {
