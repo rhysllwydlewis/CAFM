@@ -6,11 +6,12 @@ import { HealthController } from './core/health.controller';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigEngineModule } from './modules/config/config.module';
+import { LocationsModule } from './modules/locations/locations.module';
 import { PeopleModule } from './modules/people/people.module';
 import { RolesModule } from './modules/roles/roles.module';
 
 @Module({
-  imports: [CoreModule, AuthModule, PeopleModule, RolesModule, AuditModule, ConfigEngineModule],
+  imports: [CoreModule, AuthModule, PeopleModule, RolesModule, AuditModule, ConfigEngineModule, LocationsModule],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: CsrfGuard }],
 })

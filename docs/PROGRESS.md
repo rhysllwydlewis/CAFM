@@ -2,13 +2,13 @@
 
 The one page to read first in any new session, by any agent (Claude, Codex or other) or person. It says where the build is, what's next, and what's waiting on the product owner. Tick items off here in the same PR that finishes them.
 
-**Last updated:** 21 Nov 2026, with Phase 1 approval recorded.
+**Last updated:** 21 Nov 2026, with the location hierarchy and access API.
 
 ## Where we are
 
 | | |
 |---|---|
-| **Current phase** | Phase 1 (Core CAFM MVP) is ready to start. Phase 0 (Foundations) is **done**. |
+| **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
 | **Overall progress** | **About 6%** of the planned build (Phase 0 is about 4 of roughly 64 planned weeks; 15 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
@@ -54,7 +54,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-01a | Codex | `codex/p1-01a-location-hierarchy` | 21 Nov 2026 | Build the tenant location tree and site-scoped API, then verify permissions, plan limits, audit and tenant isolation. |
 
 ## Phase checklists
 
@@ -90,7 +89,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 ### Phase 1 · Core CAFM MVP
 
 - [ ] **P1-01** Location hierarchy + site map; UK bank holiday calendars by nation; QR codes and label printing.
-  - [ ] **P1-01a** Tenant-scoped location hierarchy, site access rules and API.
+  - [x] **P1-01a** Tenant-scoped location hierarchy, site access rules and API. ([API guide](locations.md))
   - [ ] **P1-01b** Searchable hierarchy and site detail, with site management in the app shell.
   - [ ] **P1-01c** Site business hours, jurisdiction, UK bank holidays and custom closures for SLA clocks.
   - [ ] **P1-01d** Portfolio map and accessible site list with filters.

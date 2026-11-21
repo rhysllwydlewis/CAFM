@@ -73,6 +73,7 @@ export async function createTestTenant(db: PrismaClient, plan = 'starter') {
       await owner.fieldDefinition.deleteMany({ where });
       await owner.numberSequence.deleteMany({ where });
       await owner.capturedEmail.deleteMany({ where });
+      await owner.location.deleteMany({ where });
       const accounts = (await owner.membership.findMany({ where, select: { accountId: true } })).map(
         (m) => m.accountId,
       );
