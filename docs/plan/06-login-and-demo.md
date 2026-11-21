@@ -1,6 +1,6 @@
 # 06 · Login Page & Demo Environment
 
-The first screen we build. A deliberately simple login page now; the marketing homepage is bolted on in front of it later (Phase 5) without changing the app.
+The sign-in page remains the entry point to the authenticated app. The public homepage introduces CAFM and includes an interactive sample work order. The wider marketing and onboarding plan remains in Phase 5.
 
 ## Routes
 
@@ -12,7 +12,7 @@ The first screen we build. A deliberately simple login page now; the marketing h
 | `/logout` | 0 | Ends the session (POST, CSRF-protected) |
 | `/forgot-password`, `/reset-password/:token` | 0 | Password reset by email (single-use token, 30-minute expiry) |
 | `/accept-invite/:token` | 0 | New users set a password and accept terms |
-| `/` | 0 → 5 | Phase 0–4: redirects to `/login` or the user's landing page. Phase 5: marketing homepage |
+| `/` | 0+ | Public marketing homepage with a sample workflow and a link to sign in. Demo environments also link to the demo account chooser. |
 | `/app/...` | 0+ | The authenticated application |
 | `/portal/...` | 1+ | Requester self-service portal (same login) |
 
