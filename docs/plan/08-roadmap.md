@@ -16,6 +16,8 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 
 ## Phase 0 · Foundations
 
+> **Done** on 21 Nov 2026. Progress for every phase is tracked in [docs/PROGRESS.md](../PROGRESS.md).
+
 **Goal:** a working, secure skeleton. The login page with demo credentials lands on an (empty-ish) app shell.
 
 - Monorepo (pnpm + Turborepo), lint/format, TypeScript strict, commit conventions.
@@ -29,7 +31,7 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - **Entitlements** model and `feature()` gating.
 - Config engine v1: field definitions + custom field storage/validation, numbering sequences, config versioning (every change stored as a version).
 - App shell: navigation, command palette, theming (light/dark), user menu, notifications bell, responsive layout, i18n framework (en-GB).
-- Design system in code: Tailwind theme generated from `design/tokens/tokens.json`, icon sprite, and the core components from [doc 11](11-design-system.md), matched against the [screen catalogue](12-screen-catalogue.md).
+- Design system in code: the mockups' component stylesheet through `packages/ui` ([ADR 0009](../adr/0009-shared-component-stylesheet.md); this replaced a Tailwind theme), icon sprite, and the core components from [doc 11](11-design-system.md), matched against the [screen catalogue](12-screen-catalogue.md).
 - Audit log infrastructure; outbox + worker skeleton.
 - Deterministic demo seed + nightly reset job.
 - ADRs 0001–0008 reviewed and confirmed (written during planning).
@@ -131,7 +133,7 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - Security review of new modules (threat model, authZ and cross-tenant tests).
 - Docs: user guide pages, API reference, changelog.
 - Demo seed updated so every new feature has realistic demo data.
-- Feature catalogue ([02](02-feature-catalogue.md)) ticked off as features ship. **Every catalogue feature must map to a phase above.** When a feature is added to the catalogue, add it here too.
+- [docs/PROGRESS.md](../PROGRESS.md) ticked off as roadmap items ship, in the same PR. The feature catalogue ([02](02-feature-catalogue.md)) stays the specification. **Every catalogue feature must map to a phase above.** When a feature is added to the catalogue, add it here too.
 
 ## Definition of Done (per feature)
 

@@ -22,6 +22,7 @@ PRs are squash-merged, so the PR title becomes the commit on `main`. The **PR ti
 ## Pull requests
 
 - **Fill in the template** (`.github/pull_request_template.md`): plan references, screenshots against the mockup for UI changes, and the checks you ran.
+- **Include a `Progress:` line**, which the **Progress** check requires: `Progress: P1-02 done`, `Progress: P1-02 in progress` or `Progress: none - <reason>`, with `docs/PROGRESS.md` updated to match. See [AGENTS.md § Progress rules](../../AGENTS.md#3-progress-rules-mandatory-checked-by-ci).
 - **Keep it small:** about 400 hand-written lines. Split bigger work into steps that each leave `main` working.
 - **Add a CHANGELOG line** under "Unreleased" for anything people using CAFM will notice.
-- **CI must be green:** lint, format, typecheck, tests, build, e2e with axe, design checks, the container image and the PR title. Never skip or weaken a test to get there.
+- **CI must be green:** lint, format, typecheck, tests, build, e2e with axe, design checks, the container image, the PR title and progress. Never skip or weaken a test to get there.

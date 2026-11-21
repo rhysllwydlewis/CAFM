@@ -4,14 +4,15 @@ Guidance for anyone (human or AI agent) working in this repository. Read this fi
 
 ## What this is
 
-A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`. Phase 0 (foundations) is built:
+A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`.
 
-- the monorepo, database with row-level security, and sign-in, password reset and invites
-- roles and permissions, entitlements, audit, the outbox and worker
-- the app shell, the demo guard rails and the configuration engine
-- CI/CD
+**Where the build is:** [`docs/PROGRESS.md`](docs/PROGRESS.md) has the current phase, a checklist for every phase, what's in progress and what's waiting on the product owner. Phase 0 (foundations) is done. Phase 1 starts on the product owner's go-ahead.
 
-Phase 1 modules (doc 08) are next.
+## How to work here (every agent, every session)
+
+[AGENTS.md](AGENTS.md) is the agent handbook. It covers starting a session, choosing work, claiming items, the mandatory progress rules, ending a session, and what never to do. It applies to Claude, Codex and everyone else. Its contents are loaded below.
+
+@AGENTS.md
 
 ## Sources of truth (in this order)
 
@@ -21,7 +22,7 @@ Phase 1 modules (doc 08) are next.
 4. `docs/adr/`: architecture decisions. Do not contradict an accepted ADR. Propose a new one instead.
 5. `docs/plan/13-agent-schedules.md`: if you are a scheduled agent, your section defines your scope.
 
-If two sources disagree, flag it in your PR and on an issue labelled `docs`. Do not guess.
+If two sources disagree, flag it in your PR and on an issue labelled `type:docs`. Do not guess.
 
 ## Non-negotiable rules
 
@@ -93,21 +94,11 @@ npm run icons      # rebuild icons, sprite, manifest, tokens.json
 
 ## Agent environment
 
-Scheduled agents run in the personal cloud environment "CAFM". Its setup script installs Postgres 16, Redis and the design tooling, but cannot start background services, so start them in your session when you need them:
+Scheduled agents run in the personal cloud environment "CAFM". Its setup script installs Postgres 16, Redis and the design tooling, but can't start background services. `source scripts/agent-setup.sh` starts them and does the rest of the setup. It works the same in any container that has Postgres and Redis installed, or Docker (it falls back to `docker compose`).
 
-```bash
-service postgresql start
-redis-server --daemonize yes
-su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='cafm'\" | grep -q 1 || psql -c \"CREATE ROLE cafm LOGIN PASSWORD 'cafm' CREATEDB\""
-su postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='cafm_dev'\" | grep -q 1 || createdb -O cafm cafm_dev"
-su postgres -c "psql -q -f infra/postgres/init.sql"   # the cafm_app role
-export DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev
-export APP_DATABASE_URL=postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev
-export REDIS_URL=redis://localhost:6379 DEMO_MODE=true
-corepack enable && pnpm install && pnpm db:migrate && pnpm db:seed
-```
+It uses local test credentials only, never used outside the container: `DATABASE_URL=postgresql://cafm:cafm@localhost:5432/cafm_dev` (owner) and `APP_DATABASE_URL=postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev` (app role).
 
-These are local test credentials only, never used outside the container.
+To serve the built app the way Railway does, run `node scripts/start.mjs` with `DATABASE_URL`, `APP_DB_PASSWORD=cafm_app` and `PORT` set.
 
 ## Definition of done
 

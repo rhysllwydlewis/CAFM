@@ -1,6 +1,6 @@
 # Design
 
-The visual source of truth for the CAFM platform: design tokens, icon set, logo and 106 rendered screens.
+The visual source of truth for the CAFM platform: design tokens, icon set, logo and 111 rendered screens.
 
 - **Read first:** [docs/plan/11-design-system.md](../docs/plan/11-design-system.md) (decisions and rules) and [docs/plan/12-screen-catalogue.md](../docs/plan/12-screen-catalogue.md) (every screen).
 - **Browse locally:** open `mockups/index.html` for a clickable gallery. Each screen's HTML is in `mockups/html/`. The HTML expects the Inter, Inter Display and JetBrains Mono fonts to be installed (free from Google Fonts); without them it falls back to system fonts.
@@ -10,7 +10,7 @@ The visual source of truth for the CAFM platform: design tokens, icon set, logo 
 | Path | Contents |
 |------|----------|
 | `tokens/tokens.css` | Colour, type, spacing, radius, elevation, motion; light and dark themes |
-| `tokens/tokens.json` | Same tokens as JSON (generated), for the Tailwind theme and mobile |
+| `tokens/tokens.json` | Same tokens as JSON (generated), for tooling and the future native mobile app (the web app uses `tokens.css`, ADR 0009) |
 | `icons/svg/` | 172 icons, one SVG each (`currentColor`) |
 | `icons/sprite.svg`, `icons/icons.json` | Symbol sprite and manifest (generated) |
 | `icons/logo/` | Placeholder logomark variants |

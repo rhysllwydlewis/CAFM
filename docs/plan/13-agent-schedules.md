@@ -68,7 +68,7 @@ Times are UK time (`CRON_TZ=Europe/London`). The build cadence applies while an 
 
 Every agent follows this protocol. Its own section only adds focus.
 
-1. **Orient (fresh session, no memory).** Read `CLAUDE.md`, then this document's section for the agent, then its notebook `docs/agents/notes/<ID>.md`. Then read its catalogue sections and screens, the latest `docs/agents/status.md` from the conductor, open issues labelled `agent:<ID>`, and its own open pull request if there is one.
+1. **Orient (fresh session, no memory).** Read `docs/PROGRESS.md` (the current phase and what's in progress), `CLAUDE.md`, then this document's section for the agent, then its notebook `docs/agents/notes/<ID>.md`. Then read its catalogue sections and screens, the latest `docs/agents/status.md` from the conductor, open issues labelled `agent:<ID>`, and its own open pull request if there is one. Then it sets up the environment with `source scripts/agent-setup.sh`.
 2. **Pick exactly one work item**, in this priority order:
    1. Its open PR has *changes requested* or failing checks → address them.
    2. The default branch is failing in paths it owns → fix the root cause.
@@ -77,10 +77,12 @@ Every agent follows this protocol. Its own section only adds focus.
    5. The next unbuilt feature in its catalogue sections for the **current** roadmap phase (the conductor keeps these as issues).
    6. An improvement from its focus list (fidelity, tests, accessibility, performance, clarity).
 
+   Before building, it **claims** the item: a draft PR with `Progress: <item> in progress` and a row in the "In progress" table of `docs/PROGRESS.md`. Only items in the approved phase can be claimed; see [AGENTS.md § Progress rules](../../AGENTS.md#3-progress-rules-mandatory-checked-by-ci), which CI enforces.
+
    If its PR is open and waiting for review with nothing to change, it does a quick check that the PR still merges cleanly and still passes its checks, then stops.
 3. **Work on its own branch:** `agent/<ID>-<short-slug>` (for example `agent/A12-sla-pause-reasons`). Keep the change small: about 400 changed lines of hand-written code at most (tests, generated files and fixtures excluded). Split anything bigger into steps.
 4. **Verify before pushing:** typecheck, lint, unit tests, API tests (including cross-tenant denial tests for every touched endpoint), end-to-end tests for touched journeys, and for UI changes a screenshot compared side by side with the matching mockup.
-5. **Ship:** push and open or update one **draft PR**, using the PR template: what changed and why, catalogue § references, screenshots next to the mockup, tests run and their results, risks, and follow-ups.
+5. **Ship:** push and open or update one **draft PR**, ticking any finished roadmap item in `docs/PROGRESS.md` in the same PR, and using the PR template: what changed and why, catalogue § references, screenshots next to the mockup, tests run and their results, risks, and follow-ups.
 6. **Write notes:** update `docs/agents/notes/<ID>.md` (its own file, so agents never conflict on it) with what it did, decisions made, gotchas, and the next three candidate items.
 7. **Stop.** Never wait or poll. If blocked, open or update an issue (`blocked` or `decision-needed`, plus the owning agent's label) and end the run.
 
@@ -130,10 +132,11 @@ Repository layout follows [doc 04](04-architecture.md). `<module>` is the agent'
 | `apps/api/src/core/tenancy/**`, `apps/api/src/core/rbac/**`, `apps/api/src/core/audit/**`, `apps/api/src/core/entitlements/**` | A03 |
 | `.github/**`, `infra/**`, root config, `turbo.json` | A01 |
 | `docs/plan/**` | A94 (module agents may edit only their own catalogue §) |
+| `docs/PROGRESS.md` (where the build is) | Any agent ticks the items its PR finishes; A00 keeps the summary and percentage current |
 | `docs/agents/status.md` (points to the status board issue) | A00 |
 | `docs/agents/notes/<ID>.md` | That agent only |
 
-Ownership is also written to `.github/CODEOWNERS` in Phase 0, mapped to agent labels for the conductor's checks.
+Ownership is to be written to `.github/CODEOWNERS` when the scheduled agents switch on, mapped to agent labels for the conductor's checks. It isn't there yet.
 
 ## 6. Rollout
 
@@ -276,7 +279,7 @@ So the eight Stage 0 routines are set up by the product owner from [docs/agents/
 
 - **Mission:** the code version of doc 11, so every screen looks like the mockups.
 - **Builds:**
-  - Tailwind theme from `design/tokens/tokens.json`
+  - the shared component stylesheet from `design/` through `packages/ui` (ADR 0009)
   - `packages/ui` components (buttons, badges, chips, tabs, tables, KPI tiles, cards, forms, timeline, charts, floor-plan and map wrappers, modal, drawer, command palette, toasts, states)
   - icon sprite, app shell (navigation rail, top bar, ⌘K), light/dark theme.
 - **Screens:** `ds-01` to `ds-10`, plus the shell on every screen.

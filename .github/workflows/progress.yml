@@ -1,0 +1,38 @@
+name: Progress
+
+# Every PR keeps docs/PROGRESS.md up to date, so two agents never build the
+# same thing and the next session knows where the build is. Rules: AGENTS.md
+# § Progress rules.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  progress:
+    name: Progress tracker
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test the progress script
+        run: node --test scripts/*.test.mjs
+      - name: Check docs/PROGRESS.md is consistent
+        run: node scripts/progress.mjs check
+      - name: Check this PR updates it
+        env:
+          # Passed through the environment, never interpolated into the script.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/progress.mjs pr-check
