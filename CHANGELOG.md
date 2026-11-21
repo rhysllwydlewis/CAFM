@@ -4,6 +4,10 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ## Unreleased
 
+### Changed
+
+- A labelled Sign out button appears next to your name and lets you retry if sign-out fails.
+
 ### Added
 
 - Railway deployment: one service runs the API and web app, with database setup, migrations and demo reseeding before each deploy.

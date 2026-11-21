@@ -238,12 +238,21 @@ a.nav-item:hover:not(.active) {
   background: #1d3a40;
   color: #a8dce3;
 }
-.nav-foot .nav-signout {
-  color: var(--nav-text);
+.nav-foot {
+  flex-wrap: wrap;
 }
-.nav-foot .nav-signout:hover {
+.nav-foot .nav-signout {
+  border-color: var(--nav-border);
   color: var(--nav-text-strong);
+}
+.nav-foot .nav-signout svg.i {
+  color: inherit;
+}
+.nav-foot .nav-signout:hover:not(:disabled) {
   background: var(--nav-active-bg);
+}
+.nav-signout-error {
+  flex-basis: 100%;
 }
 
 /* Sprite icons: presentation attributes on the sprite root don't reach <use> instances */
