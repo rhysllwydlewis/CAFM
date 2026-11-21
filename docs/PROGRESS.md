@@ -19,7 +19,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 0 / 13 | Not started |
+| 1 · Core CAFM MVP | 0 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-01a | Codex | `codex/p1-01a-location-hierarchy` | 21 Nov 2026 | Build the tenant location tree and site-scoped API, then verify permissions, plan limits, audit and tenant isolation. |
 
 ## Phase checklists
 
