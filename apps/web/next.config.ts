@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
-const apiUrl = process.env.API_URL ?? 'http://localhost:4000';
+// Read at build time: the /api rewrite is fixed into the build. The production
+// start script runs the API on 127.0.0.1:4000 in the same container.
+const apiUrl = process.env.API_URL ?? 'http://127.0.0.1:4000';
 
 const config: NextConfig = {
   transpilePackages: ['@cafm/ui'],

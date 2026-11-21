@@ -1,12 +1,12 @@
 # Deploying to Railway
 
-One Railway service runs the whole app from this repository. `railway.json` holds the build and deploy settings:
+One Railway service runs the whole app from this repository. `railway.json` holds the build and deploy settings, and `railpack.json` adds OpenSSL to the runtime image for Prisma:
 
 | Step | Command | What it does |
 |---|---|---|
-| Build | `pnpm build` | Builds the shared packages, the API and the web app |
-| Pre-deploy | `pnpm release` | As the database owner: creates or updates the `cafm_app` role, applies migrations, and reseeds the demo when `DEMO_MODE=true` |
-| Start | `pnpm start` | Runs the API on an internal port and the web app on `$PORT`; the web app proxies `/api` to the API |
+| Build | `pnpm install --frozen-lockfile --prod=false && pnpm build` | Builds the shared packages, the API and the web app (the explicit install makes sure build tools are present even if the builder sets `NODE_ENV=production`) |
+| Pre-deploy | `node scripts/release.mjs` | As the database owner: creates or updates the `cafm_app` role, applies migrations, and reseeds the demo when `DEMO_MODE=true` |
+| Start | `node scripts/start.mjs` | Runs the API on an internal port and the web app on `$PORT`; the web app proxies `/api` to the API |
 | Health check | `GET /api/health` | Goes through the web app to the API, so it checks both |
 
 ## Service variables
