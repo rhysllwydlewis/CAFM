@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { generatePpm, nextNumber, Prisma, startingPoint, withTenant, type Tx } from '@cafm/db';
+import { eligibleTechnician, generatePpm, nextNumber, Prisma, startingPoint, withTenant, type Tx } from '@cafm/db';
 import {
   createPpmScheduleSchema,
   PPM_CRITICALITIES,
@@ -75,6 +75,27 @@ async function checkAssets(tx: Tx, auth: AuthContext, assets: AssetInput[], mete
     }
   }
   return found;
+}
+
+/**
+ * The person must be able to do jobs at every place the schedule's assets are, or the jobs raised for them would be
+ * ones they cannot open.
+ */
+async function checkAssigneeSites(
+  tx: Tx,
+  tenantId: string,
+  assigneeId: string | null | undefined,
+  locationIds: string[],
+) {
+  if (!assigneeId) return;
+  for (const locationId of new Set(locationIds)) {
+    if (!(await eligibleTechnician(tx, tenantId, assigneeId, locationId))) {
+      const place = await tx.location.findFirst({ where: { tenantId, id: locationId }, select: { name: true } });
+      throw new UnprocessableEntityException(
+        `That person can’t be given jobs at ${place?.name ?? 'one of the assets’ locations'}. Choose someone with access there.`,
+      );
+    }
+  }
 }
 
 async function checkTemplateAndAssignee(tx: Tx, tenantId: string, templateId?: string, assigneeId?: string | null) {
@@ -157,7 +178,18 @@ export class PpmSchedulesController {
     return withPpmWrite(this.db, req.auth!, 'ppm.manage', async (tx, auth) => {
       const tenantId = auth.membership!.tenantId;
       await checkTemplateAndAssignee(tx, tenantId, input.templateId, input.assigneeId);
-      await checkAssets(tx, auth, input.assets, input.frequency.type === 'meter' ? input.frequency.meterName : null);
+      const found = await checkAssets(
+        tx,
+        auth,
+        input.assets,
+        input.frequency.type === 'meter' ? input.frequency.meterName : null,
+      );
+      await checkAssigneeSites(
+        tx,
+        tenantId,
+        input.assigneeId,
+        found.map((asset) => asset.locationId),
+      );
       const schedule = await tx.ppmSchedule.create({
         data: {
           tenantId,
@@ -224,8 +256,14 @@ export class PpmSchedulesController {
       await checkTemplateAndAssignee(tx, tenantId, input.templateId, input.assigneeId);
       const rows = await tx.ppmScheduleAsset.findMany({
         where: { tenantId, scheduleId: id, active: true },
-        include: { asset: { select: { meters: { select: { name: true } } } } },
+        include: { asset: { select: { locationId: true, meters: { select: { name: true } } } } },
       });
+      await checkAssigneeSites(
+        tx,
+        tenantId,
+        input.assigneeId,
+        rows.map((row) => row.asset.locationId),
+      );
       if (input.frequency.type === 'meter') {
         const meterName = input.frequency.meterName;
         const missing = rows.filter((row) => !row.asset.meters.some((meter) => meter.name === meterName));
@@ -257,7 +295,8 @@ export class PpmSchedulesController {
         before.calendarUnit !== schedule.calendarUnit ||
         before.interval !== schedule.interval ||
         before.meterName !== schedule.meterName ||
-        !before.meterInterval?.equals(schedule.meterInterval ?? new Prisma.Decimal(-1)) ||
+        // Two missing intervals (a calendar schedule) are the same, so compare what they print as.
+        (before.meterInterval?.toString() ?? null) !== (schedule.meterInterval?.toString() ?? null) ||
         before.mode !== schedule.mode ||
         before.startsOn.getTime() !== schedule.startsOn.getTime();
       // A schedule put back to work starts from today. Left alone it would raise every visit missed while it was archived.
@@ -317,7 +356,18 @@ export class PpmSchedulesController {
       const schedule = await tx.ppmSchedule.findFirst({ where: { tenantId, id } });
       if (!schedule) throw missingSchedule();
       if (schedule.version !== input.version) throw staleRecord('schedule');
-      await checkAssets(tx, auth, input.assets, schedule.freqType === 'meter' ? schedule.meterName : null);
+      const found = await checkAssets(
+        tx,
+        auth,
+        input.assets,
+        schedule.freqType === 'meter' ? schedule.meterName : null,
+      );
+      await checkAssigneeSites(
+        tx,
+        tenantId,
+        schedule.assigneeId,
+        found.map((asset) => asset.locationId),
+      );
       const existing = await tx.ppmScheduleAsset.findMany({ where: { tenantId, scheduleId: id } });
       const wanted = new Map(input.assets.map((asset) => [asset.assetId, asset]));
       let added = 0;

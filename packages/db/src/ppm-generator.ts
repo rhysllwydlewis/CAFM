@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import {
+  addDays,
   addInterval,
   daysBetween,
   endOfLocalDay,
@@ -10,6 +11,7 @@ import {
   type PpmCalendarUnit,
 } from '@cafm/shared';
 import type { Tx } from './index';
+import { eligibleTechnician } from './eligibility';
 import { nextNumber } from './numbering';
 
 /** Where the dates of PPM visits are read from the clock: the UK. */
@@ -103,15 +105,30 @@ export async function generatePpm(
       select: { ancestor: { select: { siteCalendar: true } } },
     });
     const zone = (site?.ancestor.siteCalendar as { timeZone?: string } | null)?.timeZone ?? PPM_TIME_ZONE;
-    const assigneeUsable = !!schedule.assignee && schedule.assignee.status === 'active';
-    for (const dueOn of due) {
-      const raised = await tx.workOrder.findFirst({
-        where: { tenantId, ppmScheduleAssetId: row.id, scheduledFor: asDate(dueOn) },
+    // Given to the schedule's person only if they can still do jobs at this asset's place. Otherwise it is left for
+    // someone to assign, rather than being given to someone who could not open it.
+    const assigneeUsable =
+      !!schedule.assigneeId &&
+      !!schedule.assignee &&
+      schedule.assignee.status === 'active' &&
+      (await eligibleTechnician(tx, tenantId, schedule.assigneeId, row.asset.locationId));
+    const taken = (day: string) =>
+      tx.workOrder.findFirst({
+        where: { tenantId, ppmScheduleAssetId: row.id, scheduledFor: asDate(day) },
         select: { id: true },
       });
-      if (raised) {
-        result.skipped += 1;
-        continue;
+    for (const visitDue of due) {
+      let dueOn = visitDue;
+      if (schedule.mode === 'fixed') {
+        // A fixed visit is its date: one already raised for it is the same visit.
+        if (await taken(dueOn)) {
+          result.skipped += 1;
+          continue;
+        }
+      } else {
+        // A floating or meter visit is whenever it falls due, and a job may already be for that day (a visit done and
+        // the next one due the same day). The new visit takes the next free day instead of being lost.
+        for (let tries = 0; tries < 366 && (await taken(dueOn)); tries += 1) dueOn = addDays(dueOn, 1);
       }
       const steps = (schedule.template?.steps ?? []) as {
         label: string;

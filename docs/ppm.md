@@ -27,7 +27,7 @@ A **schedule** says when a task is done and on which assets. It takes the next n
 
 Each asset on a schedule has its own next visit, last visit and open job. An asset taken off a schedule keeps its history. Putting an asset on a meter schedule needs a meter of that name on it, and its first visit is a full interval on from where the meter stands now.
 
-Changing how often, from when, or fixed against floating works each asset's next visit out again. Jobs already raised are left alone.
+Changing how often, from when, or fixed against floating works each asset's next visit out again; other edits leave the dates alone. Jobs already raised are left alone. The assignee must be able to do jobs at every place the schedule's assets are. The asset on a planned maintenance job can't be changed, because doing the visit on another would count for the wrong one.
 
 `GET /api/ppm/schedules` (filters `q`, `criticality`, `discipline`, `status=active|archived|all`, `limit`, `offset`), `GET /{id}`, `POST`, `PUT /{id}` (with `version`), `PUT /{id}/assets` (with `version`). A schedule is archived by setting `active` to false. People limited to some sites see only schedules with an asset on their sites, and only those assets. Changing schedules needs access to every location.
 
@@ -38,7 +38,7 @@ The generator raises a work order for each visit that falls due within its lead 
 - It runs **every hour** in the worker, for every organisation with planned maintenance, so a new schedule or a meter reading that makes a visit due is picked up within the hour. **Generate now** (`POST /api/ppm/schedules/{id}/generate`, or `POST /api/ppm/generate` for everything) does it straight away.
 - A visit is raised **once**: the asset and the due day are unique, so running it again, or two runs at once, change nothing.
 - At most 12 visits per asset are raised in one run, so a daily schedule with a long lead time doesn't flood the list. The rest follow on later runs.
-- Each job has type PPM, the schedule's priority and assignee, a fix target of the end of the due day (in the site's time zone), and a **checklist copied from the task's steps that holds back completing the job** (see [Work orders](work-orders.md#checklists)). The description carries the task's notes, skills and safety notes. The job page says which schedule it came from.
+- Each job has type PPM, the schedule's priority and assignee (only if that person can still do jobs at the asset's place; otherwise it is left for someone to assign), a fix target of the end of the due day (in the site's time zone), and a **checklist copied from the task's steps that holds back completing the job** (see [Work orders](work-orders.md#checklists)). The description carries the task's notes, skills and safety notes. The job page says which schedule it came from.
 - When the job is **completed**, a fixed schedule keeps its dates and remembers the last visit; a floating one is now due a set time after the visit (from the meter's reading, for a meter schedule). When it is **cancelled**, a floating schedule counts on from the day the visit was due, so it doesn't wait for ever.
 
 ## Not built yet

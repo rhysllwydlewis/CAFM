@@ -9,6 +9,7 @@ export { createTenant, listTenants, setTenantPlan, setTenantStatus } from './ten
 export { resetDemo, type DemoResetResult } from './demo-reset';
 export { seed, seedRoles } from './seed';
 export { nextNumber } from './numbering';
+export { eligibleTechnician, JOB_LICENCES } from './eligibility';
 export {
   generatePpm,
   PPM_TIME_ZONE,

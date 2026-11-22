@@ -475,6 +475,10 @@ export class WorkOrdersController {
       if (CLOSED_STATUSES.includes(before.status)) {
         throw new UnprocessableEntityException('A closed or cancelled work order can’t be edited.');
       }
+      // The asset is what a planned maintenance visit is for, so doing the visit on another would count for the wrong one.
+      if (before.ppmScheduleAssetId && input.assetId !== undefined && input.assetId !== before.assetId) {
+        throw new UnprocessableEntityException('The asset on a planned maintenance job can’t be changed.');
+      }
       if (input.assetId) {
         const asset = await tx.asset.findFirst({
           where: { tenantId, id: input.assetId, locationId: before.locationId, status: { not: 'decommissioned' } },

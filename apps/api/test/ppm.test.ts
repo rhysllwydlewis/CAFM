@@ -395,6 +395,28 @@ it('plans schedules for calendar and meter visits, works each asset’s first vi
       addDays(today, 10),
       addDays(today, 10),
     ]);
+    // A visit that is overdue and not yet raised is kept by an edit that doesn't touch the timing.
+    const overdue = new Date(addDays(today, -3) + 'T00:00:00Z');
+    await withTenant(db, tenant.id, (tx) =>
+      tx.ppmScheduleAsset.updateMany({ where: { scheduleId: ahead.id }, data: { nextDueOn: overdue } }),
+    );
+    const reworded = (
+      await planner
+        .put(url)
+        .send({
+          ...body({ templateId: task.id, title: 'Pump service (annual) ', assigneeId: member('tech') }),
+          version: 2,
+        })
+        .expect(200)
+    ).body as ScheduleBody;
+    expect(reworded.rows.map((row) => row.nextDueOn)).toEqual([addDays(today, -3), addDays(today, -3)]);
+    expect(reworded.version).toBe(3);
+    await withTenant(db, tenant.id, (tx) =>
+      tx.ppmScheduleAsset.updateMany({
+        where: { scheduleId: ahead.id },
+        data: { nextDueOn: new Date(addDays(today, 10) + 'T00:00:00Z') },
+      }),
+    );
     const retimed = (
       await planner
         .put(url)
@@ -404,7 +426,7 @@ it('plans schedules for calendar and meter visits, works each asset’s first vi
             startsOn: addDays(today, 40),
             frequency: { type: 'calendar', unit: 'month', interval: 6 },
           }),
-          version: 2,
+          version: 3,
         })
         .expect(200)
     ).body;
@@ -414,7 +436,7 @@ it('plans schedules for calendar and meter visits, works each asset’s first vi
     ]);
     await planner
       .put(url)
-      .send({ ...body({ templateId: randomUUID() }), version: 3 })
+      .send({ ...body({ templateId: randomUUID() }), version: 4 })
       .expect(422);
 
     // Assets can be added and taken off. One never visited is deleted; asking for the same set again changes nothing.
@@ -422,22 +444,22 @@ it('plans schedules for calendar and meter visits, works each asset’s first vi
     const swapped = (
       await planner
         .put(url + '/assets')
-        .send({ version: 3, assets: [{ assetId: pump2.id }, { assetId: pump3.id }] })
+        .send({ version: 4, assets: [{ assetId: pump2.id }, { assetId: pump3.id }] })
         .expect(200)
     ).body;
     expect(swapped.rows.map((row: { asset: { name: string } }) => row.asset.name)).toEqual(['Pump 2', 'Pump 3']);
-    expect(swapped.version).toBe(4);
+    expect(swapped.version).toBe(5);
     await planner
       .put(url + '/assets')
       .send({ version: 3, assets: [] })
       .expect(409);
     await auditor
       .put(url + '/assets')
-      .send({ version: 4, assets: [] })
+      .send({ version: 5, assets: [] })
       .expect(403);
     await planner
       .put(url + '/assets')
-      .send({ version: 4, assets: [{ assetId: outside.id }] })
+      .send({ version: 5, assets: [{ assetId: outside.id }] })
       .expect(404);
     expect(
       await withTenant(db, tenant.id, (tx) => tx.ppmScheduleAsset.count({ where: { scheduleId: ahead.id } })),
@@ -774,6 +796,28 @@ it('counts a floating visit on from when it is done or dropped, and a meter visi
       lastDoneOn: today,
     });
 
+    // The meter crosses the next interval the same day the last visit was done: the new visit is not lost.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    await reading('261', new Date().toISOString()).expect(201);
+    expect(
+      (
+        await planner
+          .post(hoursUrl + '/generate')
+          .send({})
+          .expect(201)
+      ).body.created,
+    ).toBe(1);
+    const sameDay = (await ppmJobs(hours.id)).map((job) => job.scheduledFor!.toISOString().slice(0, 10));
+    expect(sameDay).toEqual([today, addDays(today, 1)]);
+    const pending = (await planner.get(hoursUrl).expect(200)).body as ScheduleBody;
+    expect(pending.rows[0]).toMatchObject({ nextDueTotal: null, state: 'due' });
+    const second = (await ppmJobs(hours.id))[1]!;
+    expect((await move(tech, second.id, 'on_site')).status).toBe(201);
+    expect((await move(tech, second.id, 'completed')).status).toBe(201);
+    expect(((await planner.get(hoursUrl).expect(200)).body as ScheduleBody).rows[0]).toMatchObject({
+      nextDueTotal: '361',
+    });
+
     // A long lead on a short interval raises a bounded number in one run, and the rest on the runs after.
     const daily = await schedule({
       title: 'Daily check',
@@ -819,6 +863,76 @@ it('counts a floating visit on from when it is done or dropped, and a meter visi
     expect(new Set(dates).size).toBe(29);
     expect(dates[0]).toBe(today);
     expect(dates.at(-1)).toBe(addDays(today, 28));
+  } finally {
+    await cleanup();
+  }
+});
+
+it('gives planned jobs only to someone who can open them, and keeps a job’s asset the one its visit is for', async () => {
+  const { admin, planner, accounts, cleanup, schedule, asset, annex, site, member, ppmJobs, body } = await fixture();
+  try {
+    const remote = (
+      await admin.post('/api/locations').send({ code: 'REMOTE', name: 'Remote depot', kind: 'site' }).expect(201)
+    ).body;
+    const [pumpMain, pumpAnnex, pumpRemote] = [
+      await asset('Pump main'),
+      await asset('Pump annex', annex.id),
+      await asset('Pump remote', remote.id),
+    ];
+    // The technician can work at the main site and the annex, and not at the depot.
+    const refused = await planner
+      .post(schedules)
+      .send({ assets: [{ assetId: pumpRemote.id }], ...body({ assigneeId: member('tech') }) })
+      .expect(422);
+    expect(refused.body.message).toContain('Remote depot');
+    const unassigned = await schedule({ title: 'Depot pump', assets: [{ assetId: pumpRemote.id }] });
+    await planner
+      .put(schedules + '/' + unassigned.id)
+      .send({ ...body({ title: 'Depot pump', assigneeId: member('tech') }), version: unassigned.version })
+      .expect(422);
+    await planner
+      .put(schedules + '/' + unassigned.id)
+      .send({ ...body({ title: 'Depot pump' }), version: unassigned.version })
+      .expect(200);
+
+    // Access taken away after the schedule was made: the job for the place they can't reach is left for someone to assign.
+    const made = await schedule({
+      title: 'Two places',
+      assigneeId: member('tech'),
+      assets: [{ assetId: pumpMain.id }, { assetId: pumpAnnex.id }],
+    });
+    await admin
+      .put('/api/locations/access/' + member('tech'))
+      .send({ locationIds: [site.id] })
+      .expect(200);
+    expect(
+      (
+        await planner
+          .post(schedules + '/' + made.id + '/generate')
+          .send({})
+          .expect(201)
+      ).body.created,
+    ).toBe(2);
+    const raised = await ppmJobs(made.id);
+    expect(raised.map((job) => [job.title, job.status, job.assigneeId])).toEqual([
+      ['Two places · Pump annex', 'logged', null],
+      ['Two places · Pump main', 'assigned', member('tech')],
+    ]);
+
+    // A planned job's asset can't be changed or cleared, because doing the visit on another would count for this one.
+    const sibling = await asset('Pump main 2');
+    const job = raised.find((candidate) => candidate.title.endsWith('Pump main'))!;
+    const patch = async (changes: object) => {
+      const version = (await planner.get(jobs + '/' + job.id).expect(200)).body.version;
+      return planner.patch(jobs + '/' + job.id).send({ version, ...changes });
+    };
+    const moved = await patch({ assetId: sibling.id });
+    expect(moved.status).toBe(422);
+    expect(moved.body.message).toContain('planned maintenance');
+    expect((await patch({ assetId: null })).status).toBe(422);
+    expect((await patch({ title: 'Two places · Pump main (urgent)' })).status).toBe(200);
+    expect((await patch({ assetId: pumpMain.id, title: 'Two places · Pump main' })).status).toBe(200);
+    expect(accounts.tech.memberships).toHaveLength(1);
   } finally {
     await cleanup();
   }
