@@ -20,6 +20,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- A new homepage: a short film of the demo estate that plays as you scroll, from Cardiff HQ at dusk through its floors, plant room and a job closed on site, ending on the links to try the demo or sign in. Words are kept to one line per scene. With reduced motion the film steps between still frames, and without WebGL the stills cross-fade.
+
 - Fix a site whose opening hours end at 24:00 (the way overnight opening is entered) being unable to receive Helpdesk requests, because the response deadline couldn't be worked out.
 
 - Stop email auto-replies, bounces and the Helpdesk mailbox writing to itself from opening requests and replying to each other in a loop. Email sent by CAFM is now marked as automatic.

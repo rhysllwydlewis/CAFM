@@ -1,491 +1,137 @@
 'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Icon, Logo } from '@cafm/ui';
+import { Icon, Logo } from '@cafm/ui';
+import '@fontsource-variable/inter/wght-italic.css';
+import { startFilm } from './film';
 import styles from './home.module.css';
 
 const media = '/homepage';
-type DeviceFormat = 'compact' | 'tablet' | 'wide';
-const chapters = [
-  { label: 'Overview', title: 'Run the estate.', start: 0, stop: 0 },
-  { label: 'At the desk', title: 'At the desk.', start: 0.11, stop: 0.19 },
-  { label: 'Plant room', title: 'In the plant room.', start: 0.27, stop: 0.46 },
-  { label: 'On the job', title: 'On the job.', start: 0.55, stop: 0.68 },
-  { label: 'Complete', title: 'Job complete.', start: 0.8, stop: 0.91 },
+const stills = ['building', 'exploded', 'plant', 'hands', 'mist', 'window'] as const;
+const captions = [
+  { lines: ['Run every', 'building.'], meta: 'Facilities management software' },
+  { lines: ['Floor', 'by floor.'], meta: 'Sites · floors · spaces' },
+  { lines: ['Every', 'asset.'], meta: 'Register · history · planned maintenance' },
+  { lines: ['Every job,', 'closed.'], meta: 'Checklist · photos · signature' },
+  { lines: ['Every', 'site.'], meta: 'Twelve sites · one login' },
 ] as const;
-const fieldChapter = 3;
-const completeChapter = 4;
-const inProgress = 'In progress';
-const done = 'Completed';
-const clamp = (value: number) => Math.min(1, Math.max(0, value));
-const ease = (value: number) => clamp(value) ** 2 * (3 - 2 * clamp(value));
+const modules = ['Helpdesk', 'Work orders', 'Planned maintenance', 'Assets', 'Locations'];
 
-function useJourney() {
-  const journey = useRef<HTMLElement>(null);
-  const stage = useRef<HTMLDivElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
-  const [chapter, setChapter] = useState(0);
-  const [previewedCompletion, setPreviewedCompletion] = useState(false);
-  const [presentation, setPresentation] = useState<DeviceFormat | 'static' | null>(null);
+export function Homepage({ demo }: { demo: boolean }) {
+  const film = useRef<HTMLElement>(null);
+  useEffect(() => (film.current ? startFilm(film.current) : undefined), []);
 
-  useEffect(() => {
-    const track = journey.current!;
-    const frame = stage.current!;
-    const still = matchMedia(
-      '(prefers-reduced-motion: reduce), (max-height: 545px), (min-width: 901px) and (max-height: 580px)',
-    );
-    const compact = matchMedia('(max-width: 900px)');
-    const handset = matchMedia('(max-width: 560px)');
-    let request = 0;
-    let previous = -1;
-    let visibleProgress = -1;
-    let lastFrame = 0;
-    let completionShown = false;
-
-    function render(now: number) {
-      request = 0;
-      const travel = track.offsetHeight - frame.offsetHeight;
-      const target = still.matches || travel <= 0 ? 0 : clamp(-track.getBoundingClientRect().top / travel);
-      const elapsed = lastFrame ? Math.min(now - lastFrame, 34) : 1000 / 60;
-      lastFrame = now;
-      const remaining = target - visibleProgress;
-      // Only ease the artwork. Native scrolling and jumps out of the hero stay immediate.
-      const settle =
-        still.matches || travel <= 0 || visibleProgress < 0 || target === 1 || Math.abs(remaining) < 0.0015;
-      const progress = settle ? target : visibleProgress + remaining * (1 - Math.exp(-elapsed / 68));
-      const next = chapters.reduce((chapter, scene, index) => (progress >= scene.start ? index : chapter), 0);
-      // The job preview may finish during the story. A jump straight to #product skips it.
-      if (!completionShown && next === completeChapter && progress < 1) {
-        completionShown = true;
-        setPreviewedCompletion(true);
-      }
-      if (next !== previous) {
-        const focused = document.activeElement;
-        const keepsWorkOrderLink =
-          previous >= fieldChapter && next >= fieldChapter && focused?.id === 'completed-order';
-        if (!keepsWorkOrderLink && frame.contains(focused?.closest('[data-stage-copy]') ?? null)) {
-          frame.querySelector<HTMLButtonElement>(`[data-jump="${next}"]`)?.focus({ preventScroll: true });
-        }
-        previous = next;
-        setChapter(next);
-      }
-      const dissolve = ease((progress - 0.23) / 0.15);
-      if (progress !== visibleProgress) {
-        visibleProgress = progress;
-        const fadeIn = next === 0 ? 1 : ease((progress - chapters[next]!.start) / 0.024);
-        const upcoming = chapters[next + 1];
-        const fadeOut = upcoming ? ease((upcoming.start - progress) / 0.024) : 1;
-        const variables = {
-          progress,
-          dissolve,
-          zoom: 1.015 + clamp((progress - 0.23) / 0.77) * 0.085,
-          'copy-alpha': Math.min(fadeIn, fadeOut),
-          equipment: ease((progress - 0.39) / 0.067),
-          phone: ease((progress - 0.59) / 0.07),
-          'equipment-alpha': 1 - ease((progress - 0.515) / 0.032),
-          'phone-alpha': 1 - ease((progress - 0.76) / 0.037),
-        };
-        for (const [name, value] of Object.entries(variables)) frame.style.setProperty(`--${name}`, String(value));
-      }
-      const clip = video.current;
-      if (clip && !clip.seeking && dissolve < 1 && Number.isFinite(clip.duration)) {
-        const time = clamp(progress / chapters[1].stop) * Math.max(0, clip.duration - 0.03);
-        if (Math.abs(clip.currentTime - time) > 0.015) clip.currentTime = time;
-      }
-      if (!settle) schedule();
-    }
-
-    function schedule() {
-      if (!request) request = requestAnimationFrame(render);
-    }
-
-    function resize() {
-      setPresentation(still.matches ? 'static' : handset.matches ? 'compact' : compact.matches ? 'tablet' : 'wide');
-      schedule();
-    }
-
-    resize();
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', resize);
-    still.addEventListener('change', resize);
-    compact.addEventListener('change', resize);
-    track.addEventListener('loadedmetadata', schedule, true);
-    track.addEventListener('seeked', schedule, true);
-    return () => {
-      cancelAnimationFrame(request);
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', resize);
-      still.removeEventListener('change', resize);
-      compact.removeEventListener('change', resize);
-      track.removeEventListener('loadedmetadata', schedule, true);
-      track.removeEventListener('seeked', schedule, true);
-    };
-  }, []);
-
-  function goTo(index: number) {
-    const track = journey.current;
-    const stop = chapters[index]?.stop;
-    if (!track || !stage.current || stop === undefined) return;
-    const travel = track.offsetHeight - stage.current.offsetHeight;
-    window.scrollTo({
-      top: window.scrollY + track.getBoundingClientRect().top + travel * stop,
-      behavior: 'smooth',
-    });
-  }
-
-  const format = presentation === 'static' ? null : presentation;
-  return { journey, stage, video, chapter, format, interactive: presentation !== null, previewedCompletion, goTo };
-}
-
-function JobCard({
-  checked,
-  completed,
-  interactive,
-  onCheck,
-  onFinish,
-  onOpen,
-}: {
-  checked: boolean;
-  completed: boolean;
-  interactive: boolean;
-  onCheck: (checked: boolean) => void;
-  onFinish: () => void;
-  onOpen: () => void;
-}) {
-  return (
-    <article className={styles.order} aria-label="Work order WO 142">
-      <header>
-        <strong>WO 142</strong>
-        <span role={interactive ? 'status' : undefined}>{completed ? done : inProgress}</span>
-      </header>
-      <div>
-        <h3>Replace supply air filter</h3>
-        <p>AHU 02</p>
-        {interactive && (
-          <Checkbox
-            label="Filter replaced"
-            checked={checked || completed}
-            disabled={completed}
-            onChange={(event) => onCheck(event.target.checked)}
-          />
-        )}
-        {!interactive ? (
-          <a className="btn primary" href="#product">
-            View work order <Icon name="chevron-down" />
-          </a>
-        ) : completed ? (
-          <a id="completed-order" className="btn primary" href="#product" onClick={onOpen}>
-            View work order <Icon name="chevron-down" />
-          </a>
-        ) : (
-          <Button variant="primary" block disabled={!checked} onClick={onFinish}>
-            Complete work order
-          </Button>
-        )}
-      </div>
-    </article>
+  const cta = demo ? { href: '/login#demo-heading', label: 'Try the demo' } : { href: '/login', label: 'Sign in' };
+  const primary = (big?: boolean) => (
+    <Link className={`btn primary lg ${big ? styles.big : ''}`} href={cta.href}>
+      {cta.label} <Icon name="chevron-right" />
+    </Link>
   );
-}
 
-const previews = [
-  {
-    title: 'Work orders',
-    headers: ['Reference', 'Work order', 'Status'],
-    rows: [
-      ['WO 142', 'Replace supply air filter', inProgress],
-      ['WO 137', 'Test emergency lighting', 'Scheduled'],
-      ['WO 128', 'Check circulation pumps', 'In progress'],
-    ],
-  },
-  {
-    title: 'Compliance',
-    headers: ['Reference', 'Inspection', 'Status'],
-    rows: [
-      ['IN 056', 'Emergency lighting test', 'Due soon'],
-      ['IN 047', 'Fire door checks', 'Complete'],
-      ['IN 031', 'Water hygiene review', 'Complete'],
-    ],
-  },
-  {
-    title: 'Assets',
-    headers: ['Reference', 'Asset', 'Location'],
-    rows: [
-      ['AHU 02', 'Air handling unit', 'Basement'],
-      ['CP 01', 'Circulation pump', 'Basement'],
-      ['EP 04', 'Lighting panel', 'Level 1'],
-    ],
-  },
-];
-
-function Product({
-  active,
-  select,
-  completed,
-  interactive,
-}: {
-  active: number;
-  select: (index: number) => void;
-  completed: boolean;
-  interactive: boolean;
-}) {
-  function move(event: KeyboardEvent, index: number) {
-    const next = { ArrowLeft: (index + 2) % 3, ArrowRight: (index + 1) % 3, Home: 0, End: 2 }[event.key];
-    if (next === undefined) return;
-    event.preventDefault();
-    select(next);
-    document.getElementById(`preview-tab-${next}`)?.focus();
-  }
-
-  return (
-    <section id="product" className={styles.product} tabIndex={-1} aria-labelledby="product-title">
-      <header>
-        <h2 id="product-title">Explore CAFM</h2>
-        {interactive && (
-          <div role="tablist" aria-label="Product previews" className={styles.tabs}>
-            {previews.map(({ title }, index) => (
-              <button
-                key={title}
-                id={`preview-tab-${index}`}
-                type="button"
-                role="tab"
-                aria-controls={`preview-${index}`}
-                aria-selected={active === index}
-                tabIndex={active === index ? 0 : -1}
-                onClick={() => select(index)}
-                onKeyDown={(event) => move(event, index)}
-              >
-                {title}
-              </button>
-            ))}
-          </div>
-        )}
-      </header>
-      <div className={styles.previewBand}>
-        <div className={styles.preview} data-static={!interactive || undefined}>
-          {interactive && (
-            <aside aria-hidden="true">
-              <div>
-                <Logo size={24} /> CAFM
-              </div>
-              {previews.map(({ title }, index) => (
-                <p key={title} data-active={active === index}>
-                  {title}
-                </p>
-              ))}
-            </aside>
-          )}
-          <header>
-            <strong>Cardiff HQ</strong>
-            <span>Demo data</span>
-          </header>
-          {previews.map(
-            ({ title, headers, rows }, index) =>
-              (interactive || index === 0) && (
-                <div
-                  key={title}
-                  id={`preview-${index}`}
-                  className={styles.panel}
-                  role={interactive ? 'tabpanel' : undefined}
-                  aria-labelledby={interactive ? `preview-tab-${index}` : undefined}
-                  tabIndex={interactive ? 0 : undefined}
-                  hidden={active !== index}
-                >
-                  <h3>{title}</h3>
-                  <div className={index === 0 ? styles.records : undefined}>
-                    <table>
-                      <thead>
-                        <tr>
-                          {headers.map((header) => (
-                            <th key={header} scope="col">
-                              {header}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map(([reference, name, status]) => (
-                          <tr key={reference}>
-                            <td>{reference}</td>
-                            <td>{name}</td>
-                            <td>{reference === 'WO 142' && completed ? done : status}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {index === 0 && (
-                      <div className={styles.jobDetail}>
-                        <strong>WO 142</strong>
-                        <p>Basement plant room</p>
-                        {interactive ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              select(2);
-                              document.getElementById('preview-tab-2')?.focus();
-                            }}
-                          >
-                            View asset AHU 02 <Icon name="chevron-right" />
-                          </button>
-                        ) : (
-                          <p>Asset AHU 02</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ),
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function Homepage() {
-  const {
-    journey,
-    stage,
-    video,
-    chapter: motionChapter,
-    format,
-    interactive,
-    previewedCompletion,
-    goTo,
-  } = useJourney();
-  const chapter = format ? motionChapter : 0;
-  const [checked, setChecked] = useState(false);
-  const [completed, setCompleted] = useState(false);
-  const [active, select] = useState(0);
-  const restoreFocus = useRef(false);
-
-  useEffect(() => {
-    if (completed && restoreFocus.current) {
-      restoreFocus.current = false;
-      document.getElementById('completed-order')?.focus({ preventScroll: true });
-    }
-  }, [completed]);
-
-  function finish() {
-    restoreFocus.current = true;
-    setCompleted(true);
-    if (format) goTo(completeChapter);
-  }
-
-  const card = (showCompleted: boolean) => (
-    <JobCard
-      checked={checked}
-      completed={showCompleted}
-      interactive={interactive}
-      onCheck={setChecked}
-      onFinish={finish}
-      onOpen={() => {
-        setCompleted(true);
-        select(0);
-      }}
-    />
-  );
   return (
     <>
-      <section
-        ref={journey}
-        className={styles.journey}
-        data-motion={format ? '' : undefined}
-        aria-label="From desk to plant room"
-      >
-        <div ref={stage} className={styles.stage} data-chapter={chapter}>
-          <h1 className="sr-only">Run the estate. From anywhere.</h1>
-          <div className={styles.devices} aria-hidden="true">
-            <picture>
-              <source media="(max-width: 560px)" srcSet={`${media}/devices-compact.webp`} />
-              <source media="(max-width: 900px)" srcSet={`${media}/devices-tablet.webp`} />
-              <img src={`${media}/devices-wide.webp`} alt="" fetchPriority="high" />
-            </picture>
-            {format && (
-              <video
-                key={format}
-                ref={video}
-                data-ready="false"
-                src={`${media}/devices-${format}.mp4`}
-                muted
-                playsInline
-                preload="auto"
-                onLoadedData={(event) => {
-                  event.currentTarget.dataset.ready = 'true';
-                }}
-              />
-            )}
-          </div>
-          <div className={styles.plant} aria-hidden="true">
-            <div className={styles.photo}>
-              <div className={styles.assetCue}>
-                <span>AHU 02</span>
+      <header className={styles.masthead}>
+        <a className={styles.mark} href="#top" aria-label="CAFM, back to the top">
+          <Logo size={26} /> CAFM
+        </a>
+        {demo && (
+          <Link className={styles.link} href="/login">
+            Sign in
+          </Link>
+        )}
+        {primary()}
+      </header>
+
+      <section ref={film} className={styles.film} aria-label="Cardiff HQ, a demo site">
+        <div className={styles.stage} data-film-stage data-scene="0">
+          {stills.map((name, i) => (
+            <img
+              key={name}
+              className={styles.still}
+              data-still={i}
+              data-on={i === 0}
+              src={`${media}/${name}.webp`}
+              alt=""
+              {...(i === 0 ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
+            />
+          ))}
+          <canvas className={styles.canvas} aria-hidden="true" />
+          <div className={styles.shade} data-shade aria-hidden="true" />
+
+          <span className={styles.pin} data-pin="boiler-1" aria-hidden="true">
+            <i />
+            Boiler 1
+          </span>
+          <span className={styles.pin} data-pin="boiler-2" aria-hidden="true">
+            <i />
+            Boiler 2 · WO-10412 · <b>P2</b>
+          </span>
+          <span className={styles.pin} data-pin="checklist" aria-hidden="true">
+            <i />
+            WO-10413 · 3 of 6
+          </span>
+
+          {captions.map(({ lines, meta }, i) => {
+            const Heading = i === 0 ? 'h1' : 'h2';
+            return (
+              <div key={meta} className={styles.caption} data-caption={i} data-state={i === 0 ? 'on' : 'next'}>
+                <Heading>
+                  <span className={styles.line}>
+                    <span>{lines[0]}</span>
+                  </span>{' '}
+                  <span className={styles.line}>
+                    <span>
+                      <em>{lines[1]}</em>
+                    </span>
+                  </span>
+                </Heading>
+                <p className={styles.meta}>{meta}</p>
+                {i === 0 && (
+                  <div className={styles.actions} data-hero-actions>
+                    {primary(true)}
+                    {demo && (
+                      <Link className={`btn lg ${styles.big} ${styles.onFilm}`} href="/login">
+                        Sign in
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className={styles.phoneCue}>
-                <span>WO 142</span>
-              </div>
-            </div>
+            );
+          })}
+
+          <div className={styles.counter} aria-hidden="true">
+            <b data-counter>01</b>
+            <i data-bar />
+            <span>06</span>
           </div>
-          <header className={styles.masthead}>
-            <a href="#top" aria-label="CAFM home">
-              <Logo size={30} /> CAFM
-            </a>
-            <nav aria-label="Main">
-              <a href="#product">Product</a>
-              <Link href="/login">Sign in</Link>
-            </nav>
-          </header>
-          <div className={styles.copy} data-stage-copy hidden={chapter !== 0}>
-            <p className={styles.opening} aria-hidden="true">
-              {chapters[0].title} <span>From anywhere.</span>
-            </p>
-            <p>Facilities management software.</p>
-            <a className="btn primary lg" href="#product">
-              Explore CAFM <Icon name="chevron-down" />
-            </a>
-          </div>
-          {chapter !== 0 && (
-            <div className={`${styles.copy} ${chapter >= fieldChapter ? styles.fieldCopy : ''}`} data-stage-copy>
-              {chapter === 1 && <p>WO 142</p>}
-              <h2>{chapters[chapter]?.title}</h2>
-              {chapter === 2 && (
-                <p className="sr-only">The technician opens work order WO 142 beside air handling unit AHU 02.</p>
-              )}
-              {chapter >= fieldChapter && card(chapter === completeChapter || completed)}
-            </div>
-          )}
-          {format && (
-            <nav className={styles.chapters} aria-label="Work order sequence">
-              {chapters.map(({ label }, index) => (
-                <button
-                  key={label}
-                  type="button"
-                  data-jump={index}
-                  onClick={() => goTo(index)}
-                  aria-current={chapter === index ? 'step' : undefined}
-                >
-                  {label}
-                </button>
-              ))}
-            </nav>
-          )}
+          <span className={styles.cue} data-cue aria-hidden="true" />
         </div>
       </section>
-      {!format && (
-        <section className={styles.fallback} aria-labelledby="plant-title">
-          <div>
-            <h2 id="plant-title">In the plant room.</h2>
-            {card(completed)}
-          </div>
-          <div className={styles.still} role="img" aria-label="Technician beside an air handling unit" />
-        </section>
-      )}
-      <Product
-        active={active}
-        select={select}
-        completed={completed || (chapter === completeChapter && previewedCompletion)}
-        interactive={interactive}
-      />
+
+      <section className={styles.final} id="start" aria-labelledby="final-title">
+        <h2 id="final-title">
+          See it <em>for yourself.</em>
+        </h2>
+        <div className={styles.links}>
+          {primary(true)}
+          {demo && (
+            <Link className={`btn lg ${styles.big} ${styles.onPaper}`} href="/login">
+              Sign in
+            </Link>
+          )}
+        </div>
+        <ul className={styles.modules} aria-label="In CAFM">
+          {modules.map((name) => (
+            <li key={name}>{name}</li>
+          ))}
+        </ul>
+        <footer className={styles.footer}>
+          <span>© 2026 CAFM</span>
+          <span>{demo ? 'Demo data only' : 'Facilities management software'}</span>
+        </footer>
+      </section>
     </>
   );
 }
