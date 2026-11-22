@@ -3,7 +3,7 @@
  * is what the API connects as. Needs a migrated and seeded database.
  */
 import { afterAll, describe, expect, it } from 'vitest';
-import { PrismaClient, seedId, withAccount, withTenant } from '../src';
+import { PrismaClient, seedId, withAccount, withTenant, type Tx } from '../src';
 
 const url = process.env.APP_DATABASE_URL;
 if (!url) throw new Error('APP_DATABASE_URL is required for the RLS tests');
@@ -317,4 +317,42 @@ it('isolates Helpdesk catalogue, requests and notifications and denies a cross-t
     ),
   ).rejects.toThrow(/Foreign key constraint/);
   expect(await withTenant(db, starter, (tx) => tx.notification.count())).toBe(0);
+});
+
+it('isolates asset operational records and refuses foreign parents', async () => {
+  const counts = async (tx: Tx) =>
+    Promise.all([
+      tx.assetTag.count(),
+      tx.assetMeter.count(),
+      tx.assetMeterReading.count(),
+      tx.assetWarranty.count(),
+      tx.warrantyClaim.count(),
+      tx.recordAttachment.count(),
+      tx.attachmentContent.count(),
+    ]);
+  expect(await counts(db)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  expect(await withTenant(db, starter, counts)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  const demoCounts = await withTenant(db, demo, counts);
+  expect(demoCounts.every((count) => count > 0)).toBe(true);
+  const assetId = await withTenant(db, demo, async (tx) => (await tx.assetTag.findFirstOrThrow()).assetId);
+  const warrantyId = seedId('warranty:demo-estates:boiler-2');
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.assetTag.create({ data: { tenantId: starter, assetId, kind: 'barcode', code: 'CROSS-TENANT' } }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.warrantyClaim.create({
+        data: { tenantId: starter, warrantyId, reference: 'CROSS-TENANT', status: 'closed', filedOn: new Date() },
+      }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.attachmentContent.create({
+        data: { tenantId: starter, id: seedId('asset-attachment:demo-estates:boiler-2'), data: Uint8Array.of(1) },
+      }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint|Unique constraint/);
 });

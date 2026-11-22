@@ -218,7 +218,14 @@ export class AssetsController {
       if (search) {
         const contains = { contains: search, mode: 'insensitive' as const };
         and.push({
-          OR: [{ name: contains }, { number: contains }, { serial: contains }, { make: contains }, { model: contains }],
+          OR: [
+            { name: contains },
+            { number: contains },
+            { serial: contains },
+            { make: contains },
+            { model: contains },
+            { tags: { some: { tenantId, active: true, code: contains } } },
+          ],
         });
       }
       const rows = await tx.asset.findMany({

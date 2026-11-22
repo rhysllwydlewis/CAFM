@@ -1,5 +1,5 @@
 import webPush from 'web-push';
-import { withTenant } from '@cafm/db';
+import { scopedLocations, withTenant } from '@cafm/db';
 import { isBrowserPushEndpoint, resolveEntitlements } from '@cafm/shared';
 import { register } from '../handlers';
 import { sendEmail } from './email';
@@ -13,7 +13,16 @@ register('notification.deliver', async (raw, ctx) => {
       where: { id: notificationId, tenantId },
       include: {
         tenant: { select: { demo: true, plan: true, status: true, entitlements: true } },
-        recipient: { select: { status: true, account: { select: { email: true } } } },
+        recipient: {
+          select: {
+            id: true,
+            tenantId: true,
+            role: true,
+            locationScoped: true,
+            status: true,
+            account: { select: { email: true } },
+          },
+        },
         request: {
           select: {
             receivedMessages: {
@@ -28,10 +37,28 @@ register('notification.deliver', async (raw, ctx) => {
     if (
       !notice ||
       notice.tenant.status !== 'active' ||
-      !resolveEntitlements(notice.tenant.plan, notice.tenant.entitlements).features.includes('helpdesk') ||
+      !resolveEntitlements(notice.tenant.plan, notice.tenant.entitlements).features.includes(
+        notice.assetId ? 'assets' : 'helpdesk',
+      ) ||
       (notice.recipientId && notice.recipient?.status !== 'active')
     )
       return null;
+    if (notice.assetId) {
+      const member = notice.recipient;
+      if (!member) return null;
+      const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
+      if (!role?.permissions.includes('assets.read') || !role.permissions.includes('assets.manage')) return null;
+      const visible = await tx.asset.findFirst({
+        where: {
+          tenantId,
+          id: notice.assetId,
+          status: { not: 'decommissioned' },
+          location: scopedLocations(member, role.scope),
+        },
+        select: { id: true },
+      });
+      if (!visible) return null;
+    }
     const subscriptions =
       notice.pushEnabled && notice.recipientId && !notice.tenant.demo
         ? await tx.pushSubscription.findMany({
@@ -76,7 +103,14 @@ register('notification.deliver', async (raw, ctx) => {
             endpoint: subscription.endpoint,
             keys: { p256dh: subscription.p256dh, auth: subscription.auth },
           },
-          JSON.stringify({ id: notice.id, path: notice.requestId ? '/portal/requests/' + notice.requestId : '/app' }),
+          JSON.stringify({
+            id: notice.id,
+            path: notice.assetId
+              ? '/app/assets/' + notice.assetId + '/operations#warranties'
+              : notice.requestId
+                ? '/portal/requests/' + notice.requestId
+                : '/app',
+          }),
           {
             vapidDetails: {
               subject: WEB_PUSH_SUBJECT,

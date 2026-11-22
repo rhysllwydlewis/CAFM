@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -12,29 +13,41 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant } from '@cafm/db';
+import { withTenant, type Prisma } from '@cafm/db';
 import { pushEndpointSchema, pushSubscriptionSchema, type NotificationItem } from '@cafm/shared';
-import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
+import { SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { assetScope } from '../assets/asset-scope';
 
 function configuredPushKey(): string | null {
   const { WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT } = process.env;
   return WEB_PUSH_PUBLIC_KEY && WEB_PUSH_PRIVATE_KEY && WEB_PUSH_SUBJECT ? WEB_PUSH_PUBLIC_KEY : null;
 }
 
+function inboxScope(req: Request): Prisma.NotificationWhereInput {
+  const auth = req.auth!;
+  const { tenantId, id: recipientId } = auth.membership!;
+  const { entitlements, permissions } = auth.access!;
+  const scopes: Prisma.NotificationWhereInput[] = [];
+  if (entitlements.features.includes('helpdesk') && permissions.has('requests.create')) scopes.push({ assetId: null });
+  if (entitlements.features.includes('assets') && permissions.has('assets.read') && permissions.has('assets.manage')) {
+    scopes.push({ asset: { is: { ...assetScope(auth), status: { not: 'decommissioned' } } } });
+  }
+  if (!scopes.length) throw new ForbiddenException();
+  return { tenantId, recipientId, OR: scopes };
+}
+
 @Controller('notifications')
-@UseGuards(SessionGuard, TenantGuard, PermissionGuard)
-@RequireFeature('helpdesk')
-@RequirePermission('requests.create')
+@UseGuards(SessionGuard, TenantGuard)
 export class NotificationsController {
   constructor(private readonly db: PrismaService) {}
 
   @Get()
   list(@Req() req: Request) {
-    const { tenantId, id, tenant } = req.auth!.membership!;
+    const { tenantId, tenant } = req.auth!.membership!;
     return withTenant(this.db, tenantId, async (tx) => {
-      const where = { tenantId, recipientId: id };
+      const where = inboxScope(req);
       const [rows, unread] = await Promise.all([
         tx.notification.findMany({
           where,
@@ -43,11 +56,12 @@ export class NotificationsController {
         }),
         tx.notification.count({ where: { ...where, readAt: null } }),
       ]);
-      const items: NotificationItem[] = rows.map(({ id, title, body, requestId, readAt, createdAt }) => ({
+      const items: NotificationItem[] = rows.map(({ id, title, body, requestId, assetId, readAt, createdAt }) => ({
         id,
         title,
         body,
         requestId,
+        assetId,
         readAt: readAt?.toISOString() ?? null,
         createdAt: createdAt.toISOString(),
       }));
@@ -59,7 +73,7 @@ export class NotificationsController {
   read(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string) {
     const member = req.auth!.membership!;
     return withTenant(this.db, member.tenantId, async (tx) => {
-      const where = { id, tenantId: member.tenantId, recipientId: member.id };
+      const where = { ...inboxScope(req), id };
       const match = await tx.notification.findFirst({ where, select: { id: true } });
       if (!match) throw new NotFoundException();
       await tx.notification.updateMany({ where: { ...where, readAt: null }, data: { readAt: new Date() } });
@@ -69,10 +83,10 @@ export class NotificationsController {
 
   @Patch('read-all')
   readAll(@Req() req: Request) {
-    const { tenantId, id } = req.auth!.membership!;
+    const { tenantId } = req.auth!.membership!;
     return withTenant(this.db, tenantId, (tx) =>
       tx.notification.updateMany({
-        where: { tenantId, recipientId: id, readAt: null },
+        where: { ...inboxScope(req), readAt: null },
         data: { readAt: new Date() },
       }),
     );
@@ -80,6 +94,7 @@ export class NotificationsController {
 
   @Post('push/status')
   async pushStatus(@Req() req: Request, @Body() body: unknown) {
+    inboxScope(req);
     const { tenantId, id: membershipId } = req.auth!.membership!;
     const { endpoint } = parse(pushEndpointSchema, body);
     const match = await withTenant(this.db, tenantId, (tx) =>
@@ -94,6 +109,7 @@ export class NotificationsController {
   @Post('push')
   subscribe(@Req() req: Request, @Body() body: unknown) {
     const member = req.auth!.membership!;
+    inboxScope(req);
     if (member.tenant.demo || !configuredPushKey()) throw new NotFoundException('Browser push unavailable.');
     const { endpoint, keys } = parse(pushSubscriptionSchema, body);
     const data = { tenantId: member.tenantId, membershipId: member.id, endpoint };
@@ -109,6 +125,7 @@ export class NotificationsController {
 
   @Delete('push')
   unsubscribe(@Req() req: Request, @Body('endpoint') endpoint: string) {
+    inboxScope(req);
     const { tenantId, id: membershipId } = req.auth!.membership!;
     if (!endpoint || typeof endpoint !== 'string' || endpoint.length > 2048) throw new NotFoundException();
     return withTenant(this.db, tenantId, (tx) =>

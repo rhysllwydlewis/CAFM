@@ -1,5 +1,5 @@
 import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
-import { withTenant, type Prisma, type PrismaClient, type Tx } from '@cafm/db';
+import { hasAllLocationAccess, scopedLocations, withTenant, type Prisma, type PrismaClient, type Tx } from '@cafm/db';
 import { canContain, type LocationCrumb, type LocationKind, type Permission } from '@cafm/shared';
 import { loadAccess } from '../../core/access';
 import { assertAccess } from '../../core/auth.guards';
@@ -8,14 +8,12 @@ import type { AuthContext } from '../../core/session';
 export function allLocations(auth: AuthContext): boolean {
   const member = auth.membership;
   // A promotion grants full access. The saved branch restriction applies again after demotion.
-  return auth.access?.scope === 'all' && !!member && (member.role === 'super_user' || !member.locationScoped);
+  return !!member && hasAllLocationAccess(member, auth.access?.scope);
 }
 
 /** The same filter applies to detail, list and any location chosen for a write. */
 export function locationScope(auth: AuthContext): Prisma.LocationWhereInput {
-  const { tenantId, id: membershipId } = auth.membership!;
-  if (allLocations(auth)) return { tenantId };
-  return { tenantId, ancestors: { some: { ancestor: { grants: { some: { tenantId, membershipId } } } } } };
+  return scopedLocations(auth.membership!, auth.access?.scope);
 }
 
 /** Serialise writes and recheck access after any grant change ahead of them. */
