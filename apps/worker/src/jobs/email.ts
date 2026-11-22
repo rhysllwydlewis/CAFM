@@ -45,6 +45,8 @@ export async function sendEmail(email: EmailPayload, ctx: JobContext) {
     text: email.text,
     replyTo: email.replyTo,
     messageId: email.messageId,
+    // Tell auto-responders and other helpdesks not to answer, so two systems cannot reply to each other forever.
+    headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All' },
   });
   ctx.log('email sent');
 }

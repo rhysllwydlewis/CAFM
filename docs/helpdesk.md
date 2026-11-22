@@ -14,6 +14,8 @@ Create an inbound mailbox with a recipient address, default reportable location 
 
 The connector passes `to`, `from`, `messageId`, optional `inReplyTo`, `subject` and plain `text`. Configure the connector to pass authenticated inbound sender identities. CAFM routes to the matching enabled mailbox, deduplicates delivery by mailbox, sender and message ID, and threads a matching sender’s reply while the request accepts comments. Incoming messages go to triage. Outbound email uses the existing SMTP settings and demo email is captured.
 
+The connector should also set `autoSubmitted: true` on auto-replies and bounces (any `Auto-Submitted` header other than `no`, or a message with an empty return path). CAFM ignores those, and mail sent from the mailbox’s own address, so two systems can’t answer each other in a loop. Email sent by CAFM carries `Auto-Submitted: auto-generated` so well-behaved auto-responders leave it alone.
+
 ## Notifications
 
 The bell opens the signed-in user’s inbox. Helpdesk administrators can configure titles, messages and email and browser-push delivery by event. A notification may use `{number}`, `{title}` and `{status}` to include request details. Demo email is captured, and demo inbox notifications can be viewed directly.
