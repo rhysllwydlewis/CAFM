@@ -23,9 +23,13 @@ async function fixture() {
   const worker = await createTestAccount(db, [tenant.id], undefined, 'helpdesk');
   const reporter = await createTestAccount(db, [tenant.id]);
   const other = await createTestAccount(db, [tenant.id]);
-  const [admin, operator, requester, bystander] = await Promise.all(
-    [actor, worker, reporter, other].map(async ({ email, password }) => (await signIn(app, email, password)).agent),
-  );
+  const logIn = async ({ email, password }: typeof actor) => (await signIn(app, email, password)).agent;
+  const [admin, operator, requester, bystander] = await Promise.all([
+    logIn(actor),
+    logIn(worker),
+    logIn(reporter),
+    logIn(other),
+  ]);
   const site = (await admin.post('/api/locations').send({ code: 'MAIN', name: 'Main site', kind: 'site' }).expect(201))
     .body;
   const branch = (await admin.post('/api/locations').send({ code: 'ANNEX', name: 'Annex', kind: 'site' }).expect(201))
