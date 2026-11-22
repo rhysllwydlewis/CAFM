@@ -54,9 +54,9 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02d: tags (QR, barcode, NFC), label printing and stable scan links, following the Locations QR labels (`apps/web/app/(app)/app/locations/labels`, `location-qr`). Then meters (e), warranties (f), attachments (g). |
-| P1-03 | Codex | `codex/helpdesk-portal-notifications` | 2026-11-22 | Queue, portal, triage, email intake and location QR reviewed in draft PR #30. Integrate printed asset scans and requester photos when the P1-02 tag and attachment contracts land. |
-| P1-07 | Codex | `codex/helpdesk-portal-notifications` | 2026-11-22 | Request inbox, templates, email and browser push reviewed in draft PR #30, including per-membership subscriptions and channel retries. |
+| P1-02 | Codex | `codex/finish-asset-register` | 2026-11-22 | Finish asset tags and printed labels, meter readings, warranty alerts and attachments. |
+| P1-03 | Codex | `codex/finish-asset-register` | 2026-11-22 | Connect printed asset scans and requester photos to the merged Helpdesk flow in the Asset Register batch. |
+| P1-07 | Codex | `codex/finish-asset-register` | 2026-11-22 | Verify and record completion of the notification channels from merged PR #30, including warranty alerts. |
 
 ## Phase checklists
 

@@ -157,7 +157,7 @@ export function progressLines(body) {
 }
 
 /** Problems with a pull request against the progress rules (AGENTS.md § Progress rules). */
-export function prProblems({ body, base, head, headRef, otherClaims = [] }) {
+export function prProblems({ body, base, head, headRef, otherClaims = [], ownerHandover = false }) {
   const problems = [];
   const lines = progressLines(body);
   if (!lines.length) {
@@ -165,6 +165,10 @@ export function prProblems({ body, base, head, headRef, otherClaims = [] }) {
       'The PR description needs a "Progress:" line: "Progress: P1-02 done", "Progress: P1-02 in progress" or "Progress: none - <reason>".',
     ];
   }
+  const handovers = (body ?? '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n')
+    .map((line) => line.trim());
   const before = parse(base ?? '');
   const after = parse(head);
   for (const line of lines) {
@@ -193,7 +197,9 @@ export function prProblems({ body, base, head, headRef, otherClaims = [] }) {
         );
       }
       const baseClaim = before.claims.find((c) => overlaps(c.id, id));
-      if (baseClaim && headRef && !branchMatches(baseClaim.branch, headRef)) {
+      const handedOver =
+        baseClaim && ownerHandover && handovers.includes(`Handover: ${baseClaim.id} from ${baseClaim.branch}`);
+      if (baseClaim && headRef && !branchMatches(baseClaim.branch, headRef) && !handedOver) {
         problems.push(
           `${id} is already claimed by ${baseClaim.who} on ${baseClaim.branch}. Pick another item, or agree a handover first.`,
         );
@@ -210,7 +216,7 @@ export function prProblems({ body, base, head, headRef, otherClaims = [] }) {
       if (line.kind === 'done') {
         if (!now.done) problems.push(`The PR says ${id} is done, so tick it ([x]) in ${PROGRESS_PATH}.`);
         if (after.claims.some((c) => c.id === id)) problems.push(`${id} is done, so remove it from "In progress".`);
-      } else if (!after.claims.some((c) => overlaps(c.id, id))) {
+      } else if (headRef ? !ours : !after.claims.some((c) => overlaps(c.id, id))) {
         problems.push(`The PR says ${id} is in progress, so add it to the "In progress" table in ${PROGRESS_PATH}.`);
       }
     }
@@ -261,7 +267,7 @@ async function main() {
   }
 
   if (command === 'pr-check') {
-    const { PR_BODY, PR_NUMBER, HEAD_REF, BASE_SHA } = process.env;
+    const { PR_BODY, PR_NUMBER, HEAD_REF, BASE_SHA, OWNER_HANDOVER } = process.env;
     let base = '';
     try {
       base = git('show', `${BASE_SHA ?? 'origin/main'}:${PROGRESS_PATH}`);
@@ -269,7 +275,14 @@ async function main() {
       base = ''; // the tracker is new in this PR
     }
     const otherClaims = await openPrClaims(Number(PR_NUMBER ?? Infinity));
-    const problems = prProblems({ body: PR_BODY, base, head: text, headRef: HEAD_REF, otherClaims });
+    const problems = prProblems({
+      body: PR_BODY,
+      base,
+      head: text,
+      headRef: HEAD_REF,
+      otherClaims,
+      ownerHandover: OWNER_HANDOVER === 'true',
+    });
     for (const p of problems) console.error(`::error title=Progress::${p} See AGENTS.md § Progress rules.`);
     if (problems.length) process.exit(1);
     console.log('The PR follows the progress rules.');

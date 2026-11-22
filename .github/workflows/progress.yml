@@ -34,5 +34,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          OWNER_HANDOVER: ${{ github.event.pull_request.author_association == 'OWNER' && github.event.pull_request.user.login == github.event.repository.owner.login && github.event.pull_request.head.repo.full_name == github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/progress.mjs pr-check
