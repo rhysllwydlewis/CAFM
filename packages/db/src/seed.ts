@@ -10,6 +10,7 @@ import { seedId } from './ids';
 import { seedAssets } from './seed-assets';
 import { seedLocations } from './seed-locations';
 import { seedHelpdesk } from './seed-helpdesk';
+import { seedWorkOrders } from './seed-workorders';
 
 /**
  * Seeds (or refreshes) the built-in roles for one tenant. Custom roles are left
@@ -103,6 +104,7 @@ export async function seed(db: PrismaClient): Promise<void> {
   await seedLocations(db);
   await seedAssets(db);
   await seedHelpdesk(db);
+  await seedWorkOrders(db);
 }
 
 if (require.main === module) {

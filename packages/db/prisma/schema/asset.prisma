@@ -58,6 +58,7 @@ model Asset {
   serves               AssetServes[]      @relation("AssetServesFrom")
   servedBy             AssetServes[]      @relation("AssetServesTo")
   requests             ServiceRequest[]
+  workOrders           WorkOrder[]
   tags                 AssetTag[]
   meters               AssetMeter[]
   warranties           AssetWarranty[]

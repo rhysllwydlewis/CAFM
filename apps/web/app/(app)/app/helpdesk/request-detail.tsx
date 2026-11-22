@@ -8,10 +8,12 @@ import {
   REQUEST_CHANNEL_LABELS,
   type RequestRecord,
   type RequestTypeChoice,
+  type WorkOrderSummary,
 } from '@cafm/shared';
 import { AttachmentPanel } from '@/components/attachment-panel';
 import { attachmentList } from '@/lib/attachments';
 import { requestTime } from '@/lib/helpdesk-format';
+import { RequestWorkOrders } from '../work-orders/convert-request';
 import { RequestStatus } from './request-table';
 import { RequestActions } from './request-actions';
 import styles from './helpdesk.module.css';
@@ -22,8 +24,11 @@ export async function RequestDetail({
   canManage,
   duplicates,
   triageTypes,
+  workOrders,
 }: {
   record: RequestRecord<FieldDefinition>;
+  /** Set when the person can see work orders. */
+  workOrders?: { jobs: WorkOrderSummary[]; canConvert: boolean; canAssign: boolean };
   triageTypes?: RequestTypeChoice[];
   own: boolean;
   canManage: boolean;
@@ -109,6 +114,18 @@ export async function RequestDetail({
               )}
             </dl>
           </section>
+          {workOrders && !own && (
+            <RequestWorkOrders
+              key={record.version}
+              requestId={record.id}
+              requestVersion={record.version}
+              requestTitle={record.title}
+              locationId={record.location.id}
+              jobs={workOrders.jobs}
+              canConvert={workOrders.canConvert && ['new', 'assigned', 'in_progress'].includes(record.status)}
+              canAssign={workOrders.canAssign}
+            />
+          )}
           <AttachmentPanel
             path={filePath}
             items={files}

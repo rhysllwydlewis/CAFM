@@ -23,6 +23,7 @@ model Location {
   assets           Asset[]
   servedBy         AssetServes[]
   requests         ServiceRequest[]
+  workOrders       WorkOrder[]
   requestMailboxes RequestMailbox[]
 
   @@unique([tenantId, id])

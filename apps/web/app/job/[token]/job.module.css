@@ -1,0 +1,40 @@
+.control,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--bg-surface);
+  font: inherit;
+  font-size: 16px;
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.shell {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline li + li {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.text {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
