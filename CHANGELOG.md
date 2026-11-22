@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Planned maintenance screens: a 52-week planner of every schedule, a list of schedules, a forecast of visits, labour and estimated cost by month, the overdue visits, and how many were done on time in the last 12 months. Planners can add tasks to the library, plan schedules, put assets on them and raise the jobs now. See [Planned maintenance](docs/ppm.md#screens).
+
 - Planned maintenance: a library of maintenance tasks (steps, duration, skills, safety notes), and schedules that repeat on a calendar or by a meter reading, with fixed dates or counted on from the last visit. Work orders are raised automatically ahead of each due date, once, with the task's steps as a checklist that must be completed, and the schedule moves on when the job is done. See [Planned maintenance](docs/ppm.md).
 
 - Work order checklists, photos, sign-off and job sheets: add checklists to a job from a template or written out, with steps to tick, pass or fail, read or comment on; a checklist can hold back starting work or completing the job until its required steps are answered, including from a contractor's link. Add before and after photos, take the customer's and the technician's drawn sign-off, and download the job as a PDF job sheet or email it to the requester (without costs). See [Work orders](docs/work-orders.md#checklists).

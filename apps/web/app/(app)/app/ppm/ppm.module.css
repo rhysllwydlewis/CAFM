@@ -1,0 +1,228 @@
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters {
+  padding: 12px;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.control,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--bg-surface);
+  font: inherit;
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  min-width: 720px;
+}
+
+/* The 52-week planner: one row to a schedule, one narrow column to a week. */
+/* Positioned, so the hidden text in each cell is clipped by this box and can't stretch the page sideways. */
+.gridWrap {
+  position: relative;
+  overflow-x: auto;
+  border-top: 1px solid var(--border);
+}
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+  font-size: 12px;
+}
+
+.grid th,
+.grid td {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 6px 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.grid thead th {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.grid .sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 260px;
+  max-width: 260px;
+  padding: 8px 12px;
+  text-align: left;
+  white-space: normal;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+}
+
+.grid thead .sticky {
+  background: var(--bg-subtle);
+}
+
+.grid .monthStart {
+  border-left: 1px solid var(--border);
+}
+
+.grid .thisWeek {
+  background: var(--primary-softer);
+}
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 20px;
+  min-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.dotScheduled {
+  background: var(--bg-surface);
+  border-color: var(--text-muted);
+}
+
+.dotDue {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.dotOverdue {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.dotCompleted {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stepRow {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(110px, 1fr) auto minmax(70px, 0.6fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+@media (max-width: 800px) {
+  .stepRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.picker {
+  display: grid;
+  gap: 6px;
+}
+
+.pickerList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 650px) {
+  .grid .sticky {
+    min-width: 170px;
+    max-width: 170px;
+    padding: 6px 8px;
+  }
+}
+
+.plain {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.bareList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts > div {
+  display: contents;
+}
+
+.pages {
+  border-top: 1px solid var(--border);
+}

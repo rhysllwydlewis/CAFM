@@ -9,17 +9,17 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 12%** of the planned build (20 of 83 top-level roadmap items) |
+| **Overall progress** | **About 13%** of the planned build (21 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
-| **Next up** | Phase 1 PPM (P1-05) |
+| **Next up** | Phase 1 mobile app for technicians (P1-06) |
 
 <!-- approved-phase: 1 -->
 
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 5 / 13 | In progress |
+| 1 · Core CAFM MVP | 6 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -54,7 +54,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-05 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 05a and 05b are done (in the open PR): model, task library and schedules API, the hourly generator and Generate now, and the completion hooks. Next 05c: the planner (52 weeks, list, calendar), the schedule and task library screens, the forecast and the compliance KPI. |
 
 ## Phase checklists
 
@@ -112,10 +111,10 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job, with a not-to-exceed limit. Mark-up and charge-out follow with Finance. ([guide](work-orders.md#costs))
   - [x] **P1-04f** Checklists (templates and written out, with required steps that hold back starting and completing), before and after photos, and customer and technician sign-off. ([guide](work-orders.md#checklists))
   - [x] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester. ([guide](work-orders.md#job-sheet))
-- [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
+- [x] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
   - [x] **P1-05a** Task library: maintenance task templates with steps, duration, skills, criticality and safety notes. ([guide](ppm.md#the-task-library))
   - [x] **P1-05b** PPM schedules (calendar and meter-based, fixed or floating) on assets, and the generator that raises PPM work orders ahead of the due date, each with the task's checklist. ([guide](ppm.md#schedules))
-  - [ ] **P1-05c** 52-week planner, calendar and forecast screens, and the compliance KPI (`ppm-01-planner`, `ppm-02-schedule`).
+  - [x] **P1-05c** 52-week planner, forecast and overdue screens, the schedule and task library screens, and the compliance KPI (`ppm-01-planner`, `ppm-02-schedule`). ([guide](ppm.md#screens))
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
