@@ -128,8 +128,8 @@ test('raises a job, assigns it, takes it through each step and raises work from 
   await expect(page.getByText('Seal replaced and pressure tested.')).toBeVisible();
   await updateStatus(page, 'Completed');
   await expectStatus(page, 'Completed');
-  // Only someone who can edit work orders can verify it.
-  await expect(page.getByLabel('New status').getByRole('option', { name: 'Verified' })).toHaveCount(0);
+  // Verifying and closing are for someone who can edit work orders, so the technician has no further steps.
+  await expect(page.getByLabel('New status')).toHaveCount(0);
 
   await signInAs(page, 'helpdesk');
   await page.goto(url);

@@ -2,7 +2,7 @@
 
 The one page to read first in any new session, by any agent (Claude, Codex or other) or person. It says where the build is, what's next, and what's waiting on the product owner. Tick items off here in the same PR that finishes them.
 
-**Last updated:** 22 Nov 2026, with the Asset Register, Helpdesk and notifications built.
+**Last updated:** 22 Nov 2026, with the Asset Register, Helpdesk, notifications and the first three parts of work orders built.
 
 ## Where we are
 

@@ -32,9 +32,9 @@ Assigning someone moves a logged job to Assigned. Clearing the assignee returns 
 | Action | Permission |
 | --- | --- |
 | See jobs | `work_orders.read` |
-| Raise or edit a job, verify, cancel or reopen it | `work_orders.edit` |
+| Raise or edit a job, verify, close, cancel or reopen it | `work_orders.edit` |
 | Assign or unassign | `work_orders.assign` |
-| Accept, travel, go on site, pause, complete or close, and add notes | `work_orders.close` or `work_orders.edit` |
+| Accept, travel, go on site, pause or complete a job, and add notes | `work_orders.close` or `work_orders.edit` |
 | Convert a request | `work_orders.edit` and `requests.manage` (and the Helpdesk plan) |
 
 Everything needs the Work orders feature on the plan. A member limited to their own work (a technician) sees only the jobs assigned to them, and only at locations they have been given. Anyone else sees the jobs at the locations they can see. A job at a location someone can't see is reported as not found.

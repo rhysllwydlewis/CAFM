@@ -49,8 +49,9 @@ export const WORK_ORDER_TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderS
 
 /**
  * Where this person can move the job now. Doing the job (accepting, travelling, on site, pausing,
- * completing) needs `work_orders.close` or `work_orders.edit`. Verifying, cancelling and reopening a
- * finished job need `work_orders.edit`. Assigning and unassigning is a separate action, so it is not listed.
+ * completing) needs `work_orders.close` or `work_orders.edit`. What follows is the supervisor's: verifying,
+ * closing, cancelling and reopening need `work_orders.edit`, so nobody closes their own work unchecked.
+ * Assigning and unassigning is a separate action, so it is not listed.
  */
 export function workOrderNextStatuses(
   status: WorkOrderStatus,
@@ -63,8 +64,7 @@ export function workOrderNextStatuses(
   const finished = status === 'completed' || status === 'verified';
   return WORK_ORDER_TRANSITIONS[status].filter((to) => {
     if (to === 'logged' || to === 'assigned') return false;
-    if (to === 'closed') return field;
-    if (to === 'verified' || to === 'cancelled') return edit;
+    if (to === 'verified' || to === 'closed' || to === 'cancelled') return edit;
     // Moving a finished job back to on site reopens it.
     return finished ? edit : field;
   });
@@ -85,8 +85,6 @@ export const WORK_ORDER_REASSIGNABLE: readonly WorkOrderStatus[] = [
 export const WORK_ORDER_UNASSIGNABLE: readonly WorkOrderStatus[] = ['assigned', 'accepted', 'travelling'];
 /** Jobs that no longer need work: nothing left to assign or chase. */
 export const WORK_ORDER_FINISHED: readonly WorkOrderStatus[] = ['completed', 'verified', 'closed', 'cancelled'];
-/** Jobs the attendance clock has run for. */
-export const WORK_ORDER_ATTENDED: readonly WorkOrderStatus[] = ['on_site', 'completed', 'verified', 'closed'];
 
 export const WORK_ORDER_PAUSE_REASONS = [
   'awaiting_parts',

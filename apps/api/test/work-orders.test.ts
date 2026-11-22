@@ -222,6 +222,12 @@ it('takes a job from logged to closed, with only the right people allowed each s
       .send({ version: 6, status: 'completed' })
       .expect(201);
     expect(await detail(tech)).toMatchObject({ status: 'completed', completedAt: expect.any(String) });
+    // What follows completion is the supervisor's, so the technician cannot verify, close or reopen it.
+    expect((await detail(tech)).nextStatuses).toEqual([]);
+    await tech
+      .post(url + '/status')
+      .send({ version: 7, status: 'closed' })
+      .expect(422);
     // Jobs cannot skip steps, and someone else's technician cannot see it at all.
     await manager
       .post(url + '/status')
