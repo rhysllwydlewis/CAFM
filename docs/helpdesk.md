@@ -12,7 +12,7 @@ Duplicate candidates share a category and location within the request type’s t
 
 Create an inbound mailbox with a recipient address, default reportable location and a request type. The trusted mail connector posts normalised JSON to `POST /api/helpdesk/inbound/{organisation-slug}/{mailbox-id}` with an `Authorization: Bearer …` header. Set the connector and CAFM to the same `HELPDESK_INBOUND_TOKEN` of at least 32 characters.
 
-The connector passes `to`, `from`, `messageId`, optional `inReplyTo`, `subject` and plain `text`. Configure the connector to pass authenticated inbound sender identities. CAFM routes to the matching enabled mailbox, deduplicates delivery by mailbox, sender and message ID, and threads a matching sender’s reply while the request accepts comments. Incoming messages go to triage. Outbound email uses the existing SMTP settings and demo email is captured.
+The connector passes `to`, `from`, `messageId`, optional `inReplyTo`, `subject` and plain `text`, and should set `autoSubmitted: true` for auto-replies and bounces (any `Auto-Submitted` header other than `no`). CAFM ignores those, and mail from the mailbox's own address, so two systems can't answer each other in a loop. The mail CAFM sends carries `Auto-Submitted: auto-generated`. Configure the connector to pass authenticated inbound sender identities. CAFM routes to the matching enabled mailbox, deduplicates delivery by mailbox, sender and message ID, and threads a matching sender’s reply while the request accepts comments. Incoming messages go to triage. Outbound email uses the existing SMTP settings and demo email is captured.
 
 ## Notifications
 

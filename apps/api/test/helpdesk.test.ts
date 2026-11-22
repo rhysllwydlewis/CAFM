@@ -318,6 +318,22 @@ it('authenticates inbound mail, deduplicates provider deliveries and threads a v
     expect(anotherRequest.requestId).not.toBe(created.requestId);
     expect((await deliver(another)).body).toEqual(anotherRequest);
 
+    // Auto-replies and the mailbox writing to itself must not open requests (or answer each other forever).
+    const post = (payload: object) =>
+      admin
+        .post(url)
+        .set('Authorization', 'Bearer ' + token)
+        .send(payload)
+        .expect(201);
+    const auto = { ...message, from: 'robot@example.test', messageId: '<auto@example.test>', autoSubmitted: true };
+    expect((await post(auto)).body).toEqual({ ignored: true });
+    expect((await post({ ...auto, autoSubmitted: undefined, from: address })).body).toEqual({ ignored: true });
+    await admin
+      .post(url)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ ...auto, autoSubmitted: 'yes' })
+      .expect(400);
+
     const replacement = (
       await admin
         .post(helpdesk + '/settings/types')

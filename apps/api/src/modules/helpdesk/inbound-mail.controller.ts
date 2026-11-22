@@ -28,6 +28,9 @@ export class InboundMailController {
   ) {
     if (!bearerMatch(req.get('authorization'), process.env.HELPDESK_INBOUND_TOKEN)) throw new UnauthorizedException();
     const mail = parse(incomingRequestSchema, body);
+    // Auto-replies, bounces and the mailbox writing to itself would otherwise open a request, send an
+    // acknowledgement, and trigger another auto-reply, indefinitely.
+    if (mail.autoSubmitted || mail.from === mail.to) return { ignored: true };
     const tenant = await this.db.tenant.findUnique({ where: { slug } });
     if (!tenant || tenant.status !== 'active') throw new NotFoundException();
     const tenantId = tenant.id;
