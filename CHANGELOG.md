@@ -6,6 +6,11 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- Locations are listed in name order, and a location shows its path (for example Wales region › Cardiff HQ › Basement) with the hierarchy opened to it, so a scanned room can be placed straight away.
+- Locations keep the level order Portfolio, Region, Site, Building, Floor, Zone, Space, and only organisation-wide managers can create the top three levels, in the API as well as on screen.
+- Printed location QR labels use the organisation's own address, and the page shows it before you print.
+- The location form now says which custom field needs attention, a required text field can no longer be satisfied by blank text, and a badly typed opening time gets a clear message.
+- The page for a scanned label you can't open explains why and offers Switch organisation.
 - Menu section labels are lighter, so they meet WCAG AA contrast on the dark menu.
 - The homepage uses sharper device and plant room media and gives each scroll scene more time on screen.
 - A labelled Sign out button appears next to your name and lets you retry if sign-out fails.
