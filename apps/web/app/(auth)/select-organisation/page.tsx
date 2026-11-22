@@ -3,13 +3,15 @@ import { redirect } from 'next/navigation';
 import type { OrganisationOption } from '@cafm/shared';
 import { Logo } from '@cafm/ui';
 import { apiGet } from '@/lib/api';
+import { safeNext } from '@/lib/next-path';
 import { OrganisationList, SignOutLink } from './organisation-list';
 
 export const metadata: Metadata = { title: 'Choose an organisation' };
 
-export default async function SelectOrganisationPage() {
+export default async function SelectOrganisationPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const next = safeNext((await searchParams).next);
   const res = await apiGet('/auth/organisations');
-  if (res.status === 401) redirect('/login');
+  if (res.status === 401) redirect('/login' + (next ? '?next=' + encodeURIComponent(next) : ''));
   if (!res.ok) throw new Error(`Could not load your organisations (${res.status})`);
   const organisations = (await res.json()) as OrganisationOption[];
   const count = organisations.length;
@@ -27,7 +29,7 @@ export default async function SelectOrganisationPage() {
               ? 'Your account no longer has access to any organisation. Ask your administrator if you think this is wrong.'
               : `Your account belongs to ${count} ${count === 1 ? 'organisation' : 'organisations'}.`}
           </div>
-          {count > 0 && <OrganisationList organisations={organisations} />}
+          {count > 0 && <OrganisationList organisations={organisations} next={next} />}
           <div className="row between" style={{ marginTop: 16 }}>
             <span className="hint">{count > 1 ? 'You can switch organisation at any time from the menu.' : ''}</span>
             <SignOutLink />

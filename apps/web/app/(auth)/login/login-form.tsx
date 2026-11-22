@@ -67,7 +67,11 @@ export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: st
       const res = await postJson('/auth/login', { identifier, password, keepSignedIn });
       if (res.ok) {
         const body = (await res.json()) as LoginResponse;
-        router.push(body.status === 'signed_in' ? (next ?? body.landingPage) : '/select-organisation');
+        router.push(
+          body.status === 'signed_in'
+            ? (next ?? body.landingPage)
+            : '/select-organisation' + (next ? '?next=' + encodeURIComponent(next) : ''),
+        );
         router.refresh();
         return;
       }
