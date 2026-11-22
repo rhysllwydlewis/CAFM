@@ -414,7 +414,7 @@ export class RequestsController {
 
   private get(auth: AuthContext, id: string, own: boolean) {
     return withTenant(this.db, auth.membership!.tenantId, async (tx) =>
-      requestDetail(tx, await getRequest(tx, auth, id, own), !own),
+      requestDetail(tx, await getRequest(tx, auth, id, own), auth, !own),
     );
   }
 

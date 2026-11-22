@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- Keep accented filenames intact on uploads, link duplicate-report photos from the primary Helpdesk request, and cancel queued warranty deliveries when cover is renewed or archived.
+
 - Locations are listed in name order, and a location shows its path (for example Wales region › Cardiff HQ › Basement) with the hierarchy opened to it, so a scanned room can be placed straight away.
 - Locations keep the level order Portfolio, Region, Site, Building, Floor, Zone, Space, and only organisation-wide managers can create the top three levels, in the API as well as on screen.
 - Printed location QR labels use the organisation's own address, and the page shows it before you print.

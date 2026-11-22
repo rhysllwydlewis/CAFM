@@ -1,7 +1,11 @@
 import { BadRequestException, PayloadTooLargeException, UnsupportedMediaTypeException } from '@nestjs/common';
 import { ASSET_ATTACHMENT_MEDIA_TYPES, ATTACHMENT_MAX_BYTES, PHOTO_MEDIA_TYPES } from '@cafm/shared';
 
-export const uploadOptions = { limits: { fileSize: ATTACHMENT_MAX_BYTES + 1, files: 1, fields: 0, parts: 2 } };
+export const uploadOptions = {
+  // Browser multipart forms send unqualified filenames in UTF-8.
+  defParamCharset: 'utf8',
+  limits: { fileSize: ATTACHMENT_MAX_BYTES + 1, files: 1, fields: 0, parts: 2 },
+};
 
 export interface Upload {
   originalname: string;

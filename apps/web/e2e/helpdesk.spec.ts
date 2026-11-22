@@ -114,6 +114,8 @@ test('an operator uses quick-log in the queue', async ({ page }) => {
 
 test('reports a fault with a photo from a printed asset QR after signing in', async ({ page }) => {
   const title = 'Boiler photo ' + randomUUID().slice(0, 8);
+  const primaryTitle = title + ' primary';
+  const filename = 'Chaudière déjà signalée.png';
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=',
     'base64',
@@ -131,12 +133,10 @@ test('reports a fault with a photo from a printed asset QR after signing in', as
     await page.getByRole('radio', { name: 'Water leak' }).check();
     await page.getByLabel('Is water near electrical equipment?').selectOption('no');
     await page.getByLabel('Description').fill(title);
-    await page
-      .getByLabel('Photo (optional)')
-      .setInputFiles({ name: 'boiler-fault.png', mimeType: 'image/png', buffer: png });
+    await page.getByLabel('Photo (optional)').setInputFiles({ name: filename, mimeType: 'image/png', buffer: png });
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
-    const link = page.getByRole('link', { name: 'boiler-fault.png' });
+    const link = page.getByRole('link', { name: filename });
     await expect(link).toBeVisible();
     await checkAccessibility(page);
     const id = new URL(page.url()).pathname.split('/').pop()!;
@@ -146,15 +146,30 @@ test('reports a fault with a photo from a printed asset QR after signing in', as
     await page.getByRole('button', { name: 'Find asset' }).click();
     await expect(page.getByRole('heading', { name: 'Report a fault' })).toBeVisible();
     await expect(page.getByText('Boiler 2 · AST-00003', { exact: true })).toBeVisible();
+    await page.getByRole('radio', { name: 'Water leak' }).check();
+    await page.getByLabel('Is water near electrical equipment?').selectOption('no');
+    await page.getByLabel('Description').fill(primaryTitle);
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByRole('heading', { name: primaryTitle })).toBeVisible();
+    const primaryId = new URL(page.url()).pathname.split('/').pop()!;
     await page.context().clearCookies();
     await page.goto('/login');
     await signIn(page, 'helpdesk');
     await expect(page).not.toHaveURL(/\/login/);
     await page.goto('/app/helpdesk/' + id);
-    await expect(page.getByRole('link', { name: 'boiler-fault.png' })).toBeVisible();
+    await expect(page.getByRole('link', { name: filename })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Upload photo' })).toHaveCount(0);
+    const merge = await page.request.post('/api/helpdesk/requests/' + id + '/merge', {
+      data: { targetId: primaryId, version: 1, targetVersion: 1 },
+    });
+    expect(merge.ok()).toBeTruthy();
+    await page.goto('/app/helpdesk/' + primaryId);
+    const linkedPhotos = page.getByRole('link', { name: /^Photos on / });
+    await expect(linkedPhotos).toHaveAttribute('href', '/app/helpdesk/' + id + '#photos');
+    await linkedPhotos.click();
+    await expect(page.getByRole('link', { name: filename })).toBeVisible();
   } finally {
-    await db.serviceRequest.deleteMany({ where: { tenantId, title } });
+    await db.serviceRequest.deleteMany({ where: { tenantId, title: { in: [title, primaryTitle] } } });
     await db.$disconnect();
   }
 });

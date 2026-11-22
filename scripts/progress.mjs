@@ -196,13 +196,13 @@ export function prProblems({ body, base, head, headRef, otherClaims = [], ownerH
           `${id} is in Phase ${now.phase}, but only Phase ${gate} is approved. Wait for the product owner's go-ahead.`,
         );
       }
-      const baseClaim = before.claims.find((c) => overlaps(c.id, id));
-      const handedOver =
-        baseClaim && ownerHandover && handovers.includes(`Handover: ${baseClaim.id} from ${baseClaim.branch}`);
-      if (baseClaim && headRef && !branchMatches(baseClaim.branch, headRef) && !handedOver) {
-        problems.push(
-          `${id} is already claimed by ${baseClaim.who} on ${baseClaim.branch}. Pick another item, or agree a handover first.`,
-        );
+      for (const claim of before.claims.filter((c) => overlaps(c.id, id))) {
+        const handedOver = ownerHandover && handovers.includes(`Handover: ${claim.id} from ${claim.branch}`);
+        if (headRef && !branchMatches(claim.branch, headRef) && !handedOver) {
+          problems.push(
+            `${id} is already claimed by ${claim.who} on ${claim.branch}. Pick another item, or agree a handover first.`,
+          );
+        }
       }
       // Several PRs can work on one claim when the claim's branch pattern covers them all.
       const ours = after.claims.find((c) => overlaps(c.id, id) && headRef && branchMatches(c.branch, headRef));

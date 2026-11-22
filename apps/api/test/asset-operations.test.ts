@@ -216,7 +216,10 @@ it('stores tenant-scoped documents and lets only the reporter and scoped Helpdes
     const [first, replay] = await Promise.all([upload(), upload()]);
     expect(replay.body.id).toBe(first.body.id);
     const pdf = Buffer.from('%PDF-1.4\n%%EOF\n');
-    await admin.put(path).attach('file', pdf, 'manual.pdf').expect(200);
+    const manual = (await admin.put(path).attach('file', pdf, 'Manuel été.pdf').expect(200)).body;
+    expect(manual.filename).toBe('Manuel été.pdf');
+    const manualDownload = await admin.get(path + '/' + manual.id).expect(200);
+    expect(manualDownload.headers['content-disposition']).toContain("filename*=UTF-8''Manuel%20%C3%A9t%C3%A9.pdf");
     await admin.put(path).attach('file', Buffer.from('<svg/>'), 'no.svg').expect(415);
     const download = await admin.get(path + '/' + first.body.id).expect(200);
     expect(download.body).toEqual(png);

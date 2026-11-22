@@ -10,7 +10,10 @@ vi.mock('web-push', () => ({ default: { sendNotification } }));
 
 const owner = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.unstubAllEnvs();
+});
 afterAll(async () => {
   await owner.$disconnect();
   await db.$disconnect();
@@ -67,6 +70,88 @@ it('delivers generic push during an email failure and retries only the failed ch
     await owner.notification.deleteMany({ where });
     await owner.pushSubscription.deleteMany({ where });
     await owner.membership.deleteMany({ where });
+    await owner.account.delete({ where: { id: account.id } });
+    await owner.tenant.delete({ where: { id: tenant.id } });
+  }
+});
+
+it('skips queued expiry alerts after a renewal or archive and retains delivered history', async () => {
+  const suffix = randomUUID();
+  const tenant = await owner.tenant.create({
+    data: { slug: 'warranty-' + suffix, name: 'Warranty test', plan: 'starter' },
+  });
+  const account = await owner.account.create({
+    data: { email: suffix + '@test.example', name: 'Asset manager', passwordHash: 'fixture' },
+  });
+  const where = { tenantId: tenant.id };
+  try {
+    await owner.role.create({
+      data: { ...where, key: 'manager', name: 'Manager', permissions: ['assets.read', 'assets.manage'], scope: 'all' },
+    });
+    const recipient = await owner.membership.create({
+      data: { ...where, role: 'manager', licence: 'full', accountId: account.id },
+    });
+    const site = await owner.location.create({ data: { ...where, name: 'Workshop', code: 'WORKSHOP', kind: 'site' } });
+    const asset = await owner.asset.create({
+      data: { ...where, locationId: site.id, number: 'AST-001', name: 'Workshop pump' },
+    });
+    const warranty = await owner.assetWarranty.create({
+      data: {
+        ...where,
+        assetId: asset.id,
+        provider: 'Supplier',
+        reference: 'W-001',
+        noticeDays: 14,
+        startsOn: new Date('2026-01-01'),
+        expiresOn: new Date('2026-12-01'),
+      },
+    });
+    const queueNotice = (expiry: string) =>
+      owner.notification.create({
+        data: {
+          ...where,
+          assetId: asset.id,
+          recipientId: recipient.id,
+          recipientEmail: account.email,
+          pushEnabled: false,
+          eventKey: `warranty.expiry:${warranty.id}:${expiry}:${recipient.id}`,
+          title: 'Asset warranty expiring',
+          body: 'An expiry reminder.',
+        },
+      });
+    const deliver = (notificationId: string) =>
+      handlers.get('notification.deliver')!(
+        { notificationId },
+        { db, ...where, messageId: randomUUID(), log: () => {} },
+      );
+    const stale = await queueNotice('2026-12-01');
+    await owner.assetWarranty.update({ where: { id: warranty.id }, data: { expiresOn: new Date('2027-01-01') } });
+    await deliver(stale.id);
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(await owner.notification.findUnique({ where: { id: stale.id } })).toBeNull();
+
+    const current = await queueNotice('2027-01-01');
+    await owner.assetWarranty.update({ where: { id: warranty.id }, data: { active: false } });
+    await deliver(current.id);
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(await owner.notification.findUnique({ where: { id: current.id } })).toBeNull();
+
+    await owner.assetWarranty.update({ where: { id: warranty.id }, data: { active: true } });
+    const reissued = await queueNotice('2027-01-01');
+    await deliver(reissued.id);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    await owner.assetWarranty.update({ where: { id: warranty.id }, data: { active: false } });
+    await deliver(reissued.id);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(await owner.notification.findUnique({ where: { id: reissued.id } })).toMatchObject({
+      emailSentAt: expect.any(Date),
+    });
+  } finally {
+    await owner.notification.deleteMany({ where });
+    await owner.asset.deleteMany({ where });
+    await owner.location.deleteMany({ where });
+    await owner.membership.deleteMany({ where });
+    await owner.role.deleteMany({ where });
     await owner.account.delete({ where: { id: account.id } });
     await owner.tenant.delete({ where: { id: tenant.id } });
   }

@@ -58,6 +58,28 @@ register('notification.deliver', async (raw, ctx) => {
         select: { id: true },
       });
       if (!visible) return null;
+      if (notice.eventKey.startsWith('warranty.expiry:')) {
+        const [, warrantyId, expiry] = notice.eventKey.split(':');
+        if (!warrantyId || !expiry) return null;
+        const warranty = await tx.assetWarranty.findFirst({
+          where: { id: warrantyId, tenantId, assetId: notice.assetId, active: true },
+          select: { expiresOn: true },
+        });
+        if (!warranty || warranty.expiresOn.toISOString().slice(0, 10) !== expiry) {
+          // Preserve seen or delivered notices as history. Otherwise let a future
+          // scan reissue the alert if this expiry is tracked again.
+          await tx.notification.deleteMany({
+            where: {
+              id: notice.id,
+              tenantId,
+              readAt: null,
+              emailSentAt: null,
+              pushDeliveries: { none: {} },
+            },
+          });
+          return null;
+        }
+      }
     }
     const subscriptions =
       notice.pushEnabled && notice.recipientId && !notice.tenant.demo

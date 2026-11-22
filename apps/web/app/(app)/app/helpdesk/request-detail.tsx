@@ -113,6 +113,7 @@ export async function RequestDetail({
             path={filePath}
             items={files}
             photos
+            linkedPhotoReports={own ? undefined : record.linkedPhotoReports}
             canUpload={own && acceptsRequestComments(record.status)}
           />
         </div>

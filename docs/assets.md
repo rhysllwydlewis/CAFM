@@ -47,7 +47,7 @@ Recording readings needs `assets.record_readings`. The default technician role c
 
 ## Warranties and documents
 
-Enter the provider, reference, start and expiry dates, then choose how many days in advance to alert. Add claim references, dates and outcomes under the warranty. Turn off **Track expiry** to archive a warranty. The background worker checks at 06:00 UK time and sends one expiry alert per date and eligible asset manager. Alerts appear in the bell inbox, with email and browser push where configured.
+Enter the provider, reference, start and expiry dates, then choose how many days in advance to alert. Add claim references, dates and outcomes under the warranty. Turn off **Track expiry** to archive a warranty. The background worker checks at 06:00 UK time and sends one expiry alert per date and eligible asset manager. Alerts appear in the bell inbox, with email and browser push where configured. Queued delivery checks that the warranty is still tracked and has the same expiry date. Alerts that were marked read or sent remain in the inbox history.
 
 Upload JPEG, PNG, WebP or PDF files up to 8 MB each, with up to 20 files on an asset. Documents are downloadable by people who can read that asset. Uploads, tag changes, meter readings, warranties and claims appear in the audit log.
 

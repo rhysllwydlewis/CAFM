@@ -22,7 +22,7 @@ import {
 import { activeCustomFields, mergeCustom, nextNumber, visibleCustom } from '../../core/config';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
-import { reportAssetSelect, reportLocationSelect, reportLocations } from './request-scope';
+import { reportAssetSelect, reportLocationSelect, reportLocations, requestScope } from './request-scope';
 import { requestDeadline } from './request-sla';
 import { notifyRequester } from './request-notifications';
 
@@ -75,15 +75,23 @@ export function requestSummary(row: RequestRow): RequestSummary {
 export async function requestDetail(
   tx: Tx,
   record: RequestRow,
+  auth: AuthContext,
   staff: boolean,
 ): Promise<RequestRecord<FieldDefinition>> {
-  const [entries, fields] = await Promise.all([
+  const [entries, fields, linkedPhotoReports] = await Promise.all([
     tx.requestEntry.findMany({
       where: { tenantId: record.tenantId, requestId: record.id, ...(staff ? {} : { internal: false }) },
       include: { author: memberLabel },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     }),
     activeCustomFields(tx, record.tenantId, 'request'),
+    staff
+      ? tx.serviceRequest.findMany({
+          where: { ...requestScope(auth, false), mergedIntoId: record.id, attachments: { some: {} } },
+          select: { id: true, number: true },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        })
+      : [],
   ]);
   const questions = jsonQuestions.parse(record.type.questions);
   const answers = Array.isArray(record.answers)
@@ -108,6 +116,7 @@ export async function requestDetail(
       const value = custom[definition.key];
       return value == null ? [] : [{ definition, value }];
     }),
+    linkedPhotoReports,
     entries: entries.map(({ id, kind, body, internal, author, createdAt }) => ({
       id,
       kind,

@@ -5,17 +5,20 @@ import { useRouter } from 'next/navigation';
 import { Button, Field } from '@cafm/ui';
 import { ASSET_ATTACHMENT_MEDIA_TYPES, ATTACHMENT_LIMIT, PHOTO_MEDIA_TYPES, type AttachmentItem } from '@cafm/shared';
 import { uploadFile } from '@/lib/attachment-client';
+import Link from 'next/link';
 
 export function AttachmentPanel({
   path,
   items,
   photos,
   canUpload,
+  linkedPhotoReports = [],
 }: {
   path: string;
   items: AttachmentItem[];
   photos?: boolean;
   canUpload: boolean;
+  linkedPhotoReports?: { id: string; number: string }[];
 }) {
   const router = useRouter();
   const id = useId();
@@ -43,7 +46,7 @@ export function AttachmentPanel({
   }
 
   return (
-    <section className="card stack g3" aria-labelledby={id + '-title'} id={photos ? undefined : 'documents'}>
+    <section className="card stack g3" aria-labelledby={id + '-title'} id={photos ? 'photos' : 'documents'}>
       <header className="card-h">
         <h2 className="card-t" id={id + '-title'}>
           {photos ? 'Photos' : 'Documents'}
@@ -64,7 +67,21 @@ export function AttachmentPanel({
             ))}
           </ul>
         ) : (
-          <p className="muted">{photos ? 'No photos attached.' : 'No documents attached.'}</p>
+          <p className="muted">{photos ? 'No photos attached to this request.' : 'No documents attached.'}</p>
+        )}
+        {linkedPhotoReports.length > 0 && (
+          <div className="stack g2">
+            <h3 className="medium">Photos on linked reports</h3>
+            <ul className="stack g2">
+              {linkedPhotoReports.map(({ id, number }) => (
+                <li key={id}>
+                  <Link href={'/app/helpdesk/' + id + '#photos'} className="link">
+                    Photos on {number}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {canUpload && items.length < ATTACHMENT_LIMIT && (
           <form onSubmit={upload} className="stack g2">
