@@ -33,6 +33,8 @@ model Tenant {
   requestTypes               RequestType[]
   requestPriorities          RequestPriority[]
   requests                   ServiceRequest[]
+  workOrders                 WorkOrder[]
+  workOrderEntries           WorkOrderEntry[]
   requestEntries             RequestEntry[]
   requestMailboxes           RequestMailbox[]
   receivedRequestMessages    ReceivedRequestMessage[]
@@ -67,26 +69,29 @@ model Account {
 
 /// An account's role and licence inside one tenant. Tenant-owned (RLS).
 model Membership {
-  id                String             @id @default(uuid(7)) @db.Uuid
-  tenantId          String             @map("tenant_id") @db.Uuid
-  accountId         String             @map("account_id") @db.Uuid
-  role              String
-  licence           String
-  title             String?
-  landingPage       String             @default("/app") @map("landing_page")
-  status            String             @default("active")
-  locationScoped    Boolean            @default(false) @map("location_scoped")
-  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  tenant            Tenant             @relation(fields: [tenantId], references: [id])
-  account           Account            @relation(fields: [accountId], references: [id])
-  sessions          Session[]
-  sites             MembershipSite[]
-  requestTypes      RequestType[]      @relation("RequestTypeAssignee")
-  ownRequests       ServiceRequest[]   @relation("RequestOwner")
-  assignedRequests  ServiceRequest[]   @relation("RequestAssignee")
-  requestEntries    RequestEntry[]
-  notifications     Notification[]
-  pushSubscriptions PushSubscription[]
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  tenantId           String             @map("tenant_id") @db.Uuid
+  accountId          String             @map("account_id") @db.Uuid
+  role               String
+  licence            String
+  title              String?
+  landingPage        String             @default("/app") @map("landing_page")
+  status             String             @default("active")
+  locationScoped     Boolean            @default(false) @map("location_scoped")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant             Tenant             @relation(fields: [tenantId], references: [id])
+  account            Account            @relation(fields: [accountId], references: [id])
+  sessions           Session[]
+  sites              MembershipSite[]
+  requestTypes       RequestType[]      @relation("RequestTypeAssignee")
+  ownRequests        ServiceRequest[]   @relation("RequestOwner")
+  assignedRequests   ServiceRequest[]   @relation("RequestAssignee")
+  assignedWorkOrders WorkOrder[]        @relation("WorkOrderAssignee")
+  createdWorkOrders  WorkOrder[]        @relation("WorkOrderCreator")
+  workOrderEntries   WorkOrderEntry[]
+  requestEntries     RequestEntry[]
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, accountId])

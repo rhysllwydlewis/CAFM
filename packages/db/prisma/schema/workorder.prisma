@@ -1,0 +1,69 @@
+/// A reactive job at a location, usually raised from a Helpdesk request.
+/// Status, priority and the three SLA targets are stored on the job so later edits to the
+/// priority matrix never rewrite history.
+model WorkOrder {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  tenantId        String           @map("tenant_id") @db.Uuid
+  number          String
+  type            String           @default("reactive")
+  title           String
+  description     String
+  status          String           @default("logged")
+  pauseReason     String?          @map("pause_reason")
+  locationId      String           @map("location_id") @db.Uuid
+  assetId         String?          @map("asset_id") @db.Uuid
+  requestId       String?          @map("request_id") @db.Uuid
+  assigneeId      String?          @map("assignee_id") @db.Uuid
+  createdById     String?          @map("created_by_id") @db.Uuid
+  impact          Int
+  urgency         Int
+  priority        Int
+  responseDueAt   DateTime?        @map("response_due_at") @db.Timestamptz(3)
+  attendDueAt     DateTime?        @map("attend_due_at") @db.Timestamptz(3)
+  fixDueAt        DateTime?        @map("fix_due_at") @db.Timestamptz(3)
+  firstResponseAt DateTime?        @map("first_response_at") @db.Timestamptz(3)
+  attendedAt      DateTime?        @map("attended_at") @db.Timestamptz(3)
+  completedAt     DateTime?        @map("completed_at") @db.Timestamptz(3)
+  verifiedAt      DateTime?        @map("verified_at") @db.Timestamptz(3)
+  closedAt        DateTime?        @map("closed_at") @db.Timestamptz(3)
+  custom          Json             @default("{}")
+  version         Int              @default(1)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  location        Location         @relation(fields: [tenantId, locationId], references: [tenantId, id], onDelete: Restrict)
+  asset           Asset?           @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
+  request         ServiceRequest?  @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Restrict)
+  assignee        Membership?      @relation("WorkOrderAssignee", fields: [tenantId, assigneeId], references: [tenantId, id], onDelete: Restrict)
+  createdBy       Membership?      @relation("WorkOrderCreator", fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
+  entries         WorkOrderEntry[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, number])
+  @@index([tenantId, status, fixDueAt])
+  @@index([tenantId, assigneeId, status])
+  @@index([tenantId, requestId])
+  @@index([tenantId, assetId])
+  @@index([tenantId, locationId, createdAt])
+  @@index([tenantId, createdAt, id])
+  @@map("work_order")
+}
+
+/// The job's timeline: status changes, assignment and notes. Internal entries are for staff only.
+model WorkOrderEntry {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  workOrderId String      @map("work_order_id") @db.Uuid
+  authorId    String?     @map("author_id") @db.Uuid
+  kind        String
+  body        String
+  internal    Boolean     @default(false)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  workOrder   WorkOrder   @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  author      Membership? @relation(fields: [tenantId, authorId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId, createdAt, id])
+  @@map("work_order_entry")
+}

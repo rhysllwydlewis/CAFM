@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | P1-04a: work order tables with RLS, statuses and transitions, request conversion, API. Then 04b screens, 04c assignment, 04d SLA, 04e costs, 04f checklists and photos, 04g job sheet. |
 
 ## Phase checklists
 
@@ -104,6 +105,13 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-02g** Attachments (photos and documents) on assets. ([guide](assets.md#attachment-storage))
 - [x] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT. ([guide](helpdesk.md))
 - [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
+  - [ ] **P1-04a** Work order model and lifecycle: statuses and transitions, numbering, location and asset links, priority and SLA due dates from the request, convert a request into one or many work orders, API with audit and custom fields.
+  - [ ] **P1-04b** Work order list, detail and board screens in the app shell (`wo-01-list`, `wo-02-detail`, `wo-03-board`).
+  - [ ] **P1-04c** Assignment to people, teams and contractors, with a magic link so a contractor can update the job without an account.
+  - [ ] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation.
+  - [ ] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job.
+  - [ ] **P1-04f** Checklists, photos and signatures.
+  - [ ] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester.
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))

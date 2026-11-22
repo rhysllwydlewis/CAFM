@@ -83,6 +83,7 @@ model ServiceRequest {
   entries          RequestEntry[]
   notifications    Notification[]
   receivedMessages ReceivedRequestMessage[]
+  workOrders       WorkOrder[]
   attachments      RecordAttachment[]
 
   @@unique([tenantId, id])
