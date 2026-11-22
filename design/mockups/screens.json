@@ -232,6 +232,14 @@
     "file": "03-ppm-assets.js"
   },
   {
+    "id": "assets-03-records",
+    "group": "Assets & locations",
+    "title": "Asset records",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
     "id": "assets-02-detail",
     "group": "Assets & locations",
     "title": "Asset detail",

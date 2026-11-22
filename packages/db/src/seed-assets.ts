@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { AssetAttribute } from '@cafm/shared';
 import { seedId } from './ids';
@@ -291,6 +292,115 @@ function assetSeedId(slug: string, key: string, index: number): string {
   return `${(index + 1).toString(16).padStart(8, '0')}${hashed.slice(8)}`;
 }
 
+/** Sample record for the demo boiler. Reset removes its records with the asset. */
+async function seedBoilerRecords(tx: Prisma.TransactionClient, tenantId: string, assetId: string) {
+  await tx.assetTag.createMany({
+    data: (
+      [
+        ['qr', 'BOILER-2'],
+        ['barcode', 'CDF-00003'],
+        ['nfc', 'BOILER-2-NFC'],
+      ] as const
+    ).map(([kind, code]) => ({
+      id: seedId('asset-tag:demo-estates:' + kind),
+      tenantId,
+      assetId,
+      kind,
+      code,
+    })),
+    skipDuplicates: true,
+  });
+  const meterId = seedId('asset-meter:demo-estates:boiler-2');
+  const meter = await tx.assetMeter.upsert({
+    where: { id: meterId },
+    create: { id: meterId, tenantId, assetId, name: 'Run hours', unit: 'h', rolloverAt: '1000' },
+    update: {},
+  });
+  if (!(await tx.assetMeterReading.count({ where: { tenantId, meterId: meter.id } }))) {
+    await tx.assetMeterReading.createMany({
+      data: [
+        {
+          tenantId,
+          meterId,
+          submission: seedId('boiler-baseline'),
+          recordedAt: new Date('2026-11-18T09:00Z'),
+          value: '992.3',
+          total: '992.3',
+          rolledOver: false,
+        },
+        {
+          tenantId,
+          meterId,
+          submission: seedId('boiler-rollover'),
+          recordedAt: new Date('2026-11-20T09:00Z'),
+          value: '14.2',
+          total: '1014.2',
+          rolledOver: true,
+        },
+      ],
+    });
+  }
+  const warrantyId = seedId('warranty:demo-estates:boiler-2');
+  await tx.assetWarranty.upsert({
+    where: { id: warrantyId },
+    create: {
+      id: warrantyId,
+      tenantId,
+      assetId,
+      provider: 'Heatcare Wales',
+      reference: 'WTY-BOILER-2',
+      startsOn: new Date('2025-12-14T00:00Z'),
+      expiresOn: new Date('2027-12-14T00:00Z'),
+      noticeDays: 30,
+    },
+    update: {},
+  });
+  await tx.warrantyClaim.createMany({
+    data: {
+      id: seedId('warranty-claim:demo-estates:boiler-2'),
+      tenantId,
+      warrantyId,
+      reference: 'HW-942',
+      status: 'accepted',
+      filedOn: new Date('2026-09-01T00:00Z'),
+    },
+    skipDuplicates: true,
+  });
+
+  const id = seedId('asset-attachment:demo-estates:boiler-2');
+  if (!(await tx.recordAttachment.findUnique({ where: { id } }))) {
+    const contents = 'BT /F1 14 Tf 72 720 Td (CAFM demo - Boiler 2 maintenance record) Tj ET';
+    const objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+      `<< /Length ${contents.length} >>\nstream\n${contents}\nendstream`,
+    ];
+    let pdf = '%PDF-1.4\n';
+    const offsets = objects.map((object, index) => {
+      const offset = String(pdf.length).padStart(10, '0');
+      pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+      return offset + ' 00000 n \n';
+    });
+    const start = pdf.length;
+    pdf += `xref\n0 6\n0000000000 65535 f \n${offsets.join('')}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${start}\n%%EOF\n`;
+    const data = Buffer.from(pdf, 'ascii');
+    await tx.recordAttachment.create({
+      data: {
+        id,
+        tenantId,
+        assetId,
+        filename: 'Boiler 2 maintenance record.pdf',
+        mediaType: 'application/pdf',
+        byteLength: data.length,
+        checksum: createHash('sha256').update(data).digest('hex'),
+        storage: { create: { data } },
+      },
+    });
+  }
+}
+
 const pad = (n: number) => `AST-${String(n).padStart(5, '0')}`;
 
 /** Classes and assets for the demo tenants. Safe to run again: existing rows are left as people edited them. */
@@ -356,6 +466,17 @@ export async function seedAssets(db: PrismaClient): Promise<void> {
         })),
       ]);
       await tx.assetServes.createMany({ data: serving, skipDuplicates: true });
+      if (slug === 'demo-estates') {
+        await seedBoilerRecords(
+          tx,
+          tenantId,
+          assetSeedId(
+            slug,
+            'boiler-2',
+            rows.findIndex(({ key }) => key === 'boiler-2'),
+          ),
+        );
+      }
       // New assets people add carry on from the seeded numbers.
       await tx.$executeRaw`
         INSERT INTO number_sequence (id, tenant_id, key, format, next_value, updated_at)

@@ -239,6 +239,11 @@ export default async function AssetPage({
           <Link className="btn" href={route}>
             <Icon name="asset" /> All assets
           </Link>
+          {!editing && !editingServes && (
+            <Link className="btn" href={route + '/' + asset.id + '/operations'}>
+              <Icon name="qr-code" /> Asset records
+            </Link>
+          )}
           {!editing &&
             !editingServes &&
             asset.status !== 'decommissioned' &&

@@ -41,3 +41,5 @@ export async function withAccount<T>(db: PrismaClient, accountId: string, fn: (t
     return fn(tx);
   });
 }
+
+export { hasAllLocationAccess, scopedLocations } from './location-access';

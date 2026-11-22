@@ -83,6 +83,7 @@ model ServiceRequest {
   entries          RequestEntry[]
   notifications    Notification[]
   receivedMessages ReceivedRequestMessage[]
+  attachments      RecordAttachment[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, number])
@@ -154,6 +155,7 @@ model Notification {
   tenantId       String                     @map("tenant_id") @db.Uuid
   recipientId    String?                    @map("recipient_id") @db.Uuid
   requestId      String?                    @map("request_id") @db.Uuid
+  assetId        String?                    @map("asset_id") @db.Uuid
   recipientEmail String?                    @map("recipient_email")
   pushEnabled    Boolean                    @default(true) @map("push_enabled")
   eventKey       String                     @map("event_key")
@@ -165,6 +167,7 @@ model Notification {
   tenant         Tenant                     @relation(fields: [tenantId], references: [id])
   recipient      Membership?                @relation(fields: [tenantId, recipientId], references: [tenantId, id], onDelete: Cascade)
   request        ServiceRequest?            @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Cascade)
+  asset          Asset?                     @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
   pushDeliveries NotificationPushDelivery[]
 
   @@unique([tenantId, id])

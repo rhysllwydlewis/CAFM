@@ -242,6 +242,7 @@ export type RequestRecord<CustomField = unknown> = RequestSummary & {
   answers: { label: string; value: boolean }[];
   customFields: { definition: CustomField; value: unknown }[];
   entries: { id: string; kind: string; body: string; internal: boolean; author: string | null; createdAt: string }[];
+  linkedPhotoReports: { id: string; number: string }[];
 };
 export type RequestPage = {
   items: RequestSummary[];
@@ -261,6 +262,7 @@ export type NotificationItem = {
   title: string;
   body: string;
   requestId: string | null;
+  assetId: string | null;
   readAt: string | null;
   createdAt: string;
 };

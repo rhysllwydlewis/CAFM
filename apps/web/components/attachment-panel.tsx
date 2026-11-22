@@ -1,0 +1,118 @@
+'use client';
+
+import { type FormEvent, useId, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, Field } from '@cafm/ui';
+import { ASSET_ATTACHMENT_MEDIA_TYPES, ATTACHMENT_LIMIT, PHOTO_MEDIA_TYPES, type AttachmentItem } from '@cafm/shared';
+import { uploadFile } from '@/lib/attachment-client';
+import Link from 'next/link';
+
+export function AttachmentPanel({
+  path,
+  items,
+  photos,
+  canUpload,
+  linkedPhotoReports = [],
+}: {
+  path: string;
+  items: AttachmentItem[];
+  photos?: boolean;
+  canUpload: boolean;
+  linkedPhotoReports?: { id: string; number: string }[];
+}) {
+  const router = useRouter();
+  const id = useId();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
+  async function upload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const file = new FormData(form).get('file');
+    if (!(file instanceof File) || !file.size) return;
+    setBusy(true);
+    setError('');
+    setStatus('');
+    try {
+      await uploadFile(path, file, !!photos);
+      form.reset();
+      setStatus(photos ? 'Photo added.' : 'File added.');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload the file.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card stack g3" aria-labelledby={id + '-title'} id={photos ? 'photos' : 'documents'}>
+      <header className="card-h">
+        <h2 className="card-t" id={id + '-title'}>
+          {photos ? 'Photos' : 'Documents'}
+        </h2>
+      </header>
+      <div className="card-b stack g3">
+        {items.length ? (
+          <ul className="stack g2">
+            {items.map((file) => (
+              <li key={file.id} className="row wrap between g2">
+                <a className="link" style={{ overflowWrap: 'anywhere' }} href={'/api' + path + '/' + file.id} download>
+                  {file.filename}
+                </a>
+                <span className="muted sm">
+                  {Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 }).format(file.byteLength / 1024)} KB
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">{photos ? 'No photos attached to this request.' : 'No documents attached.'}</p>
+        )}
+        {linkedPhotoReports.length > 0 && (
+          <div className="stack g2">
+            <h3 className="medium">Photos on linked reports</h3>
+            <ul className="stack g2">
+              {linkedPhotoReports.map(({ id, number }) => (
+                <li key={id}>
+                  <Link href={'/app/helpdesk/' + id + '#photos'} className="link">
+                    Photos on {number}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {canUpload && items.length < ATTACHMENT_LIMIT && (
+          <form onSubmit={upload} className="stack g2">
+            <Field label={photos ? 'Choose a photo' : 'Choose a file'} htmlFor={id}>
+              <small className="muted" id={id + '-hint'}>
+                {photos ? 'JPEG, PNG or WebP, up to 8 MB.' : 'JPEG, PNG, WebP or PDF, up to 8 MB.'}
+              </small>
+              <input
+                id={id}
+                aria-describedby={id + '-hint'}
+                name="file"
+                type="file"
+                disabled={busy}
+                accept={(photos ? PHOTO_MEDIA_TYPES : ASSET_ATTACHMENT_MEDIA_TYPES).join(',')}
+                required
+              />
+            </Field>
+            <div>
+              <Button type="submit" icon="upload" disabled={busy}>
+                {busy ? 'Uploading…' : photos ? 'Upload photo' : 'Upload file'}
+              </Button>
+            </div>
+            {error && (
+              <p role="alert" className="field-error">
+                {error}
+              </p>
+            )}
+            {status && <p role="status">{status}</p>}
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}

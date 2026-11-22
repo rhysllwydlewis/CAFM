@@ -203,6 +203,12 @@ it('detects and merges matching requests without exposing the other requester', 
         .send(input())
         .expect(201)
     ).body;
+    const sourceFiles = helpdesk + '/mine/' + source.id + '/attachments';
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=',
+      'base64',
+    );
+    const photo = (await requester.put(sourceFiles).attach('file', png, 'leak.png').expect(200)).body;
     const target = (
       await bystander
         .post(helpdesk + '/requests')
@@ -216,6 +222,12 @@ it('detects and merges matching requests without exposing the other requester', 
       .post(helpdesk + '/requests/' + source.id + '/merge')
       .send({ targetId: target.id, version: 1, targetVersion: 1 })
       .expect(201);
+    const staffPrimary = (await operator.get(helpdesk + '/requests/' + target.id).expect(200)).body;
+    expect(staffPrimary.linkedPhotoReports).toEqual([{ id: source.id, number: source.number }]);
+    const reporterPrimary = (await bystander.get(helpdesk + '/mine/' + target.id).expect(200)).body;
+    expect(reporterPrimary.linkedPhotoReports).toEqual([]);
+    await bystander.get(sourceFiles + '/' + photo.id).expect(404);
+    expect((await requester.get(sourceFiles + '/' + photo.id).expect(200)).body).toEqual(png);
     const current = (await requester.get(helpdesk + '/mine/' + source.id).expect(200)).body;
     expect(current.status).toBe('merged');
     expect(JSON.stringify(current)).not.toContain(target.id);
@@ -239,6 +251,8 @@ it('detects and merges matching requests without exposing the other requester', 
       .patch(helpdesk + '/requests/' + primary.id)
       .send({ status: 'completed', version: 2 })
       .expect(200);
+    const newPrimary = (await operator.get(helpdesk + '/requests/' + primary.id).expect(200)).body;
+    expect(newPrimary.linkedPhotoReports).toEqual([{ id: source.id, number: source.number }]);
     const linked = (await requester.get(helpdesk + '/mine/' + source.id).expect(200)).body;
     expect(linked).toMatchObject({ status: 'merged', linkedStatus: 'completed' });
     expect(linked.entries.at(-1).body).toBe('Linked request · Completed');

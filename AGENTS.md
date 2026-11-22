@@ -55,6 +55,7 @@ These stop two agents building the same thing and keep the tracker true. The **P
 7. **Stale claims.**
    - A claim is stale if its PR has had no commits for **7 days**, or its PR was closed.
    - To take one over, comment on its PR and wait 24 hours. If nobody objects, replace the row in a PR of your own and say so in the description.
+   - For a handover approved by the product owner, use the same-repository PR opened under the repository owner's GitHub account. Add an explicit `Handover: P1-02 from previous/branch` line for each transferred claim and update or close that claim in the tracker. Older open PRs retain priority.
    - Never quietly take over a live claim.
 8. **Merge conflicts in docs/PROGRESS.md or the CHANGELOG:** merge `main` into your branch and keep both sides. Never drop someone else's tick, claim row or line.
 

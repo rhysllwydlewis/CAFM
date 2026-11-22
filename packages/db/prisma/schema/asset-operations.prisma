@@ -1,0 +1,124 @@
+/// A physical tag resolves to exactly one asset for its lifetime, even after retirement.
+model AssetTag {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  assetId   String   @map("asset_id") @db.Uuid
+  kind      String
+  code      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  asset     Asset    @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId, assetId])
+  @@map("asset_tag")
+}
+
+/// The rollover value is the first display value that cannot be shown (e.g. 1000 for a 0–999 counter).
+model AssetMeter {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  tenantId   String              @map("tenant_id") @db.Uuid
+  assetId    String              @map("asset_id") @db.Uuid
+  name       String
+  unit       String
+  rolloverAt Decimal?            @map("rollover_at") @db.Decimal(18, 6)
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  asset      Asset               @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+  readings   AssetMeterReading[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, assetId, name])
+  @@map("asset_meter")
+}
+
+/// Store the display reading and the monotonic total for future usage-based maintenance.
+model AssetMeterReading {
+  id         String     @id @default(uuid(7)) @db.Uuid
+  tenantId   String     @map("tenant_id") @db.Uuid
+  meterId    String     @map("meter_id") @db.Uuid
+  submission String     @db.Uuid
+  recordedAt DateTime   @map("recorded_at") @db.Timestamptz(3)
+  value      Decimal    @db.Decimal(18, 6)
+  total      Decimal    @db.Decimal(30, 6)
+  rolledOver Boolean    @map("rolled_over")
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  meter      AssetMeter @relation(fields: [tenantId, meterId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, meterId, submission])
+  @@unique([tenantId, meterId, recordedAt])
+  @@map("asset_meter_reading")
+}
+
+model AssetWarranty {
+  id         String          @id @default(uuid(7)) @db.Uuid
+  tenantId   String          @map("tenant_id") @db.Uuid
+  assetId    String          @map("asset_id") @db.Uuid
+  provider   String
+  reference  String
+  startsOn   DateTime        @map("starts_on") @db.Date
+  expiresOn  DateTime        @map("expires_on") @db.Date
+  noticeDays Int             @map("notice_days")
+  notes      String?
+  active     Boolean         @default(true)
+  version    Int             @default(1)
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  asset      Asset           @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+  claims     WarrantyClaim[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, assetId])
+  @@index([tenantId, expiresOn])
+  @@map("asset_warranty")
+}
+
+model RecordAttachment {
+  id         String             @id @default(uuid(7)) @db.Uuid
+  tenantId   String             @map("tenant_id") @db.Uuid
+  assetId    String?            @map("asset_id") @db.Uuid
+  requestId  String?            @map("request_id") @db.Uuid
+  filename   String
+  mediaType  String             @map("media_type")
+  byteLength Int                @map("byte_length")
+  checksum   String
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant     Tenant             @relation(fields: [tenantId], references: [id])
+  asset      Asset?             @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+  request    ServiceRequest?    @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Cascade)
+  storage    AttachmentContent?
+
+  @@unique([tenantId, id])
+  @@index([tenantId, assetId, createdAt])
+  @@index([tenantId, requestId, createdAt])
+  @@map("record_attachment")
+}
+
+/// The local/test adapter commits bytes and metadata together, without a shared filesystem.
+model AttachmentContent {
+  id       String           @id @db.Uuid
+  tenantId String           @map("tenant_id") @db.Uuid
+  data     Bytes
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  record   RecordAttachment @relation(fields: [tenantId, id], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@map("attachment_content")
+}
+
+/// Claim references and outcomes can be tracked against each manufacturer's warranty.
+model WarrantyClaim {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  tenantId   String        @map("tenant_id") @db.Uuid
+  warrantyId String        @map("warranty_id") @db.Uuid
+  reference  String
+  status     String
+  filedOn    DateTime      @map("filed_on") @db.Date
+  notes      String?
+  version    Int           @default(1)
+  tenant     Tenant        @relation(fields: [tenantId], references: [id])
+  warranty   AssetWarranty @relation(fields: [tenantId, warrantyId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, warrantyId, reference])
+  @@map("warranty_claim")
+}

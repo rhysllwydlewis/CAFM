@@ -303,11 +303,16 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
             {summary.maintainable.toLocaleString('en-GB')} to maintain
           </p>
         </div>
-        {page.canManage && (
-          <Link className="btn primary" href={`${route}/new`}>
-            <Icon name="add" /> Add asset
+        <div className="row wrap g2">
+          <Link className="btn" href={route + '/labels'}>
+            <Icon name="qr-code" /> Print labels
           </Link>
-        )}
+          {page.canManage && (
+            <Link className="btn primary" href={`${route}/new`}>
+              <Icon name="add" /> Add asset
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className={styles.kpis}>

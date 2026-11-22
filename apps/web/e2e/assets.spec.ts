@@ -299,3 +299,30 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await db.$disconnect();
   }
 });
+
+test('opens asset records and renders all three printable tag types', async ({ page }) => {
+  await signIn(page, 'manager');
+  await page.goto('/app/assets');
+  await page.getByRole('link', { name: 'Boiler 2', exact: true }).click();
+  await page.getByRole('link', { name: 'Asset records' }).click();
+  await expect(page.getByRole('region', { name: 'Tags' }).getByText('BOILER-2-NFC')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Meters' }).getByText('1014.2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Warranties' }).getByText('HW-942', { exact: false })).toBeVisible();
+  const document = page.getByRole('link', { name: 'Boiler 2 maintenance record.pdf' });
+  await expect(document).toBeVisible();
+  await assertAccessible(page);
+  const [download] = await Promise.all([page.waitForEvent('download'), document.click()]);
+  expect(download.suggestedFilename()).toBe('Boiler 2 maintenance record.pdf');
+  await page.getByRole('link', { name: 'Print labels' }).click();
+  const selected = page.getByRole('region', { name: 'Selected asset labels' });
+  await expect(selected.getByRole('img', { name: 'Barcode CDF-00003' })).toBeVisible();
+  await expect(selected.locator('svg[aria-label="Barcode CDF-00003"] rect').first()).toBeAttached();
+  await expect(selected.locator('svg title')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Print selected labels (3)' })).toBeEnabled();
+  await assertAccessible(page);
+  await page.getByLabel('Scan or enter tag code').fill('cdf-00003');
+  await page.getByRole('button', { name: 'Find asset' }).click();
+  await expect(page.getByRole('heading', { name: 'Report a fault' })).toBeVisible();
+  await expect(page.getByText('Boiler 2 · AST-00003', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Record meter reading' })).toBeVisible();
+});

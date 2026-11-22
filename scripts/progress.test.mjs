@@ -165,3 +165,33 @@ test('nobody starts a phase the product owner hasn’t approved', () => {
   assert.ok(problems.some((p) => p.includes('only Phase 0 is approved')));
   assert.ok(check(tracker().replace(/<!-- approved-phase: 1 -->\n/, '')).some((p) => p.includes('marker is missing')));
 });
+
+test('an owner can explicitly transfer a precise base claim without superseding an open PR', () => {
+  const base = tracker({ claims: [{ id: 'P1-02', who: 'A12', branch: 'agent/assets' }] });
+  const head = tracker({ claims: [{ id: 'P1-02', branch: 'codex/assets' }] });
+  const body = 'Progress: P1-02 in progress\nHandover: P1-02 from agent/assets';
+  const args = { body, base, head, headRef: 'codex/assets' };
+  assert.match(prProblems(args)[0], /already claimed/);
+  assert.deepEqual(prProblems({ ...args, ownerHandover: true }), []);
+  assert.match(prProblems({ ...args, ownerHandover: true, head: base })[0], /In progress/);
+  assert.match(
+    prProblems({ ...args, ownerHandover: true, otherClaims: [{ id: 'P1-02', number: 30, branch: 'agent/assets' }] })[0],
+    /open PR #30/,
+  );
+});
+
+test('a handover of a parent item requires every overlapping base claim', () => {
+  const subs = [{ id: 'P1-02a' }, { id: 'P1-02b' }];
+  const base = tracker({
+    subs,
+    claims: [
+      { id: 'P1-02a', branch: 'agent/tags' },
+      { id: 'P1-02b', branch: 'agent/meters' },
+    ],
+  });
+  const head = tracker({ subs, claims: [{ id: 'P1-02', branch: 'codex/assets' }] });
+  const body = 'Progress: P1-02 in progress\nHandover: P1-02a from agent/tags';
+  const args = { body, base, head, headRef: 'codex/assets', ownerHandover: true };
+  assert.match(prProblems(args)[0], /already claimed .*agent\/meters/);
+  assert.deepEqual(prProblems({ ...args, body: body + '\nHandover: P1-02b from agent/meters' }), []);
+});

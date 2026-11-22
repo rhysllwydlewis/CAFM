@@ -5,7 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Icon, TextInput } from '@cafm/ui';
 import type { FieldDefinition } from '@cafm/config-engine';
-import type { ReportAsset, ReportLocation, RequestCatalogue, RequestSummary } from '@cafm/shared';
+import {
+  ATTACHMENT_MAX_BYTES,
+  PHOTO_MEDIA_TYPES,
+  type ReportAsset,
+  type ReportLocation,
+  type RequestCatalogue,
+  type RequestSummary,
+} from '@cafm/shared';
+import { uploadFile } from '@/lib/attachment-client';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { LocationCustomFields, readCustomFields } from '../locations/location-custom-fields';
 import styles from './helpdesk.module.css';
@@ -20,6 +28,7 @@ export function RequestForm({
   scannedAsset,
   draftId,
   fromRegister = false,
+  fromAssetTag = false,
   returnTo = '/app/helpdesk',
 }: {
   data: RequestCatalogue<FieldDefinition>;
@@ -28,6 +37,7 @@ export function RequestForm({
   scannedAsset?: ReportAsset;
   draftId?: string;
   fromRegister?: boolean;
+  fromAssetTag?: boolean;
   returnTo?: string;
 }) {
   const router = useRouter();
@@ -40,6 +50,7 @@ export function RequestForm({
   const [requester, setRequester] = useState<Selected | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [savedId, setSavedId] = useState('');
 
   useEffect(() => {
     const modal = dialog.current;
@@ -80,6 +91,15 @@ export function RequestForm({
       return;
     }
     const values = new FormData(event.currentTarget);
+    const file = values.get('photo');
+    const photo = file instanceof File && file.size ? file : null;
+    if (
+      photo &&
+      (photo.size > ATTACHMENT_MAX_BYTES || (photo.type && !PHOTO_MEDIA_TYPES.some((type) => type === photo.type)))
+    ) {
+      setError('Choose a JPEG, PNG or WebP photo up to 8 MB.');
+      return;
+    }
     const description = String(values.get('description') ?? '').trim();
     const title =
       String(values.get('title') ?? '').trim() || description.split(/\r?\n/)[0]?.slice(0, 160) || active.name;
@@ -103,6 +123,16 @@ export function RequestForm({
         ),
         custom: readCustomFields(data.customFields, values),
       });
+      if (photo) {
+        try {
+          await uploadFile('/helpdesk/mine/' + saved.id + '/attachments', photo, true);
+        } catch (error) {
+          setSavedId(saved.id);
+          setError(error instanceof Error ? error.message : 'Could not upload the photo.');
+          setBusy(false);
+          return;
+        }
+      }
       router.replace((staff ? '/app/helpdesk/' : '/portal/requests/') + saved.id);
       router.refresh();
     } catch (e) {
@@ -125,7 +155,7 @@ export function RequestForm({
                 <strong>{scanned.name}</strong>
                 <div className="muted">
                   {scanned.code}
-                  {fromRegister ? '' : ' · From QR code'}
+                  {fromRegister ? '' : fromAssetTag ? ' · From asset tag' : ' · From QR code'}
                 </div>
                 {scannedAsset && (
                   <div>
@@ -232,6 +262,20 @@ export function RequestForm({
         </div>
       </div>
       <LocationCustomFields fields={data.customFields} />
+      {!staff && (
+        <Field label="Photo (optional)" htmlFor="request-photo">
+          <small className="muted" id="request-photo-hint">
+            JPEG, PNG or WebP, up to 8 MB.
+          </small>
+          <input
+            id="request-photo"
+            aria-describedby="request-photo-hint"
+            name="photo"
+            type="file"
+            accept={PHOTO_MEDIA_TYPES.join(',')}
+          />
+        </Field>
+      )}
       {error && (
         <p role="alert" className="field-error">
           {error}
@@ -250,6 +294,19 @@ export function RequestForm({
     <p className="muted">Ask your organisation’s administrator to add a request type.</p>
   );
 
+  if (savedId)
+    return (
+      <div className="stack g3">
+        <p role="status">
+          <strong>Report sent.</strong> {error}
+        </p>
+        <div>
+          <Link className="btn primary" href={'/portal/requests/' + savedId}>
+            Open request and retry photo
+          </Link>
+        </div>
+      </div>
+    );
   if (!staff) return content;
   return (
     <dialog
