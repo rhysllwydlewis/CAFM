@@ -13,6 +13,7 @@
     "@cafm/config-engine": "workspace:*",
     "@cafm/db": "workspace:*",
     "@cafm/shared": "workspace:*",
+    "@js-temporal/polyfill": "0.5.1",
     "@nestjs/common": "11.2.8",
     "@nestjs/core": "11.2.8",
     "@nestjs/platform-express": "11.2.8",

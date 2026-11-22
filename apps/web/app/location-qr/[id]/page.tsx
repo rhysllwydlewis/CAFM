@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { can, feature, type CurrentUser } from '@cafm/shared';
 import { apiGet } from '@/lib/api';
+import { reportLocation } from '@/lib/helpdesk';
 import { locationDetail, route, validLocationId } from '../../(app)/app/locations/location-data';
 
 export const metadata: Metadata = { title: 'Location QR', robots: { index: false } };
@@ -17,7 +18,9 @@ export default async function LocationQrPage({ params }: { params: Promise<{ id:
   if (!response.ok) throw new Error('Could not load your CAFM session.');
   const user = (await response.json()) as CurrentUser;
 
-  // Helpdesk uses this same URL and location ID when fault intake ships in P1-03.
+  if (can(user, 'requests.create') && feature(user.entitlements, 'helpdesk') && (await reportLocation(id))) {
+    redirect('/portal/new?location=' + id);
+  }
   const allowed = can(user, 'locations.read') && feature(user.entitlements, 'locations');
   if (allowed && (await locationDetail(id))) redirect(route + '?id=' + id);
   return (

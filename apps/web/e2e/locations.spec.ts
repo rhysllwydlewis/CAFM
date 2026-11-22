@@ -196,13 +196,14 @@ test('creates and edits a site with a required field and saves its calendar', as
   }
 });
 
-test('a scanned link returns to the location after sign-in and protects sites outside the current tenant', async ({
-  page,
-}) => {
+test('a scanned link opens a fault report and preserves access to the location', async ({ page }) => {
   const scan = '/location-qr/' + cardiffId;
   await page.goto(scan);
   await expect(page).toHaveURL(/\/login\?next=/);
   await signIn(page, 'technician');
+  await expect(page).toHaveURL('/portal/new?location=' + cardiffId, { timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: 'Report a fault' })).toBeVisible();
+  await page.getByRole('link', { name: 'View location' }).click();
   await expect(page).toHaveURL(cardiffRoute, { timeout: 15_000 });
   await expect(page.getByRole('heading', { level: 1, name: 'Cardiff HQ' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Edit site' })).toHaveCount(0);

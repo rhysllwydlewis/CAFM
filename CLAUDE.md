@@ -78,6 +78,8 @@ Configuration engine (`packages/config-engine`): custom fields per entity type (
 
 Permissions and plans: add permission keys to `packages/shared/src/permissions.ts` and feature keys to `entitlements.ts`; guard endpoints with `@RequirePermission()` and `@RequireFeature()`; record changes with `audit()` and queue side effects with `enqueue()` in the same `withTenant` transaction. Worker handlers register a topic in `apps/worker/src/handlers.ts`.
 
+Helpdesk mail intake and browser push use optional configuration documented in [docs/helpdesk.md](docs/helpdesk.md).
+
 Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role.
 
 New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `pnpm --filter @cafm/db -s migrate:diff` (diffs your migrated `DATABASE_URL` against the schema), plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.

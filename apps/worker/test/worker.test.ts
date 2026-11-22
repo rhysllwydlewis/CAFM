@@ -139,3 +139,32 @@ describe('demo reset schedule', () => {
     }
   });
 });
+
+it('captures a demo request notification once when its job is replayed', async () => {
+  const demo = seedId('tenant:demo-estates');
+  const notice = await withTenant(db, demo, (tx) =>
+    tx.notification.create({
+      data: {
+        tenantId: demo,
+        eventKey: 'worker-notice-replay',
+        recipientEmail: 'notifications-test@example.test',
+        title: 'Demo Helpdesk notification',
+        body: 'The request has been received.',
+      },
+    }),
+  );
+  try {
+    const handler = (await import('../src')).handlers.get('notification.deliver')!;
+    const context = { db, tenantId: demo, messageId: notice.id, log: () => {} };
+    await handler({ notificationId: notice.id }, context);
+    await handler({ notificationId: notice.id }, context);
+    const captured = await db.capturedEmail.findMany({
+      where: { tenantId: demo, to: 'notifications-test@example.test' },
+    });
+    expect(captured).toHaveLength(1);
+    expect(captured[0]).toMatchObject({ reason: 'demo', subject: notice.title });
+  } finally {
+    await withTenant(db, demo, (tx) => tx.notification.delete({ where: { id: notice.id } }));
+    await db.capturedEmail.deleteMany({ where: { tenantId: demo, to: 'notifications-test@example.test' } });
+  }
+});

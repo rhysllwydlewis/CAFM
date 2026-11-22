@@ -22,6 +22,8 @@ model Location {
   grants           MembershipSite[]
   assets           Asset[]
   servedBy         AssetServes[]
+  requests         ServiceRequest[]
+  requestMailboxes RequestMailbox[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])

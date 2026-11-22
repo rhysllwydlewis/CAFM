@@ -2,27 +2,37 @@
 
 /// A customer organisation. Platform-level table (no RLS); only exposed through memberships.
 model Tenant {
-  id             String              @id @default(uuid(7)) @db.Uuid
-  slug           String              @unique
-  name           String
-  plan           String
-  status         String              @default("active")
+  id                         String                     @id @default(uuid(7)) @db.Uuid
+  slug                       String                     @unique
+  name                       String
+  plan                       String
+  status                     String                     @default("active")
   /// Demo tenants never send email or SMS: it is captured instead (doc 06).
-  demo           Boolean             @default(false)
-  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
-  memberships    Membership[]
-  invites        Invite[]
-  fields         FieldDefinition[]
-  sequences      NumberSequence[]
-  configVersions ConfigVersion[]
-  roles          Role[]
-  auditEvents    AuditEvent[]
-  outbox         OutboxMessage[]
-  entitlements   TenantEntitlement[]
-  locations      Location[]
-  assetClasses   AssetClass[]
-  assets         Asset[]
-  assetServes    AssetServes[]
+  demo                       Boolean                    @default(false)
+  createdAt                  DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships                Membership[]
+  invites                    Invite[]
+  fields                     FieldDefinition[]
+  sequences                  NumberSequence[]
+  configVersions             ConfigVersion[]
+  roles                      Role[]
+  auditEvents                AuditEvent[]
+  outbox                     OutboxMessage[]
+  entitlements               TenantEntitlement[]
+  locations                  Location[]
+  assetClasses               AssetClass[]
+  assets                     Asset[]
+  assetServes                AssetServes[]
+  requestTypes               RequestType[]
+  requestPriorities          RequestPriority[]
+  requests                   ServiceRequest[]
+  requestEntries             RequestEntry[]
+  requestMailboxes           RequestMailbox[]
+  receivedRequestMessages    ReceivedRequestMessage[]
+  notifications              Notification[]
+  notificationTemplates      NotificationTemplate[]
+  pushSubscriptions          PushSubscription[]
+  notificationPushDeliveries NotificationPushDelivery[]
 
   @@map("tenant")
 }
@@ -50,20 +60,26 @@ model Account {
 
 /// An account's role and licence inside one tenant. Tenant-owned (RLS).
 model Membership {
-  id             String           @id @default(uuid(7)) @db.Uuid
-  tenantId       String           @map("tenant_id") @db.Uuid
-  accountId      String           @map("account_id") @db.Uuid
-  role           String
-  licence        String
-  title          String?
-  landingPage    String           @default("/app") @map("landing_page")
-  status         String           @default("active")
-  locationScoped Boolean          @default(false) @map("location_scoped")
-  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  tenant         Tenant           @relation(fields: [tenantId], references: [id])
-  account        Account          @relation(fields: [accountId], references: [id])
-  sessions       Session[]
-  sites          MembershipSite[]
+  id                String             @id @default(uuid(7)) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  accountId         String             @map("account_id") @db.Uuid
+  role              String
+  licence           String
+  title             String?
+  landingPage       String             @default("/app") @map("landing_page")
+  status            String             @default("active")
+  locationScoped    Boolean            @default(false) @map("location_scoped")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  account           Account            @relation(fields: [accountId], references: [id])
+  sessions          Session[]
+  sites             MembershipSite[]
+  requestTypes      RequestType[]      @relation("RequestTypeAssignee")
+  ownRequests       ServiceRequest[]   @relation("RequestOwner")
+  assignedRequests  ServiceRequest[]   @relation("RequestAssignee")
+  requestEntries    RequestEntry[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, accountId])

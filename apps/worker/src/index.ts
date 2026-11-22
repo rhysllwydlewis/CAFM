@@ -6,6 +6,7 @@ import { redisConnection } from './redis';
 export { register, handlers } from './handlers';
 // Job handlers register themselves on import.
 import './jobs/email';
+import './jobs/notifications';
 export type { Handler, JobContext } from './handlers';
 
 export const QUEUE = 'cafm';
