@@ -198,4 +198,78 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
       },
     });
   }
+
+  // Checklist templates the organisation keeps, and the plant room checklist on the boiler job, all answered.
+  const step = (label: string, kind: string, required: boolean, unit?: string) => ({
+    label,
+    kind,
+    required,
+    ...(unit ? { unit } : {}),
+  });
+  const plantSteps = [
+    step('Risk assessment and RAMS acknowledged', 'tick', true),
+    step('System isolated and made safe before work', 'tick', true),
+    step('Pressure after repair', 'number', false, 'bar'),
+    step('Pressure test after repair (2 hours)', 'pass_fail', true),
+    step('Area left clean and tidy', 'tick', true),
+  ];
+  const templates = [
+    { key: 'plant', name: 'Plant room repair', gate: 'completion', items: plantSteps },
+    {
+      key: 'isolation',
+      name: 'Safe isolation before electrical work',
+      gate: 'start',
+      items: [
+        step('Circuit identified and isolated', 'tick', true),
+        step('Lock-off applied and tag fitted', 'tick', true),
+        step('Absence of voltage proved', 'pass_fail', true),
+      ],
+    },
+    {
+      key: 'fire-door',
+      name: 'Fire door check',
+      gate: 'none',
+      items: [
+        step('Door closes fully onto its latch', 'pass_fail', false),
+        step('Seals and hinges intact', 'pass_fail', false),
+        step('Gap around the door (mm)', 'number', false, 'mm'),
+        step('Comments', 'text', false),
+      ],
+    },
+  ];
+  for (const template of templates) {
+    const id = seedId('checklist-template:demo-estates:' + template.key);
+    await db.checklistTemplate.upsert({
+      where: { id },
+      update: {},
+      create: { id, tenantId, name: template.name, gate: template.gate, items: template.items },
+    });
+  }
+  const checklistId = seedId('work-order-checklist:demo-estates:boiler');
+  await db.workOrderChecklist.upsert({
+    where: { id: checklistId },
+    update: {},
+    create: { id: checklistId, tenantId, workOrderId: boilerJob, title: 'Plant room repair', gate: 'completion', createdById: manager },
+  });
+  const answers = ['done', 'done', '1.4', 'pass', 'done'];
+  for (const [position, item] of plantSteps.entries()) {
+    const id = seedId('work-order-checklist-item:demo-estates:boiler:' + position);
+    await db.workOrderChecklistItem.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        tenantId,
+        checklistId,
+        position,
+        kind: item.kind,
+        label: item.label,
+        required: item.required,
+        unit: 'unit' in item ? item.unit : null,
+        answer: answers[position],
+        answeredById: technician,
+        answeredAt: now,
+      },
+    });
+  }
 }

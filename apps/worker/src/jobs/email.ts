@@ -8,6 +8,7 @@ export interface EmailPayload {
   capture?: boolean;
   replyTo?: string;
   messageId?: string;
+  attachments?: { filename: string; contentType: string; contentBase64: string }[];
 }
 
 let transport: Transporter | null | undefined;
@@ -31,7 +32,9 @@ export async function sendEmail(email: EmailPayload, ctx: JobContext) {
         tenantId: ctx.tenantId,
         to: email.to,
         subject: email.subject,
-        text: email.text,
+        text: email.attachments?.length
+          ? `${email.text}\n\n[Attached: ${email.attachments.map((file) => file.filename).join(', ')}]`
+          : email.text,
         reason: email.capture ? 'demo' : 'no_mail_server',
       },
     });
@@ -45,6 +48,11 @@ export async function sendEmail(email: EmailPayload, ctx: JobContext) {
     text: email.text,
     replyTo: email.replyTo,
     messageId: email.messageId,
+    attachments: email.attachments?.map((file) => ({
+      filename: file.filename,
+      contentType: file.contentType,
+      content: Buffer.from(file.contentBase64, 'base64'),
+    })),
     // Tell auto-responders and other helpdesks not to answer, so two systems cannot reply to each other forever.
     headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All' },
   });

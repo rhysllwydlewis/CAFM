@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ReportAsset, ReportLocation } from './helpdesk';
+import type { Checklist } from './work-order-forms';
 
 const uuid = z.string().uuid();
 const shortText = (max: number) => z.string().trim().min(1).max(max);
@@ -250,6 +251,7 @@ export type ContractorJob = {
   expiresAt: string;
   nextStatuses: WorkOrderStatus[];
   notes: { id: string; author: string; body: string; createdAt: string }[];
+  checklists: Checklist[];
 };
 
 export type WorkOrderSummary = {

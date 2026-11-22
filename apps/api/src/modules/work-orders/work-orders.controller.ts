@@ -71,6 +71,7 @@ import {
   type WorkOrderRow,
 } from './work-order-records';
 import { syncRequest } from './request-sync';
+import { assertChecklistsAllow } from './work-order-checklists';
 import { staleWorkOrder, withWorkOrderWrite, workOrderScope } from './work-order-scope';
 
 const CLOSED_STATUSES = ['closed', 'cancelled'];
@@ -565,6 +566,7 @@ export class WorkOrdersController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const to = input.status;
+      await assertChecklistsAllow(tx, auth.membership!.tenantId, id, current, to);
       const { reopened, data, clockNote } = await statusChange(tx, before, current, to, input.pauseReason, new Date());
       const next = await tx.workOrder.update({
         where: { id },

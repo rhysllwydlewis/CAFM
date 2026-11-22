@@ -13,23 +13,44 @@ import { audit } from '../../core/audit';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { requireVisibleAsset, withAssetWrite } from '../assets/asset-scope';
+import { getWorkOrder } from '../work-orders/work-order-records';
+import { assertCanWorkJob, withWorkOrderWrite } from '../work-orders/work-order-scope';
 import { missingRequest, requestScope, withRequestWrite } from '../helpdesk/request-scope';
 import { type Upload, validateUpload } from './attachment-file';
 import { scanAttachment } from './attachment-scanner';
 import { AttachmentStore } from './attachment-store';
 
-type Parent = { type: 'asset' | 'ownRequest' | 'staffRequest'; id: string };
+type Parent = { type: 'asset' | 'ownRequest' | 'staffRequest' | 'workOrder'; id: string };
+
+/** A job's photos and its two signatures share one allowance. */
+const WORK_ORDER_FILE_LIMIT = 42;
+/** What the caller adds to the file's record, and what it does in the same transaction once the record exists. */
+export interface UploadExtras {
+  phase?: string;
+  caption?: string;
+  after?: (tx: Tx, auth: AuthContext, row: { id: string }) => Promise<void>;
+}
 type Row = Omit<AttachmentItem, 'createdAt'> & { createdAt: Date };
 const metadata = { id: true, filename: true, mediaType: true, byteLength: true, createdAt: true } as const;
 const item = (row: Row): AttachmentItem => ({ ...row, createdAt: row.createdAt.toISOString() });
 
 function parentWhere(parent: Parent, tenantId: string) {
-  return parent.type === 'asset' ? { tenantId, assetId: parent.id } : { tenantId, requestId: parent.id };
+  if (parent.type === 'asset') return { tenantId, assetId: parent.id };
+  if (parent.type === 'workOrder') return { tenantId, workOrderId: parent.id };
+  return { tenantId, requestId: parent.id };
 }
+
+const parentLabel = (parent: Parent) =>
+  parent.type === 'asset' ? 'asset' : parent.type === 'workOrder' ? 'work_order' : 'request';
 
 async function checkParent(tx: Tx, auth: AuthContext, parent: Parent, writing = false) {
   if (parent.type === 'asset') {
     await requireVisibleAsset(tx, auth, parent.id);
+  } else if (parent.type === 'workOrder') {
+    const job = await getWorkOrder(tx, auth, parent.id);
+    if (writing && ['closed', 'cancelled'].includes(job.status)) {
+      throw new UnprocessableEntityException('Photos can’t be added to a closed or cancelled work order.');
+    }
   } else {
     const request = await tx.serviceRequest.findFirst({
       where: { ...requestScope(auth, parent.type === 'ownRequest'), id: parent.id },
@@ -65,9 +86,11 @@ export class AttachmentsService {
     });
   }
 
-  async upload(req: Request, parent: Parent, uploaded: Upload | undefined) {
+  async upload(req: Request, parent: Parent, uploaded: Upload | undefined, extras: UploadExtras = {}) {
     const auth = req.auth!;
     const { tenantId } = auth.membership!;
+    // Checked before anything is looked up, so someone who may only read learns nothing from the answer.
+    if (parent.type === 'workOrder') assertCanWorkJob(auth);
     const where = parentWhere(parent, tenantId);
     const { buffer, ...file } = validateUpload(uploaded, parent.type !== 'asset');
     const checksum = digest(buffer);
@@ -77,7 +100,8 @@ export class AttachmentsService {
         where: { ...where, checksum, filename: file.filename },
         select: metadata,
       });
-      if (!match && (await tx.recordAttachment.count({ where })) >= ATTACHMENT_LIMIT) {
+      const limit = parent.type === 'workOrder' ? WORK_ORDER_FILE_LIMIT : ATTACHMENT_LIMIT;
+      if (!match && (await tx.recordAttachment.count({ where })) >= limit) {
         throw new UnprocessableEntityException('This record already has the maximum number of attachments.');
       }
       return match;
@@ -99,7 +123,7 @@ export class AttachmentsService {
         const match = await existing(tx, current);
         if (match) return match;
         const row = await tx.recordAttachment.create({
-          data: { id, ...where, ...file, checksum },
+          data: { id, ...where, ...file, checksum, phase: extras.phase ?? null, caption: extras.caption ?? null },
           select: metadata,
         });
         if (!useObjectStorage)
@@ -112,7 +136,7 @@ export class AttachmentsService {
             entityType: 'attachment',
             entityId: id,
             changes: {
-              parent: parent.type === 'asset' ? 'asset' : 'request',
+              parent: parentLabel(parent),
               parentId: parent.id,
               mediaType: file.mediaType,
               byteLength: file.byteLength,
@@ -120,12 +144,15 @@ export class AttachmentsService {
           },
           req.ip,
         );
+        await extras.after?.(tx, current, row);
         return row;
       };
       const row =
         parent.type === 'asset'
           ? await withAssetWrite(this.db, auth, 'assets.manage', save)
-          : await withRequestWrite(this.db, auth, 'requests.create', save);
+          : parent.type === 'workOrder'
+            ? await withWorkOrderWrite(this.db, auth, ['work_orders.edit', 'work_orders.close'], save)
+            : await withRequestWrite(this.db, auth, 'requests.create', save);
       if (row.id !== id && useObjectStorage) await this.store.removeStaged(tenantId, id);
       return item(row);
     } catch (error) {
@@ -173,5 +200,58 @@ export class AttachmentsService {
       disposition: "attachment; filename*=UTF-8''" + encoded,
       length: data.length,
     });
+  }
+
+  /** Removes a file from a job. Its bytes go with it: from the database, or from object storage once that commits. */
+  async removeFromWorkOrder(
+    req: Request,
+    jobId: string,
+    id: string,
+    kind: 'photo' | 'signature',
+    inside?: (tx: Tx, auth: AuthContext) => Promise<void>,
+  ) {
+    const auth = req.auth!;
+    const { tenantId } = auth.membership!;
+    const parent: Parent = { type: 'workOrder', id: jobId };
+    const stored = await withWorkOrderWrite(this.db, auth, 'work_orders.edit', async (tx, current) => {
+      await checkParent(tx, current, parent, true);
+      const record = await tx.recordAttachment.findFirst({
+        where: { id, tenantId, workOrderId: jobId },
+        select: { id: true, phase: true, mediaType: true, byteLength: true, storage: { select: { id: true } } },
+      });
+      if (!record || (kind === 'photo') !== (record.phase !== null)) throw new NotFoundException('File not found.');
+      await inside?.(tx, current);
+      await tx.recordAttachment.delete({ where: { id } });
+      await audit(
+        tx,
+        current,
+        {
+          action: 'attachment.remove',
+          entityType: 'attachment',
+          entityId: id,
+          changes: { parent: 'work_order', parentId: jobId, mediaType: record.mediaType, byteLength: record.byteLength },
+        },
+        req.ip,
+      );
+      return !!record.storage;
+    });
+    if (!stored && this.store.enabled) await this.store.removeStaged(tenantId, id);
+  }
+
+  /** A file's verified bytes, for building a document from it. Null when it cannot be read, so one file never stops the rest. */
+  async readFile(tenantId: string, id: string): Promise<Buffer | null> {
+    const file = await withTenant(this.db, tenantId, (tx) =>
+      tx.recordAttachment.findFirst({
+        where: { tenantId, id },
+        select: { checksum: true, byteLength: true, storage: { select: { data: true } } },
+      }),
+    );
+    if (!file) return null;
+    try {
+      const data = file.storage ? Buffer.from(file.storage.data) : await this.store.get(tenantId, id, file.byteLength);
+      return data.byteLength === file.byteLength && digest(data) === file.checksum ? data : null;
+    } catch {
+      return null;
+    }
   }
 }

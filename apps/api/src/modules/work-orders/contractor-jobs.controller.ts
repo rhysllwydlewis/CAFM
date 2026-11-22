@@ -5,11 +5,14 @@ import {
   GoneException,
   NotFoundException,
   Param,
+  ParseUUIDPipe,
   Post,
+  Put,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { hashToken, withTenant, type Tx } from '@cafm/db';
 import {
+  answerChecklistItemSchema,
   contractorNoteSchema,
   contractorStatusSchema,
   resolveEntitlements,
@@ -22,6 +25,7 @@ import {
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { syncRequest } from './request-sync';
+import { answerChecklistItem, assertChecklistsAllow, readChecklists } from './work-order-checklists';
 import { statusChange, statusEntryBody } from './work-order-records';
 import { lockWorkOrders } from './work-order-scope';
 
@@ -109,6 +113,7 @@ export class ContractorJobsController {
         body,
         createdAt: createdAt.toISOString(),
       })),
+      checklists: await readChecklists(tx, tenantId, job.id),
     };
   }
 
@@ -130,6 +135,7 @@ export class ContractorJobsController {
       if (!workOrderNextStatuses(current, LINK_PERMISSIONS).includes(input.status)) {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
+      await assertChecklistsAllow(tx, tenantId, job.id, current, input.status);
       const now = new Date();
       const { reopened, data, clockNote } = await statusChange(tx, job, current, input.status, input.pauseReason, now);
       const next = await tx.workOrder.update({ where: { id: job.id }, data: { ...data, version: { increment: 1 } } });
@@ -189,6 +195,44 @@ export class ContractorJobsController {
           entityId: job.id,
           action: 'work_order.comment',
           changes: { internal: false, via: 'contractor_link', contractor: link.name },
+        },
+      });
+      return this.view(tx, opened);
+    });
+  }
+
+  /** Answers a checklist step from the link. The same rules apply as for staff. */
+  @Put(':token/checklist-items/:itemId')
+  async answer(
+    @Param('token') token: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() body: unknown,
+  ): Promise<ContractorJob> {
+    const input = parse(answerChecklistItemSchema, body);
+    const { id, tenantId } = await this.locate(token);
+    return withTenant(this.db, tenantId, async (tx) => {
+      await lockWorkOrders(tx, tenantId);
+      const opened = await this.open(tx, id, tenantId);
+      const { link, job } = opened;
+      if (CLOSED_FOR_NOTES.includes(job.status as WorkOrderStatus)) {
+        throw new UnprocessableEntityException('This work order is closed to changes.');
+      }
+      const { kind, answer } = await answerChecklistItem(tx, tenantId, job.id, itemId, input, { name: link.name });
+      await tx.workOrderContractor.update({ where: { id: link.id }, data: { lastUsedAt: new Date() } });
+      await tx.auditEvent.create({
+        data: {
+          tenantId,
+          entityType: 'work_order',
+          entityId: job.id,
+          action: 'work_order_checklist.answer',
+          changes: {
+            itemId,
+            kind,
+            answered: answer !== null,
+            ...(kind === 'pass_fail' && answer ? { result: answer } : {}),
+            via: 'contractor_link',
+            contractor: link.name,
+          },
         },
       });
       return this.view(tx, opened);
