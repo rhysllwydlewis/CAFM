@@ -79,6 +79,23 @@ describe('custom field values', () => {
     expect(validateCustom(fields, { contract_ref: 'C-1', notes: null })).toMatchObject({ success: true });
   });
 
+  it('does not let blank text, or a missing value, satisfy a required field', () => {
+    const errors = (value: unknown) => {
+      const result = validateCustom(fields, { contract_ref: value });
+      return result.success ? null : result.errors.contract_ref;
+    };
+    expect(errors('   ')).toBe('Enter Contract reference');
+    expect(errors('')).toBe('Enter Contract reference');
+    expect(errors(null)).toBe('Enter Contract reference');
+    expect(errors(undefined)).toBe('Enter Contract reference');
+    expect(errors(' C-1 ')).toBeNull();
+    const required: FieldDefinition[] = [{ key: 'notes', label: 'Notes', type: 'long_text', required: true }];
+    const result = validateCustom(required, { notes: '  \n ' });
+    expect(result.success ? null : result.errors.notes).toBe('Enter Notes');
+    // Optional text may still be empty.
+    expect(validateCustom([{ ...required[0]!, required: false }], { notes: '' }).success).toBe(true);
+  });
+
   it('refuses dates that don’t exist', () => {
     expect(validateCustom(fields, { contract_ref: 'C-1', installed_on: '2028-02-29' }).success).toBe(true);
     expect(validateCustom(fields, { contract_ref: 'C-1', installed_on: '2026-02-31' })).toEqual({

@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { createTenant, PrismaClient, seedId } from '@cafm/db';
 
 const cardiffId = seedId('location:demo-estates:CDF');
+const plantRoomId = seedId('location:demo-estates:CDF-PLANT');
 const locationRoute = '/app/locations';
 const cardiffRoute = locationRoute + '?id=' + cardiffId;
 
@@ -63,6 +64,35 @@ test('searches and opens a site, filters the portfolio and prints matching QR la
   ).toBeVisible();
 });
 
+test('shows where a location sits and opens the hierarchy to it, with children in name order', async ({ page }) => {
+  await page.goto('/login');
+  await signIn(page);
+  await expect(page).toHaveURL('/app');
+  await page.goto(locationRoute + '?id=' + plantRoomId);
+  await expect(page.getByRole('heading', { level: 1, name: 'Plant room B1' })).toBeVisible();
+
+  const path = page.getByRole('navigation', { name: 'Where this location is' });
+  await expect(path.getByRole('listitem')).toHaveText([
+    'Locations',
+    'Demo Estates Ltd',
+    'Wales region',
+    'Cardiff HQ',
+    'Basement',
+    'Plant room B1',
+  ]);
+  // The tree has opened its way down to the room, so it can be seen and is marked as the current page.
+  const tree = page.getByRole('complementary', { name: 'Hierarchy' });
+  await expect(tree.getByRole('link', { name: /Plant room B1/ })).toHaveAttribute('aria-current', 'page');
+  await path.getByRole('link', { name: 'Cardiff HQ' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Cardiff HQ' })).toBeVisible();
+  await expect(
+    page
+      .locator('section.card', { has: page.getByRole('heading', { name: 'Buildings and floors' }) })
+      .getByRole('link'),
+  ).toHaveText(['Basement', 'Ground', 'Level 2']);
+  await assertAccessible(page);
+});
+
 test('creates and edits a site with a required field and saves its calendar', async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
   const code = 'E2E-' + suffix.toUpperCase();
@@ -102,6 +132,10 @@ test('creates and edits a site with a required field and saves its calendar', as
     await page.getByLabel('Name', { exact: true }).fill('Test site ' + code);
     await page.getByLabel('Code', { exact: true }).fill(code);
     await page.getByLabel('Address', { exact: true }).fill('Test address');
+    // A blank-looking value passes the browser's own check, so the API's message must reach the screen.
+    await page.getByLabel('Estate reference', { exact: true }).fill('   ');
+    await page.getByRole('button', { name: 'Save location' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'Estate reference' })).toBeVisible();
     await page.getByLabel('Estate reference', { exact: true }).fill('EST-21');
     await page.getByRole('button', { name: 'Save location' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Test site ' + code })).toBeVisible();
@@ -122,7 +156,20 @@ test('creates and edits a site with a required field and saves its calendar', as
     await page.getByRole('link', { name: 'Cancel' }).click();
 
     await page.getByRole('link', { name: 'Set calendar' }).click();
+    await page.getByLabel('Jurisdiction').selectOption('other');
+    await expect(
+      page.getByText(/Bank holidays are built in for England, Wales, Scotland and Northern Ireland/),
+    ).toBeVisible();
     await page.getByLabel('Jurisdiction').selectOption('scotland');
+    await expect(page.getByText(/Bank holidays are built in for England/)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Add opening window' }).click();
+    await page.getByLabel('Opens').last().fill('9am');
+    await page.getByRole('button', { name: 'Save calendar' }).click();
+    await expect(page.getByText('Enter a time as hours and minutes, like 09:00.')).toBeVisible();
+    await page
+      .getByRole('button', { name: /^Remove opening window/ })
+      .last()
+      .click();
     await page.getByRole('button', { name: 'Add closure' }).click();
     await page.getByLabel('Closure name').fill('Test closure');
     await page.getByLabel('Start date').fill('2027-01-04');
@@ -166,4 +213,10 @@ test('a scanned link returns to the location after sign-in and protects sites ou
   await expect(page).toHaveURL(scan);
   await expect(page.getByRole('heading', { name: 'Location unavailable' })).toBeVisible();
   await expect(page.getByText('Cardiff HQ', { exact: true })).toHaveCount(0);
+  // The dead end says what is wrong and offers the way out.
+  await expect(page.getByText(/isn’t in the organisation you’re signed in to/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Switch organisation' })).toHaveAttribute(
+    'href',
+    '/select-organisation?next=' + encodeURIComponent(scan),
+  );
 });

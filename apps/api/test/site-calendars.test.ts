@@ -42,3 +42,35 @@ describe('site business calendars', () => {
     expect(siteCalendarSchema.safeParse({ ...DEFAULT_SITE_CALENDAR, ...invalid }).success).toBe(false);
   });
 });
+
+describe('calendar validation messages', () => {
+  const calendar = (hours: unknown[], timeZone = 'Europe/London') => ({
+    jurisdiction: 'wales',
+    timeZone,
+    observeBankHolidays: true,
+    hours,
+    closures: [],
+  });
+  const messages = (input: unknown) => {
+    const result = siteCalendarSchema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((issue) => issue.message);
+  };
+
+  it('explains a badly typed time once, instead of "Invalid" and a misleading ordering error', () => {
+    expect(messages(calendar([{ day: 1, opens: '9am', closes: '17:00' }]))).toEqual([
+      'Enter a time as hours and minutes, like 09:00.',
+    ]);
+    expect(messages(calendar([{ day: 1, opens: '09:00', closes: '5pm' }]))).toEqual([
+      'Enter a time as hours and minutes, like 09:00.',
+    ]);
+    expect(messages(calendar([{ day: 1, opens: '17:00', closes: '09:00' }]))).toEqual([
+      'Closing time must be after opening time.',
+    ]);
+  });
+
+  it('stores the time zone in its standard spelling', () => {
+    const result = siteCalendarSchema.parse(calendar([], 'europe/london'));
+    expect(result.timeZone).toBe('Europe/London');
+    expect(messages(calendar([], 'Mars/Olympus'))).toEqual(['Enter a valid IANA time zone.']);
+  });
+});

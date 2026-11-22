@@ -1,6 +1,6 @@
 import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
 import { withTenant, type Prisma, type PrismaClient, type Tx } from '@cafm/db';
-import type { Permission } from '@cafm/shared';
+import { canContain, type LocationCrumb, type LocationKind, type Permission } from '@cafm/shared';
 import { loadAccess } from '../../core/access';
 import { assertAccess } from '../../core/auth.guards';
 import type { AuthContext } from '../../core/session';
@@ -39,8 +39,20 @@ export function withLocationWrite<T>(
   });
 }
 
-/** The site boundary stays stable even when intermediate levels are omitted. */
+/**
+ * A location sits inside a shallower level, and the site boundary stays stable even when
+ * intermediate levels are omitted.
+ */
 export async function assertLocationParent(tx: Tx, tenantId: string, kind: string, parentId: string | null) {
+  if (parentId) {
+    const parent = await tx.location.findFirst({ where: { tenantId, id: parentId }, select: { kind: true } });
+    if (parent && !canContain(parent.kind as LocationKind, kind as LocationKind)) {
+      throw new UnprocessableEntityException({
+        code: 'invalid_location_parent',
+        message: `A ${kind} can’t go inside a ${parent.kind}.`,
+      });
+    }
+  }
   const requiresSite = !['portfolio', 'region', 'site'].includes(kind);
   const underSite =
     parentId !== null &&
@@ -85,4 +97,33 @@ export async function moveLocationPaths(tx: Tx, tenantId: string, id: string, pa
     JOIN location_path AS branch ON branch.tenant_id = parent.tenant_id
     WHERE parent.tenant_id = ${tenantId}::uuid AND parent.descendant_id = ${parentId}::uuid
       AND branch.ancestor_id = ${id}::uuid`;
+}
+
+/**
+ * The ancestors of a location that the member can see, from the top down. Visibility covers a branch and
+ * everything below it, so the visible ancestors always form one unbroken run ending at the parent.
+ */
+export async function visibleAncestors(
+  tx: Tx,
+  auth: AuthContext,
+  id: string,
+  parentId: string | null,
+): Promise<LocationCrumb[]> {
+  const rows = await tx.locationPath.findMany({
+    where: {
+      tenantId: auth.membership!.tenantId,
+      descendantId: id,
+      ancestorId: { not: id },
+      ancestor: locationScope(auth),
+    },
+    select: { ancestor: { select: { id: true, name: true, code: true, kind: true, parentId: true } } },
+  });
+  const byId = new Map(rows.map(({ ancestor }) => [ancestor.id, ancestor]));
+  const path: LocationCrumb[] = [];
+  for (let next = parentId; next && byId.has(next) && path.length < rows.length;) {
+    const { parentId: above, ...crumb } = byId.get(next)!;
+    path.unshift({ ...crumb, kind: crumb.kind as LocationKind });
+    next = above;
+  }
+  return path;
 }

@@ -106,13 +106,18 @@ const uuid = () => z.string().uuid('Choose a valid record');
 
 function valueSchema(f: FieldDefinition): z.ZodTypeAny {
   switch (f.type) {
-    case 'text':
-      return z
+    case 'text': {
+      const text = z
         .string()
         .trim()
         .max(f.maxLength ?? 255);
-    case 'long_text':
-      return z.string().max(f.maxLength ?? 10000);
+      // A required field needs something in it: blank text doesn't count.
+      return f.required ? text.min(1, `Enter ${f.label}`) : text;
+    }
+    case 'long_text': {
+      const text = z.string().max(f.maxLength ?? 10000);
+      return f.required ? text.refine((value) => value.trim().length > 0, `Enter ${f.label}`) : text;
+    }
     case 'number': {
       let s = z.number({ invalid_type_error: `${f.label} must be a number` }).finite();
       if (f.min != null) s = s.min(f.min, `${f.label} must be at least ${f.min}`);
@@ -179,7 +184,8 @@ export function validateCustom(fields: readonly FieldDefinition[], values: unkno
     }
     if (errors[key]) continue;
     const label = fields.find((f) => f.key === key)?.label ?? key;
-    errors[key] = issue.code === 'invalid_type' && issue.received === 'undefined' ? `Enter ${label}` : issue.message;
+    const missing = issue.code === 'invalid_type' && (issue.received === 'undefined' || issue.received === 'null');
+    errors[key] = missing ? `Enter ${label}` : issue.message;
   }
   return { success: false, errors };
 }

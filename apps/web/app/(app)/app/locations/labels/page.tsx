@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { can, feature } from '@cafm/shared';
+import { configuredAppUrl } from '@/lib/public-url';
 import { currentUser } from '@/lib/session';
 import { allLocations, locationDetail, route, validLocationId } from '../location-data';
 import styles from '../locations.module.css';
@@ -27,7 +28,7 @@ export default async function LabelsPage({ searchParams }: { searchParams: Promi
           Back to location
         </Link>
       </header>
-      <LabelSheet primaryId={location.id} locations={locations} />
+      <LabelSheet primaryId={location.id} locations={locations} baseUrl={configuredAppUrl()} />
     </div>
   );
 }

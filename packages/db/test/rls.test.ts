@@ -101,6 +101,18 @@ it('isolates what assets serve, and refuses links across organisations, to nothi
   }
 });
 
+it('refuses locations the database rules forbid, whatever the API checks', async () => {
+  const make = (code: string, data: Record<string, unknown>) =>
+    withTenant(db, starter, (tx) =>
+      tx.location.create({ data: { tenantId: starter, code, name: 'Rule', kind: 'site', ...data } }),
+    );
+  await expect(make('RULE-1', { kind: 'campus' })).rejects.toThrow(/location_kind_check/);
+  await expect(make('RULE-2', { status: 'demolished' })).rejects.toThrow(/location_status_check/);
+  await expect(make('RULE-3', { version: 0 })).rejects.toThrow(/location_version_check/);
+  await expect(make('RULE-4', { name: '  ' })).rejects.toThrow(/location_text_check/);
+  await expect(make('  ', {})).rejects.toThrow(/location_text_check/);
+});
+
 it('refuses assets the database rules forbid, whatever the API checks', async () => {
   const site = seedId('location:starter-demo:ST-WH');
   const make = (n: number, data: Record<string, unknown>) =>

@@ -94,6 +94,25 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
       <header className={styles.pageHeader}>
         <div>
           {selected && (
+            <nav className={styles.path} aria-label="Where this location is">
+              <ol>
+                <li>
+                  <Link className="link" href={route}>
+                    Locations
+                  </Link>
+                </li>
+                {selected.path.map((step) => (
+                  <li key={step.id}>
+                    <Link className="link" href={route + '?id=' + step.id}>
+                      {step.name}
+                    </Link>
+                  </li>
+                ))}
+                <li aria-current="page">{selected.name}</li>
+              </ol>
+            </nav>
+          )}
+          {selected && (
             <p className="eyebrow">
               {selected.code + (selected.details.address ? ' · ' + selected.details.address : '')}
             </p>
@@ -127,7 +146,13 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
         </div>
       </header>
       <div className={styles.hierarchyLayout}>
-        <LocationBrowser key={mode ? 'form' : 'browse'} initial={tree} search={search} selectedId={selected?.id} />
+        <LocationBrowser
+          key={mode ? 'form' : 'browse'}
+          initial={tree}
+          search={search}
+          selectedId={selected?.id}
+          openIds={selected?.path.map((step) => step.id)}
+        />
         {editing && selected ? (
           <LocationForm
             key={'edit-' + selected.id}

@@ -322,3 +322,140 @@ it('lists available roots and child indicators from the member’s own branches'
     await cleanup();
   }
 });
+
+it('lists locations by name and pages through them in that order, including equal names', async () => {
+  const { agent, cleanup } = await estate();
+  try {
+    const site = (await agent.post(locations).send({ code: 'S', name: 'Site', kind: 'site' }).expect(201)).body;
+    for (const [code, name] of [
+      ['C', 'Charlie'],
+      ['A', 'Alpha'],
+      ['D', 'Delta'],
+      ['B', 'Bravo'],
+    ]) {
+      await agent.post(locations).send({ code, name, kind: 'floor', parentId: site.id }).expect(201);
+    }
+    const names = async (query: Record<string, unknown>) =>
+      (
+        await agent
+          .get(locations)
+          .query({ parent: site.id, ...query })
+          .expect(200)
+      ).body;
+    expect((await names({})).items.map((row: { name: string }) => row.name)).toEqual([
+      'Alpha',
+      'Bravo',
+      'Charlie',
+      'Delta',
+    ]);
+    const first = await names({ limit: 2 });
+    expect(first.items.map((row: { name: string }) => row.name)).toEqual(['Alpha', 'Bravo']);
+    const second = await names({ limit: 2, after: first.nextCursor });
+    expect(second.items.map((row: { name: string }) => row.name)).toEqual(['Charlie', 'Delta']);
+    expect(second.nextCursor).toBeNull();
+
+    // Equal names still page without skipping or repeating anything.
+    for (const code of ['T1', 'T2', 'T3']) {
+      await agent.post(locations).send({ code, name: 'Twin', kind: 'zone', parentId: site.id }).expect(201);
+    }
+    const seen: string[] = [];
+    let after: string | undefined;
+    do {
+      const page = await names({ q: 'Twin', limit: 1, ...(after ? { after } : {}) });
+      seen.push(...page.items.map((row: { code: string }) => row.code));
+      after = page.nextCursor ?? undefined;
+    } while (after);
+    expect(seen.sort()).toEqual(['T1', 'T2', 'T3']);
+    await agent.get(locations).query({ after: crypto.randomUUID() }).expect(400);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('keeps levels in order and leaves the top levels to organisation-wide managers', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const region = (await agent.post(locations).send({ code: 'R', name: 'Region', kind: 'region' }).expect(201)).body;
+    const site = (
+      await agent.post(locations).send({ code: 'S', name: 'Site', kind: 'site', parentId: region.id }).expect(201)
+    ).body;
+    const floor = (
+      await agent.post(locations).send({ code: 'F', name: 'Floor', kind: 'floor', parentId: site.id }).expect(201)
+    ).body;
+    const zone = (
+      await agent.post(locations).send({ code: 'Z', name: 'Zone', kind: 'zone', parentId: floor.id }).expect(201)
+    ).body;
+    const space = (
+      await agent.post(locations).send({ code: 'SP', name: 'Room', kind: 'space', parentId: zone.id }).expect(201)
+    ).body;
+    // Levels run Portfolio, Region, Site, Building, Floor, Zone, Space. Levels can be skipped, never inverted.
+    const refused = [
+      { code: 'B1', kind: 'building', parentId: space.id },
+      { code: 'B2', kind: 'building', parentId: floor.id },
+      { code: 'P1', kind: 'portfolio', parentId: region.id },
+      { code: 'R2', kind: 'region', parentId: region.id },
+      { code: 'F2', kind: 'floor', parentId: floor.id },
+      { code: 'F3', kind: 'floor', parentId: space.id },
+    ];
+    for (const row of refused) {
+      const response = await agent
+        .post(locations)
+        .send({ name: row.code, ...row })
+        .expect(422);
+      expect(response.body).toMatchObject({ code: 'invalid_location_parent' });
+    }
+    await agent.post(locations).send({ code: 'Z2', name: 'Inner zone', kind: 'zone', parentId: zone.id }).expect(201);
+    await agent.post(locations).send({ code: 'SP2', name: 'Cupboard', kind: 'space', parentId: space.id }).expect(201);
+    await agent.post(locations).send({ code: 'B3', name: 'Building', kind: 'building', parentId: site.id }).expect(201);
+    await agent.patch(`${locations}/${floor.id}`).send({ version: 1, parentId: space.id }).expect(422);
+
+    // The top three levels are the organisation-wide managers' to create, whatever the UI shows.
+    const manager = await createTestAccount(db, [tenant.id], undefined, 'fm_manager');
+    const scoped = (await signIn(app, manager.email, manager.password)).agent;
+    await agent
+      .put(`${locations}/access/${manager.memberships[0]}`)
+      .send({ locationIds: [region.id] })
+      .expect(200);
+    for (const kind of ['site', 'region', 'portfolio']) {
+      await scoped
+        .post(locations)
+        .send({ code: `X-${kind}`, name: kind, kind, parentId: region.id })
+        .expect(403);
+    }
+    await scoped.post(locations).send({ code: 'OK', name: 'Allowed', kind: 'building', parentId: site.id }).expect(201);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('returns the path to a location from the ancestors the member can see', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const region = (await agent.post(locations).send({ code: 'R', name: 'Region', kind: 'region' }).expect(201)).body;
+    const site = (
+      await agent.post(locations).send({ code: 'S', name: 'Site', kind: 'site', parentId: region.id }).expect(201)
+    ).body;
+    const floor = (
+      await agent.post(locations).send({ code: 'F', name: 'Floor', kind: 'floor', parentId: site.id }).expect(201)
+    ).body;
+    const room = (
+      await agent.post(locations).send({ code: 'RM', name: 'Room', kind: 'space', parentId: floor.id }).expect(201)
+    ).body;
+    const pathOf = async (client: typeof agent, id: string) =>
+      (await client.get(`${locations}/${id}`).expect(200)).body.path.map((row: { name: string }) => row.name);
+    expect(await pathOf(agent, room.id)).toEqual(['Region', 'Site', 'Floor']);
+    expect(await pathOf(agent, region.id)).toEqual([]);
+
+    const manager = await createTestAccount(db, [tenant.id], undefined, 'fm_manager');
+    const scoped = (await signIn(app, manager.email, manager.password)).agent;
+    await agent
+      .put(`${locations}/access/${manager.memberships[0]}`)
+      .send({ locationIds: [site.id] })
+      .expect(200);
+    // The region sits outside this member's branch, so it is left out of their path.
+    expect(await pathOf(scoped, room.id)).toEqual(['Site', 'Floor']);
+    expect(await pathOf(scoped, site.id)).toEqual([]);
+  } finally {
+    await cleanup();
+  }
+});

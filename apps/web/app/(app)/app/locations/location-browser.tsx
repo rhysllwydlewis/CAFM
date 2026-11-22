@@ -14,8 +14,19 @@ async function fetchPage(query: Record<string, string>, signal?: AbortSignal): P
   return response.json() as Promise<LocationPage>;
 }
 
-function Node({ row, selectedId, flat }: { row: LocationPage['items'][number]; selectedId?: string; flat?: boolean }) {
-  const [open, setOpen] = useState(row.kind === 'portfolio' || row.kind === 'region');
+function Node({
+  row,
+  selectedId,
+  openIds,
+  flat,
+}: {
+  row: LocationPage['items'][number];
+  selectedId?: string;
+  openIds: readonly string[];
+  flat?: boolean;
+}) {
+  // Regions start open, and so does every branch on the way to the selected location.
+  const [open, setOpen] = useState(row.kind === 'portfolio' || row.kind === 'region' || openIds.includes(row.id));
   const [children, setChildren] = useState<LocationPage>();
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -69,7 +80,7 @@ function Node({ row, selectedId, flat }: { row: LocationPage['items'][number]; s
             Retry loading
           </Button>
         ) : children ? (
-          <Rows initial={children} query={{ parent: row.id }} selectedId={selectedId} />
+          <Rows initial={children} query={{ parent: row.id }} selectedId={selectedId} openIds={openIds} />
         ) : (
           <p className="sm muted" role="status">
             Loading branches…
@@ -83,11 +94,13 @@ function Rows({
   initial,
   query,
   selectedId,
+  openIds,
   flat,
 }: {
   initial: LocationPage;
   query: Record<string, string>;
   selectedId?: string;
+  openIds: readonly string[];
   flat?: boolean;
 }) {
   const [more, setMore] = useState<LocationPage>();
@@ -111,7 +124,7 @@ function Rows({
     <>
       <ul className={styles.treeList}>
         {[...initial.items, ...(more?.items ?? [])].map((row) => (
-          <Node key={row.id} row={row} selectedId={selectedId} flat={flat} />
+          <Node key={row.id} row={row} selectedId={selectedId} openIds={openIds} flat={flat} />
         ))}
       </ul>
       {cursor && (
@@ -132,10 +145,13 @@ export function LocationBrowser({
   initial,
   search,
   selectedId,
+  openIds = [],
 }: {
   initial: LocationPage;
   search: string;
   selectedId?: string;
+  /** Branches to open, so the selected location is visible in the tree. */
+  openIds?: readonly string[];
 }) {
   return (
     <aside className="card" aria-labelledby="location-hierarchy-title">
@@ -169,6 +185,7 @@ export function LocationBrowser({
             initial={initial}
             query={search ? { q: search } : { parent: 'root' }}
             selectedId={selectedId}
+            openIds={openIds}
             flat={!!search}
           />
         ) : (

@@ -3,6 +3,19 @@ import { siteCalendarSchema, type SiteCalendar } from './site-calendar';
 
 export const LOCATION_KINDS = ['portfolio', 'region', 'site', 'building', 'floor', 'zone', 'space'] as const;
 export const LOCATION_STATUSES = ['open', 'closed', 'mothballed', 'sold'] as const;
+export type LocationKind = (typeof LOCATION_KINDS)[number];
+
+/** Only organisation-wide managers create these, because they shape the whole estate. */
+export const TOP_LEVEL_KINDS: readonly LocationKind[] = ['portfolio', 'region', 'site'];
+
+/**
+ * Levels run from the top down and can be skipped but never inverted, so a building can sit
+ * straight under a site but not inside a room. Zones and spaces can nest (a cupboard in a plant room).
+ */
+export function canContain(parent: LocationKind, child: LocationKind): boolean {
+  const [above, below] = [LOCATION_KINDS.indexOf(parent), LOCATION_KINDS.indexOf(child)];
+  return below > above || (below === above && (child === 'zone' || child === 'space'));
+}
 
 const locationId = z.string().uuid().toLowerCase();
 export const locationDetailsSchema = z
@@ -77,6 +90,19 @@ export interface LocationRecord {
   custom: Record<string, unknown>;
   siteCalendar: SiteCalendar | null;
   restrictedAccess?: string | null;
+}
+
+/** An ancestor shown in a location's path, from the top down. */
+export interface LocationCrumb {
+  id: string;
+  name: string;
+  code: string;
+  kind: LocationKind;
+}
+
+/** One location with the ancestors the member can see. Ancestors outside their branches are left out. */
+export interface LocationDetail extends LocationRecord {
+  path: LocationCrumb[];
 }
 
 export interface LocationPage {
