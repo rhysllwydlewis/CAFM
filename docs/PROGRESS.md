@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04d are done (04d is in the open PR). Next 04e: labour, parts and sub-contract costs and the job's cost total (money in minor units, with a not-to-exceed limit). Then 04f checklists, photos and signatures, 04g job sheet. |
+| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04d are on `main`. Building 04e: labour, parts, sub-contract and expense costs on a job (integer pennies, amount worked out on the server), the cost total, and a not-to-exceed limit that blocks spend over it unless the overrun is recorded with a reason. Costs need `costs.read` to see and `work_orders.edit` to change. Then 04f checklists, photos and signatures, 04g job sheet. |
 
 ## Phase checklists
 
