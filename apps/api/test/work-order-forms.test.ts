@@ -523,6 +523,10 @@ it('records the customer’s and the technician’s sign-off, once each, from a 
     expect((await sign({ role: 'technician', image: drawing })).status).toBe(422);
     await move(tech, created.id, 'on_site').then((res) => expect(res.status).toBe(201));
 
+    // The technician's sign-off says they did the work, so a supervisor cannot give it for them.
+    expect((await sign({ role: 'technician', image: drawing }, manager)).status).toBe(403);
+    expect((await sign({ role: 'customer', signerName: 'Hana Patel', image: drawing }, finance)).status).toBe(403);
+
     // A drawing, and a name for the customer.
     expect((await sign({ role: 'customer', image: drawing })).body.message).toBe('Enter the customer’s name.');
     expect((await sign({ role: 'customer', signerName: 'Hana Patel', image: 'nope' })).status).toBe(422);
@@ -712,6 +716,8 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
     }
     // Staff with costs see them. An internal note never appears, and the Welsh letter is drawn as its base letter.
     expect(text).toContain('Total (excluding VAT)');
+    // Hours or items at a rate, and a single amount has no quantity beside it.
+    expect(text).toContain('PRV 3 bar · Parts and materials · 1 × £48.90');
     expect(text).not.toContain('1234');
     expect(text).toContain('Stop the leak w');
     // Finance sees costs too; Helpdesk and the technician, who cannot, get a sheet without any money.
@@ -747,6 +753,13 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
       .post(url + '/job-sheet/email')
       .send({})
       .expect(404);
+    // A long job keeps its latest notes, including the completion note, and drops the earliest.
+    for (let count = 0; count < 18; count += 1) {
+      await manager
+        .post(url + '/comments')
+        .send({ body: `Filler note ${count}` })
+        .expect(201);
+    }
     await move(tech, created.id, 'completed', { note: 'Fitted a new seal and tested it.' }).then((res) =>
       expect(res.status).toBe(201),
     );
@@ -786,7 +799,9 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
     expect(copy.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     // The customer copy has no money, no internal notes and no costs.
     const customerText = pdfStrings(copy);
-    expect(customerText).toContain('Seal replaced and tested.');
+    expect(customerText).toContain('Filler note 17');
+    expect(customerText).not.toContain('Filler note 0');
+    expect(customerText).not.toContain('Seal replaced and tested.');
     // The note given when the job was completed is the work carried out, without the clock's housekeeping.
     expect(customerText).toContain('Fitted a new seal and tested it.');
     expect(customerText).not.toContain('SLA clock');

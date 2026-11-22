@@ -33,6 +33,7 @@ export function WorkOrderDetail({
   costs,
   canEditCosts,
   forms,
+  memberId,
 }: {
   record: WorkOrderRecord<FieldDefinition>;
   canEdit: boolean;
@@ -43,6 +44,8 @@ export function WorkOrderDetail({
   /** Set when the person may see costs. */
   costs?: WorkOrderCosts;
   canEditCosts: boolean;
+  /** The signed-in person, to know whether the job is theirs. */
+  memberId: string;
   forms: {
     checklists: Checklist[];
     photos: WorkOrderPhoto[];
@@ -162,6 +165,7 @@ export function WorkOrderDetail({
             status={record.status}
             initial={forms.signatures}
             canSign={canNote}
+            isAssignee={record.assigneeId === memberId}
             canRemove={canEdit}
             locked={locked}
           />

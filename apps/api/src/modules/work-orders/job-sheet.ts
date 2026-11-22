@@ -38,7 +38,7 @@ export interface JobSheetData {
   /** Present only for a copy that is allowed to show money. */
   costs: null | {
     currency: string;
-    items: { kind: CostKind; description: string; quantity: string; unitMinor: number; amountMinor: number }[];
+    items: { kind: CostKind; description: string; detail: string | null; amountMinor: number }[];
     totalMinor: number;
   };
   photos: { phase: PhotoPhase; caption: string | null; filename: string; image: Buffer | null }[];
@@ -101,8 +101,9 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
   };
   const text = (value: string, size = 10, font = 'Helvetica', colour = INK) =>
     doc.font(font).fontSize(size).fillColor(colour).text(pdfText(value), left, doc.y, { width });
-  const heading = (value: string) => {
-    room(60);
+  /** `keep` is the room the heading and the start of what follows it need, so a heading is never left alone at the foot of a page. */
+  const heading = (value: string, keep = 60) => {
+    room(keep);
     doc.moveDown(0.8);
     doc.font('Helvetica-Bold').fontSize(11).fillColor(BRAND).text(pdfText(value).toUpperCase(), left, doc.y, { width });
     doc
@@ -224,9 +225,14 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
         .font('Helvetica')
         .fontSize(9.5)
         .fillColor(INK)
-        .text(pdfText(`${item.description} · ${COST_KIND_LABELS[item.kind]} · ${item.quantity}`), left + 8, y, {
-          width: width * 0.72,
-        });
+        .text(
+          pdfText([item.description, COST_KIND_LABELS[item.kind], item.detail].filter(Boolean).join(' · ')),
+          left + 8,
+          y,
+          {
+            width: width * 0.72,
+          },
+        );
       const after = doc.y;
       doc.text(formatMinor(item.amountMinor, data.costs.currency), left + width * 0.75, y, {
         width: width * 0.25,
@@ -252,7 +258,7 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
   }
 
   if (data.photos.length) {
-    heading('Photos');
+    heading('Photos', 170);
     const cell = (width - 20) / 3;
     let column = 0;
     let rowTop = doc.y;
@@ -300,8 +306,7 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
   }
 
   if (data.signatures.length) {
-    heading('Sign-off');
-    room(100);
+    heading('Sign-off', 140);
     const top = doc.y;
     const cell = (width - 10) / 2;
     data.signatures.forEach((signature, index) => {

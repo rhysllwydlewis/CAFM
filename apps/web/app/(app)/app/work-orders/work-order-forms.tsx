@@ -162,7 +162,12 @@ function StepRow({
         )}
         {editable && (
           <div className={styles.actions}>
-            <Button size="sm" disabled={busy || !value} onClick={() => void save(value, note)}>
+            <Button
+              size="sm"
+              disabled={busy || !value}
+              // The reason belongs to a failure, so changing to Pass does not carry it along.
+              onClick={() => void save(value, item.kind === 'pass_fail' && value === 'fail' ? note : null)}
+            >
               Save answer
             </Button>
           </div>
@@ -687,6 +692,7 @@ export function SignOffCard({
   status,
   initial,
   canSign,
+  isAssignee,
   canRemove,
   locked,
 }: {
@@ -694,6 +700,8 @@ export function SignOffCard({
   status: string;
   initial: WorkOrderSignature[];
   canSign: boolean;
+  /** Only the technician the job is assigned to gives the technician's sign-off. */
+  isAssignee: boolean;
   canRemove: boolean;
   locked: boolean;
 }) {
@@ -749,7 +757,7 @@ export function SignOffCard({
       {signatures.length === 0 && <p className="muted">Nobody has signed this job off.</p>}
       {canSign &&
         open &&
-        SIGNATURE_ROLES.filter((role) => !signed.has(role)).map((role) => (
+        SIGNATURE_ROLES.filter((role) => !signed.has(role) && (role !== 'technician' || isAssignee)).map((role) => (
           <SignForm
             key={role}
             jobId={jobId}

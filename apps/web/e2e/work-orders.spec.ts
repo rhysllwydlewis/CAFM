@@ -548,6 +548,19 @@ test('works through a checklist, adds a photo, signs the job off and makes a job
   await list.getByLabel(/^Pressure after repair/).fill('1.4');
   await list.getByRole('button', { name: 'Save answer' }).first().click();
   await expect(list.getByText('Answered by Tom Price').first()).toBeVisible();
+  // Changing a failure to a pass does not carry the reason for the failure along.
+  await list.getByLabel(/^Pressure test after repair/).selectOption({ label: 'Pass' });
+  await list.getByRole('button', { name: 'Save answer' }).nth(1).click();
+  // The answer is saved, not just chosen, and the reason went with the failure.
+  await expect
+    .poll(async () => {
+      const stored = (await (await page.request.get('/api/work-orders/' + job.id + '/checklists')).json()) as {
+        items: { label: string; answer: string | null; note: string | null }[];
+      }[];
+      const step = stored[0]!.items.find((item) => item.label.startsWith('Pressure test'));
+      return [step?.answer, step?.note];
+    })
+    .toEqual(['pass', null]);
   await updateStatus(page, 'Completed');
   await expectStatus(page, 'Completed');
 

@@ -49,13 +49,19 @@ function Step({
   );
   async function save(next: string | null) {
     if (next !== null) {
-      const problem = checklistAnswerProblem(item.kind, next, note.trim() || null);
+      const problem = checklistAnswerProblem(
+        item.kind,
+        next,
+        item.kind === 'pass_fail' && next === 'fail' ? note.trim() || null : null,
+      );
       if (problem) {
         setError(problem);
         return;
       }
     }
-    setError((await answer(item, next, next === null ? null : note.trim() || null)) ?? '');
+    // The reason belongs to a failure, so changing to Pass does not carry it along.
+    const reason = item.kind === 'pass_fail' && next === 'fail' ? note.trim() || null : null;
+    setError((await answer(item, next, reason)) ?? '');
   }
   return (
     <li className="stack g2">

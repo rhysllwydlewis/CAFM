@@ -26,6 +26,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ id: 
       costs={seesCosts ? await workOrderCosts(id) : undefined}
       canEditCosts={canEdit && seesCosts}
       forms={await workOrderForms(id, canEdit)}
+      memberId={user.membershipId}
     />
   );
 }

@@ -49,7 +49,9 @@ async function checkParent(tx: Tx, auth: AuthContext, parent: Parent, writing = 
   } else if (parent.type === 'workOrder') {
     const job = await getWorkOrder(tx, auth, parent.id);
     if (writing && ['closed', 'cancelled'].includes(job.status)) {
-      throw new UnprocessableEntityException('Photos can’t be added to a closed or cancelled work order.');
+      throw new UnprocessableEntityException(
+        'A closed or cancelled work order’s photos and sign-offs can’t be changed.',
+      );
     }
   } else {
     const request = await tx.serviceRequest.findFirst({

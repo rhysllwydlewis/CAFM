@@ -13,6 +13,7 @@ import {
 import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
 import {
+  formatMinor,
   JOB_SHEET_STATUSES,
   WORK_ORDER_STATUS_LABELS,
   type CostKind,
@@ -73,7 +74,8 @@ export class WorkOrderJobSheetController {
             internal: false,
             OR: [{ kind: 'comment' }, { kind: 'status', body: { startsWith: COMPLETED_PREFIX } }],
           },
-          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          // The latest fifteen, so a long job keeps its completion note. They are put back in order below.
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take: 15,
           select: { kind: true, body: true, createdAt: true },
         }),
@@ -167,7 +169,7 @@ export class WorkOrderJobSheetController {
       },
       asset: job.asset?.locationId === job.locationId ? { name: job.asset.name, number: job.asset.number } : null,
       assignee: job.assignee?.account.name ?? (job.contractors[0] ? `${job.contractors[0].name} (contractor)` : null),
-      notes: gathered.notes.flatMap((note) => {
+      notes: [...gathered.notes].reverse().flatMap((note) => {
         const body = note.kind === 'status' ? completionNote(note.body) : note.body;
         return body ? [{ at: note.createdAt, body }] : [];
       }),
@@ -177,11 +179,11 @@ export class WorkOrderJobSheetController {
         items: gathered.costs.map((cost) => ({
           kind: cost.kind as CostKind,
           description: cost.description,
-          quantity:
+          // Hours or items at a rate. A single amount has no quantity to show.
+          detail:
             cost.kind === 'labour' || cost.kind === 'parts'
-              ? `${cost.quantityMilli / 1000}${cost.kind === 'labour' ? ' h' : ''}`
-              : '1',
-          unitMinor: cost.unitCostMinor,
+              ? `${cost.quantityMilli / 1000}${cost.kind === 'labour' ? ' h' : ''} × ${formatMinor(cost.unitCostMinor, job.currency)}`
+              : null,
           amountMinor: cost.amountMinor,
         })),
         totalMinor: gathered.costs.reduce((total, cost) => total + cost.amountMinor, 0),

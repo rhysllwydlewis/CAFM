@@ -3,6 +3,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Header,
   NotFoundException,
@@ -83,6 +84,13 @@ export async function readSignatures(tx: Tx, tenantId: string, workOrderId: stri
     signedAt: row.signedAt.toISOString(),
     recordedByName: row.recordedBy?.account.name ?? null,
   }));
+}
+
+/** The technician's sign-off says they did the work, so only the person the job is assigned to can give it. */
+function assertMaySign(role: SignatureRole, assigneeId: string | null, memberId: string) {
+  if (role === 'technician' && assigneeId !== memberId) {
+    throw new ForbiddenException('Only the technician the job is assigned to can give the technician’s sign-off.');
+  }
 }
 
 /** Before and after photos on a job. Whoever does the job can add them; removing one is a supervisor's. */
@@ -180,6 +188,7 @@ export class WorkOrderSignaturesController {
       if (!(SIGNATURE_STATUSES as readonly string[]).includes(job.status)) {
         throw new UnprocessableEntityException('A job can be signed off once the work has started.');
       }
+      assertMaySign(input.role, job.assigneeId, auth.membership!.id);
       if (await tx.workOrderSignature.count({ where: { tenantId, workOrderId: id, role: input.role } })) {
         throw new ConflictException('This job already has that sign-off. A supervisor can remove it to sign again.');
       }
@@ -194,6 +203,7 @@ export class WorkOrderSignaturesController {
           if (!(SIGNATURE_STATUSES as readonly string[]).includes(job.status)) {
             throw new UnprocessableEntityException('A job can be signed off once the work has started.');
           }
+          assertMaySign(input.role, job.assigneeId, current.membership!.id);
           const clash = await tx.workOrderSignature.count({ where: { tenantId, workOrderId: id, role: input.role } });
           if (clash) throw new ConflictException('This job already has that sign-off.');
           await tx.workOrderSignature.create({
