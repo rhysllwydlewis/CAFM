@@ -47,6 +47,29 @@ export const WORK_ORDER_TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderS
   cancelled: [],
 };
 
+/**
+ * Where this person can move the job now. Doing the job (accepting, travelling, on site, pausing,
+ * completing) needs `work_orders.close` or `work_orders.edit`. Verifying, cancelling and reopening a
+ * finished job need `work_orders.edit`. Assigning and unassigning is a separate action, so it is not listed.
+ */
+export function workOrderNextStatuses(
+  status: WorkOrderStatus,
+  permissions: ReadonlySet<string> | readonly string[],
+): WorkOrderStatus[] {
+  const has = (key: string) =>
+    Array.isArray(permissions) ? permissions.includes(key) : (permissions as ReadonlySet<string>).has(key);
+  const edit = has('work_orders.edit');
+  const field = edit || has('work_orders.close');
+  const finished = status === 'completed' || status === 'verified';
+  return WORK_ORDER_TRANSITIONS[status].filter((to) => {
+    if (to === 'logged' || to === 'assigned') return false;
+    if (to === 'closed') return field;
+    if (to === 'verified' || to === 'cancelled') return edit;
+    // Moving a finished job back to on site reopens it.
+    return finished ? edit : field;
+  });
+}
+
 /** The steps the person doing the job takes, with only the permission to close jobs. */
 export const WORK_ORDER_FIELD_STATUSES: readonly WorkOrderStatus[] = [
   'accepted',
@@ -55,6 +78,16 @@ export const WORK_ORDER_FIELD_STATUSES: readonly WorkOrderStatus[] = [
   'paused',
   'completed',
 ];
+/** Jobs that can still change hands: before anyone is on site. */
+export const WORK_ORDER_REASSIGNABLE: readonly WorkOrderStatus[] = [
+  'logged',
+  'assigned',
+  'accepted',
+  'travelling',
+  'paused',
+];
+/** Jobs that can go back to the queue: assigned, but nobody has started. */
+export const WORK_ORDER_UNASSIGNABLE: readonly WorkOrderStatus[] = ['assigned', 'accepted', 'travelling'];
 /** Jobs that no longer need work: nothing left to assign or chase. */
 export const WORK_ORDER_FINISHED: readonly WorkOrderStatus[] = ['completed', 'verified', 'closed', 'cancelled'];
 /** Jobs the attendance clock has run for. */
@@ -124,6 +157,7 @@ export const listWorkOrdersSchema = z.object({
   q: z.string().trim().max(160).optional(),
   locationId: uuid.optional(),
   assetId: uuid.optional(),
+  requestId: uuid.optional(),
   priority: z.coerce.number().int().min(1).max(4).optional(),
   cursor: uuid.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -189,6 +223,7 @@ export type WorkOrderSummary = {
   responseDueAt: string | null;
   attendDueAt: string | null;
   fixDueAt: string | null;
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -201,7 +236,6 @@ export type WorkOrderRecord<CustomField = unknown> = WorkOrderSummary & {
   createdByName: string | null;
   firstResponseAt: string | null;
   attendedAt: string | null;
-  completedAt: string | null;
   verifiedAt: string | null;
   closedAt: string | null;
   customFields: { definition: CustomField; value: unknown }[];

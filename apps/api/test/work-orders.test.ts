@@ -27,6 +27,13 @@ async function fixture() {
     other: await createTestAccount(db, [tenant.id], undefined, 'technician'),
     reporter: await createTestAccount(db, [tenant.id], undefined, 'requester'),
   };
+  // Technicians hold a mobile licence, which is what field work is licensed as.
+  await withTenant(db, tenant.id, (tx) =>
+    tx.membership.updateMany({
+      where: { id: { in: [accounts.tech.memberships[0]!, accounts.other.memberships[0]!] } },
+      data: { licence: 'mobile' },
+    }),
+  );
   const logIn = async ({ email, password }: { email: string; password: string }) =>
     (await signIn(app, email, password)).agent;
   const [admin, manager, desk, tech, other, reporter] = await Promise.all(Object.values(accounts).map(logIn));
@@ -298,16 +305,16 @@ it('lets a job be edited and re-triaged, which recalculates its targets, and rea
     ).body;
     expect(cleared).toMatchObject({ status: 'logged', assigneeId: null });
     expect(
-      (await manager.get(jobs + '/assignees?locationId=' + site.id).expect(200)).body.map(
+      (await manager.get(jobs + '/locations/' + site.id + '/assignees').expect(200)).body.map(
         (row: { id: string }) => row.id,
       ),
     ).toEqual(expect.arrayContaining([member('tech')]));
     expect(
-      (await manager.get(jobs + '/assignees?locationId=' + annex.id).expect(200)).body.map(
+      (await manager.get(jobs + '/locations/' + annex.id + '/assignees').expect(200)).body.map(
         (row: { id: string }) => row.id,
       ),
     ).not.toContain(member('tech'));
-    await tech.get(jobs + '/assignees?locationId=' + site.id).expect(403);
+    await tech.get(jobs + '/locations/' + site.id + '/assignees').expect(403);
     await manager
       .patch(url)
       .send({ version: 5, title: 'x'.repeat(161) })
@@ -380,6 +387,45 @@ it('lists the jobs a person may see, filtered and in pages, with counts for the 
       .post(jobs + '/' + first.id + '/status')
       .send({ version: 2, status: 'accepted' })
       .expect(404);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('finds the locations, assets and people a job can be raised with', async () => {
+  const { manager, tech, admin, cleanup, site, annex, member, job } = await fixture();
+  try {
+    const ids = (body: { id: string }[]) => body.map(({ id }) => id).sort();
+    expect(ids((await manager.get(jobs + '/locations').expect(200)).body)).toEqual(ids([site, annex]));
+    expect((await manager.get(jobs + '/locations?q=annex').expect(200)).body).toEqual([
+      { id: annex.id, code: 'ANNEX', name: 'Annex' },
+    ]);
+    await tech.get(jobs + '/locations').expect(403);
+    const pump = (await admin.post('/api/assets').send({ name: 'Pump 1', locationId: site.id }).expect(201)).body;
+    expect((await manager.get(jobs + '/locations/' + site.id + '/assets?q=pump').expect(200)).body).toMatchObject([
+      { id: pump.id, name: 'Pump 1' },
+    ]);
+    expect((await manager.get(jobs + '/locations/' + annex.id + '/assets').expect(200)).body).toEqual([]);
+    // A job can be raised against an asset at its own location, and not one elsewhere.
+    expect(
+      (
+        await manager
+          .post(jobs)
+          .send(job({ assetId: pump.id }))
+          .expect(201)
+      ).body.asset,
+    ).toMatchObject({
+      id: pump.id,
+    });
+    await manager
+      .post(jobs)
+      .send(job({ assetId: pump.id, locationId: annex.id }))
+      .expect(404);
+    expect(
+      (await manager.get(jobs + '/locations/' + site.id + '/assignees?q=').expect(200)).body.map(
+        ({ id }: { id: string }) => id,
+      ),
+    ).toContain(member('tech'));
   } finally {
     await cleanup();
   }

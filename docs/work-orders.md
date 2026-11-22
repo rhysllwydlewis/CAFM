@@ -1,6 +1,13 @@
 # Work orders
 
-Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the model and the API. The list, detail and board screens, assignment to contractors, SLA clocks, costs, checklists and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
+Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. Contractor assignment, SLA clocks and escalation, costs, checklists and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
+
+## Screens
+
+- **Work orders** (`/app/work-orders`) lists jobs with the views Open, Mine, Unassigned, Overdue and All, a search, and priority and status filters. The queue counts sit above it. **New work order** opens a form to raise a job at a location, with an optional asset and assignee.
+- **Board** shows the open jobs in lanes: To assign, Assigned, In progress, On hold and Completed. Each card has a menu of the steps you can take, so the board works with the keyboard, and the same rules apply as on the job page. Pausing a job asks for a reason, so do that from the job page.
+- **A job** (`/app/work-orders/{id}`) shows the details, targets and timeline. From there you can update the status, assign, edit the details and priority, and add notes, as far as your role allows.
+- **On a Helpdesk request**, the Work orders panel lists the jobs raised from it and has a form to raise one or more, each with its own title and assignee.
 
 ## Lifecycle
 
@@ -32,7 +39,7 @@ Assigning someone moves a logged job to Assigned. Clearing the assignee returns 
 
 Everything needs the Work orders feature on the plan. A member limited to their own work (a technician) sees only the jobs assigned to them, and only at locations they have been given. Anyone else sees the jobs at the locations they can see. A job at a location someone can't see is reported as not found.
 
-Only people who can do jobs at the location can be assigned: active, fully licensed, with `work_orders.read` and either `work_orders.close` or `work_orders.edit`, and access to the location. `GET /api/work-orders/assignees?locationId=` lists them.
+Only people who can do jobs at the location can be assigned: active, with a full, mobile or contractor licence, with `work_orders.read` and either `work_orders.close` or `work_orders.edit`, and access to the location. `GET /api/work-orders/locations/{locationId}/assignees` lists them.
 
 ## Raising jobs
 

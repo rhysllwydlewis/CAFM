@@ -25,8 +25,11 @@ import {
   listWorkOrdersSchema,
   WORK_ORDER_FINISHED,
   WORK_ORDER_PAUSE_LABELS,
+  WORK_ORDER_REASSIGNABLE,
+  WORK_ORDER_UNASSIGNABLE,
   WORK_ORDER_STATUS_LABELS,
   workOrderCommentSchema,
+  workOrderNextStatuses,
   type RequestStatus,
   type WorkOrderPage,
   type WorkOrderStatus,
@@ -46,12 +49,19 @@ import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
 import { CLOSED, requestRelations, requestTargets } from '../helpdesk/request-records';
 import { notifyLinkedRequesters, notifyRequester } from '../helpdesk/request-notifications';
-import { lockRequests, requestScope, staleRequest } from '../helpdesk/request-scope';
+import {
+  lockRequests,
+  reportAssetSelect,
+  reportLocations,
+  reportLocationSelect,
+  requestScope,
+  staleRequest,
+} from '../helpdesk/request-scope';
 import { locationScope } from '../locations/location-tree';
 import {
   eligibleTechnician,
   insertWorkOrder,
-  nextStatuses,
+  JOB_LICENCES,
   submissionHash,
   workOrderDetail,
   workOrderRelations,
@@ -61,10 +71,6 @@ import {
 import { missingWorkOrder, staleWorkOrder, withWorkOrderWrite, workOrderScope } from './work-order-scope';
 
 const CLOSED_STATUSES = ['closed', 'cancelled'];
-/** Jobs that can still change hands: before anyone is on site. */
-const REASSIGNABLE: readonly WorkOrderStatus[] = ['logged', 'assigned', 'accepted', 'travelling', 'paused'];
-const UNASSIGNABLE: readonly WorkOrderStatus[] = ['assigned', 'accepted', 'travelling'];
-
 async function getWorkOrder(tx: Tx, auth: AuthContext, id: string): Promise<WorkOrderRow> {
   const row = await tx.workOrder.findFirst({
     where: { ...workOrderScope(auth), id },
@@ -173,6 +179,7 @@ export class WorkOrdersController {
           ...(input.status ? [{ status: input.status }] : []),
           ...(input.priority ? [{ priority: input.priority }] : []),
           ...(input.assetId ? [{ assetId: input.assetId }] : []),
+          ...(input.requestId ? [{ requestId: input.requestId }] : []),
           ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
           ...(input.q
             ? [
@@ -230,9 +237,61 @@ export class WorkOrdersController {
     });
   }
 
-  @Get('assignees')
+  /** Locations a job can be raised at: open, below the portfolio and region levels, and visible to the caller. */
+  @Get('locations')
+  @RequirePermission('work_orders.edit')
+  locations(@Req() req: Request, @Query('q') q?: string) {
+    const auth = req.auth!;
+    const query = typeof q === 'string' ? q.trim().slice(0, 100) : '';
+    return withTenant(this.db, auth.membership!.tenantId, (tx) =>
+      tx.location.findMany({
+        where: {
+          ...reportLocations(auth),
+          ...(query
+            ? {
+                OR: [
+                  { name: { contains: query, mode: 'insensitive' } },
+                  { code: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
+        select: reportLocationSelect,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: 25,
+      }),
+    );
+  }
+
+  @Get('locations/:locationId/assets')
+  @RequirePermission('work_orders.edit')
+  assets(@Req() req: Request, @Param('locationId', ParseUUIDPipe) locationId: string, @Query('q') q?: string) {
+    const auth = req.auth!;
+    const query = typeof q === 'string' ? q.trim().slice(0, 100) : '';
+    return withTenant(this.db, auth.membership!.tenantId, (tx) =>
+      tx.asset.findMany({
+        where: {
+          location: { ...reportLocations(auth), id: locationId },
+          status: { not: 'decommissioned' },
+          ...(query
+            ? {
+                OR: [
+                  { name: { contains: query, mode: 'insensitive' } },
+                  { number: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
+        select: reportAssetSelect,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: 25,
+      }),
+    );
+  }
+
+  @Get('locations/:locationId/assignees')
   @RequirePermission('work_orders.assign')
-  assignees(@Req() req: Request, @Query('locationId', ParseUUIDPipe) locationId: string, @Query('q') q?: string) {
+  assignees(@Req() req: Request, @Param('locationId', ParseUUIDPipe) locationId: string, @Query('q') q?: string) {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
     const query = typeof q === 'string' ? q.trim().slice(0, 100) : '';
@@ -253,7 +312,7 @@ export class WorkOrdersController {
         where: {
           tenantId,
           status: 'active',
-          licence: 'full',
+          licence: { in: [...JOB_LICENCES] },
           account: { name: { contains: query, mode: 'insensitive' } },
           role: { in: eligible.map(({ key }) => key) },
           OR: [
@@ -524,7 +583,7 @@ export class WorkOrdersController {
       const before = await getWorkOrder(tx, auth, id);
       if (before.version !== input.version) throw staleWorkOrder();
       const current = before.status as WorkOrderStatus;
-      if (!nextStatuses(current, auth.access!.permissions).includes(input.status)) {
+      if (!workOrderNextStatuses(current, auth.access!.permissions).includes(input.status)) {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const to = input.status;
@@ -586,10 +645,10 @@ export class WorkOrdersController {
       if (before.version !== input.version) throw staleWorkOrder();
       const current = before.status as WorkOrderStatus;
       if (input.assigneeId === before.assigneeId) return workOrderSummary(before);
-      if (input.assigneeId === null && !UNASSIGNABLE.includes(current)) {
+      if (input.assigneeId === null && !WORK_ORDER_UNASSIGNABLE.includes(current)) {
         throw new UnprocessableEntityException('This work order can’t be unassigned now.');
       }
-      if (input.assigneeId !== null && !REASSIGNABLE.includes(current)) {
+      if (input.assigneeId !== null && !WORK_ORDER_REASSIGNABLE.includes(current)) {
         throw new UnprocessableEntityException('This work order can’t be reassigned now.');
       }
       if (input.assigneeId && !(await eligibleTechnician(tx, tenantId, input.assigneeId, before.locationId))) {

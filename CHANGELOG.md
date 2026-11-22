@@ -6,7 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
-- Work orders: reactive jobs with a lifecycle from Logged to Closed, assignment to people who can do the job at that location, notes, and a history of every change. A Helpdesk request can be turned into one or more jobs, which keep the request's priority and targets, and the request is completed and the requester told when all the work is done. Screens, contractor assignment, SLA clocks, costs, checklists and job sheets follow. See [Work orders](docs/work-orders.md).
+- Work orders: reactive jobs with a lifecycle from Logged to Closed, assignment to people who can do the job at that location, notes, and a history of every change. A Helpdesk request can be turned into one or more jobs, which keep the request's priority and targets, and the request is completed and the requester told when all the work is done. There is a list, a board and a page for each job, and a panel on Helpdesk requests to raise work. Contractor assignment, SLA clocks, costs, checklists and job sheets follow. See [Work orders](docs/work-orders.md).
 
 ### Changed
 

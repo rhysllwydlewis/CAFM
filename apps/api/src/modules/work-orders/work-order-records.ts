@@ -3,7 +3,7 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import type { FieldDefinition } from '@cafm/config-engine';
 import type { Prisma, Tx } from '@cafm/db';
 import {
-  WORK_ORDER_TRANSITIONS,
+  workOrderNextStatuses,
   type WorkOrderPauseReason,
   type WorkOrderRecord,
   type WorkOrderStatus,
@@ -13,6 +13,9 @@ import { activeCustomFields, nextNumber, visibleCustom } from '../../core/config
 import type { AuthContext } from '../../core/session';
 import { reportAssetSelect, reportLocationSelect } from '../helpdesk/request-scope';
 import { requestTargets } from '../helpdesk/request-records';
+
+/** Licences that can be given jobs: office staff, and the field and contractor people who do them. */
+export const JOB_LICENCES = ['full', 'mobile', 'contractor'] as const;
 
 const memberLabel = { select: { account: { select: { name: true } } } } as const;
 export const workOrderRelations = {
@@ -42,27 +45,10 @@ export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
     responseDueAt: iso(row.responseDueAt),
     attendDueAt: iso(row.attendDueAt),
     fixDueAt: iso(row.fixDueAt),
+    completedAt: iso(row.completedAt),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-/**
- * Where this person can move the job now. Doing the job (accepting, travelling, on site, pausing,
- * completing) needs `work_orders.close` or `work_orders.edit`. Verifying, reopening and cancelling
- * need `work_orders.edit`. Assigning and unassigning is a separate action, so it is not listed.
- */
-export function nextStatuses(status: WorkOrderStatus, permissions: ReadonlySet<string>): WorkOrderStatus[] {
-  const edit = permissions.has('work_orders.edit');
-  const field = edit || permissions.has('work_orders.close');
-  const finished = status === 'completed' || status === 'verified';
-  return WORK_ORDER_TRANSITIONS[status].filter((to) => {
-    if (to === 'logged' || to === 'assigned') return false;
-    if (to === 'closed') return field;
-    if (to === 'verified' || to === 'cancelled') return edit;
-    // Moving a finished job back to on site reopens it.
-    return finished ? edit : field;
-  });
 }
 
 export async function workOrderDetail(
@@ -89,14 +75,13 @@ export async function workOrderDetail(
     createdByName: row.createdBy?.account.name ?? null,
     firstResponseAt: iso(row.firstResponseAt),
     attendedAt: iso(row.attendedAt),
-    completedAt: iso(row.completedAt),
     verifiedAt: iso(row.verifiedAt),
     closedAt: iso(row.closedAt),
     customFields: [...fields.values()].flatMap((definition) => {
       const value = custom[definition.key];
       return value == null ? [] : [{ definition, value }];
     }),
-    nextStatuses: nextStatuses(row.status as WorkOrderStatus, auth.access!.permissions),
+    nextStatuses: workOrderNextStatuses(row.status as WorkOrderStatus, auth.access!.permissions),
     entries: entries.map(({ id, kind, body, internal, author, createdAt }) => ({
       id,
       kind,
@@ -109,12 +94,12 @@ export async function workOrderDetail(
 }
 
 /**
- * Whether this member can do jobs at the location: an active, fully licensed person whose role can
+ * Whether this member can do jobs at the location: an active person with a full, mobile or contractor licence whose role can
  * see and work on jobs, with access to the location (everywhere, or a granted site above it).
  */
 export async function eligibleTechnician(tx: Tx, tenantId: string, id: string, locationId: string) {
   const member = await tx.membership.findFirst({
-    where: { tenantId, id, status: 'active', licence: 'full' },
+    where: { tenantId, id, status: 'active', licence: { in: [...JOB_LICENCES] } },
     select: { role: true, locationScoped: true },
   });
   if (!member) return false;
