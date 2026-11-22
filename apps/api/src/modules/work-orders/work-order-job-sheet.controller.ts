@@ -35,7 +35,10 @@ const EMBED_PHOTO_BYTES = 400_000;
 const EMBED_PHOTOS = 6;
 const EMBEDDABLE = ['image/jpeg', 'image/png'];
 /** An emailed sheet must stay well inside what the outbox and mail servers handle. */
-const MAX_EMAIL_PDF_BYTES = 1_500_000;
+const MAX_EMAIL_PDF_BYTES = 750_000;
+const EMAILED_NOTE = 'Job sheet emailed to the requester';
+/** The requester is not sent the same sheet again within this time, so a double click or a mistake can't flood them. */
+const RESEND_AFTER_MS = 60_000;
 
 @Controller('work-orders/:id/job-sheet')
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
@@ -225,6 +228,21 @@ export class WorkOrderJobSheetController {
       if (!(JOB_SHEET_STATUSES as readonly string[]).includes(job.status)) {
         throw new UnprocessableEntityException('The job sheet can be emailed once the work is completed.');
       }
+      const recent = await tx.workOrderEntry.findFirst({
+        where: {
+          tenantId,
+          workOrderId: id,
+          kind: 'system',
+          body: EMAILED_NOTE,
+          createdAt: { gte: new Date(Date.now() - RESEND_AFTER_MS) },
+        },
+        select: { id: true },
+      });
+      if (recent) {
+        throw new UnprocessableEntityException(
+          'The job sheet was only just sent. Wait a minute before sending it again.',
+        );
+      }
       await queueTenantEmail(tx, tenantId, {
         to,
         subject: `Job sheet for ${sheet.requestNumber ?? job.number}: ${job.title}`,
@@ -250,7 +268,7 @@ export class WorkOrderJobSheetController {
           workOrderId: id,
           authorId: current.membership!.id,
           kind: 'system',
-          body: 'Job sheet emailed to the requester',
+          body: EMAILED_NOTE,
           internal: true,
         },
       });

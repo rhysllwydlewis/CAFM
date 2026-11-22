@@ -728,6 +728,14 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
       )
       .find(({ attachments }) => attachments?.length);
     expect(sheet).toBeDefined();
+    // Sending it again straight away is refused, so the requester is not flooded.
+    await manager
+      .post(url + '/job-sheet/email')
+      .send({})
+      .expect(422);
+    expect(
+      (await mailed()).slice(before).filter(({ payload }) => (payload as { attachments?: unknown }).attachments),
+    ).toHaveLength(1);
     expect(sheet!.to).toBe(accounts.reporter.email);
     expect(sheet!.subject).toContain('Stop the leak');
     expect(sheet!.attachments![0]!.filename).toBe(`job-sheet-${created.number}.pdf`);

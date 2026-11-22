@@ -175,12 +175,6 @@ function StepRow({
     <li className={styles.checkItem}>
       {control}
       {item.kind === 'tick' && item.note && <p className="sm muted">{item.note}</p>}
-      {answered && item.kind !== 'tick' && !editable && (
-        <p className="sm">
-          <strong>{item.answer}</strong>
-          {item.note ? ' · ' + item.note : ''}
-        </p>
-      )}
       {(meta || (answered && editable && item.kind !== 'tick')) && (
         <div className="row wrap g2 sm muted">
           {meta && <span>{meta}</span>}
@@ -365,7 +359,7 @@ export function ChecklistsCard({
           <details>
             <summary>Write your own checklist</summary>
             <form className="stack g2" onSubmit={own} aria-label="Write a checklist">
-              <Field label="Title" htmlFor="checklist-title">
+              <Field label="Checklist title" htmlFor="checklist-title">
                 <TextInput id="checklist-title" name="title" required maxLength={120} />
               </Field>
               <Field label="What it holds back" htmlFor="checklist-gate">
