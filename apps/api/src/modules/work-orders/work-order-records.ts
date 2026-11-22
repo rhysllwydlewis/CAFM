@@ -60,6 +60,7 @@ export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
     attendDueAt: iso(row.attendDueAt),
     fixDueAt: iso(row.fixDueAt),
     slaPausedAt: iso(row.slaPausedAt),
+    currency: row.currency,
     completedAt: iso(row.completedAt),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

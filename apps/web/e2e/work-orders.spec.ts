@@ -400,3 +400,87 @@ test('stops the SLA clock for a pause that is not the team’s fault, and links 
     await db.$disconnect();
   }
 });
+
+test('records costs, applies a not-to-exceed limit, and keeps costs from field staff', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'manager');
+  const created = await page.request.post('/api/work-orders', {
+    data: {
+      submissionId: randomUUID(),
+      title: 'E2E costs ' + suffix,
+      description: 'Created by a browser test.',
+      locationId: seedId('location:demo-estates:CDF'),
+      impact: 2,
+      urgency: 2,
+      assigneeId: seedId('membership:demo-estates:technician'),
+    },
+  });
+  expect(created.ok()).toBe(true);
+  const job = (await created.json()) as { id: string };
+  await page.goto('/app/work-orders/' + job.id);
+  const costs = page.getByRole('region', { name: 'Costs', exact: true });
+  const total = costs.locator('strong.page-title');
+  await expect(total).toHaveText('£0.00');
+
+  // Labour is hours at a rate, and the screen shows the amount before it is saved.
+  const add = costs.getByRole('form', { name: 'Add a cost' });
+  await add.getByLabel('Description').fill('E2E labour');
+  await add.getByLabel('Hours').fill('2.5');
+  await add.getByLabel('Rate per hour').fill('46.00');
+  await expect(add.getByText('This will cost £115.00.')).toBeVisible();
+  await add.getByRole('button', { name: 'Add cost' }).click();
+  await expect(total).toHaveText('£115.00');
+
+  // A single amount, such as an expense, has no quantity.
+  await add.getByLabel('Type').selectOption({ label: 'Expenses' });
+  await add.getByLabel('Description').fill('E2E parking');
+  await add.getByLabel(/^Amount/).fill('6.50');
+  await add.getByRole('button', { name: 'Add cost' }).click();
+  await expect(total).toHaveText('£121.50');
+
+  // Bad figures are explained, not sent.
+  await add.getByLabel('Description').fill('E2E bad');
+  await add.getByLabel(/^Amount/).fill('6.555');
+  await add.getByRole('button', { name: 'Add cost' }).click();
+  await expect(costs.getByText('Enter the amount in pounds, like 48.90.')).toBeVisible();
+  await expect(total).toHaveText('£121.50');
+
+  // A limit, then spend over it needs a reason.
+  const limit = costs.getByRole('form', { name: 'Cost limit' });
+  await limit.getByLabel(/^Limit/).fill('150');
+  await limit.getByRole('button', { name: 'Save limit' }).click();
+  await expect(costs.getByText('81% used')).toBeVisible();
+  await add.getByLabel('Description').fill('E2E hire');
+  await add.getByLabel(/^Amount/).fill('40');
+  await add.getByRole('button', { name: 'Add cost' }).click();
+  await expect(costs.getByText(/over its limit of £150.00/)).toBeVisible();
+  await expect(total).toHaveText('£121.50');
+  await add.getByLabel('Why does this go over the limit?').fill('Agreed by phone');
+  await add.getByRole('button', { name: 'Add it over the limit' }).click();
+  await expect(total).toHaveText('£161.50');
+  await expect(costs.getByText('Agreed by phone')).toBeVisible();
+  await expect(costs.getByText('Over the limit').first()).toBeVisible();
+  await assertAccessible(page);
+
+  // Removing a cost puts the total right.
+  await costs.getByRole('button', { name: 'Remove E2E hire' }).click();
+  await expect(total).toHaveText('£121.50');
+  await expect(costs.getByText('E2E hire')).toHaveCount(0);
+
+  // The list carries the total for people who may see costs.
+  await page.goto('/app/work-orders?view=all&q=' + suffix);
+  const results = page.getByRole('region', { name: 'Work order results' });
+  await expect(results.getByRole('columnheader', { name: 'Cost' })).toBeVisible();
+  await expect(results.getByText('£121.50')).toBeVisible();
+
+  // The technician who does the job sees no money at all.
+  await signInAs(page, 'technician');
+  await page.goto('/app/work-orders/' + job.id);
+  await expect(page.getByRole('heading', { level: 1, name: 'E2E costs ' + suffix })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Costs', exact: true })).toHaveCount(0);
+  await expect(page.getByText('£121.50')).toHaveCount(0);
+  await page.goto('/app/work-orders?view=all&q=' + suffix);
+  await expect(page.getByRole('link', { name: /^WO-/ }).first()).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Cost' })).toHaveCount(0);
+});

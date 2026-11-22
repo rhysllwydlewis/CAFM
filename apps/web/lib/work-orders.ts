@@ -1,6 +1,6 @@
 import 'server-only';
 import type { FieldDefinition } from '@cafm/config-engine';
-import type { WorkOrderPage, WorkOrderRecord, WorkOrderSummary } from '@cafm/shared';
+import type { WorkOrderCosts, WorkOrderPage, WorkOrderRecord, WorkOrderSummary } from '@cafm/shared';
 import { apiGet } from './api';
 
 export async function workOrderPage(params = ''): Promise<WorkOrderPage> {
@@ -20,4 +20,11 @@ export async function workOrderRecord(id: string): Promise<WorkOrderRecord<Field
 export async function jobsForRequest(requestId: string): Promise<WorkOrderSummary[]> {
   const page = await workOrderPage(new URLSearchParams({ view: 'all', requestId, limit: '50' }).toString());
   return page.items;
+}
+
+/** What a job has cost. Only for people who may see costs. */
+export async function workOrderCosts(id: string): Promise<WorkOrderCosts | undefined> {
+  const response = await apiGet('/work-orders/' + encodeURIComponent(id) + '/costs');
+  if (!response.ok) return undefined;
+  return response.json() as Promise<WorkOrderCosts>;
 }

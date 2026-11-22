@@ -159,6 +159,16 @@ export class WorkOrdersController {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       });
       const items = rows.slice(0, input.limit).map(workOrderSummary);
+      // Costs are for people who may see them. Everyone else gets no money in the list.
+      if (auth.access!.permissions.has('costs.read') && items.length) {
+        const sums = await tx.workOrderCost.groupBy({
+          by: ['workOrderId'],
+          where: { tenantId: auth.membership!.tenantId, workOrderId: { in: items.map(({ id }) => id) } },
+          _sum: { amountMinor: true },
+        });
+        const totals = new Map(sums.map((row) => [row.workOrderId, row._sum.amountMinor ?? 0]));
+        for (const item of items) item.costTotalMinor = totals.get(item.id) ?? 0;
+      }
       const page: WorkOrderPage = {
         items,
         nextCursor: rows.length > input.limit ? (items.at(-1)?.id ?? null) : null,

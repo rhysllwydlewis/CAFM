@@ -169,3 +169,9 @@
 .sla dd {
   margin: 0;
 }
+
+.meter {
+  width: 100%;
+  max-width: 280px;
+  height: 10px;
+}

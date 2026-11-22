@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04d are on `main`. Building 04e: labour, parts, sub-contract and expense costs on a job (integer pennies, amount worked out on the server), the cost total, and a not-to-exceed limit that blocks spend over it unless the overrun is recorded with a reason. Costs need `costs.read` to see and `work_orders.edit` to change. Then 04f checklists, photos and signatures, 04g job sheet. |
+| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04e are done (04e is in the open PR). Next 04f: checklists on a job (templates, steps, answers), photos and signatures (customer and technician sign-off), reusing the attachment storage. Then 04g job-sheet PDFs, emailed to the requester. |
 
 ## Phase checklists
 
@@ -109,7 +109,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-04b** Work order list, detail and board screens in the app shell (`wo-01-list`, `wo-02-detail`, `wo-03-board`), and raising work from a Helpdesk request. ([guide](work-orders.md#screens))
   - [x] **P1-04c** Assignment to people and to contractors, with a magic link so a contractor can update the job without an account. Teams are not built yet. ([guide](work-orders.md#contractors))
   - [x] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation. Escalation chains are fixed (assignee, then supervisors) until the workflow builder. ([guide](work-orders.md#sla-targets-pauses-and-alerts))
-  - [ ] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job.
+  - [x] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job, with a not-to-exceed limit. Mark-up and charge-out follow with Finance. ([guide](work-orders.md#costs))
   - [ ] **P1-04f** Checklists, photos and signatures.
   - [ ] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester.
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.

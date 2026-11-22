@@ -269,6 +269,9 @@ export type WorkOrderSummary = {
   fixDueAt: string | null;
   /** Set while the SLA clock is stopped by a pause. */
   slaPausedAt: string | null;
+  /** The cost so far in minor units. Only sent to people who may see costs. */
+  costTotalMinor?: number | null;
+  currency: string;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
