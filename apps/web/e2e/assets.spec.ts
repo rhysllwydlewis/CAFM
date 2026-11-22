@@ -34,6 +34,7 @@ test('lists, filters and opens the demo assets, and keeps other organisations ou
   await page.getByRole('link', { name: /Heating & hot water/ }).click();
   await expect(register.getByRole('row')).toHaveCount(4);
   await page.getByRole('link', { name: /All assets/ }).click();
+  await expect(register.getByRole('row')).toHaveCount(11);
   await page.getByLabel('Search', { exact: true }).fill('hamworthy');
   await page.getByRole('button', { name: 'Apply filters' }).click();
   await expect(register.getByRole('row')).toHaveCount(3);
