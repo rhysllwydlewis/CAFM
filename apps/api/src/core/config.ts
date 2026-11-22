@@ -1,6 +1,6 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import type { Prisma, Tx } from '@cafm/db';
-import { DEFAULT_SEQUENCES, formatNumber, validateCustom, type FieldDefinition } from '@cafm/config-engine';
+import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
 import type { AuthContext } from './session';
 
 /** The definition as the validator and clients need it. */
@@ -52,31 +52,7 @@ export async function recordVersion(
   return version;
 }
 
-/**
- * The next number in a sequence, e.g. WO-04801. Call inside the same
- * withTenant transaction that creates the record: the row lock taken by the
- * UPDATE makes numbers gap-free and unique under concurrency, and a rolled-back
- * transaction gives its number back.
- */
-export async function nextNumber(
-  tx: Tx,
-  tenantId: string,
-  key: string,
-  context: Record<string, string> = {},
-): Promise<string> {
-  const format = Object.hasOwn(DEFAULT_SEQUENCES, key)
-    ? DEFAULT_SEQUENCES[key]!
-    : `${key.toUpperCase().slice(0, 4)}-{00000}`;
-  await tx.$executeRaw`
-    INSERT INTO number_sequence (id, tenant_id, key, format, next_value, updated_at)
-    VALUES (gen_random_uuid(), ${tenantId}::uuid, ${key}, ${format}, 1, now())
-    ON CONFLICT (tenant_id, key) DO NOTHING`;
-  const [row] = await tx.$queryRaw<{ value: number; format: string }[]>`
-    UPDATE number_sequence SET next_value = next_value + 1, updated_at = now()
-    WHERE tenant_id = ${tenantId}::uuid AND key = ${key}
-    RETURNING next_value - 1 AS value, format`;
-  return formatNumber(row!.format, row!.value, new Date(), context);
-}
+export { nextNumber } from '@cafm/db';
 
 /** The active custom fields for an entity type, by key (doc 02 § 0). */
 export async function activeCustomFields(

@@ -222,6 +222,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@cafm/config-engine':
+        specifier: workspace:*
+        version: link:../config-engine
       '@cafm/shared':
         specifier: workspace:*
         version: link:../shared

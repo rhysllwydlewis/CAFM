@@ -11,3 +11,4 @@ export * from './asset-operations';
 export * from './work-orders';
 export * from './work-order-costs';
 export * from './work-order-forms';
+export * from './ppm';
