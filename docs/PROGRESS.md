@@ -55,6 +55,8 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
 | P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02d: tags (QR, barcode, NFC), label printing and stable scan links, following the Locations QR labels (`apps/web/app/(app)/app/locations/labels`, `location-qr`). Then meters (e), warranties (f), attachments (g). |
+| P1-03 | Codex | `codex/helpdesk-portal-notifications` | 2026-11-22 | Build the shared request intake, queue and portal. Integrate the Asset Register scan and attachment contracts once available. |
+| P1-07 | Codex | `codex/helpdesk-portal-notifications` | 2026-11-22 | Connect request lifecycle events to the inbox, email and push in the same Helpdesk PR. |
 
 ## Phase checklists
 
