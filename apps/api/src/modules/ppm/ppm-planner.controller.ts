@@ -99,7 +99,7 @@ export class PpmPlannerController {
         (visit) => visit.date >= monday && visit.state !== 'completed',
       );
 
-      const scope = { tenantId, type: 'ppm', asset: assetScope(auth) };
+      const scope = { tenantId, type: 'ppm', ppmScheduleAssetId: { not: null }, asset: assetScope(auth) };
       const [overdueJobs, history] = await Promise.all([
         tx.workOrder.findMany({
           where: {
@@ -218,6 +218,8 @@ export class PpmPlannerController {
       );
       for (const visit of visits) {
         // Late and not yet done from before the window is shown in the first week, so it isn't lost off the edge.
+        // Anything else before the window (a window that starts in the future) is not part of it.
+        if (visit.date < start && visit.state !== 'overdue') continue;
         const index = Math.max(0, Math.floor(daysBetween(start, visit.date) / 7));
         if (index >= input.weeks) continue;
         const row = byRow.get(visit.scheduleId);
@@ -291,6 +293,7 @@ export class PpmPlannerController {
         where: {
           tenantId,
           type: 'ppm',
+          ppmScheduleAssetId: { not: null },
           asset: assetScope(auth),
           status: { notIn: [...WORK_ORDER_FINISHED] },
           scheduledFor: { lt: new Date(today + 'T00:00:00Z') },

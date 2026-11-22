@@ -60,7 +60,7 @@ export default async function ScheduleDetailPage({ params }: { params: Promise<{
         </div>
         {canManage && (
           <div className={'page-actions ' + styles.actions}>
-            <GenerateButton path={`/ppm/schedules/${schedule.id}/generate`} />
+            {schedule.active && <GenerateButton path={`/ppm/schedules/${schedule.id}/generate`} />}
             <Link href={`/app/ppm/schedules/${schedule.id}/edit`} className="btn">
               <Icon name="edit" /> Edit schedule
             </Link>
@@ -112,7 +112,9 @@ export default async function ScheduleDetailPage({ params }: { params: Promise<{
                           )}
                           {row.openJob && (
                             <div className="sm">
-                              <Link href={'/app/work-orders/' + row.openJob.id}>{row.openJob.scheduledFor}</Link>
+                              <Link href={'/app/work-orders/' + row.openJob.id}>
+                                {longDay(row.openJob.scheduledFor)}
+                              </Link>
                             </div>
                           )}
                         </td>
@@ -190,7 +192,7 @@ export default async function ScheduleDetailPage({ params }: { params: Promise<{
           </h2>
           <dl className={styles.facts}>
             {facts.map(([label, value]) => (
-              <div key={label} style={{ display: 'contents' }}>
+              <div key={label}>
                 <dt className="muted">{label}</dt>
                 <dd>{value}</dd>
               </div>

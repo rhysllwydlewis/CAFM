@@ -55,13 +55,17 @@ export function ScheduleAssets({
     if (!q) return;
     setBusy(true);
     setError('');
-    const response = await fetch('/api/assets?limit=10&q=' + encodeURIComponent(q));
-    setBusy(false);
-    if (!response.ok) {
+    let page: AssetPage;
+    try {
+      const response = await fetch('/api/assets?limit=10&q=' + encodeURIComponent(q));
+      if (!response.ok) throw new Error('Search failed');
+      page = (await response.json()) as AssetPage;
+    } catch {
       setError('Could not search the assets. Try again.');
       return;
+    } finally {
+      setBusy(false);
     }
-    const page = (await response.json()) as AssetPage;
     setSearched(true);
     setResults(
       page.items.map((asset) => ({
@@ -75,7 +79,7 @@ export function ScheduleAssets({
 
   return (
     <div className="stack g3">
-      <ul className="stack g2" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+      <ul className={'stack g2 ' + styles.bareList}>
         {assets.map((asset) => (
           <li key={asset.id} className="row wrap between g2">
             <span>

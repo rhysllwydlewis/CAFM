@@ -148,7 +148,7 @@ export function TaskForm({ task }: { task?: PpmTaskTemplate }) {
         />
       </Field>
 
-      <fieldset className="stack g3" style={{ border: 0, padding: 0, margin: 0 }}>
+      <fieldset className={'stack g3 ' + styles.plain}>
         <legend className="card-t">Steps</legend>
         <p className="sm muted">
           These are copied onto each job as its checklist. Required steps must be answered before the job can be

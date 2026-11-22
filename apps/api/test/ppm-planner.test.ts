@@ -273,6 +273,11 @@ it('filters the planner, keeps meter schedules out of the calendar, and checks w
     const window = await get<PpmPlanner>(planner, `/planner?from=${next}&weeks=8`);
     expect(window.weekStarts).toEqual(Array.from({ length: 8 }, (_, index) => addDays(next, index * 7)));
     expect(window.totals).toHaveLength(8);
+    // Visits that fall before a window that starts in the future are not squeezed into its first week.
+    const fan = window.rows.find((row) => row.title === 'Fan check')!;
+    const inWindow = Object.values(fan.weeks).reduce((count, week) => count + week.scheduled, 0);
+    expect(inWindow).toBeGreaterThan(0);
+    expect(fan.weeks[0]?.scheduled ?? 0).toBeLessThanOrEqual(1);
     // A date in the middle of a week starts the grid on that week's Monday.
     expect((await get<PpmPlanner>(planner, `/planner?from=${addDays(monday, 3)}&weeks=1`)).weekStarts).toEqual([
       monday,

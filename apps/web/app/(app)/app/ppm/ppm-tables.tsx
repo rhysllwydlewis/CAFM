@@ -168,7 +168,7 @@ export function ComplianceTable({ title, groups }: { title: string; groups: PpmC
         <thead>
           <tr>
             <th scope="col">{title}</th>
-            <th scope="col">On time</th>
+            <th scope="col">Share on time</th>
             <th scope="col">Done on time</th>
             <th scope="col">Done late</th>
             <th scope="col">Overdue</th>

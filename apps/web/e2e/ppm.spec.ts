@@ -17,6 +17,14 @@ async function assertAccessible(page: Page) {
 }
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+/** "25 Nov 2026", as the screens show a day. */
+const shown = (day: string) =>
+  new Date(day + 'T00:00:00Z').toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
 test('shows the planner, the schedules, the forecast, the overdue list and compliance, and keeps others out', async ({
   page,
@@ -126,6 +134,7 @@ test('adds a task to the library, plans a schedule for it, puts an asset on it a
   await expect(page.getByText('£48.90')).toBeVisible();
   await expect(page.getByText('Isolate the unit')).toBeVisible();
   await expect(page.getByText('No assets are on this schedule yet.')).toBeVisible();
+  const scheduleUrl = page.url();
 
   // An asset on it. A meter-less asset is fine for a calendar schedule.
   await page.getByLabel('Add an asset').fill('Boiler 2');
@@ -140,15 +149,21 @@ test('adds a task to the library, plans a schedule for it, puts an asset on it a
   await page.getByRole('button', { name: 'Generate now' }).click();
   await expect(page.getByText('1 job has been raised.')).toBeVisible();
   await expect(assets.getByText('Due', { exact: true }).last()).toBeVisible();
-  await assets.getByRole('link', { name: inDays(3) }).click();
+  await assets.getByRole('link', { name: shown(inDays(3)) }).click();
   await expect(page.getByRole('heading', { level: 1, name: `${title} · Boiler 2` })).toBeVisible();
   await expect(page.getByText(/^PPM-\d+, due /)).toBeVisible();
   const checklist = page.getByRole('region', { name: 'Checklists', exact: true });
   await expect(checklist.getByText('Isolate the unit')).toBeVisible();
   await expect(checklist.getByText('2 required to answer')).toBeVisible();
 
+  // A task that a live schedule uses can't be retired, and the message says why.
+  await page.goto('/app/ppm/tasks');
+  await page.getByRole('link', { name: taskName }).click();
+  await page.getByRole('button', { name: 'Retire this task' }).click();
+  await expect(page.getByText('1 active schedule uses this task.')).toBeVisible();
+  await page.goto(scheduleUrl);
+
   // Edit the schedule, then archive it.
-  await page.goBack();
   await page.getByRole('link', { name: 'Edit schedule' }).click();
   await page.getByLabel('Title').fill(title + ' (edited)');
   await page.getByRole('button', { name: 'Save schedule' }).click();
@@ -158,7 +173,7 @@ test('adds a task to the library, plans a schedule for it, puts an asset on it a
   await page.getByRole('button', { name: 'Save schedule' }).click();
   await expect(page.getByText('Archived').first()).toBeVisible();
 
-  // A task in use can't be retired; the message says why. Once the schedule is archived it can go.
+  // Once the schedule is archived the task can go.
   await page.goto('/app/ppm/tasks');
   await page.getByRole('link', { name: taskName }).click();
   await page.getByRole('button', { name: 'Retire this task' }).click();

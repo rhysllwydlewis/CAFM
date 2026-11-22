@@ -206,3 +206,19 @@
     padding: 6px 8px;
   }
 }
+
+.plain {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.bareList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts > div {
+  display: contents;
+}

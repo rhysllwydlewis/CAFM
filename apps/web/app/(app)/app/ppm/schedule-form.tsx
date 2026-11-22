@@ -180,7 +180,7 @@ export function ScheduleForm({
         </Field>
       </div>
 
-      <fieldset className="stack g2" style={{ border: 0, padding: 0, margin: 0 }}>
+      <fieldset className={'stack g2 ' + styles.plain}>
         <legend className="label">How often</legend>
         <div className="row wrap g3">
           <label className="row g2">
