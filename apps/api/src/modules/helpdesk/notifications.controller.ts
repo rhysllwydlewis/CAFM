@@ -19,6 +19,7 @@ import { SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { assetScope } from '../assets/asset-scope';
+import { workOrderScope } from '../work-orders/work-order-scope';
 
 function configuredPushKey(): string | null {
   const { WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT } = process.env;
@@ -30,9 +31,14 @@ function inboxScope(req: Request): Prisma.NotificationWhereInput {
   const { tenantId, id: recipientId } = auth.membership!;
   const { entitlements, permissions } = auth.access!;
   const scopes: Prisma.NotificationWhereInput[] = [];
-  if (entitlements.features.includes('helpdesk') && permissions.has('requests.create')) scopes.push({ assetId: null });
+  if (entitlements.features.includes('helpdesk') && permissions.has('requests.create')) {
+    scopes.push({ assetId: null, workOrderId: null });
+  }
   if (entitlements.features.includes('assets') && permissions.has('assets.read') && permissions.has('assets.manage')) {
     scopes.push({ asset: { is: { ...assetScope(auth), status: { not: 'decommissioned' } } } });
+  }
+  if (entitlements.features.includes('work_orders') && permissions.has('work_orders.read')) {
+    scopes.push({ workOrder: { is: workOrderScope(auth) } });
   }
   if (!scopes.length) throw new ForbiddenException();
   return { tenantId, recipientId, OR: scopes };
@@ -56,15 +62,18 @@ export class NotificationsController {
         }),
         tx.notification.count({ where: { ...where, readAt: null } }),
       ]);
-      const items: NotificationItem[] = rows.map(({ id, title, body, requestId, assetId, readAt, createdAt }) => ({
-        id,
-        title,
-        body,
-        requestId,
-        assetId,
-        readAt: readAt?.toISOString() ?? null,
-        createdAt: createdAt.toISOString(),
-      }));
+      const items: NotificationItem[] = rows.map(
+        ({ id, title, body, requestId, assetId, workOrderId, readAt, createdAt }) => ({
+          id,
+          title,
+          body,
+          requestId,
+          assetId,
+          workOrderId,
+          readAt: readAt?.toISOString() ?? null,
+          createdAt: createdAt.toISOString(),
+        }),
+      );
       return { items, unread, pushKey: tenant.demo ? null : configuredPushKey() };
     });
   }

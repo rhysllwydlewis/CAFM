@@ -287,6 +287,19 @@ export async function createRequest(
   return requestSummary(request);
 }
 
+/**
+ * The calendar a priority's targets are measured against: the site's opening hours, or null for a
+ * round-the-clock priority such as an emergency.
+ */
+export async function slaSchedule(tx: Tx, tenantId: string, impact: number, urgency: number, siteCalendar: unknown) {
+  const rule =
+    (await tx.requestPriority.findUnique({ where: { tenantId_impact_urgency: { tenantId, impact, urgency } } })) ??
+    defaultRequestPriority(impact, urgency);
+  const calendar = siteCalendarSchema.safeParse(siteCalendar);
+  const schedule = rule.businessHours ? (calendar.success ? calendar.data : DEFAULT_SITE_CALENDAR) : null;
+  return { rule, schedule };
+}
+
 export async function requestTargets(
   tx: Tx,
   tenantId: string,
@@ -295,11 +308,7 @@ export async function requestTargets(
   start: Date,
   siteCalendar: unknown,
 ) {
-  const rule =
-    (await tx.requestPriority.findUnique({ where: { tenantId_impact_urgency: { tenantId, impact, urgency } } })) ??
-    defaultRequestPriority(impact, urgency);
-  const calendar = siteCalendarSchema.safeParse(siteCalendar);
-  const schedule = rule.businessHours ? (calendar.success ? calendar.data : DEFAULT_SITE_CALENDAR) : null;
+  const { rule, schedule } = await slaSchedule(tx, tenantId, impact, urgency, siteCalendar);
   return {
     priority: rule.priority,
     responseDueAt: requestDeadline(start, rule.responseMinutes, schedule),

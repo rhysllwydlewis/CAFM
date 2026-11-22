@@ -200,6 +200,11 @@ export function NotificationsDrawer({ onClose }: { onClose: () => void }) {
                     Open request
                   </Link>
                 )}
+                {item.workOrderId && (
+                  <Link href={'/app/work-orders/' + item.workOrderId} onClick={onClose}>
+                    Open work order
+                  </Link>
+                )}
                 {item.assetId && (
                   <Link href={'/app/assets/' + item.assetId + '/operations#warranties'} onClick={onClose}>
                     Open asset warranties

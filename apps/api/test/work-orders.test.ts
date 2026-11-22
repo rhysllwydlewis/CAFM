@@ -3,6 +3,8 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { PrismaClient, withTenant } from '@cafm/db';
+import { DEFAULT_SITE_CALENDAR } from '@cafm/shared';
+import { requestDeadline } from '../src/modules/helpdesk/request-sla';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -99,7 +101,7 @@ async function fixture() {
 }
 
 it('raises a job, sets the targets from the priority matrix and returns the same job for a retry', async () => {
-  const { manager, tech, reporter, cleanup, site, job } = await fixture();
+  const { manager, tech, reporter, cleanup, site, job, member } = await fixture();
   try {
     const input = job();
     const created = (await manager.post(jobs).send(input).expect(201)).body;
@@ -113,6 +115,18 @@ it('raises a job, sets the targets from the priority matrix and returns the same
       request: null,
     });
     expect(created.number).toMatch(/^WO-\d{5}$/);
+    // A job nobody has picked up has had no response yet. Giving it to someone is the response.
+    expect((await manager.get(jobs + '/' + created.id).expect(200)).body.firstResponseAt).toBeNull();
+    const given = (
+      await manager
+        .post(jobs)
+        .send(job({ assigneeId: member('tech') }))
+        .expect(201)
+    ).body;
+    expect((await manager.get(jobs + '/' + given.id).expect(200)).body).toMatchObject({
+      status: 'assigned',
+      firstResponseAt: expect.any(String),
+    });
     expect(Date.parse(created.responseDueAt)).toBeGreaterThan(Date.now());
     expect(Date.parse(created.attendDueAt)).toBeGreaterThanOrEqual(Date.parse(created.responseDueAt));
     expect(Date.parse(created.fixDueAt)).toBeGreaterThanOrEqual(Date.parse(created.attendDueAt));
@@ -264,8 +278,8 @@ it('takes a job from logged to closed, with only the right people allowed each s
       expect.stringMatching(/^Assigned to /),
       'Accepted',
       'On site',
-      'Paused · Awaiting parts · Seal ordered',
-      'On site',
+      'Paused · Awaiting parts · Seal ordered · SLA clock stopped',
+      expect.stringMatching(/^On site · SLA clock restarted/),
       'Completed',
       'Seal replaced and pressure tested.',
       'Check the guard.',
@@ -471,6 +485,12 @@ it('turns a request into several jobs, keeps the request in step and tells the r
     expect(created[1]).toMatchObject({ title: 'Dry out the wall', status: 'logged' });
     // The jobs carry the request's priority and targets, so the clock does not restart.
     expect(created[0]).toMatchObject({ priority: request.priority, fixDueAt: expect.any(String) });
+    // Raising work from an answered request is not a new request waiting for a response.
+    const answered = (await desk.get(helpdesk + '/requests/' + request.id).expect(200)).body;
+    expect((await desk.get(jobs + '/' + created[0].id).expect(200)).body.firstResponseAt).toBe(
+      answered.firstResponseAt,
+    );
+    expect((await desk.get(jobs + '/' + created[1].id).expect(200)).body.firstResponseAt).not.toBeNull();
     expect(Date.parse(created[0].fixDueAt)).toBe(
       Date.parse((await desk.get(helpdesk + '/requests/' + request.id).expect(200)).body.fixDueAt),
     );
@@ -795,6 +815,129 @@ it('completes the request when a contractor finishes the only job on it', async 
     expect((await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.status).toBe('completed');
     const entries = (await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.entries;
     expect(entries.map(({ body }: { body: string }) => body)).toContain('Completed · all work orders finished');
+  } finally {
+    await cleanup();
+  }
+});
+
+it('stops the SLA clock while a job is paused for parts, and moves the targets out when work resumes', async () => {
+  const { manager, tech, cleanup, tenant, member, job } = await fixture();
+  const owner = ownerDb();
+  try {
+    // An emergency runs round the clock, so the time lost is plain elapsed time.
+    const created = (
+      await manager
+        .post(jobs)
+        .send(job({ impact: 1, urgency: 1 }))
+        .expect(201)
+    ).body;
+    const url = jobs + '/' + created.id;
+    await manager
+      .post(url + '/assign')
+      .send({ version: 1, assigneeId: member('tech') })
+      .expect(201);
+    const read = async () => (await manager.get(url).expect(200)).body;
+    const move = async (status: string, extra: object = {}) => {
+      const { version } = await read();
+      return tech.post(url + '/status').send({ version, status, ...extra });
+    };
+    await (
+      await move('on_site')
+    ).body;
+    const overdueIds = async () =>
+      (await manager.get(jobs + '?view=overdue').expect(200)).body.items.map(({ id }: { id: string }) => id);
+    const setDue = (fixDueAt: Date) =>
+      owner.workOrder.updateMany({ where: { id: created.id, tenantId: tenant.id }, data: { fixDueAt } });
+
+    // Running late, it is overdue. Paused for parts the clock stops, so it is not; paused for another reason it still is.
+    const late = new Date(Date.now() - 60 * 60_000);
+    await setDue(late);
+    expect(await overdueIds()).toContain(created.id);
+    await move('paused', { pauseReason: 'awaiting_contractor' }).then((res) => expect(res.status).toBe(201));
+    expect(await read()).toMatchObject({ status: 'paused', slaPausedAt: null, slaPausedMinutes: 0 });
+    expect(await overdueIds()).toContain(created.id);
+    await move('on_site').then((res) => expect(res.status).toBe(201));
+    expect(Date.parse((await read()).fixDueAt)).toBe(late.getTime());
+
+    await move('paused', { pauseReason: 'awaiting_parts' }).then((res) => expect(res.status).toBe(201));
+    const paused = await read();
+    expect(paused).toMatchObject({ status: 'paused', slaPausedAt: expect.any(String) });
+    expect(await overdueIds()).not.toContain(created.id);
+    // Pretend it was paused three hours ago, then resume.
+    await owner.workOrder.updateMany({
+      where: { id: created.id, tenantId: tenant.id },
+      data: { slaPausedAt: new Date(Date.now() - 180 * 60_000) },
+    });
+    const attendBefore = (await read()).attendDueAt;
+    await move('on_site').then((res) => expect(res.status).toBe(201));
+    const resumed = await read();
+    const moved = (Date.parse(resumed.fixDueAt) - late.getTime()) / 60_000;
+    expect(moved).toBeGreaterThan(179);
+    expect(moved).toBeLessThan(181);
+    expect(resumed).toMatchObject({ slaPausedAt: null, slaPausedMinutes: expect.any(Number) });
+    expect(resumed.slaPausedMinutes).toBeGreaterThanOrEqual(180);
+    expect(resumed.slaPausedMinutes).toBeLessThanOrEqual(181);
+    // The timeline says so, and the audit log keeps the same note.
+    expect(resumed.entries.map(({ body }: { body: string }) => body)).toEqual(
+      expect.arrayContaining([
+        'Paused · Awaiting parts · SLA clock stopped',
+        expect.stringMatching(/^On site · SLA clock restarted, 3h [01]m added to the targets$/),
+      ]),
+    );
+    const audited = await withTenant(db, tenant.id, (tx) =>
+      tx.auditEvent.findMany({ where: { entityId: created.id, action: 'work_order.status' } }),
+    );
+    expect(JSON.stringify(audited.map(({ changes }) => changes))).toMatch(/SLA clock restarted, 3h [01]m added/);
+    // The job had already been attended, so that target stays where it was. It is no longer late.
+    expect(resumed.attendDueAt).toBe(attendBefore);
+    expect(await overdueIds()).not.toContain(created.id);
+
+    // Re-triaging works the new targets out from when the problem was reported, and keeps the time already lost.
+    const urgent = (await manager.patch(url).send({ version: resumed.version, impact: 2, urgency: 2 }).expect(200))
+      .body;
+    const base = requestDeadline(new Date(created.createdAt), 1440, DEFAULT_SITE_CALENDAR)!;
+    const expected = requestDeadline(base, resumed.slaPausedMinutes, DEFAULT_SITE_CALENDAR)!;
+    expect(urgent.priority).toBe(3);
+    expect(urgent.fixDueAt).toBe(expected.toISOString());
+  } finally {
+    await owner.$disconnect();
+    await cleanup();
+  }
+});
+
+it('shows work order alerts in the inbox of people who can see the job, and no one else', async () => {
+  const { manager, tech, reporter, other, tenant, cleanup, member, job } = await fixture();
+  try {
+    const created = (await manager.post(jobs).send(job()).expect(201)).body;
+    await manager
+      .post(jobs + '/' + created.id + '/assign')
+      .send({ version: 1, assigneeId: member('tech') })
+      .expect(201);
+    const notify = (recipient: string, key: string) =>
+      withTenant(db, tenant.id, (tx) =>
+        tx.notification.create({
+          data: {
+            tenantId: tenant.id,
+            recipientId: recipient,
+            workOrderId: created.id,
+            eventKey: key,
+            title: 'Work order ' + created.number + ' is close to its fix target',
+            body: 'Replace pump seal at Main site.',
+          },
+        }),
+      );
+    await notify(member('tech'), 'alert-tech');
+    await notify(member('reporter'), 'alert-reporter');
+    await notify(member('other'), 'alert-other');
+    const inbox = async (agent: typeof tech) => (await agent.get('/api/notifications').expect(200)).body;
+    const seen = await inbox(tech);
+    expect(seen.items).toMatchObject([{ workOrderId: created.id, requestId: null, assetId: null }]);
+    expect(seen.unread).toBe(1);
+    await tech.patch('/api/notifications/' + seen.items[0].id + '/read').expect(200);
+    expect((await inbox(tech)).unread).toBe(0);
+    // A requester has no right to see jobs, and a technician at another site cannot see this one.
+    expect((await inbox(reporter)).items).toEqual([]);
+    expect((await inbox(other)).items).toEqual([]);
   } finally {
     await cleanup();
   }

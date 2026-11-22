@@ -34,7 +34,7 @@ export function StatusBadge({ item }: { item: Pick<WorkOrderSummary, 'status' | 
   );
 }
 
-function duration(ms: number) {
+export function duration(ms: number) {
   const minutes = Math.ceil(Math.abs(ms) / 60_000);
   if (minutes < 60) return minutes + ' min';
   if (minutes < 2880) return Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'm';
@@ -51,6 +51,15 @@ export function FixSla({ item, now }: { item: WorkOrderSummary; now: number }) {
     return <span className={'badge ' + (met ? 'success' : 'danger')}>{met ? 'Met' : 'Missed'}</span>;
   }
   if (WORK_ORDER_FINISHED.includes(item.status)) return <span>—</span>;
+  // While the clock is stopped by a pause there is no countdown: the targets move on when work resumes.
+  if (item.slaPausedAt) {
+    return (
+      <span className="badge" title={'The SLA clock has been stopped since ' + requestTime(item.slaPausedAt)}>
+        <Icon name="sla" size={14} />
+        Clock stopped
+      </span>
+    );
+  }
   const remaining = due - now;
   const late = remaining < 0;
   const soon = !late && remaining <= 60 * 60_000;

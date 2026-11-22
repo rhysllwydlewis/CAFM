@@ -1,6 +1,6 @@
 # Work orders
 
-Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. SLA clocks and escalation, costs, checklists and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
+Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. Costs, checklists and photos, and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
 
 ## Screens
 
@@ -48,6 +48,23 @@ Only people who can do jobs at the location can be assigned: active, with a full
 - When every job on a request that is still wanted has been completed, the request is completed and the requester is told. Reopening a job reopens the request.
 
 Numbers use the `work_order` sequence (`WO-00001`), whose format can be changed through the numbering configuration (`/api/config/numbering`).
+
+## SLA targets, pauses and alerts
+
+Each job carries three targets from the Helpdesk priority matrix and the site's business calendar: **response** (the job is picked up), **attendance** (someone is on site) and **fix** (the job is completed). A job raised from a request keeps the request's targets, so the clock doesn't restart. The job page shows where it stands on each: how long is left, how late it is, or whether it was met. Giving a job to a person or a contractor is the response, and so is raising it from a request that has already been answered.
+
+The priority matrix has one fix target. The catalogue also lists separate temporary and permanent fix clocks, which need a second fix time in the matrix and aren't built yet.
+
+**Pausing.** Pausing a job needs a reason. These reasons stop the SLA clock, because the delay is outside the team's control: **awaiting parts**, **awaiting access** and **awaiting approval**. **Awaiting contractor** and **other** don't, so the clock keeps running. When a job that stopped the clock goes back to work, the attendance and fix targets move out by the time lost. For a target measured in business hours that is business time only (opening hours, no weekends, bank holidays or closures); for a round-the-clock priority such as an emergency it is plain elapsed time. A target that has already been met doesn't move. The job page shows the clock as stopped, and how much time has been added. A stopped clock is not counted as overdue. The timeline and the audit log record when the clock stops and restarts, and how much time was added. Re-triaging a job keeps the time already lost.
+
+**Alerts.** A check runs every five minutes for each organisation:
+
+| When | Who is told |
+| --- | --- |
+| A job is within an hour of its response, attendance or fix target (or within a quarter of the target's length, if that is shorter, so a new emergency isn't alerted the moment it is raised) (response stops mattering once the job is picked up, and attendance once someone has been on site) | The person it is assigned to, or the supervisors for that location if nobody has it (for example, with a contractor) |
+| A target has been missed | The assignee and the supervisors for that location |
+
+Supervisors are people whose role can assign work and who can see the job's location. Each alert is sent once for a given target time, in the app and by email, and as a browser push if set up. If the target moves, the clock is paused or the job is finished before the alert is delivered, it is dropped, so no one is told something that is no longer true. Alerts appear in the notification drawer and link to the job. Who is told, and when, is fixed for now; configurable escalation chains arrive with the workflow builder (P2A-06).
 
 ## Contractors
 

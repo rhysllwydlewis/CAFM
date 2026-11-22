@@ -3,6 +3,9 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import type { FieldDefinition } from '@cafm/config-engine';
 import type { Prisma, Tx } from '@cafm/db';
 import {
+  SLA_PAUSING_REASONS,
+  WORK_ORDER_PAUSE_LABELS,
+  WORK_ORDER_STATUS_LABELS,
   workOrderNextStatuses,
   type WorkOrderPauseReason,
   type WorkOrderRecord,
@@ -13,7 +16,8 @@ import { activeCustomFields, nextNumber, visibleCustom } from '../../core/config
 import type { AuthContext } from '../../core/session';
 import { missingWorkOrder, workOrderScope } from './work-order-scope';
 import { reportAssetSelect, reportLocationSelect } from '../helpdesk/request-scope';
-import { requestTargets } from '../helpdesk/request-records';
+import { requestTargets, slaSchedule } from '../helpdesk/request-records';
+import { elapsedMinutes, requestDeadline } from '../helpdesk/request-sla';
 
 /** Licences that can be given jobs: office staff, and the field and contractor people who do them. */
 export const JOB_LICENCES = ['full', 'mobile', 'contractor'] as const;
@@ -55,6 +59,7 @@ export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
     responseDueAt: iso(row.responseDueAt),
     attendDueAt: iso(row.attendDueAt),
     fixDueAt: iso(row.fixDueAt),
+    slaPausedAt: iso(row.slaPausedAt),
     completedAt: iso(row.completedAt),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -86,6 +91,7 @@ export async function workOrderDetail(
     ...workOrderSummary(row),
     version: row.version,
     type: row.type,
+    slaPausedMinutes: row.slaPausedMinutes,
     description: row.description,
     impact: row.impact,
     urgency: row.urgency,
@@ -154,7 +160,12 @@ export interface NewWorkOrder {
   urgency: number;
   custom: Prisma.InputJsonObject;
   /** Request targets carry over, so the clock keeps running from when the problem was reported. */
-  from?: { createdAt: Date; targets?: Awaited<ReturnType<typeof requestTargets>> };
+  from?: {
+    createdAt: Date;
+    targets?: Awaited<ReturnType<typeof requestTargets>>;
+    /** When the requester was first answered. Work raised from a request has already had its response. */
+    respondedAt?: Date;
+  };
 }
 
 /** Creates the job and its first timeline entry. Checks that location, asset and assignee belong together. */
@@ -192,6 +203,8 @@ export async function insertWorkOrder(tx: Tx, auth: AuthContext, input: NewWorkO
       title: input.title,
       description: input.description,
       status,
+      // Giving the job to someone is the response. So is raising it from a request, which has been answered.
+      firstResponseAt: input.from?.respondedAt ?? (input.assigneeId ? start : null),
       locationId: location.id,
       assetId: input.assetId,
       requestId: input.requestId,
@@ -218,18 +231,83 @@ export async function insertWorkOrder(tx: Tx, auth: AuthContext, input: NewWorkO
   return row;
 }
 
+const minutesText = (minutes: number) =>
+  minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'm';
+
+/** The timeline line for a status step, saying when the step also stopped or restarted the SLA clock. */
+export function statusEntryBody(
+  to: WorkOrderStatus,
+  pauseReason: WorkOrderPauseReason | undefined,
+  note: string | undefined,
+  clockNote: string | null,
+) {
+  return [WORK_ORDER_STATUS_LABELS[to], pauseReason ? WORK_ORDER_PAUSE_LABELS[pauseReason] : null, note, clockNote]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** What the clock-and-status change needs to know about the job before the step. */
+export interface StatusChangeJob {
+  tenantId: string;
+  locationId: string;
+  impact: number;
+  urgency: number;
+  firstResponseAt: Date | null;
+  attendedAt: Date | null;
+  completedAt: Date | null;
+  attendDueAt: Date | null;
+  fixDueAt: Date | null;
+  slaPausedAt: Date | null;
+  slaPausedMinutes: number;
+}
+
 /**
  * The change a status step makes to the job, shared by staff and by contractors on a link: the times
- * the targets are measured against, and whether the step reopens a finished job.
+ * the targets are measured against, whether the step reopens a finished job, and the SLA clock.
+ *
+ * Pausing for a reason that stops the clock records when. Leaving the pause moves the attendance and fix
+ * targets out by the business time that was lost, so the people doing the work are not held to time spent
+ * waiting on something outside their control.
  */
-export function statusChange(
-  before: { firstResponseAt: Date | null; attendedAt: Date | null },
+export async function statusChange(
+  tx: Tx,
+  before: StatusChangeJob,
   current: WorkOrderStatus,
   to: WorkOrderStatus,
   pauseReason: WorkOrderPauseReason | undefined,
   now: Date,
 ) {
   const reopened = to === 'on_site' && (current === 'completed' || current === 'verified');
+  const stopsClock = to === 'paused' && !!pauseReason && SLA_PAUSING_REASONS.includes(pauseReason);
+  const clock: Prisma.WorkOrderUpdateInput = {};
+  let clockNote: string | null = null;
+  if (stopsClock) {
+    clock.slaPausedAt = now;
+    clockNote = 'SLA clock stopped';
+  } else if (before.slaPausedAt) {
+    const site = await tx.locationPath.findFirst({
+      where: { tenantId: before.tenantId, descendantId: before.locationId, ancestor: { kind: 'site' } },
+      select: { ancestor: { select: { siteCalendar: true } } },
+    });
+    const { schedule } = await slaSchedule(
+      tx,
+      before.tenantId,
+      before.impact,
+      before.urgency,
+      site?.ancestor.siteCalendar,
+    );
+    const lost = elapsedMinutes(before.slaPausedAt, now, schedule);
+    clock.slaPausedAt = null;
+    clock.slaPausedMinutes = before.slaPausedMinutes + Math.ceil(lost);
+    clockNote =
+      Math.ceil(lost) > 0
+        ? `SLA clock restarted, ${minutesText(Math.ceil(lost))} added to the targets`
+        : 'SLA clock restarted';
+    // A target that has already been met doesn't move.
+    if (before.attendDueAt && !before.attendedAt)
+      clock.attendDueAt = requestDeadline(before.attendDueAt, lost, schedule);
+    if (before.fixDueAt && !before.completedAt) clock.fixDueAt = requestDeadline(before.fixDueAt, lost, schedule);
+  }
   const data = {
     status: to,
     pauseReason: to === 'paused' ? (pauseReason ?? null) : null,
@@ -239,6 +317,7 @@ export function statusChange(
     ...(to === 'verified' ? { verifiedAt: now } : {}),
     ...(to === 'closed' ? { closedAt: now } : {}),
     ...(reopened ? { completedAt: null, verifiedAt: null } : {}),
+    ...clock,
   };
-  return { reopened, data };
+  return { reopened, data, clockNote };
 }

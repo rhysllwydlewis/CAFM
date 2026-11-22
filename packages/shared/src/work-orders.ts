@@ -102,6 +102,17 @@ export const WORK_ORDER_PAUSE_LABELS: Record<WorkOrderPauseReason, string> = {
   other: 'Other',
 };
 
+/**
+ * Pauses that stop the SLA clock, because the delay is outside the provider's control. While one is in
+ * force the attendance and fix targets are held, and move out by the business time lost when work resumes.
+ * "Awaiting contractor" and "other" do not stop the clock.
+ */
+export const SLA_PAUSING_REASONS: readonly WorkOrderPauseReason[] = [
+  'awaiting_parts',
+  'awaiting_access',
+  'awaiting_approval',
+];
+
 export const WORK_ORDER_VIEWS = ['open', 'mine', 'unassigned', 'overdue', 'all'] as const;
 export type WorkOrderView = (typeof WORK_ORDER_VIEWS)[number];
 
@@ -256,6 +267,8 @@ export type WorkOrderSummary = {
   responseDueAt: string | null;
   attendDueAt: string | null;
   fixDueAt: string | null;
+  /** Set while the SLA clock is stopped by a pause. */
+  slaPausedAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -263,6 +276,8 @@ export type WorkOrderSummary = {
 export type WorkOrderRecord<CustomField = unknown> = WorkOrderSummary & {
   version: number;
   type: string;
+  /** The business minutes the clock has been stopped for. The targets already include them. */
+  slaPausedMinutes: number;
   description: string;
   impact: number;
   urgency: number;

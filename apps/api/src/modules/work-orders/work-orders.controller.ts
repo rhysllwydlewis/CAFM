@@ -24,10 +24,8 @@ import {
   createWorkOrderSchema,
   listWorkOrdersSchema,
   WORK_ORDER_FINISHED,
-  WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_REASSIGNABLE,
   WORK_ORDER_UNASSIGNABLE,
-  WORK_ORDER_STATUS_LABELS,
   workOrderCommentSchema,
   workOrderNextStatuses,
   type RequestStatus,
@@ -47,7 +45,8 @@ import { activeCustomFields, mergeCustom } from '../../core/config';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
-import { CLOSED, requestRelations, requestTargets } from '../helpdesk/request-records';
+import { CLOSED, requestRelations, requestTargets, slaSchedule } from '../helpdesk/request-records';
+import { requestDeadline } from '../helpdesk/request-sla';
 import { notifyLinkedRequesters, notifyRequester } from '../helpdesk/request-notifications';
 import {
   lockRequests,
@@ -63,6 +62,7 @@ import {
   getWorkOrder,
   insertWorkOrder,
   statusChange,
+  statusEntryBody,
   JOB_LICENCES,
   submissionHash,
   workOrderDetail,
@@ -100,7 +100,12 @@ export class WorkOrdersController {
     const input = parse(listWorkOrdersSchema, query);
     const scope = workOrderScope(auth);
     const open = { status: { notIn: CLOSED_STATUSES } };
-    const overdue = { status: { notIn: [...WORK_ORDER_FINISHED] }, fixDueAt: { lt: new Date() } };
+    // A job whose clock is stopped by a pause is not running late.
+    const overdue = {
+      status: { notIn: [...WORK_ORDER_FINISHED] },
+      slaPausedAt: null,
+      fixDueAt: { lt: new Date() },
+    };
     const filter: Prisma.WorkOrderWhereInput = {
       open,
       mine: { ...open, assigneeId: auth.membership!.id },
@@ -372,6 +377,8 @@ export class WorkOrdersController {
         attendDueAt: request.attendDueAt,
         fixDueAt: request.fixDueAt,
       };
+      // One moment for both: converting is the response if the request hasn't had one.
+      const responded = request.firstResponseAt ?? new Date();
       const rows: WorkOrderRow[] = [];
       for (const [index, job] of input.jobs.entries()) {
         const row = await insertWorkOrder(tx, auth, {
@@ -386,7 +393,7 @@ export class WorkOrdersController {
           impact: request.impact,
           urgency: request.urgency,
           custom: {},
-          from: { createdAt: request.createdAt, targets },
+          from: { createdAt: request.createdAt, targets, respondedAt: responded },
         });
         await audit(
           tx,
@@ -418,7 +425,7 @@ export class WorkOrdersController {
           where: { id: request.id },
           data: {
             status: 'in_progress',
-            firstResponseAt: request.firstResponseAt ?? new Date(),
+            firstResponseAt: responded,
             version: { increment: 1 },
           },
         });
@@ -485,6 +492,22 @@ export class WorkOrdersController {
           reported?.createdAt ?? before.createdAt,
           site?.ancestor.siteCalendar,
         );
+        // Time the clock has already been stopped for still counts for the new targets.
+        if (before.slaPausedMinutes > 0) {
+          const { schedule } = await slaSchedule(
+            tx,
+            tenantId,
+            input.impact!,
+            input.urgency!,
+            site?.ancestor.siteCalendar,
+          );
+          const lost = before.slaPausedMinutes;
+          targets = {
+            ...targets,
+            attendDueAt: targets.attendDueAt && requestDeadline(targets.attendDueAt, lost, schedule),
+            fixDueAt: targets.fixDueAt && requestDeadline(targets.fixDueAt, lost, schedule),
+          };
+        }
       }
       const custom = input.custom
         ? mergeCustom(await activeCustomFields(tx, tenantId, 'work_order'), input.custom, before.custom)
@@ -532,25 +555,13 @@ export class WorkOrdersController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const to = input.status;
-      const { reopened, data } = statusChange(before, current, to, input.pauseReason, new Date());
+      const { reopened, data, clockNote } = await statusChange(tx, before, current, to, input.pauseReason, new Date());
       const next = await tx.workOrder.update({
         where: { id },
         include: workOrderRelations,
         data: { ...data, version: { increment: 1 } },
       });
-      await entry(
-        tx,
-        before,
-        auth,
-        'status',
-        [
-          WORK_ORDER_STATUS_LABELS[to],
-          input.pauseReason ? WORK_ORDER_PAUSE_LABELS[input.pauseReason] : null,
-          input.note,
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      );
+      await entry(tx, before, auth, 'status', statusEntryBody(to, input.pauseReason, input.note, clockNote));
       await audit(
         tx,
         auth,
@@ -558,7 +569,11 @@ export class WorkOrdersController {
           action: 'work_order.status',
           entityType: 'work_order',
           entityId: id,
-          changes: { before: { status: current }, after: { status: to, pauseReason: input.pauseReason ?? null } },
+          changes: {
+            before: { status: current },
+            after: { status: to, pauseReason: input.pauseReason ?? null },
+            sla: clockNote,
+          },
         },
         req.ip,
       );
