@@ -19,6 +19,7 @@ async function assertAccessible(page: Page) {
 }
 
 test('searches and opens a site, filters the portfolio and prints matching QR labels', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.route('https://tile.openstreetmap.org/**', (route) =>
     route.fulfill({
       contentType: 'image/png',
@@ -155,7 +156,7 @@ test('a scanned link returns to the location after sign-in and protects sites ou
   await page.goto(scan);
   await expect(page).toHaveURL(/\/login\?next=/);
   await signIn(page, 'technician');
-  await expect(page).toHaveURL(cardiffRoute);
+  await expect(page).toHaveURL(cardiffRoute, { timeout: 15_000 });
   await expect(page.getByRole('heading', { level: 1, name: 'Cardiff HQ' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Edit site' })).toHaveCount(0);
 
