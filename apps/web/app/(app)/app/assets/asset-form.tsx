@@ -16,7 +16,15 @@ import {
 import { LocationCustomFields, readCustomFields } from '../locations/location-custom-fields';
 import type { AssetDetail } from './asset-data';
 import { Picker, type PickerOption } from './asset-picker';
-import { CRITICALITY_LABELS, locationLabel, minorToPounds, poundsToMinor, route, STATUS_LABELS } from './asset-labels';
+import {
+  CRITICALITY_LABELS,
+  currencyDigits,
+  locationLabel,
+  minorToMoney,
+  moneyToMinor,
+  route,
+  STATUS_LABELS,
+} from './asset-labels';
 import styles from './assets.module.css';
 
 const text = (data: FormData, name: string) => {
@@ -111,6 +119,9 @@ export function AssetForm({
   const [error, setError] = useState('');
   const selectedClass = classes.find((item) => item.id === classId);
   const groups = [...new Set(classes.map((item) => item.group))];
+  // Money is typed in the asset's own currency and kept as whole minor units.
+  const currency = asset?.replacementCost?.currency ?? 'GBP';
+  const digits = currencyDigits(currency);
   const cancelHref = asset ? `${route}/${asset.id}` : route;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -120,8 +131,10 @@ export function AssetForm({
     const locationId = String(data.get('locationId') ?? '');
     if (!locationId) return setError('Choose a location.');
     const costText = String(data.get('cost') ?? '').trim();
-    const minor = costText ? poundsToMinor(costText) : null;
-    if (costText && minor === null) return setError('Enter the replacement cost in pounds, like 18500 or 18500.50.');
+    const minor = costText ? moneyToMinor(costText, digits) : null;
+    if (costText && minor === null) {
+      return setError(`Enter the replacement cost as a plain amount, like ${digits ? '18500.50' : '18500'}.`);
+    }
     const life = text(data, 'expectedLifeYears');
     const body = {
       name: text(data, 'name'),
@@ -137,8 +150,7 @@ export function AssetForm({
       supplier: text(data, 'supplier'),
       installedOn: text(data, 'installedOn'),
       expectedLifeYears: life ? Number(life) : null,
-      replacementCost:
-        minor === null ? null : { amountMinor: minor, currency: asset?.replacementCost?.currency ?? 'GBP' },
+      replacementCost: minor === null ? null : { amountMinor: minor, currency },
       attributes: readAttributes(selectedClass?.attributes ?? [], data),
       ...(customFields.length ? { custom: readCustomFields(customFields, data) } : {}),
       ...(asset ? { version: asset.version } : {}),
@@ -217,6 +229,7 @@ export function AssetForm({
           <Picker
             name="parentId"
             label="Part of (parent asset)"
+            clearable
             endpoint="/api/assets"
             initial={initialParent}
             describe={(item) => ({
@@ -294,13 +307,13 @@ export function AssetForm({
               defaultValue={asset?.expectedLifeYears ?? ''}
             />
           </Field>
-          <Field label="Replacement cost (£)" htmlFor="asset-cost">
+          <Field label={`Replacement cost (${currency === 'GBP' ? '£' : currency})`} htmlFor="asset-cost">
             <TextInput
               id="asset-cost"
               name="cost"
               inputMode="decimal"
-              placeholder="18500.00"
-              defaultValue={asset?.replacementCost ? minorToPounds(asset.replacementCost.amountMinor) : ''}
+              placeholder={digits ? '18500.00' : '18500'}
+              defaultValue={asset?.replacementCost ? minorToMoney(asset.replacementCost.amountMinor, digits) : ''}
             />
           </Field>
         </div>

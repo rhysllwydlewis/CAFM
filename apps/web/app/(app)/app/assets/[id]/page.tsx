@@ -194,11 +194,7 @@ export default async function AssetPage({
     ['Model', asset.model],
     ['Serial', asset.serial],
     ...asset.classAttributes.map(
-      (attribute) =>
-        [
-          attribute.unit ? `${attribute.label}` : attribute.label,
-          attributeValue(attribute, asset.attributes[attribute.key]),
-        ] as const,
+      (attribute) => [attribute.label, attributeValue(attribute, asset.attributes[attribute.key])] as const,
     ),
     ['Installed', formatDate(asset.installedOn)],
     [

@@ -92,7 +92,13 @@ export class AssetServesController {
         throw new UnprocessableEntityException({ code: 'serves_self', message: 'An asset can’t serve itself.' });
       }
       const site = await siteOf(tx, tenantId, asset.locationId);
-      const inSite = { ancestors: { some: { ancestorId: site?.id } } };
+      if (!site) {
+        throw new UnprocessableEntityException({
+          code: 'asset_location_invalid',
+          message: 'This asset isn’t in a site, so it can’t serve anything yet.',
+        });
+      }
+      const inSite = { ancestors: { some: { ancestorId: site.id } } };
       const foundLocations = await tx.location.count({
         where: { AND: [locationScope(auth), { id: { in: locationIds } }] },
       });

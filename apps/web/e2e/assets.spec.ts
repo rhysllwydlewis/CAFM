@@ -177,7 +177,7 @@ test('adds, edits and decommissions an asset, with a component, class details an
     // Money is typed in pounds and has to be a plain amount.
     await page.getByLabel('Replacement cost (£)').fill('eighteen thousand');
     await page.getByRole('button', { name: 'Add asset' }).click();
-    await expect(page.getByText('Enter the replacement cost in pounds')).toBeVisible();
+    await expect(page.getByText('Enter the replacement cost as a plain amount')).toBeVisible();
     await page.getByLabel('Replacement cost (£)').fill('£18,500.50');
     await page.getByRole('button', { name: 'Add asset' }).click();
 
@@ -246,6 +246,14 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await expect(
       page.getByRole('region', { name: 'Serves' }).getByRole('link', { name: 'Boiler A (main)' }),
     ).toBeVisible();
+    // Backing out of "Change" keeps the parent; nothing is lost.
+    await page.getByRole('link', { name: 'Edit', exact: true }).click();
+    await page.getByRole('button', { name: 'Change part of (parent asset)' }).click();
+    await expect(page.getByRole('combobox', { name: 'Part of (parent asset)' })).toBeVisible();
+    await page.getByRole('button', { name: 'Keep Boiler A (main)' }).click();
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Burner' })).toBeVisible();
+    await expect(page.getByText('Part of', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Boiler A (main)' }).first().click();
     await expect(page.getByRole('heading', { level: 1, name: 'Boiler A (main)' })).toBeVisible();
 
@@ -260,6 +268,15 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await expect(page.getByText('2 assets · 2 to maintain')).toBeVisible();
     await expect(page.getByRole('link', { name: /Heating/ })).toBeVisible();
     await expect(page.getByText('1 component')).toBeVisible();
+
+    // Clear takes the parent away, on purpose.
+    await page.getByRole('link', { name: 'Burner' }).first().click();
+    await page.getByRole('link', { name: 'Edit', exact: true }).click();
+    await page.getByRole('button', { name: 'Clear part of (parent asset)' }).click();
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    // The saved page, not the form (both are headed "Burner"): wait for it before checking.
+    await expect(page.getByRole('link', { name: 'Edit what it serves' })).toBeVisible();
+    await expect(page.getByText('Part of', { exact: true })).toHaveCount(0);
   } finally {
     const account = await db.account.findUnique({ where: { email } });
     await db.$transaction(async (tx) => {

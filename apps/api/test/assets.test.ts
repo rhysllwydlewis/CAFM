@@ -165,6 +165,12 @@ it('keeps assets inside a site, a parent in the same site, and refuses loops and
     // and a standalone asset can move freely.
     const moved = await agent.patch(`${assets}/${part.id}`).send({ version: 1, locationId: siteB.id }).expect(422);
     expect(moved.body.code).toBe('asset_parent_site');
+    // The edit form always sends the current parent too; that must not skip the check.
+    const withParent = await agent
+      .patch(`${assets}/${part.id}`)
+      .send({ version: 1, locationId: siteB.id, parentId: system.id })
+      .expect(422);
+    expect(withParent.body.code).toBe('asset_parent_site');
     const left = await agent.patch(`${assets}/${system.id}`).send({ version: 1, locationId: siteB.id }).expect(422);
     expect(left.body.code).toBe('asset_site_change');
     await agent.patch(`${assets}/${elsewhere.id}`).send({ version: 1, locationId: room.id }).expect(200);

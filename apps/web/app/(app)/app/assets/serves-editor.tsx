@@ -100,7 +100,7 @@ export function ServesEditor({
               initial={null}
               onSelect={(option) =>
                 setAssets((list) =>
-                  list.some(({ id }) => id === option.id)
+                  option.id === asset.id || list.some(({ id }) => id === option.id)
                     ? list
                     : [...list, { id: option.id, number: option.hint ?? '', name: option.label, status: 'in_service' }],
                 )

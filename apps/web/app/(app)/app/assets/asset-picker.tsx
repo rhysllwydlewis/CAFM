@@ -18,6 +18,7 @@ export function Picker({
   name,
   label,
   onSelect,
+  clearable,
   endpoint,
   params,
   initial,
@@ -28,6 +29,8 @@ export function Picker({
   label: string;
   /** Adds to a list instead of holding one choice: called with each option chosen, then the search clears. */
   onSelect?: (option: PickerOption) => void;
+  /** For an optional choice: shows a Clear button that removes it. */
+  clearable?: boolean;
   /** A list endpoint that takes `q` and returns `{ items }`. */
   endpoint: string;
   params?: Record<string, string>;
@@ -37,6 +40,8 @@ export function Picker({
   const id = useId();
   const listId = id + '-list';
   const [chosen, setChosen] = useState<PickerOption | null>(initial);
+  // Changing a choice keeps the current one until a new one is picked, so backing out loses nothing.
+  const [searching, setSearching] = useState(false);
   const [text, setText] = useState('');
   const [options, setOptions] = useState<PickerOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -76,11 +81,12 @@ export function Picker({
       return;
     }
     setChosen(option);
+    setSearching(false);
     setOpen(false);
     setText('');
   }
 
-  if (chosen) {
+  if (chosen && !searching) {
     return (
       <div className="field">
         <span className="label" id={id + '-label'}>
@@ -92,17 +98,31 @@ export function Picker({
             {chosen.hint && <span className="muted"> · {chosen.hint}</span>}
           </span>
           {name && <input type="hidden" name={name} value={chosen.id} />}
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              setChosen(null);
-              setOpen(true);
-              setTimeout(() => document.getElementById(id)?.focus());
-            }}
-          >
-            Change<span className="sr-only"> {label.toLowerCase()}</span>
-          </Button>
+          <span className="row g2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setSearching(true);
+                setOpen(true);
+                setTimeout(() => document.getElementById(id)?.focus());
+              }}
+            >
+              Change<span className="sr-only"> {label.toLowerCase()}</span>
+            </Button>
+            {clearable && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setChosen(null);
+                  setSearching(true);
+                }}
+              >
+                Clear<span className="sr-only"> {label.toLowerCase()}</span>
+              </Button>
+            )}
+          </span>
         </div>
       </div>
     );
@@ -111,7 +131,7 @@ export function Picker({
   return (
     <Field label={label} htmlFor={id}>
       <div className={styles.picker}>
-        {name && <input type="hidden" name={name} value="" />}
+        {name && <input type="hidden" name={name} value={chosen?.id ?? ''} />}
         <TextInput
           id={id}
           role="combobox"
@@ -142,10 +162,31 @@ export function Picker({
             } else if (event.key === 'Escape') setOpen(false);
           }}
         />
+        {chosen && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              setSearching(false);
+              setOpen(false);
+              setText('');
+            }}
+          >
+            Keep {chosen.label}
+          </Button>
+        )}
         {open && (
           <ul className={styles.pickerList} id={listId} role="listbox" aria-label={label}>
-            {failed && <li aria-disabled="true">Could not search. Try again.</li>}
-            {!failed && options.length === 0 && <li aria-disabled="true">Nothing found.</li>}
+            {failed && (
+              <li role="option" aria-selected="false" aria-disabled="true">
+                Could not search. Try again.
+              </li>
+            )}
+            {!failed && options.length === 0 && (
+              <li role="option" aria-selected="false" aria-disabled="true">
+                Nothing found.
+              </li>
+            )}
             {options.map((option, i) => (
               <li
                 key={option.id}

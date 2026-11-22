@@ -105,6 +105,57 @@ it('refuses an asset serving itself, serving another site, or serving what does 
   }
 });
 
+it('keeps serving inside a site: an asset with serves links can not move to another site', async () => {
+  const { agent, cleanup } = await estate();
+  try {
+    const { plant, floor1, other } = await tree(agent);
+    const pump = await asset(agent, 'Pump', plant.id);
+    const boiler = await asset(agent, 'Boiler', plant.id);
+    const loose = await asset(agent, 'Loose', plant.id);
+    await agent
+      .put(serves(pump.id))
+      .send({ locationIds: [floor1.id], assetIds: [] })
+      .expect(200);
+    await agent
+      .put(serves(boiler.id))
+      .send({ locationIds: [], assetIds: [loose.id] })
+      .expect(200);
+
+    // Serving a place, or being served by another asset, ties it to the site.
+    const serving = await agent.patch(`${assets}/${pump.id}`).send({ version: 1, locationId: other.id }).expect(422);
+    expect(serving.body.code).toBe('asset_site_change');
+    const served = await agent.patch(`${assets}/${loose.id}`).send({ version: 1, locationId: other.id }).expect(422);
+    expect(served.body.code).toBe('asset_site_change');
+    // Moving within the site is fine, and so is moving once the links are gone.
+    await agent.patch(`${assets}/${pump.id}`).send({ version: 1, locationId: floor1.id }).expect(200);
+    await agent.put(serves(pump.id)).send({ locationIds: [], assetIds: [] }).expect(200);
+    await agent.patch(`${assets}/${pump.id}`).send({ version: 2, locationId: other.id }).expect(200);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('lets a component that is served by other assets stand alone', async () => {
+  const { agent, cleanup } = await estate();
+  try {
+    const { plant } = await tree(agent);
+    const system = await asset(agent, 'System', plant.id);
+    const part = (
+      await agent.post(assets).send({ name: 'Part', locationId: plant.id, parentId: system.id }).expect(201)
+    ).body;
+    await agent
+      .put(serves(system.id))
+      .send({ locationIds: [], assetIds: [part.id] })
+      .expect(200);
+    const alone = await agent.patch(`${assets}/${part.id}`).send({ version: 1, parentId: null }).expect(200);
+    expect(alone.body.parentId).toBeNull();
+    // Its serves link is untouched by that.
+    expect((await agent.get(serves(part.id)).expect(200)).body.servedBy).toMatchObject([{ id: system.id }]);
+  } finally {
+    await cleanup();
+  }
+});
+
 it('follows the links to show everything that depends on an asset, and survives a loop', async () => {
   const { agent, cleanup } = await estate();
   try {

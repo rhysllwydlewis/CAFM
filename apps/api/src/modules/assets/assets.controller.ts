@@ -176,7 +176,7 @@ async function requireClass(tx: Tx, tenantId: string, classId: string) {
 }
 
 /** The asset's location must be inside a site, and a parent must be in the same site. */
-async function requireSiteMatch(tx: Tx, tenantId: string, locationId: string, parent: Row | null) {
+async function requireSiteMatch(tx: Tx, tenantId: string, locationId: string, parent: { locationId: string } | null) {
   const site = await siteOf(tx, tenantId, locationId);
   if (!site) {
     throw new UnprocessableEntityException({
@@ -378,29 +378,34 @@ export class AssetsController {
       // Parent: visible, same site, no loops. A hidden parent can't be replaced, only left alone.
       let parentId = input.parentId;
       const currentParent = before.parentId
-        ? await tx.asset.findFirst({ where: { ...assetScope(auth), id: before.parentId }, include: { class: true } })
+        ? await tx.asset.findFirst({ where: { ...assetScope(auth), id: before.parentId }, select: { id: true } })
         : null;
       if (before.parentId && !currentParent && parentId !== undefined) {
         if (parentId !== null) throw new ForbiddenException();
         parentId = undefined;
       }
       const parentChanged = parentId !== undefined && parentId !== before.parentId;
-      const parent = parentChanged
-        ? parentId
-          ? await requireAsset(tx, auth, parentId)
-          : null
-        : parentId === undefined
-          ? currentParent
-          : null;
+      // The site rule applies to the real parent even when the member can't see it, so check against that.
+      const actualParent = before.parentId
+        ? await tx.asset.findFirst({ where: { tenantId, id: before.parentId }, select: { locationId: true } })
+        : null;
+      const parent = parentChanged ? (parentId ? await requireAsset(tx, auth, parentId) : null) : actualParent;
       const site = await requireSiteMatch(tx, tenantId, locationId, parent);
       if (locationId !== before.locationId) {
         const previousSite = await siteOf(tx, tenantId, before.locationId);
-        const components = await tx.asset.count({ where: { tenantId, parentId: before.id } });
-        if (previousSite?.id !== site.id && components) {
-          throw new UnprocessableEntityException({
-            code: 'asset_site_change',
-            message: 'An asset with components can’t move to another site. Move its components first.',
-          });
+        if (previousSite?.id !== site.id) {
+          // Components and "serves" links all stay within one site, so they have to be dealt with first.
+          const [components, links] = await Promise.all([
+            tx.asset.count({ where: { tenantId, parentId: before.id } }),
+            tx.assetServes.count({ where: { tenantId, OR: [{ assetId: before.id }, { servedAssetId: before.id }] } }),
+          ]);
+          if (components || links) {
+            throw new UnprocessableEntityException({
+              code: 'asset_site_change',
+              message:
+                'An asset with components, or that serves or is served by others, can’t move to another site. Move its components and remove those links first.',
+            });
+          }
         }
       }
       if (parentChanged && parentId) await assertNoAssetCycle(tx, tenantId, before.id, parentId);
