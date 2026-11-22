@@ -2,6 +2,7 @@
  * Proves row-level security holds for the application role (cafm_app), which
  * is what the API connects as. Needs a migrated and seeded database.
  */
+import { randomUUID } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
 import { PrismaClient, seedId, withAccount, withTenant, type Tx } from '../src';
 
@@ -317,6 +318,62 @@ it('isolates Helpdesk catalogue, requests and notifications and denies a cross-t
     ),
   ).rejects.toThrow(/Foreign key constraint/);
   expect(await withTenant(db, starter, (tx) => tx.notification.count())).toBe(0);
+});
+
+it('isolates work orders and their timeline and refuses foreign locations, requests and people', async () => {
+  expect([await db.workOrder.count(), await db.workOrderEntry.count()]).toEqual([0, 0]);
+  const [jobs, entries] = await withTenant(db, demo, (tx) =>
+    Promise.all([tx.workOrder.count(), tx.workOrderEntry.count()]),
+  );
+  expect(jobs).toBeGreaterThan(0);
+  expect(entries).toBeGreaterThan(0);
+  expect(await withTenant(db, starter, (tx) => Promise.all([tx.workOrder.count(), tx.workOrderEntry.count()]))).toEqual(
+    [0, 0],
+  );
+
+  const base = {
+    tenantId: starter,
+    title: 'Outside',
+    description: 'Outside',
+    impact: 2,
+    urgency: 2,
+    priority: 3,
+    submissionHash: 'test',
+  };
+  const starterLocation = await withTenant(db, starter, (tx) => tx.location.findFirstOrThrow());
+  const demoRequest = seedId('request:demo-estates:REQ-10480');
+  const demoTechnician = seedId('membership:demo-estates:technician');
+  const make = (data: object) =>
+    withTenant(db, starter, (tx) =>
+      tx.workOrder.create({
+        data: {
+          ...base,
+          number: 'WO-T-' + randomUUID().slice(0, 8),
+          submissionKey: randomUUID(),
+          locationId: starterLocation.id,
+          ...data,
+        } as never,
+      }),
+    );
+  await expect(make({ locationId: seedId('location:demo-estates:CDF') })).rejects.toThrow(/Foreign key constraint/);
+  await expect(make({ requestId: demoRequest })).rejects.toThrow(/Foreign key constraint/);
+  await expect(make({ assigneeId: demoTechnician })).rejects.toThrow(/Foreign key constraint/);
+  // The database refuses states the API never produces.
+  await expect(make({ status: 'nonsense' })).rejects.toThrow(/work_order_status_valid/);
+  await expect(make({ status: 'paused' })).rejects.toThrow(/work_order_pause_valid/);
+  await expect(make({ priority: 9 })).rejects.toThrow(/work_order_levels_valid/);
+  await expect(make({ title: '   ' })).rejects.toThrow(/work_order_text_valid/);
+
+  // A job in one organisation cannot be written to from another, nor can a timeline entry point at it.
+  const demoJob = await withTenant(db, demo, (tx) => tx.workOrder.findFirstOrThrow());
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.workOrderEntry.create({ data: { tenantId: starter, workOrderId: demoJob.id, kind: 'comment', body: 'Hi' } }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  expect(
+    await withTenant(db, starter, (tx) => tx.workOrder.updateMany({ where: { id: demoJob.id }, data: { title: 'x' } })),
+  ).toEqual({ count: 0 });
 });
 
 it('isolates asset operational records and refuses foreign parents', async () => {

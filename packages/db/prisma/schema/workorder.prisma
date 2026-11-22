@@ -27,6 +27,8 @@ model WorkOrder {
   verifiedAt      DateTime?        @map("verified_at") @db.Timestamptz(3)
   closedAt        DateTime?        @map("closed_at") @db.Timestamptz(3)
   custom          Json             @default("{}")
+  submissionKey   String           @map("submission_key")
+  submissionHash  String           @map("submission_hash")
   version         Int              @default(1)
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -40,6 +42,7 @@ model WorkOrder {
 
   @@unique([tenantId, id])
   @@unique([tenantId, number])
+  @@unique([tenantId, submissionKey])
   @@index([tenantId, status, fixDueAt])
   @@index([tenantId, assigneeId, status])
   @@index([tenantId, requestId])

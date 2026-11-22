@@ -9,6 +9,7 @@ import { ConfigEngineModule } from './modules/config/config.module';
 import { AssetsModule } from './modules/assets/assets.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { HelpdeskModule } from './modules/helpdesk/helpdesk.module';
+import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { PeopleModule } from './modules/people/people.module';
 import { RolesModule } from './modules/roles/roles.module';
 
@@ -23,6 +24,7 @@ import { RolesModule } from './modules/roles/roles.module';
     LocationsModule,
     AssetsModule,
     HelpdeskModule,
+    WorkOrdersModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: CsrfGuard }],

@@ -8,3 +8,4 @@ export * from './assets';
 export * from './helpdesk';
 
 export * from './asset-operations';
+export * from './work-orders';

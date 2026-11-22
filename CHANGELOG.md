@@ -4,6 +4,10 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ## Unreleased
 
+### Added
+
+- Work orders: reactive jobs with a lifecycle from Logged to Closed, assignment to people who can do the job at that location, notes, and a history of every change. A Helpdesk request can be turned into one or more jobs, which keep the request's priority and targets, and the request is completed and the requester told when all the work is done. Screens, contractor assignment, SLA clocks, costs, checklists and job sheets follow. See [Work orders](docs/work-orders.md).
+
 ### Changed
 
 - Keep accented filenames intact on uploads, link duplicate-report photos from the primary Helpdesk request, and cancel queued warranty deliveries when cover is renewed or archived.

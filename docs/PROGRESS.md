@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | P1-04a: work order tables with RLS, statuses and transitions, request conversion, API. Then 04b screens, 04c assignment, 04d SLA, 04e costs, 04f checklists and photos, 04g job sheet. |
+| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a is done (tables, lifecycle, API, request conversion, demo jobs). Next 04b: list, detail and board screens (`wo-01`, `wo-02`, `wo-03`), including Convert to work order on the Helpdesk request. Then 04c assignment and contractor magic link, 04d SLA clocks and escalation, 04e costs, 04f checklists and photos, 04g job sheet. |
 
 ## Phase checklists
 
@@ -105,7 +105,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-02g** Attachments (photos and documents) on assets. ([guide](assets.md#attachment-storage))
 - [x] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT. ([guide](helpdesk.md))
 - [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
-  - [ ] **P1-04a** Work order model and lifecycle: statuses and transitions, numbering, location and asset links, priority and SLA due dates from the request, convert a request into one or many work orders, API with audit and custom fields.
+  - [x] **P1-04a** Work order model and lifecycle: statuses and transitions, numbering, location and asset links, priority and SLA due dates from the request, convert a request into one or many work orders, API with audit and custom fields. ([guide](work-orders.md))
   - [ ] **P1-04b** Work order list, detail and board screens in the app shell (`wo-01-list`, `wo-02-detail`, `wo-03-board`).
   - [ ] **P1-04c** Assignment to people, teams and contractors, with a magic link so a contractor can update the job without an account.
   - [ ] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation.

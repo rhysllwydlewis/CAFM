@@ -1,0 +1,217 @@
+import { z } from 'zod';
+import type { ReportAsset, ReportLocation } from './helpdesk';
+
+const uuid = z.string().uuid();
+const shortText = (max: number) => z.string().trim().min(1).max(max);
+const level = z.number().int().min(1).max(3);
+const version = z.number().int().positive();
+
+export const WORK_ORDER_STATUSES = [
+  'logged',
+  'assigned',
+  'accepted',
+  'travelling',
+  'on_site',
+  'paused',
+  'completed',
+  'verified',
+  'closed',
+  'cancelled',
+] as const;
+export type WorkOrderStatus = (typeof WORK_ORDER_STATUSES)[number];
+
+export const WORK_ORDER_STATUS_LABELS: Record<WorkOrderStatus, string> = {
+  logged: 'Logged',
+  assigned: 'Assigned',
+  accepted: 'Accepted',
+  travelling: 'Travelling',
+  on_site: 'On site',
+  paused: 'Paused',
+  completed: 'Completed',
+  verified: 'Verified',
+  closed: 'Closed',
+  cancelled: 'Cancelled',
+};
+
+/** Where a job can go next. Assigning and unassigning (logged and assigned) is done by assigning, not by status. */
+export const WORK_ORDER_TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderStatus[]> = {
+  logged: ['assigned', 'cancelled'],
+  assigned: ['logged', 'accepted', 'travelling', 'on_site', 'paused', 'cancelled'],
+  accepted: ['assigned', 'travelling', 'on_site', 'paused', 'cancelled'],
+  travelling: ['accepted', 'on_site', 'paused', 'cancelled'],
+  on_site: ['paused', 'completed', 'cancelled'],
+  paused: ['accepted', 'travelling', 'on_site', 'cancelled'],
+  completed: ['verified', 'closed', 'on_site'],
+  verified: ['closed', 'on_site'],
+  closed: [],
+  cancelled: [],
+};
+
+/** The steps the person doing the job takes, with only the permission to close jobs. */
+export const WORK_ORDER_FIELD_STATUSES: readonly WorkOrderStatus[] = [
+  'accepted',
+  'travelling',
+  'on_site',
+  'paused',
+  'completed',
+];
+/** Jobs that no longer need work: nothing left to assign or chase. */
+export const WORK_ORDER_FINISHED: readonly WorkOrderStatus[] = ['completed', 'verified', 'closed', 'cancelled'];
+/** Jobs the attendance clock has run for. */
+export const WORK_ORDER_ATTENDED: readonly WorkOrderStatus[] = ['on_site', 'completed', 'verified', 'closed'];
+
+export const WORK_ORDER_PAUSE_REASONS = [
+  'awaiting_parts',
+  'awaiting_access',
+  'awaiting_approval',
+  'awaiting_contractor',
+  'other',
+] as const;
+export type WorkOrderPauseReason = (typeof WORK_ORDER_PAUSE_REASONS)[number];
+export const WORK_ORDER_PAUSE_LABELS: Record<WorkOrderPauseReason, string> = {
+  awaiting_parts: 'Awaiting parts',
+  awaiting_access: 'Awaiting access',
+  awaiting_approval: 'Awaiting approval',
+  awaiting_contractor: 'Awaiting contractor',
+  other: 'Other',
+};
+
+export const WORK_ORDER_VIEWS = ['open', 'mine', 'unassigned', 'overdue', 'all'] as const;
+export type WorkOrderView = (typeof WORK_ORDER_VIEWS)[number];
+
+/** Rows in a convert-request call: one request can become several jobs (for example, one per trade). */
+export const MAX_JOBS_PER_REQUEST = 10;
+
+export const createWorkOrderSchema = z
+  .object({
+    submissionId: uuid,
+    title: shortText(160),
+    description: shortText(6000),
+    locationId: uuid,
+    assetId: uuid.nullable().default(null),
+    impact: level,
+    urgency: level,
+    assigneeId: uuid.nullable().default(null),
+    custom: z.record(z.unknown()).default({}),
+  })
+  .strict();
+export type CreateWorkOrder = z.infer<typeof createWorkOrderSchema>;
+
+export const convertRequestSchema = z
+  .object({
+    submissionId: uuid,
+    requestVersion: version,
+    jobs: z
+      .array(
+        z
+          .object({
+            title: shortText(160).optional(),
+            description: shortText(6000).optional(),
+            assetId: uuid.nullable().optional(),
+            assigneeId: uuid.nullable().default(null),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(MAX_JOBS_PER_REQUEST),
+  })
+  .strict();
+export type ConvertRequest = z.infer<typeof convertRequestSchema>;
+
+export const listWorkOrdersSchema = z.object({
+  view: z.enum(WORK_ORDER_VIEWS).default('open'),
+  status: z.enum(WORK_ORDER_STATUSES).optional(),
+  q: z.string().trim().max(160).optional(),
+  locationId: uuid.optional(),
+  assetId: uuid.optional(),
+  priority: z.coerce.number().int().min(1).max(4).optional(),
+  cursor: uuid.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+
+export const changeWorkOrderSchema = z
+  .object({
+    version,
+    title: shortText(160).optional(),
+    description: shortText(6000).optional(),
+    assetId: uuid.nullable().optional(),
+    impact: level.optional(),
+    urgency: level.optional(),
+    custom: z.record(z.unknown()).optional(),
+  })
+  .strict()
+  .refine(
+    (change) =>
+      change.title !== undefined ||
+      change.description !== undefined ||
+      change.assetId !== undefined ||
+      change.impact !== undefined ||
+      change.urgency !== undefined ||
+      change.custom !== undefined,
+    'Change at least one detail.',
+  )
+  // Impact and urgency decide the priority and the SLA targets, so they are changed together.
+  .refine(
+    (change) => (change.impact === undefined) === (change.urgency === undefined),
+    'Set impact and urgency together.',
+  );
+
+export const changeWorkOrderStatusSchema = z
+  .object({
+    version,
+    status: z.enum(WORK_ORDER_STATUSES),
+    pauseReason: z.enum(WORK_ORDER_PAUSE_REASONS).optional(),
+    note: shortText(1200).optional(),
+  })
+  .strict()
+  .refine((change) => (change.status === 'paused') === (change.pauseReason !== undefined), {
+    message: 'Choose why the job is paused.',
+    path: ['pauseReason'],
+  });
+
+export const assignWorkOrderSchema = z.object({ version, assigneeId: uuid.nullable() }).strict();
+export const workOrderCommentSchema = z
+  .object({ body: shortText(6000), internal: z.boolean().default(false) })
+  .strict();
+
+export type WorkOrderSummary = {
+  id: string;
+  number: string;
+  title: string;
+  status: WorkOrderStatus;
+  pauseReason: WorkOrderPauseReason | null;
+  priority: number;
+  location: ReportLocation;
+  asset: ReportAsset | null;
+  request: { id: string; number: string } | null;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  responseDueAt: string | null;
+  attendDueAt: string | null;
+  fixDueAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type WorkOrderRecord<CustomField = unknown> = WorkOrderSummary & {
+  version: number;
+  type: string;
+  description: string;
+  impact: number;
+  urgency: number;
+  createdByName: string | null;
+  firstResponseAt: string | null;
+  attendedAt: string | null;
+  completedAt: string | null;
+  verifiedAt: string | null;
+  closedAt: string | null;
+  customFields: { definition: CustomField; value: unknown }[];
+  /** The statuses this person can move the job to now, given its state and their permissions. */
+  nextStatuses: WorkOrderStatus[];
+  entries: { id: string; kind: string; body: string; internal: boolean; author: string | null; createdAt: string }[];
+};
+export type WorkOrderPage = {
+  items: WorkOrderSummary[];
+  nextCursor: string | null;
+  cursorReset?: boolean;
+  counts?: { open: number; unassigned: number; overdue: number; completedToday: number };
+};

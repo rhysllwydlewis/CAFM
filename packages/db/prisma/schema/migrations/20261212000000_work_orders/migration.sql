@@ -25,6 +25,8 @@ CREATE TABLE "work_order" (
     "verified_at" TIMESTAMPTZ(3),
     "closed_at" TIMESTAMPTZ(3),
     "custom" JSONB NOT NULL DEFAULT '{}',
+    "submission_key" TEXT NOT NULL,
+    "submission_hash" TEXT NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 1,
     "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(3) NOT NULL,
@@ -69,6 +71,9 @@ CREATE UNIQUE INDEX "work_order_tenant_id_id_key" ON "work_order"("tenant_id", "
 
 -- CreateIndex
 CREATE UNIQUE INDEX "work_order_tenant_id_number_key" ON "work_order"("tenant_id", "number");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "work_order_tenant_id_submission_key_key" ON "work_order"("tenant_id", "submission_key");
 
 -- CreateIndex
 CREATE INDEX "work_order_entry_tenant_id_work_order_id_created_at_id_idx" ON "work_order_entry"("tenant_id", "work_order_id", "created_at", "id");
