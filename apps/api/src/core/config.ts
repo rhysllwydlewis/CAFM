@@ -1,5 +1,6 @@
+import { UnprocessableEntityException } from '@nestjs/common';
 import type { Prisma, Tx } from '@cafm/db';
-import { DEFAULT_SEQUENCES, formatNumber, type FieldDefinition } from '@cafm/config-engine';
+import { DEFAULT_SEQUENCES, formatNumber, validateCustom, type FieldDefinition } from '@cafm/config-engine';
 import type { AuthContext } from './session';
 
 /** The definition as the validator and clients need it. */
@@ -75,4 +76,39 @@ export async function nextNumber(
     WHERE tenant_id = ${tenantId}::uuid AND key = ${key}
     RETURNING next_value - 1 AS value, format`;
   return formatNumber(row!.format, row!.value, new Date(), context);
+}
+
+/** The active custom fields for an entity type, by key (doc 02 § 0). */
+export async function activeCustomFields(
+  tx: Tx,
+  tenantId: string,
+  entityType: string,
+): Promise<ReadonlyMap<string, FieldDefinition>> {
+  const rows = await tx.fieldDefinition.findMany({
+    where: { tenantId, entityType, active: true },
+    orderBy: [{ position: 'asc' }, { label: 'asc' }],
+  });
+  return new Map(rows.map((row) => [row.key, toFieldDefinition(row)]));
+}
+
+/** The stored values for fields that are still active. Retired fields stay in storage but are hidden. */
+export function visibleCustom(values: Prisma.JsonValue | undefined, fields: ReadonlyMap<string, FieldDefinition>) {
+  return Object.fromEntries(Object.entries((values ?? {}) as Prisma.JsonObject).filter(([key]) => fields.has(key)));
+}
+
+/**
+ * Validates custom values against the active fields and merges them over the
+ * previous ones, keeping values for retired fields. Throws 422 with a message per field.
+ */
+export function mergeCustom(
+  fields: ReadonlyMap<string, FieldDefinition>,
+  values: Record<string, unknown>,
+  previous?: Prisma.JsonValue,
+): Prisma.InputJsonObject {
+  const result = validateCustom([...fields.values()], { ...visibleCustom(previous, fields), ...values });
+  if (!result.success) throw new UnprocessableEntityException({ code: 'invalid_custom_fields', errors: result.errors });
+  const retired = Object.fromEntries(
+    Object.entries((previous ?? {}) as Prisma.JsonObject).filter(([key]) => !fields.has(key)),
+  );
+  return { ...retired, ...result.data } as Prisma.InputJsonObject;
 }

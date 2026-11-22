@@ -1,0 +1,66 @@
+/// A class in the tenant's classification scheme (Uniclass 2015, NRM 3, SFG20 or custom).
+/// `attributes` is the template of extra fields assets of this class carry.
+model AssetClass {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  scheme     String
+  code       String
+  name       String
+  /// The heading the class is listed under in the register, such as "Heating & hot water".
+  group      String
+  attributes Json     @default("[]")
+  position   Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  assets     Asset[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, scheme, code])
+  @@index([tenantId, group])
+  @@map("asset_class")
+}
+
+/// A piece of equipment or fabric in a location. Location, parent and class must be in the same tenant.
+model Asset {
+  id                   String      @id @default(uuid(7)) @db.Uuid
+  tenantId             String      @map("tenant_id") @db.Uuid
+  locationId           String      @map("location_id") @db.Uuid
+  parentId             String?     @map("parent_id") @db.Uuid
+  classId              String?     @map("class_id") @db.Uuid
+  /// The reference people use and labels carry, such as AST-00214. Never reused.
+  number               String
+  name                 String
+  status               String      @default("in_service")
+  make                 String?
+  model                String?
+  serial               String?
+  installedOn          DateTime?   @map("installed_on") @db.Date
+  supplier             String?
+  expectedLifeYears    Int?        @map("expected_life_years")
+  /// Money is integer minor units plus a currency code.
+  replacementCostMinor Int?        @map("replacement_cost_minor")
+  currency             String      @default("GBP")
+  criticality          String      @default("medium")
+  condition            String?
+  /// Values for the class's attribute template.
+  attributes           Json        @default("{}")
+  custom               Json        @default("{}")
+  version              Int         @default(1)
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant               Tenant      @relation(fields: [tenantId], references: [id])
+  location             Location    @relation(fields: [tenantId, locationId], references: [tenantId, id], onDelete: Restrict)
+  parent               Asset?      @relation("AssetParent", fields: [tenantId, parentId], references: [tenantId, id], onDelete: NoAction)
+  children             Asset[]     @relation("AssetParent")
+  class                AssetClass? @relation(fields: [tenantId, classId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, number])
+  @@index([tenantId, locationId])
+  @@index([tenantId, parentId])
+  @@index([tenantId, classId])
+  @@index([tenantId, status])
+  @@map("asset")
+}

@@ -29,6 +29,15 @@ describe('demo reset', () => {
       });
       await db.locationPath.create({ data: { tenantId: tenant.id, ancestorId: site.id, descendantId: floor.id } });
       await db.membershipSite.create({ data: { tenantId: tenant.id, membershipId: member.id, locationId: site.id } });
+      const assetClass = await db.assetClass.create({
+        data: { tenantId: tenant.id, scheme: 'custom', code: 'X', name: 'Class', group: 'Group' },
+      });
+      const parentAsset = await db.asset.create({
+        data: { tenantId: tenant.id, locationId: floor.id, classId: assetClass.id, number: 'AST-1', name: 'System' },
+      });
+      await db.asset.create({
+        data: { tenantId: tenant.id, locationId: floor.id, parentId: parentAsset.id, number: 'AST-2', name: 'Part' },
+      });
       await db.role.create({ data: { tenantId: tenant.id, key: 'custom_x', name: 'X', permissions: [] } });
       await db.role.update({
         where: { tenantId_key: { tenantId: tenant.id, key: 'helpdesk' } },
@@ -57,10 +66,14 @@ describe('demo reset', () => {
       ).toContain('people.read');
       expect(await db.invite.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.auditEvent.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.asset.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.assetClass.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.location.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.locationPath.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.membershipSite.count({ where: { tenantId: tenant.id } })).toBe(0);
     } finally {
+      await db.asset.deleteMany({ where: { tenantId: tenant.id } });
+      await db.assetClass.deleteMany({ where: { tenantId: tenant.id } });
       await db.location.deleteMany({ where: { tenantId: tenant.id } });
       await db.role.deleteMany({ where: { tenantId: tenant.id } });
       await db.tenant.delete({ where: { id: tenant.id } });

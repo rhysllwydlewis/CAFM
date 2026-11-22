@@ -20,6 +20,7 @@ model Location {
   ancestors        LocationPath[]   @relation("LocationDescendant")
   descendants      LocationPath[]   @relation("LocationAncestor")
   grants           MembershipSite[]
+  assets           Asset[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])

@@ -37,6 +37,51 @@ it('isolates location records, paths and site grants and rejects a cross-tenant 
   ).rejects.toThrow(/Foreign key constraint/);
 });
 
+it('isolates assets and classes, and rejects a cross-tenant location, parent or class', async () => {
+  const boiler = seedId('asset:demo-estates:boiler-2');
+  const boilerClass = seedId('asset-class:demo-estates:BOILER');
+  expect(await db.asset.count()).toBe(0);
+  expect(await db.assetClass.count()).toBe(0);
+  const demoAssets = await withTenant(db, demo, (tx) => tx.asset.findMany({ include: { class: true } }));
+  expect(demoAssets).toHaveLength(10);
+  expect(demoAssets.find(({ id }) => id === boiler)).toMatchObject({ number: 'AST-00003', class: { code: 'BOILER' } });
+  const starterRows = await withTenant(db, starter, async (tx) => ({
+    assets: await tx.asset.findMany(),
+    classes: await tx.assetClass.findMany(),
+    demoAsset: await tx.asset.findUnique({ where: { id: boiler } }),
+  }));
+  expect(starterRows.assets.map(({ name }) => name)).toEqual(['Dock leveller 1']);
+  expect(starterRows.classes).toHaveLength(13);
+  expect(starterRows.demoAsset).toBeNull();
+  const starterSite = seedId('location:starter-demo:ST-WH');
+  const demoSite = seedId('location:demo-estates:CDF');
+  const create = (data: { locationId?: string; parentId?: string; classId?: string }) =>
+    withTenant(db, starter, (tx) =>
+      tx.asset.create({
+        data: { tenantId: starter, locationId: starterSite, number: 'X-1', name: 'Outside', ...data },
+      }),
+    );
+  await expect(create({ locationId: demoSite })).rejects.toThrow(/Foreign key constraint/);
+  await expect(create({ parentId: boiler })).rejects.toThrow(/Foreign key constraint/);
+  await expect(create({ classId: boilerClass })).rejects.toThrow(/Foreign key constraint/);
+});
+
+it('refuses assets the database rules forbid, whatever the API checks', async () => {
+  const site = seedId('location:starter-demo:ST-WH');
+  const make = (n: number, data: Record<string, unknown>) =>
+    withTenant(db, starter, (tx) =>
+      tx.asset.create({ data: { tenantId: starter, locationId: site, number: `RULE-${n}`, name: 'Rule', ...data } }),
+    );
+  await expect(make(1, { status: 'broken' })).rejects.toThrow(/asset_status_check/);
+  await expect(make(2, { criticality: 'urgent' })).rejects.toThrow(/asset_criticality_check/);
+  await expect(make(3, { condition: 'E' })).rejects.toThrow(/asset_condition_check/);
+  await expect(make(4, { replacementCostMinor: -1 })).rejects.toThrow(/asset_cost_check/);
+  await expect(make(5, { currency: 'pounds' })).rejects.toThrow(/asset_currency_check/);
+  await expect(make(6, { expectedLifeYears: 0 })).rejects.toThrow(/asset_life_check/);
+  // A reference is never reused within a tenant.
+  await expect(make(7, { number: 'AST-00001' })).rejects.toThrow(/Unique constraint/);
+});
+
 describe('row-level security on membership', () => {
   it('connects as a role that cannot bypass RLS', async () => {
     const [row] = await db.$queryRaw<{ rolbypassrls: boolean; rolsuper: boolean }[]>`
