@@ -18,7 +18,14 @@ import {
 import type { Request } from 'express';
 import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
 import { withTenant, type Prisma, type Tx } from '@cafm/db';
-import { createLocationSchema, listLocationsSchema, locationAccessSchema, updateLocationSchema } from '@cafm/shared';
+import {
+  createLocationSchema,
+  listLocationsSchema,
+  locationAccessSchema,
+  updateLocationSchema,
+  type LocationRecord,
+  type LocationPage,
+} from '@cafm/shared';
 import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
@@ -51,20 +58,39 @@ function activeValues(values: Prisma.JsonValue | undefined, fields: LocationFiel
   return Object.fromEntries(customEntries(values).filter(([key]) => fields.has(key)));
 }
 
-function publicFields(row: Location, fields: LocationFields) {
-  const { id, name, code, kind, status, parentId, version, custom } = row;
-  return { id, name, code, kind, status, parentId, version, custom: activeValues(custom, fields) };
+function publicFields(row: Location, fields: LocationFields, includeAccess = false): LocationRecord {
+  const { id, name, code, kind, status, parentId, version, custom, details, siteCalendar } = row;
+  return {
+    id,
+    name,
+    code,
+    parentId,
+    version,
+    kind: kind as LocationRecord['kind'],
+    status: status as LocationRecord['status'],
+    custom: activeValues(custom, fields),
+    details: details as LocationRecord['details'],
+    siteCalendar: siteCalendar as LocationRecord['siteCalendar'],
+    ...(includeAccess ? { restrictedAccess: row.restrictedAccess } : {}),
+  };
 }
 
 function auditFields(row: Location) {
-  const { name, code, kind, status, parentId, version } = row;
-  return { name, code, kind, status, parentId, version };
+  const { name, code, kind, status, parentId, version, details, siteCalendar } = row;
+  return { name, code, kind, status, parentId, version, details, siteCalendar };
 }
 
-async function visibleLocations(tx: Tx, auth: AuthContext, rows: Location[], fields?: LocationFields) {
+async function visibleLocations(
+  tx: Tx,
+  auth: AuthContext,
+  rows: Location[],
+  fields?: LocationFields,
+  accessDetails = false,
+) {
   if (!rows.length) return [];
   const definitions = fields ?? (await activeFields(tx, auth.membership!.tenantId));
-  if (allLocations(auth)) return rows.map((row) => publicFields(row, definitions));
+  const includeAccess = accessDetails && auth.access!.permissions.has('locations.manage');
+  if (allLocations(auth)) return rows.map((row) => publicFields(row, definitions, includeAccess));
   const ids = rows.flatMap(({ parentId }) => (parentId ? [parentId] : []));
   const parents = new Set(
     (
@@ -75,7 +101,11 @@ async function visibleLocations(tx: Tx, auth: AuthContext, rows: Location[], fie
     ).map(({ id }) => id),
   );
   return rows.map((row) =>
-    publicFields({ ...row, parentId: row.parentId && parents.has(row.parentId) ? row.parentId : null }, definitions),
+    publicFields(
+      { ...row, parentId: row.parentId && parents.has(row.parentId) ? row.parentId : null },
+      definitions,
+      includeAccess,
+    ),
   );
 }
 
@@ -106,27 +136,37 @@ export class LocationsController {
 
   @Get()
   @RequirePermission('locations.read')
-  async list(@Query() query: unknown, @Req() req: Request) {
-    const { after, q, limit, kind } = parse(listLocationsSchema, query);
+  async list(@Query() query: unknown, @Req() req: Request): Promise<LocationPage> {
+    const { after, q, limit, kind, status, parent } = parse(listLocationsSchema, query);
     // Prisma's contains uses a PostgreSQL LIKE pattern. Search for the text literally.
     const search = q?.replace(/[\\%_]/g, '\\$&');
     const auth = req.auth!;
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
+      const scope = locationScope(auth);
       const rows = await tx.location.findMany({
         where: {
-          ...locationScope(auth),
+          ...scope,
           kind,
+          status,
+          ...(parent === 'root'
+            ? { AND: [{ OR: [{ parentId: null }, { parent: { isNot: scope } }] }] }
+            : { parentId: parent }),
           id: after ? { gt: after } : undefined,
           OR: search
             ? [{ name: { contains: search, mode: 'insensitive' } }, { code: { contains: search, mode: 'insensitive' } }]
             : undefined,
         },
         orderBy: { id: 'asc' },
+        include: { _count: { select: { children: { where: scope } } } },
         take: limit + 1,
       });
       const page = rows.slice(0, limit);
       return {
-        items: await visibleLocations(tx, auth, page),
+        items: (await visibleLocations(tx, auth, page)).map((item, index) => ({
+          ...item,
+          hasChildren: page[index]!._count.children > 0,
+        })),
+        canManageHierarchy: allLocations(auth) && auth.access!.permissions.has('locations.manage'),
         nextCursor: rows.length > limit ? page.at(-1)!.id : null,
       };
     });
@@ -138,7 +178,7 @@ export class LocationsController {
     const auth = req.auth!;
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
       const row = await requireLocation(tx, auth, id);
-      const [location] = await visibleLocations(tx, auth, [row]);
+      const [location] = await visibleLocations(tx, auth, [row], undefined, true);
       return location;
     });
   }
@@ -152,6 +192,8 @@ export class LocationsController {
       if ((!input.parentId || input.kind === 'site') && !allLocations(auth)) throw new ForbiddenException();
       if (input.parentId) await requireLocation(tx, auth, input.parentId);
       await assertLocationParent(tx, tenantId, input.kind, input.parentId);
+      if (input.siteCalendar && input.kind !== 'site')
+        throw new UnprocessableEntityException('Choose a site for this calendar.');
       const limit = auth.access!.entitlements.limits.sites;
       if (
         input.kind === 'site' &&
@@ -171,7 +213,7 @@ export class LocationsController {
         { action: 'location.created', entityType: 'location', entityId: row.id, changes: { after: auditFields(row) } },
         req.ip,
       );
-      return publicFields(row, fields);
+      return publicFields(row, fields, true);
     });
   }
 
@@ -184,6 +226,8 @@ export class LocationsController {
       const before = await requireLocation(tx, auth, id);
       if (before.version !== version)
         throw new ConflictException({ code: 'location_changed', message: 'Reload this location and try again.' });
+      if (input.siteCalendar && before.kind !== 'site')
+        throw new UnprocessableEntityException('Choose a site for this calendar.');
       let parentId = requestedParent;
       if (parentId !== undefined && parentId !== before.parentId) {
         if (allLocations(auth)) {
@@ -223,12 +267,13 @@ export class LocationsController {
           changes: {
             before: auditFields(before),
             after: auditFields(updated),
+            ...(input.restrictedAccess !== undefined ? { restrictedAccessChanged: true } : {}),
             ...(custom ? { customFields: Object.keys(custom) } : {}),
           },
         },
         req.ip,
       );
-      const [location] = await visibleLocations(tx, auth, [updated], fields);
+      const [location] = await visibleLocations(tx, auth, [updated], fields, true);
       return location;
     });
   }

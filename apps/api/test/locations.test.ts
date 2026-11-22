@@ -225,3 +225,97 @@ it('enforces site limits under concurrent creation and validates custom fields',
     await cleanup();
   }
 });
+
+it('manages site details and calendars and restricts access instructions to authorised readers', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const viewer = await createTestAccount(db, [tenant.id], undefined, 'helpdesk');
+    const readOnly = (await signIn(app, viewer.email, viewer.password)).agent;
+    const siteDetails = { address: '1 Example Street', latitude: 51.4, longitude: -3.2, grossArea: 100, netArea: 80 };
+    const calendar = {
+      jurisdiction: 'wales',
+      timeZone: 'Europe/London',
+      observeBankHolidays: true,
+      hours: [{ day: 1, opens: '09:00', closes: '17:00' }],
+      closures: [{ name: 'Repairs', from: '2027-01-04', to: '2027-01-05' }],
+    };
+    const region = (await agent.post(locations).send({ code: 'REG', name: 'Region', kind: 'region' }).expect(201)).body;
+    const site = (
+      await agent
+        .post(locations)
+        .send({
+          code: 'A',
+          name: 'Site A',
+          kind: 'site',
+          parentId: region.id,
+          details: siteDetails,
+          siteCalendar: calendar,
+          restrictedAccess: 'Ask reception before entering',
+        })
+        .expect(201)
+    ).body;
+    expect(site.siteCalendar).toEqual(calendar);
+    expect((await agent.get(locations + '/' + site.id).expect(200)).body.restrictedAccess).toBe(
+      'Ask reception before entering',
+    );
+    expect((await readOnly.get(locations + '/' + site.id).expect(200)).body).not.toHaveProperty('restrictedAccess');
+    expect((await agent.get(locations).query({ kind: 'site' }).expect(200)).body.items[0]).not.toHaveProperty(
+      'restrictedAccess',
+    );
+    const audit = await agent.get('/api/audit').expect(200);
+    expect(JSON.stringify(audit.body)).not.toContain('Ask reception before entering');
+    await readOnly
+      .patch(locations + '/' + site.id)
+      .send({ version: 1, siteCalendar: calendar })
+      .expect(403);
+    await agent
+      .patch(locations + '/' + region.id)
+      .send({ version: 1, siteCalendar: calendar })
+      .expect(422);
+    await agent
+      .patch(locations + '/' + site.id)
+      .send({ version: 1, details: { latitude: 1 } })
+      .expect(400);
+    await agent
+      .patch(locations + '/' + site.id)
+      .send({ version: 1, status: 'closed' })
+      .expect(200);
+    expect((await agent.get(locations).query({ kind: 'site', status: 'closed' }).expect(200)).body.items).toMatchObject(
+      [{ id: site.id, details: siteDetails, siteCalendar: calendar }],
+    );
+  } finally {
+    await cleanup();
+  }
+});
+
+it('lists available roots and child indicators from the member’s own branches', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const scoped = await createTestAccount(db, [tenant.id], undefined, 'fm_manager');
+    const reader = (await signIn(app, scoped.email, scoped.password)).agent;
+    const region = (await agent.post(locations).send({ code: 'REG', name: 'Region', kind: 'region' }).expect(201)).body;
+    const site = (
+      await agent.post(locations).send({ code: 'S', name: 'Site', kind: 'site', parentId: region.id }).expect(201)
+    ).body;
+    const floor = (
+      await agent.post(locations).send({ code: 'F', name: 'Floor', kind: 'floor', parentId: site.id }).expect(201)
+    ).body;
+    await agent
+      .put(locations + '/access/' + scoped.memberships[0])
+      .send({ locationIds: [site.id] })
+      .expect(200);
+    expect((await agent.get(locations).query({ parent: 'root' }).expect(200)).body).toMatchObject({
+      canManageHierarchy: true,
+      items: [{ id: region.id, hasChildren: true }],
+    });
+    expect((await reader.get(locations).query({ parent: 'root' }).expect(200)).body).toMatchObject({
+      canManageHierarchy: false,
+      items: [{ id: site.id, parentId: null, hasChildren: true }],
+    });
+    expect((await reader.get(locations).query({ parent: site.id }).expect(200)).body.items).toMatchObject([
+      { id: floor.id, parentId: site.id, hasChildren: false },
+    ]);
+  } finally {
+    await cleanup();
+  }
+});
