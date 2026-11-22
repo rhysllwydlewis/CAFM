@@ -142,7 +142,7 @@ export class RequestsController {
     const auth = req.auth!;
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
       const row = await tx.asset.findFirst({
-        where: { id, location: reportLocations(auth), status: { not: 'disposed' } },
+        where: { id, location: reportLocations(auth), status: { not: 'decommissioned' } },
         select: { ...reportAssetSelect, location: { select: reportLocationSelect } },
       });
       if (!row) throw new NotFoundException('Reportable asset not found.');
@@ -160,7 +160,7 @@ export class RequestsController {
       tx.asset.findMany({
         where: {
           location: { ...reportLocations(auth), id },
-          status: { not: 'disposed' },
+          status: { not: 'decommissioned' },
           ...(query
             ? {
                 OR: [

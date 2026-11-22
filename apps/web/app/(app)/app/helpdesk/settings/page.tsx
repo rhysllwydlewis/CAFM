@@ -16,7 +16,7 @@ export default async function HelpdeskSettingsPage() {
     <div className="page stack g4">
       <Link href="/app/helpdesk">Helpdesk queue</Link>
       <h1 className="page-title">Request catalogue</h1>
-      <SettingsForms data={data} />
+      <SettingsForms data={data} routeRequests={user.scope === 'all'} />
     </div>
   );
 }

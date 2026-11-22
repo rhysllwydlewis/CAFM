@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -32,6 +33,7 @@ import { recordVersion } from '../../core/config';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
+import { locationScope } from '../locations/location-tree';
 import { requestNotificationDefault } from './request-notifications';
 import { eligibleAssignee } from './request-records';
 import { reportLocations, staleRequest, withRequestWrite } from './request-scope';
@@ -44,12 +46,18 @@ async function settingsChange(tx: Tx, auth: AuthContext, kind: string, id: strin
 async function validateMailbox(
   tx: Tx,
   auth: AuthContext,
-  input: { address: string; typeId: string; locationId: string },
+  input: { address: string; typeId: string; locationId: string; active: boolean },
   id?: string,
 ) {
   const [location, type, existing] = await Promise.all([
-    tx.location.findFirst({ where: { ...reportLocations(auth), id: input.locationId }, select: { id: true } }),
-    tx.requestType.findFirst({ where: { id: input.typeId, active: true }, select: { id: true } }),
+    tx.location.findFirst({
+      where: { ...(input.active ? reportLocations(auth) : locationScope(auth)), id: input.locationId },
+      select: { id: true },
+    }),
+    tx.requestType.findFirst({
+      where: { id: input.typeId, ...(input.active ? { active: true } : {}) },
+      select: { id: true },
+    }),
     tx.requestMailbox.findFirst({
       where: { address: input.address, NOT: id ? { id } : undefined },
       select: { id: true },
@@ -71,16 +79,20 @@ export class HelpdeskSettingsController {
     const tenantId = req.auth!.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
       const [types, rules, mailboxes, templates] = await Promise.all([
-        tx.requestType.findMany({ orderBy: [{ category: 'asc' }, { name: 'asc' }] }),
+        tx.requestType.findMany({
+          orderBy: [{ category: 'asc' }, { name: 'asc' }],
+          include: { assignee: { select: { account: { select: { name: true } } } } },
+        }),
         tx.requestPriority.findMany(),
         tx.requestMailbox.findMany({
+          where: { location: locationScope(req.auth!) },
           orderBy: { address: 'asc' },
           include: { location: { select: { name: true, code: true } } },
         }),
         tx.notificationTemplate.findMany(),
       ]);
       return {
-        types,
+        types: types.map(({ assignee, ...type }) => ({ ...type, assigneeName: assignee?.account.name ?? null })),
         mailboxes,
         matrix: [1, 2, 3].flatMap((impact) =>
           [1, 2, 3].map(
@@ -93,6 +105,31 @@ export class HelpdeskSettingsController {
           (key) => templates.find((row) => row.key === key) ?? requestNotificationDefault(key),
         ),
       };
+    });
+  }
+
+  @Get('assignees')
+  assignees(@Req() req: Request, @Query('q') q?: string) {
+    const tenantId = req.auth!.membership!.tenantId;
+    const query = typeof q === 'string' ? q.trim().slice(0, 100) : '';
+    return withTenant(this.db, tenantId, async (tx) => {
+      const roles = await tx.role.findMany({
+        where: { tenantId, permissions: { has: 'requests.manage' } },
+        select: { key: true },
+      });
+      const members = await tx.membership.findMany({
+        where: {
+          tenantId,
+          status: 'active',
+          licence: 'full',
+          role: { in: roles.map(({ key }) => key) },
+          account: { name: { contains: query, mode: 'insensitive' } },
+        },
+        select: { id: true, account: { select: { name: true } } },
+        orderBy: [{ account: { name: 'asc' } }, { id: 'asc' }],
+        take: 25,
+      });
+      return members.map(({ id, account }) => ({ id, name: account.name }));
     });
   }
 
@@ -179,7 +216,7 @@ export class HelpdeskSettingsController {
     return withRequestWrite(this.db, auth, 'settings.manage', async (tx, current) => {
       const tenantId = current.membership!.tenantId;
       if (edit) {
-        const old = await tx.requestMailbox.findFirst({ where: { id: edit.id, location: reportLocations(current) } });
+        const old = await tx.requestMailbox.findFirst({ where: { id: edit.id, location: locationScope(current) } });
         if (!old) throw new NotFoundException('Mailbox not found.');
         if (old.version !== edit.version) throw staleRequest();
       }

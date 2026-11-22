@@ -10,6 +10,7 @@ export function requestDeadline(start: Date, minutes: number, calendar: SiteCale
   const firstDay = Temporal.Instant.fromEpochMilliseconds(start.getTime())
     .toZonedDateTimeISO(calendar.timeZone)
     .toPlainDate();
+  let cursor = start.getTime();
   for (let offset = 0; offset <= 730; offset++) {
     const day = firstDay.add({ days: offset });
     for (const window of siteBusinessHoursOn(calendar, day.toString())) {
@@ -17,11 +18,12 @@ export function requestDeadline(start: Date, minutes: number, calendar: SiteCale
       const closes = day
         .toPlainDateTime(window.closes)
         .toZonedDateTime(calendar.timeZone, { disambiguation: 'later' }).epochMilliseconds;
-      const from = Math.max(opens, start.getTime());
+      const from = Math.max(opens, cursor);
       if (closes <= from) continue;
       const available = closes - from;
       if (available >= remaining) return new Date(from + remaining);
       remaining -= available;
+      cursor = closes;
     }
   }
   return null;

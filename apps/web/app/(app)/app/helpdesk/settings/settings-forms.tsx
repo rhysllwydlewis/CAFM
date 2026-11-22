@@ -13,7 +13,7 @@ import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { RecordPicker } from '../record-picker';
 import styles from '../helpdesk.module.css';
 
-type Type = RequestTypeInput & { id: string; version: number };
+type Type = RequestTypeInput & { id: string; version: number; assigneeName: string | null };
 type Mailbox = {
   id: string;
   version: number;
@@ -105,7 +105,10 @@ function Level({
   );
 }
 
-function EditType({ selected }: { selected?: Type }) {
+function EditType({ selected, routeRequests }: { selected?: Type; routeRequests: boolean }) {
+  const [assignee, setAssignee] = useState(
+    selected?.assigneeId && selected.assigneeName ? { id: selected.assigneeId, name: selected.assigneeName } : null,
+  );
   const [rows, setRows] = useState(() =>
     (selected?.questions ?? []).map((question, index) => ({ id: index, question })),
   );
@@ -134,7 +137,7 @@ function EditType({ selected }: { selected?: Type }) {
             duplicateWindowHours: Number(data.get('duplicateWindowHours')),
             acknowledgement: acknowledgement || null,
             active: data.has('active'),
-            assigneeId: selected?.assigneeId ?? null,
+            assigneeId: routeRequests ? (assignee?.id ?? null) : (selected?.assigneeId ?? null),
             ...(selected ? { version: selected.version } : {}),
           },
           selected ? 'PATCH' : 'POST',
@@ -176,6 +179,14 @@ function EditType({ selected }: { selected?: Type }) {
           defaultValue={selected?.acknowledgement ?? ''}
         />
       </Field>
+      {routeRequests && (
+        <RecordPicker
+          label="Default assignee"
+          path="/helpdesk/settings/assignees"
+          value={assignee}
+          onChange={setAssignee}
+        />
+      )}
       <Checkbox label="Available to requesters" name="active" defaultChecked={selected?.active ?? true} />
       <h3 className="card-t">Triage questions</h3>
       {rows.map(({ id: rowId, question }, index) => (
@@ -439,7 +450,7 @@ function EditTemplate({ templates }: { templates: Template[] }) {
   );
 }
 
-export function SettingsForms({ data }: { data: HelpdeskSettings }) {
+export function SettingsForms({ data, routeRequests }: { data: HelpdeskSettings; routeRequests: boolean }) {
   const [typeId, setTypeId] = useState('');
   const [mailboxId, setMailboxId] = useState('');
   const selected = data.types.find(({ id }) => id === typeId);
@@ -463,7 +474,7 @@ export function SettingsForms({ data }: { data: HelpdeskSettings }) {
             ))}
           </select>
         </Field>
-        <EditType key={typeId + (selected?.version ?? 0)} selected={selected} />
+        <EditType key={typeId + (selected?.version ?? 0)} selected={selected} routeRequests={routeRequests} />
       </section>
       <section className="card card-b stack g4">
         <h2 className="card-t">Priority matrix</h2>

@@ -24,3 +24,14 @@ it('handles sites with no opening hours and 24-hour emergency targets', () => {
   expect(requestDeadline(start, 15, { ...DEFAULT_SITE_CALENDAR, hours: [] })).toBeNull();
   expect(requestDeadline(start, 15, null)?.toISOString()).toBe('2026-12-25T14:15:00.000Z');
 });
+
+it('does not double count overlapping real instants on the autumn clock change', () => {
+  const result = requestDeadline(new Date('2026-10-25T00:00:00Z'), 100, {
+    ...DEFAULT_SITE_CALENDAR,
+    hours: [
+      { day: 7, opens: '01:00', closes: '01:30' },
+      { day: 7, opens: '01:30', closes: '02:30' },
+    ],
+  });
+  expect(result?.toISOString()).toBe('2026-10-25T01:40:00.000Z');
+});

@@ -165,7 +165,7 @@ export async function createRequest(
   const selectedAsset =
     input.assetId &&
     (await tx.asset.findFirst({
-      where: { tenantId, id: input.assetId, locationId: location.id, status: { not: 'disposed' } },
+      where: { tenantId, id: input.assetId, locationId: location.id, status: { not: 'decommissioned' } },
       select: { id: true },
     }));
   if (input.assetId && !selectedAsset) throw new NotFoundException('Asset not found at this location.');

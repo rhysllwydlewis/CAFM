@@ -241,7 +241,7 @@ export default async function AssetPage({
           </Link>
           {!editing &&
             !editingServes &&
-            asset.status !== 'disposed' &&
+            asset.status !== 'decommissioned' &&
             can(user, 'requests.create') &&
             feature(user.entitlements, 'helpdesk') && (
               <Link className="btn" href={'/portal/new?asset=' + asset.id + '&source=register'}>
