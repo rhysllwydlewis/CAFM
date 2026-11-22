@@ -18,7 +18,7 @@ export default async function LabelsPage({ searchParams }: { searchParams: Promi
   const locations = [
     location,
     ...records.filter((record) => record.id !== location.id).sort((a, b) => a.name.localeCompare(b.name)),
-  ];
+  ].map(({ id, name, code }) => ({ id, name, code }));
   return (
     <div className="page stack g4">
       <header className={styles.pageHeader + ' ' + styles.screenOnly}>
@@ -27,7 +27,7 @@ export default async function LabelsPage({ searchParams }: { searchParams: Promi
           Back to location
         </Link>
       </header>
-      <LabelSheet primary={location} locations={locations} />
+      <LabelSheet primaryId={location.id} locations={locations} />
     </div>
   );
 }

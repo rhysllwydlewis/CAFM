@@ -7,14 +7,15 @@ import type { LocationRecord } from '@cafm/shared';
 import styles from '../locations.module.css';
 
 const subscribe = () => () => undefined;
+type LabelLocation = Pick<LocationRecord, 'id' | 'name' | 'code'>;
 
-export function LabelSheet({ primary, locations }: { primary: LocationRecord; locations: LocationRecord[] }) {
+export function LabelSheet({ primaryId, locations }: { primaryId: string; locations: LabelLocation[] }) {
   const origin = useSyncExternalStore(
     subscribe,
     () => window.location.origin,
     () => '',
   );
-  const [selected, setSelected] = useState(() => new Set([primary.id]));
+  const [selected, setSelected] = useState(() => new Set([primaryId]));
   const [search, setSearch] = useState('');
   const labels = locations.filter((location) => selected.has(location.id));
   const filter = search.trim().toLowerCase();
