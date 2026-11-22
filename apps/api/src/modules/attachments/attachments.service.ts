@@ -229,7 +229,12 @@ export class AttachmentsService {
           action: 'attachment.remove',
           entityType: 'attachment',
           entityId: id,
-          changes: { parent: 'work_order', parentId: jobId, mediaType: record.mediaType, byteLength: record.byteLength },
+          changes: {
+            parent: 'work_order',
+            parentId: jobId,
+            mediaType: record.mediaType,
+            byteLength: record.byteLength,
+          },
         },
         req.ip,
       );

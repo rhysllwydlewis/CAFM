@@ -63,9 +63,7 @@ async function fixture() {
   );
   const logIn = async ({ email, password }: { email: string; password: string }) =>
     (await signIn(app, email, password)).agent;
-  const [admin, manager, finance, desk, tech, other, reporter] = await Promise.all(
-    Object.values(accounts).map(logIn),
-  );
+  const [admin, manager, finance, desk, tech, other, reporter] = await Promise.all(Object.values(accounts).map(logIn));
   const site = (await admin!.post('/api/locations').send({ code: 'MAIN', name: 'Main site', kind: 'site' }).expect(201))
     .body;
   await admin!
@@ -131,13 +129,26 @@ it('checks a checklist answer against its kind, and counts what is still to answ
   expect(checklistAnswerProblem('pass_fail', 'fail', null)).toBe('Say what failed.');
   expect(checklistAnswerProblem('pass_fail', 'fail', 'Leaking seal')).toBeNull();
   expect(checklistAnswerProblem('pass_fail', 'maybe', null)).not.toBeNull();
-  for (const good of ['1', '1.4', '-0.5', '123456789.123']) expect(checklistAnswerProblem('number', good, null)).toBeNull();
+  for (const good of ['1', '1.4', '-0.5', '123456789.123'])
+    expect(checklistAnswerProblem('number', good, null)).toBeNull();
   for (const bad of ['', 'abc', '1,4', '1.4567', '1e3', '.5', '1234567890']) {
     expect(checklistAnswerProblem('number', bad, null), bad).not.toBeNull();
   }
   const lists = [
-    { gate: 'start' as const, items: [{ required: true, answer: null }, { required: true, answer: 'done' }] },
-    { gate: 'completion' as const, items: [{ required: true, answer: null }, { required: false, answer: null }] },
+    {
+      gate: 'start' as const,
+      items: [
+        { required: true, answer: null },
+        { required: true, answer: 'done' },
+      ],
+    },
+    {
+      gate: 'completion' as const,
+      items: [
+        { required: true, answer: null },
+        { required: false, answer: null },
+      ],
+    },
     { gate: 'none' as const, items: [{ required: true, answer: null }] },
   ];
   expect(outstandingFor(lists, 'start')).toBe(1);
@@ -187,10 +198,7 @@ it('keeps checklists on a job, from a template or written out, and holds back st
     await tech.post(url).send({ templateId: template.id }).expect(403);
     await reporter.get(url).expect(403);
     await manager.post(url).send({ templateId: randomUUID() }).expect(404);
-    await manager
-      .post(url)
-      .send({ title: 'Empty', gate: 'none', items: [] })
-      .expect(400);
+    await manager.post(url).send({ title: 'Empty', gate: 'none', items: [] }).expect(400);
     await manager.post(url).send({ templateId: template.id }).expect(201);
     const lists = (
       await manager
@@ -258,26 +266,45 @@ it('keeps checklists on a job, from a template or written out, and holds back st
     await stranger.admin.delete(`${url}/${start!.id}`).expect(404);
     // Someone limited to their own work cannot answer on a job that isn't theirs.
     const mine = await job({ assigneeId: undefined, title: 'Not the technician’s' });
-    const list = (await manager.post(jobs + '/' + mine.id + '/checklists').send({ templateId: template.id }).expect(201))
-      .body[0];
+    const list = (
+      await manager
+        .post(jobs + '/' + mine.id + '/checklists')
+        .send({ templateId: template.id })
+        .expect(201)
+    ).body[0];
     await tech.get(jobs + '/' + mine.id + '/checklists').expect(404);
-    await tech.put(`${jobs}/${mine.id}/checklists/${list.id}/items/${list.items[0].id}`).send({ answer: 'done' }).expect(404);
+    await tech
+      .put(`${jobs}/${mine.id}/checklists/${list.id}/items/${list.items[0].id}`)
+      .send({ answer: 'done' })
+      .expect(404);
 
     // Removing a checklist is a supervisor's, and a closed or cancelled job's checklists are fixed.
     await tech.delete(`${url}/${plant!.id}`).expect(403);
     await finance.delete(`${url}/${plant!.id}`).expect(403);
     expect((await manager.delete(`${url}/${plant!.id}`).expect(200)).body).toHaveLength(1);
     const cancelled = await job({ title: 'Cancelled job' });
-    await manager.post(jobs + '/' + cancelled.id + '/checklists').send({ templateId: template.id }).expect(201);
+    await manager
+      .post(jobs + '/' + cancelled.id + '/checklists')
+      .send({ templateId: template.id })
+      .expect(201);
     await move(manager, cancelled.id, 'cancelled').then((res) => expect(res.status).toBe(201));
-    await manager.post(jobs + '/' + cancelled.id + '/checklists').send({ templateId: template.id }).expect(422);
+    await manager
+      .post(jobs + '/' + cancelled.id + '/checklists')
+      .send({ templateId: template.id })
+      .expect(422);
 
     // The cap, and the audit trail.
     const crowded = await job({ title: 'Crowded' });
     for (let count = 0; count < 10; count += 1) {
-      await manager.post(jobs + '/' + crowded.id + '/checklists').send({ templateId: template.id }).expect(201);
+      await manager
+        .post(jobs + '/' + crowded.id + '/checklists')
+        .send({ templateId: template.id })
+        .expect(201);
     }
-    await manager.post(jobs + '/' + crowded.id + '/checklists').send({ templateId: template.id }).expect(422);
+    await manager
+      .post(jobs + '/' + crowded.id + '/checklists')
+      .send({ templateId: template.id })
+      .expect(422);
     const audited = await withTenant(db, tenant.id, (tx) =>
       tx.auditEvent.findMany({
         where: { entityId: created.id, action: { startsWith: 'work_order_checklist.' } },
@@ -327,23 +354,42 @@ it('holds a contractor on a link to the same checklists, and lets them answer fr
       tx.outboxMessage.findMany({ where: { topic: 'email.send' }, orderBy: { createdAt: 'desc' } }),
     );
     const token = /\/job\/([\w-]+)/.exec(
-      mail.map(({ payload }) => payload as { to: string; text: string }).find(({ to }) => to === 'jobs@sparks.test')?.text ??
-        '',
+      mail.map(({ payload }) => payload as { to: string; text: string }).find(({ to }) => to === 'jobs@sparks.test')
+        ?.text ?? '',
     )![1]!;
     const link = '/api/contractor-jobs/' + token;
     const seen = (await anon().get(link).expect(200)).body;
     expect(seen.checklists).toMatchObject([{ title: 'Before you start', gate: 'start', outstanding: 1 }]);
-    const blocked = await anon().post(link + '/status').send({ status: 'on_site' });
+    const blocked = await anon()
+      .post(link + '/status')
+      .send({ status: 'on_site' });
     expect(blocked.status).toBe(422);
     expect(blocked.body.code).toBe('checklist_incomplete');
     const [required, optional] = seen.checklists[0].items as { id: string }[];
-    await anon().put(link + '/checklist-items/' + required!.id).send({ answer: 'ticked' }).expect(422);
-    await anon().put(link + '/checklist-items/' + randomUUID()).send({ answer: 'done' }).expect(404);
-    const after = (await anon().put(link + '/checklist-items/' + required!.id).send({ answer: 'done' }).expect(200)).body;
+    await anon()
+      .put(link + '/checklist-items/' + required!.id)
+      .send({ answer: 'ticked' })
+      .expect(422);
+    await anon()
+      .put(link + '/checklist-items/' + randomUUID())
+      .send({ answer: 'done' })
+      .expect(404);
+    const after = (
+      await anon()
+        .put(link + '/checklist-items/' + required!.id)
+        .send({ answer: 'done' })
+        .expect(200)
+    ).body;
     expect(after.checklists[0]).toMatchObject({ outstanding: 0 });
     expect(after.checklists[0].items[0]).toMatchObject({ answer: 'done', answeredByName: 'Sparks Electrical Ltd' });
-    await anon().put(link + '/checklist-items/' + optional!.id).send({ answer: '1.4' }).expect(200);
-    await anon().post(link + '/status').send({ status: 'on_site' }).expect(201);
+    await anon()
+      .put(link + '/checklist-items/' + optional!.id)
+      .send({ answer: '1.4' })
+      .expect(200);
+    await anon()
+      .post(link + '/status')
+      .send({ status: 'on_site' })
+      .expect(201);
     // Their answers are audited as theirs.
     const audited = await withTenant(db, tenant.id, (tx) =>
       tx.auditEvent.findMany({ where: { entityId: created.id, action: 'work_order_checklist.answer' } }),
@@ -360,7 +406,10 @@ it('holds a contractor on a link to the same checklists, and lets them answer fr
           .send({ title: 'Theirs', gate: 'none', items: [{ label: 'Step', kind: 'tick', required: false }] })
           .expect(201)
       ).body[0];
-      await anon().put(link + '/checklist-items/' + list.items[0].id).send({ answer: 'done' }).expect(404);
+      await anon()
+        .put(link + '/checklist-items/' + list.items[0].id)
+        .send({ answer: 'done' })
+        .expect(404);
     } finally {
       await stranger.cleanup();
     }
@@ -383,14 +432,23 @@ it('keeps before and after photos on a job for the people who do it, and no one 
     // A retry of the same upload does not add a second copy.
     expect((await photo().expect(200)).body.id).toBe(first.id);
     const after = Buffer.concat([png, Buffer.alloc(8)]);
-    await tech.put(url + '?phase=after').attach('file', after, 'done.png').expect(200);
+    await tech
+      .put(url + '?phase=after')
+      .attach('file', after, 'done.png')
+      .expect(200);
     const listed = (await manager.get(url).expect(200)).body;
     expect(listed.map((item: { phase: string }) => item.phase)).toEqual(['before', 'after']);
 
     // Only photos, and a phase from the list.
     await tech.put(url).attach('file', Buffer.from('<svg/>'), 'x.svg').expect(415);
-    await tech.put(url + '?phase=during').attach('file', png, 'a.png').expect(400);
-    await tech.put(url + '?phase=other&caption=' + 'x'.repeat(151)).attach('file', png, 'b.png').expect(400);
+    await tech
+      .put(url + '?phase=during')
+      .attach('file', png, 'a.png')
+      .expect(400);
+    await tech
+      .put(url + '?phase=other&caption=' + 'x'.repeat(151))
+      .attach('file', png, 'b.png')
+      .expect(400);
     await tech.put(url).expect(400);
 
     // The file comes back as it went in, and cannot be run as a page.
@@ -443,10 +501,18 @@ it('records the customer’s and the technician’s sign-off, once each, from a 
       (await sign({ role: 'customer', signerName: 'Hana Patel', image: 'data:image/png;base64,AAAA' })).status,
     ).toBe(422);
     expect(
-      (await sign({ role: 'customer', signerName: 'Hana Patel', image: 'data:image/png;base64,' + 'A'.repeat(300_000) }))
-        .status,
+      (
+        await sign({
+          role: 'customer',
+          signerName: 'Hana Patel',
+          image: 'data:image/png;base64,' + 'A'.repeat(300_000),
+        })
+      ).status,
     ).toBe(413);
-    expect((await sign({ role: 'customer', signerName: 'Hana Patel', image: 'data:image/png;base64,' + 'A'.repeat(90_000) })).status).toBe(400);
+    expect(
+      (await sign({ role: 'customer', signerName: 'Hana Patel', image: 'data:image/png;base64,' + 'A'.repeat(90_000) }))
+        .status,
+    ).toBe(400);
     expect((await sign({ role: 'witness', signerName: 'X', image: drawing })).status).toBe(400);
     const customer = (await sign({ role: 'customer', signerName: ' Hana Patel ', image: drawing }).expect(201)).body;
     expect(customer).toMatchObject([{ role: 'customer', signerName: 'Hana Patel', recordedByName: 'Test Person' }]);
@@ -497,8 +563,22 @@ it('records the customer’s and the technician’s sign-off, once each, from a 
 });
 
 it('makes a job sheet as a PDF, shows money only to those who can see costs, and emails the customer copy', async () => {
-  const { admin, manager, finance, desk, tech, reporter, cleanup, job, move, requestType, site, member, tenant, accounts } =
-    await fixture();
+  const {
+    admin,
+    manager,
+    finance,
+    desk,
+    tech,
+    reporter,
+    cleanup,
+    job,
+    move,
+    requestType,
+    site,
+    member,
+    tenant,
+    accounts,
+  } = await fixture();
   const stranger = await fixture();
   try {
     // A job raised from a request, so there is someone to send the sheet to.
@@ -525,8 +605,14 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
         .expect(201)
     ).body[0] as { id: string; number: string };
     const url = jobs + '/' + created.id;
-    await manager.post(url + '/comments').send({ body: 'Gate code is 1234', internal: true }).expect(201);
-    await manager.post(url + '/comments').send({ body: 'Seal replaced and tested.' }).expect(201);
+    await manager
+      .post(url + '/comments')
+      .send({ body: 'Gate code is 1234', internal: true })
+      .expect(201);
+    await manager
+      .post(url + '/comments')
+      .send({ body: 'Seal replaced and tested.' })
+      .expect(201);
     await manager
       .post(url + '/costs')
       .send({
@@ -546,15 +632,24 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
       })
       .expect(201);
     await move(tech, created.id, 'on_site').then((res) => expect(res.status).toBe(201));
-    await tech.put(url + '/photos?phase=after&caption=Finished').attach('file', png, 'after.png').expect(200);
-    await tech.post(url + '/signatures').send({ role: 'technician', image: drawing }).expect(201);
+    await tech
+      .put(url + '/photos?phase=after&caption=Finished')
+      .attach('file', png, 'after.png')
+      .expect(200);
+    await tech
+      .post(url + '/signatures')
+      .send({ role: 'technician', image: drawing })
+      .expect(201);
 
     const pdfOf = async (agent: typeof manager) => {
-      const response = await agent.get(url + '/job-sheet').buffer(true).parse((res, done) => {
-        const chunks: Buffer[] = [];
-        res.on('data', (chunk: Buffer) => chunks.push(chunk));
-        res.on('end', () => done(null, Buffer.concat(chunks)));
-      });
+      const response = await agent
+        .get(url + '/job-sheet')
+        .buffer(true)
+        .parse((res, done) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk: Buffer) => chunks.push(chunk));
+          res.on('end', () => done(null, Buffer.concat(chunks)));
+        });
       return response;
     };
     const full = await pdfOf(manager);
@@ -564,7 +659,14 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
     const bytes = full.body as Buffer;
     expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     const text = pdfStrings(bytes);
-    for (const shown of [created.number, 'Stop the leak', 'Seal replaced and tested.', 'Area left clean', 'PRV 3 bar', 'Test Tenant Ltd']) {
+    for (const shown of [
+      created.number,
+      'Stop the leak',
+      'Seal replaced and tested.',
+      'Area left clean',
+      'PRV 3 bar',
+      'Test Tenant Ltd',
+    ]) {
       expect(text, shown).toContain(shown);
     }
     // Staff with costs see them. An internal note never appears, and the Welsh letter is drawn as its base letter.
@@ -588,15 +690,42 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
         tx.outboxMessage.findMany({ where: { topic: 'email.send' }, orderBy: { createdAt: 'asc' } }),
       );
     const before = (await mailed()).length;
-    await manager.post(url + '/job-sheet/email').send({}).expect(422);
-    await tech.post(url + '/job-sheet/email').send({}).expect(403);
-    await finance.post(url + '/job-sheet/email').send({}).expect(403);
-    await stranger.admin.post(url + '/job-sheet/email').send({}).expect(404);
+    await manager
+      .post(url + '/job-sheet/email')
+      .send({})
+      .expect(422);
+    await tech
+      .post(url + '/job-sheet/email')
+      .send({})
+      .expect(403);
+    await finance
+      .post(url + '/job-sheet/email')
+      .send({})
+      .expect(403);
+    await stranger.admin
+      .post(url + '/job-sheet/email')
+      .send({})
+      .expect(404);
     await move(tech, created.id, 'completed').then((res) => expect(res.status).toBe(201));
-    expect((await manager.post(url + '/job-sheet/email').send({}).expect(201)).body).toEqual({ sent: true });
+    expect(
+      (
+        await manager
+          .post(url + '/job-sheet/email')
+          .send({})
+          .expect(201)
+      ).body,
+    ).toEqual({ sent: true });
     const messages = (await mailed()).slice(before);
     const sheet = messages
-      .map(({ payload }) => payload as { to: string; subject: string; text: string; attachments?: { filename: string; contentBase64: string }[] })
+      .map(
+        ({ payload }) =>
+          payload as {
+            to: string;
+            subject: string;
+            text: string;
+            attachments?: { filename: string; contentBase64: string }[];
+          },
+      )
       .find(({ attachments }) => attachments?.length);
     expect(sheet).toBeDefined();
     expect(sheet!.to).toBe(accounts.reporter.email);
@@ -620,7 +749,10 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
     const orphan = await job({ title: 'No requester' });
     await move(tech, orphan.id, 'on_site').then((res) => expect(res.status).toBe(201));
     await move(tech, orphan.id, 'completed').then((res) => expect(res.status).toBe(201));
-    const refused = await manager.post(jobs + '/' + orphan.id + '/job-sheet/email').send({}).expect(422);
+    const refused = await manager
+      .post(jobs + '/' + orphan.id + '/job-sheet/email')
+      .send({})
+      .expect(422);
     expect(refused.body.message).toContain('no requester');
     await admin.get(jobs + '/' + orphan.id + '/job-sheet').expect(200);
   } finally {

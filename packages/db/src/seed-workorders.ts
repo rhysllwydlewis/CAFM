@@ -249,7 +249,14 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
   await db.workOrderChecklist.upsert({
     where: { id: checklistId },
     update: {},
-    create: { id: checklistId, tenantId, workOrderId: boilerJob, title: 'Plant room repair', gate: 'completion', createdById: manager },
+    create: {
+      id: checklistId,
+      tenantId,
+      workOrderId: boilerJob,
+      title: 'Plant room repair',
+      gate: 'completion',
+      createdById: manager,
+    },
   });
   const answers = ['done', 'done', '1.4', 'pass', 'done'];
   for (const [position, item] of plantSteps.entries()) {

@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { Button, Field } from '@cafm/ui';
 import {
+  checklistAnswerProblem,
+  CHECKLIST_GATE_LABELS,
+  PASS_FAIL_LABELS,
   SLA_PAUSING_REASONS,
   WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_PAUSE_REASONS,
   WORK_ORDER_STATUS_LABELS,
+  type ChecklistItem,
   type ContractorJob,
   type WorkOrderPauseReason,
   type WorkOrderStatus,
@@ -23,6 +27,124 @@ const STEP_LABELS: Record<string, string> = {
   completed: 'Job complete',
 };
 
+/** One checklist step the contractor can answer from the link. */
+function Step({
+  item,
+  closed,
+  answer,
+}: {
+  item: ChecklistItem;
+  closed: boolean;
+  answer: (item: ChecklistItem, value: string | null, note: string | null) => Promise<string | null>;
+}) {
+  const id = useId();
+  const [value, setValue] = useState(item.answer ?? '');
+  const [note, setNote] = useState(item.note ?? '');
+  const [error, setError] = useState('');
+  const label = (
+    <>
+      {item.label}
+      {item.required && <span className="muted"> (required)</span>}
+    </>
+  );
+  async function save(next: string | null) {
+    if (next !== null) {
+      const problem = checklistAnswerProblem(item.kind, next, note.trim() || null);
+      if (problem) {
+        setError(problem);
+        return;
+      }
+    }
+    setError((await answer(item, next, next === null ? null : note.trim() || null)) ?? '');
+  }
+  return (
+    <li className="stack g2">
+      {item.kind === 'tick' ? (
+        <label className="row g2" htmlFor={id}>
+          <input
+            id={id}
+            type="checkbox"
+            className="cb"
+            checked={item.answer === 'done'}
+            disabled={closed}
+            onChange={(event) => void save(event.target.checked ? 'done' : null)}
+          />
+          <span>{label}</span>
+        </label>
+      ) : (
+        <div className="stack g2">
+          <label className="label" htmlFor={id}>
+            {label}
+          </label>
+          {item.kind === 'pass_fail' ? (
+            <select
+              id={id}
+              className={styles.control}
+              value={value}
+              disabled={closed}
+              onChange={(event) => setValue(event.target.value)}
+            >
+              <option value="">Not answered</option>
+              {(Object.keys(PASS_FAIL_LABELS) as (keyof typeof PASS_FAIL_LABELS)[]).map((key) => (
+                <option key={key} value={key}>
+                  {PASS_FAIL_LABELS[key]}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              id={id}
+              className={styles.control}
+              value={value}
+              inputMode={item.kind === 'number' ? 'decimal' : undefined}
+              maxLength={500}
+              disabled={closed}
+              onChange={(event) => setValue(event.target.value)}
+            />
+          )}
+          {item.unit && <span className="muted sm">in {item.unit}</span>}
+          {item.kind === 'pass_fail' && value === 'fail' && (
+            <input
+              className={styles.control}
+              aria-label={`What failed: ${item.label}`}
+              placeholder="What failed?"
+              value={note}
+              maxLength={500}
+              disabled={closed}
+              onChange={(event) => setNote(event.target.value)}
+            />
+          )}
+          {!closed && (
+            <div className="row wrap g2">
+              <Button size="sm" disabled={!value} onClick={() => void save(value)}>
+                Save answer
+              </Button>
+              {item.answer !== null && (
+                <Button
+                  size="sm"
+                  aria-label={`Clear the answer to ${item.label}`}
+                  onClick={() => {
+                    setValue('');
+                    setNote('');
+                    void save(null);
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {error && (
+        <p className="field-error" role="alert">
+          {error}
+        </p>
+      )}
+    </li>
+  );
+}
+
 /** The contractor's page: the job, what they can do next, and the notes so far. */
 export function ContractorJobView({ token, initial }: { token: string; initial: ContractorJob }) {
   const [job, setJob] = useState(initial);
@@ -32,6 +154,16 @@ export function ContractorJobView({ token, initial }: { token: string; initial: 
   const [message, setMessage] = useState('');
   const [done, setDone] = useState('');
   const base = '/contractor-jobs/' + encodeURIComponent(token);
+
+  /** Saves one answer. Returns the problem to show beside the step, or null when it was saved. */
+  async function answerStep(item: ChecklistItem, value: string | null, note: string | null) {
+    try {
+      setJob(await helpdeskWrite<ContractorJob>(base + '/checklist-items/' + item.id, { answer: value, note }, 'PUT'));
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Could not save this answer.';
+    }
+  }
 
   async function run(
     event: FormEvent<HTMLFormElement>,
@@ -105,6 +237,37 @@ export function ContractorJobView({ token, initial }: { token: string; initial: 
           )}
         </dl>
       </section>
+
+      {job.checklists.length > 0 && (
+        <section className="card card-b stack g3" aria-labelledby="job-checklists">
+          <h2 className="card-t" id="job-checklists">
+            Checklists
+          </h2>
+          {job.checklists.map((list) => (
+            <div key={list.id} className="stack g2">
+              <div className="row wrap between g2">
+                <h3 className="medium">{list.title}</h3>
+                <div className="row wrap g2">
+                  {list.gate !== 'none' && <span className="badge outline">{CHECKLIST_GATE_LABELS[list.gate]}</span>}
+                  <span className={'badge ' + (list.outstanding ? 'warning' : 'success')}>
+                    {list.outstanding ? list.outstanding + ' required to answer' : 'Complete'}
+                  </span>
+                </div>
+              </div>
+              <ol className="stack g3" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {list.items.map((item) => (
+                  <Step
+                    key={item.id + ':' + (item.answeredAt ?? '')}
+                    item={item}
+                    closed={['closed', 'cancelled'].includes(job.status)}
+                    answer={answerStep}
+                  />
+                ))}
+              </ol>
+            </div>
+          ))}
+        </section>
+      )}
 
       {job.nextStatuses.length > 0 && (
         <form

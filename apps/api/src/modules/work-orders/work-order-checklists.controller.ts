@@ -218,7 +218,10 @@ export class ChecklistTemplatesController {
     const { tenantId } = req.auth!.membership!;
     return withTenant(this.db, tenantId, async (tx) =>
       (
-        await tx.checklistTemplate.findMany({ where: { tenantId, active: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] })
+        await tx.checklistTemplate.findMany({
+          where: { tenantId, active: true },
+          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        })
       ).map(templateRow),
     );
   }

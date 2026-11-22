@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { can, feature } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
-import { workOrderCosts, workOrderRecord } from '@/lib/work-orders';
+import { workOrderCosts, workOrderForms, workOrderRecord } from '@/lib/work-orders';
 import { WorkOrderDetail } from '../work-order-detail';
 
 export const metadata: Metadata = { title: 'Work order' };
@@ -25,6 +25,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ id: 
       now={Date.now()}
       costs={seesCosts ? await workOrderCosts(id) : undefined}
       canEditCosts={canEdit && seesCosts}
+      forms={await workOrderForms(id, canEdit)}
     />
   );
 }

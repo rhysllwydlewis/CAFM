@@ -123,6 +123,33 @@ describe('email.send', () => {
   });
 });
 
+describe('email attachments', () => {
+  it('names the attached files in a captured email, and never stores their contents', async () => {
+    const to = `sheet-${Date.now()}@test.example`;
+    const contentBase64 = Buffer.from('%PDF-1.3 not really a document').toString('base64');
+    const msg = await withTenant(db, tenantId, (tx) =>
+      tx.outboxMessage.create({
+        data: {
+          tenantId,
+          topic: 'email.send',
+          payload: {
+            to,
+            subject: 'Job sheet',
+            text: 'The job sheet is attached.',
+            capture: true,
+            attachments: [{ filename: 'job-sheet-WO-1.pdf', contentType: 'application/pdf', contentBase64 }],
+          },
+        },
+      }),
+    );
+    await dispatchUntilQueued(msg.id);
+    await waitFor(async () => (await db.capturedEmail.count({ where: { to } })) === 1);
+    const captured = await db.capturedEmail.findFirstOrThrow({ where: { to } });
+    expect(captured.text).toBe('The job sheet is attached.\n\n[Attached: job-sheet-WO-1.pdf]');
+    expect(captured.text).not.toContain(contentBase64);
+  });
+});
+
 describe('demo reset schedule', () => {
   it('schedules the reset for 03:00 UK time', async () => {
     const { scheduleDemoReset, DEMO_RESET_SCHEDULE } = await import('../src/jobs/demo-reset');

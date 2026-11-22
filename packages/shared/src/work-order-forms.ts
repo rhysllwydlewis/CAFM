@@ -63,7 +63,10 @@ export const checklistTemplateSchema = z.object({ ...checklistBody, description:
 export type ChecklistTemplateInput = z.infer<typeof checklistTemplateSchema>;
 
 export const answerChecklistItemSchema = z
-  .object({ answer: z.string().trim().max(MAX_ANSWER_LENGTH).nullable(), note: z.string().trim().max(500).nullable().optional() })
+  .object({
+    answer: z.string().trim().max(MAX_ANSWER_LENGTH).nullable(),
+    note: z.string().trim().max(500).nullable().optional(),
+  })
   .strict();
 
 /** A reading is a plain decimal: up to 9 digits and 3 decimal places, optionally negative. */

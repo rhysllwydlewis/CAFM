@@ -1,6 +1,5 @@
 import PDFDocument from 'pdfkit';
 import {
-  CHECKLIST_ITEM_KIND_LABELS,
   COST_KIND_LABELS,
   formatMinor,
   PASS_FAIL_LABELS,
@@ -106,7 +105,12 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
     room(60);
     doc.moveDown(0.8);
     doc.font('Helvetica-Bold').fontSize(11).fillColor(BRAND).text(pdfText(value).toUpperCase(), left, doc.y, { width });
-    doc.moveTo(left, doc.y + 2).lineTo(left + width, doc.y + 2).strokeColor(RULE).lineWidth(1).stroke();
+    doc
+      .moveTo(left, doc.y + 2)
+      .lineTo(left + width, doc.y + 2)
+      .strokeColor(RULE)
+      .lineWidth(1)
+      .stroke();
     doc.moveDown(0.5);
   };
   const pair = (label: string, value: string) => {
@@ -120,16 +124,32 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
 
   // Title block.
   doc.rect(left, 40, width, 48).fillColor(WASH).fill();
-  doc.font('Helvetica-Bold').fontSize(18).fillColor(BRAND).text('Job sheet', left + 10, 48, { width: width / 2 });
-  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(pdfText(data.organisation), left + 10, 70, { width: width / 2 });
-  doc.font('Helvetica-Bold').fontSize(14).fillColor(INK).text(pdfText(data.number), left + width / 2, 50, {
-    width: width / 2 - 10,
-    align: 'right',
-  });
-  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(`Printed ${when(data.generatedAt)}`, left + width / 2, 70, {
-    width: width / 2 - 10,
-    align: 'right',
-  });
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(18)
+    .fillColor(BRAND)
+    .text('Job sheet', left + 10, 48, { width: width / 2 });
+  doc
+    .font('Helvetica')
+    .fontSize(9)
+    .fillColor(MUTED)
+    .text(pdfText(data.organisation), left + 10, 70, { width: width / 2 });
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(14)
+    .fillColor(INK)
+    .text(pdfText(data.number), left + width / 2, 50, {
+      width: width / 2 - 10,
+      align: 'right',
+    });
+  doc
+    .font('Helvetica')
+    .fontSize(9)
+    .fillColor(MUTED)
+    .text(`Printed ${when(data.generatedAt)}`, left + width / 2, 70, {
+      width: width / 2 - 10,
+      align: 'right',
+    });
   doc.y = 100;
 
   heading('Job');
@@ -166,9 +186,14 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
       for (const item of list.items) {
         room(26);
         const y = doc.y;
-        doc.font('Helvetica').fontSize(9.5).fillColor(INK).text(pdfText(item.label), left + 8, y, { width: width * 0.62 });
+        doc
+          .font('Helvetica')
+          .fontSize(9.5)
+          .fillColor(INK)
+          .text(pdfText(item.label), left + 8, y, { width: width * 0.62 });
         const afterLabel = doc.y;
-        const answerColour = item.answer === null ? MUTED : item.kind === 'pass_fail' && item.answer === 'fail' ? '#8F2424' : INK;
+        const answerColour =
+          item.answer === null ? MUTED : item.kind === 'pass_fail' && item.answer === 'fail' ? '#8F2424' : INK;
         doc
           .font(item.answer === null ? 'Helvetica-Oblique' : 'Helvetica-Bold')
           .fontSize(9.5)
@@ -176,9 +201,13 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
           .text(pdfText(quantity(item)), left + width * 0.66, y, { width: width * 0.34 });
         doc.y = Math.max(afterLabel, doc.y);
         if (item.note) {
-          doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(pdfText(`Note: ${item.note}`), left + 16, doc.y, {
-            width: width - 16,
-          });
+          doc
+            .font('Helvetica')
+            .fontSize(8.5)
+            .fillColor(MUTED)
+            .text(pdfText(`Note: ${item.note}`), left + 16, doc.y, {
+              width: width - 16,
+            });
         }
         doc.moveDown(0.25);
       }
@@ -207,7 +236,11 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
       doc.moveDown(0.2);
     }
     room(24);
-    doc.moveTo(left, doc.y).lineTo(left + width, doc.y).strokeColor(RULE).stroke();
+    doc
+      .moveTo(left, doc.y)
+      .lineTo(left + width, doc.y)
+      .strokeColor(RULE)
+      .stroke();
     doc.moveDown(0.3);
     doc.font('Helvetica-Bold').fontSize(10).fillColor(INK);
     const y = doc.y;
@@ -240,17 +273,26 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
       }
       if (!drawn) {
         doc.rect(x, rowTop, cell, 100).strokeColor(RULE).stroke();
-        doc.font('Helvetica').fontSize(8).fillColor(MUTED).text('Photo on record', x + 6, rowTop + 44, { width: cell - 12, align: 'center' });
+        doc
+          .font('Helvetica')
+          .fontSize(8)
+          .fillColor(MUTED)
+          .text('Photo on record', x + 6, rowTop + 44, { width: cell - 12, align: 'center' });
       }
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor(MUTED)
-        .text(pdfText(`${PHOTO_PHASE_LABELS[photo.phase]}${photo.caption ? ': ' + photo.caption : ''}`), x, rowTop + 104, {
-          width: cell,
-          height: 22,
-          ellipsis: true,
-        });
+        .text(
+          pdfText(`${PHOTO_PHASE_LABELS[photo.phase]}${photo.caption ? ': ' + photo.caption : ''}`),
+          x,
+          rowTop + 104,
+          {
+            width: cell,
+            height: 22,
+            ellipsis: true,
+          },
+        );
       column = (column + 1) % 3;
       if (column === 0) doc.y = rowTop + 130;
     }
@@ -264,7 +306,11 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
     const cell = (width - 10) / 2;
     data.signatures.forEach((signature, index) => {
       const x = left + index * (cell + 10);
-      doc.font('Helvetica-Bold').fontSize(9).fillColor(MUTED).text(SIGNATURE_ROLE_LABELS[signature.role], x, top, { width: cell });
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor(MUTED)
+        .text(SIGNATURE_ROLE_LABELS[signature.role], x, top, { width: cell });
       if (signature.image) {
         try {
           doc.image(signature.image, x, top + 14, { fit: [cell - 20, 50] });
@@ -272,13 +318,20 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
           // A drawing that cannot be read leaves the name and time, which are the record.
         }
       }
-      doc.moveTo(x, top + 68).lineTo(x + cell - 20, top + 68).strokeColor(RULE).stroke();
+      doc
+        .moveTo(x, top + 68)
+        .lineTo(x + cell - 20, top + 68)
+        .strokeColor(RULE)
+        .stroke();
       doc
         .font('Helvetica')
         .fontSize(10)
         .fillColor(INK)
         .text(pdfText(signature.signerName), x, top + 72, { width: cell - 20 });
-      doc.fontSize(8.5).fillColor(MUTED).text(when(signature.signedAt), x, top + 86, { width: cell - 20 });
+      doc
+        .fontSize(8.5)
+        .fillColor(MUTED)
+        .text(when(signature.signedAt), x, top + 86, { width: cell - 20 });
     });
     doc.y = top + 105;
   }

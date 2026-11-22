@@ -120,7 +120,11 @@ export class WorkOrderPhotosController {
   @Header('Cache-Control', downloadHeaders.cache)
   @Header('X-Content-Type-Options', downloadHeaders.sniff)
   @Header('Content-Security-Policy', downloadHeaders.csp)
-  download(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string, @Param('fileId', ParseUUIDPipe) fileId: string) {
+  download(
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+  ) {
     return this.files.download(req, { type: 'workOrder', id }, fileId);
   }
 

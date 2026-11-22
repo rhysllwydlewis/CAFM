@@ -14,7 +14,6 @@ import type { Request } from 'express';
 import { withTenant } from '@cafm/db';
 import {
   JOB_SHEET_STATUSES,
-  PHOTO_PHASE_LABELS,
   WORK_ORDER_STATUS_LABELS,
   type CostKind,
   type PhotoPhase,
@@ -83,7 +82,10 @@ export class WorkOrderJobSheetController {
           where: { tenantId, descendantId: job.locationId, ancestor: { kind: 'site' } },
           select: { ancestor: { select: { name: true } } },
         }),
-        tx.location.findFirst({ where: { tenantId, id: job.locationId }, select: { name: true, code: true, details: true } }),
+        tx.location.findFirst({
+          where: { tenantId, id: job.locationId },
+          select: { name: true, code: true, details: true },
+        }),
         job.requestId
           ? tx.serviceRequest.findFirst({
               where: { tenantId, id: job.requestId },
@@ -99,14 +101,28 @@ export class WorkOrderJobSheetController {
             })
           )?.account.email
         : request?.externalEmail;
-      return { job, notes, checklists, photos, signatures, costs, site, location, requesterEmail: requesterEmail ?? null };
+      return {
+        job,
+        notes,
+        checklists,
+        photos,
+        signatures,
+        costs,
+        site,
+        location,
+        requesterEmail: requesterEmail ?? null,
+      };
     });
     const { job } = gathered;
     const embeddable = copy.embedPhotos
-      ? gathered.photos.filter((p) => EMBEDDABLE.includes(p.mediaType) && p.byteLength <= EMBED_PHOTO_BYTES).slice(0, EMBED_PHOTOS)
+      ? gathered.photos
+          .filter((p) => EMBEDDABLE.includes(p.mediaType) && p.byteLength <= EMBED_PHOTO_BYTES)
+          .slice(0, EMBED_PHOTOS)
       : [];
     const embedded = new Map(
-      await Promise.all(embeddable.map(async (photo) => [photo.id, await this.files.readFile(tenantId, photo.id)] as const)),
+      await Promise.all(
+        embeddable.map(async (photo) => [photo.id, await this.files.readFile(tenantId, photo.id)] as const),
+      ),
     );
     const drawings = await Promise.all(
       gathered.signatures.map(async (signature) => ({
@@ -221,7 +237,11 @@ export class WorkOrderJobSheetController {
         ].join('\n'),
         capture: current.membership!.tenant.demo,
         attachments: [
-          { filename: `job-sheet-${job.number}.pdf`, contentType: 'application/pdf', contentBase64: pdf.toString('base64') },
+          {
+            filename: `job-sheet-${job.number}.pdf`,
+            contentType: 'application/pdf',
+            contentBase64: pdf.toString('base64'),
+          },
         ],
       });
       await tx.workOrderEntry.create({
