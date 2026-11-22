@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-05 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 05a and 05b are done (in the open PR): model, task library and schedules API, the hourly generator and Generate now, and the completion hooks. Next 05c: the planner (52 weeks, list, calendar), the schedule and task library screens, the forecast and the compliance KPI. |
+| P1-05 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 05a and 05b are merged. Now 05c: planner, forecast, compliance KPI and overdue API; then the screens (52-week planner, schedule list and detail, task library, forms). |
 
 ## Phase checklists
 
