@@ -18,19 +18,23 @@ export const calendarDate = z
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }, 'Enter a real calendar date.');
 
-const openTime = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
-const closeTime = z.union([openTime, z.literal('24:00')]);
+const TIME_MESSAGE = 'Enter a time as hours and minutes, like 09:00.';
+const TIME = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const openTime = z.string().regex(TIME, TIME_MESSAGE);
+const closeTime = z.string().refine((value) => TIME.test(value) || value === '24:00', TIME_MESSAGE);
 const timeZone = z
   .string()
   .trim()
   .max(64)
-  .refine((value) => {
+  .transform((value, ctx) => {
     try {
-      return !!new Intl.DateTimeFormat('en-GB', { timeZone: value }).resolvedOptions().timeZone;
+      // The standard spelling, so "europe/london" is stored as "Europe/London".
+      return new Intl.DateTimeFormat('en-GB', { timeZone: value }).resolvedOptions().timeZone;
     } catch {
-      return false;
+      ctx.addIssue({ code: 'custom', message: 'Enter a valid IANA time zone.' });
+      return z.NEVER;
     }
-  }, 'Enter a valid IANA time zone.');
+  });
 
 export const siteCalendarSchema = z
   .object({
@@ -62,13 +66,20 @@ export const siteCalendarSchema = z
   })
   .strict()
   .superRefine(({ hours, closures }, ctx) => {
+    // Order and overlap only mean something once every time is well formed.
+    const valid = (window: { opens: string; closes: string }) =>
+      TIME.test(window.opens) && (TIME.test(window.closes) || window.closes === '24:00');
     for (const [index, window] of hours.entries()) {
+      if (!valid(window)) continue;
       if (window.opens >= window.closes)
         ctx.addIssue({ code: 'custom', path: ['hours', index], message: 'Closing time must be after opening time.' });
       if (
         hours
           .slice(0, index)
-          .some((other) => other.day === window.day && other.opens < window.closes && window.opens < other.closes)
+          .some(
+            (other) =>
+              valid(other) && other.day === window.day && other.opens < window.closes && window.opens < other.closes,
+          )
       )
         ctx.addIssue({
           code: 'custom',

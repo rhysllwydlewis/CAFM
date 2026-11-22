@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -22,7 +23,9 @@ import {
   createLocationSchema,
   listLocationsSchema,
   locationAccessSchema,
+  TOP_LEVEL_KINDS,
   updateLocationSchema,
+  type LocationDetail,
   type LocationRecord,
   type LocationPage,
 } from '@cafm/shared';
@@ -39,6 +42,7 @@ import {
   assertLocationParent,
   locationScope,
   moveLocationPaths,
+  visibleAncestors,
   withLocationWrite,
 } from './location-tree';
 
@@ -146,20 +150,26 @@ export class LocationsController {
     const auth = req.auth!;
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
       const scope = locationScope(auth);
+      // Pages follow name order, with the id as the tie-breaker so equal names never skip or repeat.
+      const cursor = after
+        ? await tx.location.findFirst({ where: { ...scope, id: after }, select: { id: true, name: true } })
+        : null;
+      if (after && !cursor) throw new BadRequestException({ code: 'invalid_cursor', message: 'Start the list again.' });
       const rows = await tx.location.findMany({
         where: {
           ...scope,
           kind,
           status,
-          ...(parent === 'root'
-            ? { AND: [{ OR: [{ parentId: null }, { parent: { isNot: scope } }] }] }
-            : { parentId: parent }),
-          id: after ? { gt: after } : undefined,
+          ...(parent === 'root' ? {} : { parentId: parent }),
+          AND: [
+            ...(parent === 'root' ? [{ OR: [{ parentId: null }, { parent: { isNot: scope } }] }] : []),
+            ...(cursor ? [{ OR: [{ name: { gt: cursor.name } }, { name: cursor.name, id: { gt: cursor.id } }] }] : []),
+          ],
           OR: search
             ? [{ name: { contains: search, mode: 'insensitive' } }, { code: { contains: search, mode: 'insensitive' } }]
             : undefined,
         },
-        orderBy: { id: 'asc' },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
         include: { _count: { select: { children: { where: scope } } } },
         take: limit + 1,
       });
@@ -184,12 +194,15 @@ export class LocationsController {
 
   @Get(':id')
   @RequirePermission('locations.read')
-  async detail(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+  async detail(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request): Promise<LocationDetail> {
     const auth = req.auth!;
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
       const row = await requireLocation(tx, auth, id);
-      const [location] = await visibleLocations(tx, auth, [row], undefined, true);
-      return location;
+      const [[location], path] = await Promise.all([
+        visibleLocations(tx, auth, [row], undefined, true),
+        visibleAncestors(tx, auth, row.id, row.parentId),
+      ]);
+      return { ...location!, path };
     });
   }
 
@@ -199,7 +212,9 @@ export class LocationsController {
     const input = parse(createLocationSchema, body);
     return withLocationWrite(this.db, req.auth!, 'locations.manage', async (tx, auth) => {
       const tenantId = auth.membership!.tenantId;
-      if ((!input.parentId || input.kind === 'site') && !allLocations(auth)) throw new ForbiddenException();
+      // Organisation-wide managers shape the top of the estate. The screens hide these levels from scoped managers too.
+      if ((!input.parentId || TOP_LEVEL_KINDS.includes(input.kind)) && !allLocations(auth))
+        throw new ForbiddenException();
       if (input.parentId) await requireLocation(tx, auth, input.parentId);
       await assertLocationParent(tx, tenantId, input.kind, input.parentId);
       if (input.siteCalendar && input.kind !== 'site')
