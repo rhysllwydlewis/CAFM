@@ -22,7 +22,7 @@
 | Database | **PostgreSQL 16+** with PostGIS, `pg_trgm`, JSONB | Relational core, geo, fuzzy search, custom fields |
 | Cache / queues | **Redis + BullMQ** | Background jobs: PPM generation, notifications, imports, SLA timers, webhooks |
 | Search | Postgres full-text search (phase 1) → Meilisearch/OpenSearch (when needed) | Start simple |
-| Files | S3-compatible object storage, presigned uploads, ClamAV scanning, image thumbnails | Scalable, cheap |
+| Files | S3-compatible object storage, ClamAV scanning, presigned uploads and image thumbnails. The first small-file release uses [bounded attachment transport](../adr/0010-bounded-attachment-transport.md) | Scalable, cheap |
 | Realtime | WebSockets (Socket.IO with Redis adapter, so it scales across API instances) / SSE | Dispatch board, live SLA counters, notifications |
 | PDF | Headless Chromium (Playwright) rendering HTML templates | Branded job sheets and reports |
 | Email | Transactional provider (e.g. Postmark/SES) + inbound parsing for email-to-ticket | Reliable delivery, inbound routing |

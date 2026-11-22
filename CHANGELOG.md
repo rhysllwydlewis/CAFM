@@ -17,6 +17,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Asset records for printable QR and barcode labels, NFC scan links, cumulative meter readings with rollover, warranties and claims, expiry alerts and documents. Scan a tag to report a fault against its asset and include a photo.
+
 - Helpdesk queue, requester portal, request catalogue and priority matrix. Report from a location QR label, an asset page, the portal, a phone call or a configured inbox. Operators can triage and link duplicates, and each requester receives status updates and can rate their completed report.
 - Request notifications in the CAFM inbox, with templates for email and browser push.
 

@@ -82,6 +82,8 @@ Helpdesk mail intake and browser push use optional configuration documented in [
 
 Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role.
 
+Local attachment tests use PostgreSQL for file contents. An API running in production needs a private S3-compatible bucket and a private ClamAV listener for uploads to non-demo organisations. See [Assets](docs/assets.md#attachment-storage) and `.env.example` for configuration.
+
 New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `pnpm --filter @cafm/db -s migrate:diff` (diffs your migrated `DATABASE_URL` against the schema), plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.
 
 Design tooling (run in `design/`):

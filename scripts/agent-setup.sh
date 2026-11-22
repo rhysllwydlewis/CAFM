@@ -17,6 +17,7 @@ export REDIS_URL=${REDIS_URL:-redis://localhost:6379}
 export DEMO_MODE=${DEMO_MODE:-true}
 export WEB_ORIGIN=${WEB_ORIGIN:-http://localhost:3000}
 export API_URL=${API_URL:-http://localhost:4000}
+# The attachment API uses PostgreSQL in the local setup without a bucket or clamd.
 
 step() { printf '\n[setup] %s\n' "$*"; }
 

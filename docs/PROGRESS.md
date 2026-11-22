@@ -2,24 +2,24 @@
 
 The one page to read first in any new session, by any agent (Claude, Codex or other) or person. It says where the build is, what's next, and what's waiting on the product owner. Tick items off here in the same PR that finishes them.
 
-**Last updated:** 22 Nov 2026, with asset "serves" relationships (P1-02c) built.
+**Last updated:** 22 Nov 2026, with the Asset Register, Helpdesk and notifications built.
 
 ## Where we are
 
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 7%** of the planned build (16 of 83 top-level roadmap items) |
+| **Overall progress** | **About 11%** of the planned build (19 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
-| **Next up** | Phase 1 asset register (P1-02) |
+| **Next up** | Phase 1 reactive work orders (P1-04) |
 
 <!-- approved-phase: 1 -->
 
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 1 / 13 | In progress |
+| 1 · Core CAFM MVP | 4 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -54,9 +54,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-02 | Codex | `codex/finish-asset-register` | 2026-11-22 | Finish asset tags and printed labels, meter readings, warranty alerts and attachments. |
-| P1-03 | Codex | `codex/finish-asset-register` | 2026-11-22 | Connect printed asset scans and requester photos to the merged Helpdesk flow in the Asset Register batch. |
-| P1-07 | Codex | `codex/finish-asset-register` | 2026-11-22 | Verify and record completion of the notification channels from merged PR #30, including warranty alerts. |
 
 ## Phase checklists
 
@@ -97,19 +94,19 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-01c** Site business hours, jurisdiction, UK bank holidays and custom closures for SLA clocks.
   - [x] **P1-01d** Portfolio map and accessible site list with filters.
   - [x] **P1-01e** Location QR labels, printing and stable links for Helpdesk fault intake (P1-03).
-- [ ] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
+- [x] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
   - [x] **P1-02a** Asset classes with attribute templates, and the tenant-scoped asset hierarchy and API (location link, parent and child, plan limit, custom fields, audit). ([guide](assets.md))
   - [x] **P1-02b** Asset register and asset detail screens in the app shell (`assets-01-register`, `assets-02-detail`). ([guide](assets.md))
   - [x] **P1-02c** "Serves" relationships: the spaces and assets an asset serves, and impact lookup. ([guide](assets.md))
-  - [ ] **P1-02d** Tags (QR, barcode, NFC), label printing and stable scan links for Helpdesk (P1-03).
-  - [ ] **P1-02e** Meters and readings, with rollover handling.
-  - [ ] **P1-02f** Warranties with expiry alerts.
-  - [ ] **P1-02g** Attachments (photos and documents) on assets.
-- [ ] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT.
+  - [x] **P1-02d** Tags (QR, barcode, NFC), label printing and stable scan links for Helpdesk (P1-03).
+  - [x] **P1-02e** Meters and readings, with rollover handling.
+  - [x] **P1-02f** Warranties with expiry alerts.
+  - [x] **P1-02g** Attachments (photos and documents) on assets. ([guide](assets.md#attachment-storage))
+- [x] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT. ([guide](helpdesk.md))
 - [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
-- [ ] **P1-07** Notifications (in-app, email, push) with templates.
+- [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
 - [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
