@@ -3,13 +3,20 @@ import Link from 'next/link';
 import type { FieldDefinition } from '@cafm/config-engine';
 import { customFieldValue } from '../locations/location-custom-fields';
 import { Icon } from '@cafm/ui';
-import { REQUEST_CHANNEL_LABELS, type RequestRecord, type RequestTypeChoice } from '@cafm/shared';
+import {
+  acceptsRequestComments,
+  REQUEST_CHANNEL_LABELS,
+  type RequestRecord,
+  type RequestTypeChoice,
+} from '@cafm/shared';
+import { AttachmentPanel } from '@/components/attachment-panel';
+import { attachmentList } from '@/lib/attachments';
 import { requestTime } from '@/lib/helpdesk-format';
 import { RequestStatus } from './request-table';
 import { RequestActions } from './request-actions';
 import styles from './helpdesk.module.css';
 
-export function RequestDetail({
+export async function RequestDetail({
   record,
   own,
   canManage,
@@ -22,6 +29,8 @@ export function RequestDetail({
   canManage: boolean;
   duplicates?: { id: string; number: string; title: string; version: number }[];
 }) {
+  const filePath = (own ? '/helpdesk/mine/' : '/helpdesk/requests/') + record.id + '/attachments';
+  const files = await attachmentList(filePath);
   return (
     <div className={(own ? styles.portalContent : 'page') + ' stack g4'}>
       <div className="page-head">
@@ -35,70 +44,78 @@ export function RequestDetail({
         </div>
       </div>
       <div className={styles.columns}>
-        <section className="card card-b stack g3">
-          <h2 className="card-t">Request details</h2>
-          <p className={styles.bodyText}>{record.description}</p>
-          <div className="row wrap g2 muted">
-            <Icon name="location" />
-            {record.location.name} · {record.location.code}
-          </div>
-          {record.asset && (
-            <div className="row wrap g2">
-              <Icon name="asset" />
-              {record.asset.name} · {record.asset.number}
+        <div className="stack g3">
+          <section className="card card-b stack g3">
+            <h2 className="card-t">Request details</h2>
+            <p className={styles.bodyText}>{record.description}</p>
+            <div className="row wrap g2 muted">
+              <Icon name="location" />
+              {record.location.name} · {record.location.code}
             </div>
-          )}
-          <dl className="kv">
-            <dt>Category</dt>
-            <dd>
-              {record.type.category} › {record.type.problemCode}
-            </dd>
-            <dt>Reported</dt>
-            <dd>
-              {requestTime(record.createdAt)} · {REQUEST_CHANNEL_LABELS[record.channel]}
-            </dd>
-            {record.customFields.map(({ definition, value }) => (
-              <Fragment key={definition.key}>
-                <dt>{definition.label}</dt>
-                <dd>{customFieldValue(definition, value)}</dd>
-              </Fragment>
-            ))}
-            {!own && (
-              <>
-                <dt>Requester</dt>
-                <dd>{record.requesterName ?? 'Email requester'}</dd>
-                <dt>Assignee</dt>
-                <dd>{record.assigneeName ?? 'Unassigned'}</dd>
-                <dt>Priority</dt>
-                <dd>P{record.priority}</dd>
-                {record.answers.map(({ label, value }, index) => (
-                  <Fragment key={index}>
-                    <dt>{label}</dt>
-                    <dd>{value ? 'Yes' : 'No'}</dd>
-                  </Fragment>
-                ))}
-                {record.responseDueAt && (
-                  <>
-                    <dt>Response due</dt>
-                    <dd>{requestTime(record.responseDueAt)}</dd>
-                  </>
-                )}
-                {record.attendDueAt && (
-                  <>
-                    <dt>Attendance due</dt>
-                    <dd>{requestTime(record.attendDueAt)}</dd>
-                  </>
-                )}
-                {record.fixDueAt && (
-                  <>
-                    <dt>Fix due</dt>
-                    <dd>{requestTime(record.fixDueAt)}</dd>
-                  </>
-                )}
-              </>
+            {record.asset && (
+              <div className="row wrap g2">
+                <Icon name="asset" />
+                {record.asset.name} · {record.asset.number}
+              </div>
             )}
-          </dl>
-        </section>
+            <dl className="kv">
+              <dt>Category</dt>
+              <dd>
+                {record.type.category} › {record.type.problemCode}
+              </dd>
+              <dt>Reported</dt>
+              <dd>
+                {requestTime(record.createdAt)} · {REQUEST_CHANNEL_LABELS[record.channel]}
+              </dd>
+              {record.customFields.map(({ definition, value }) => (
+                <Fragment key={definition.key}>
+                  <dt>{definition.label}</dt>
+                  <dd>{customFieldValue(definition, value)}</dd>
+                </Fragment>
+              ))}
+              {!own && (
+                <>
+                  <dt>Requester</dt>
+                  <dd>{record.requesterName ?? 'Email requester'}</dd>
+                  <dt>Assignee</dt>
+                  <dd>{record.assigneeName ?? 'Unassigned'}</dd>
+                  <dt>Priority</dt>
+                  <dd>P{record.priority}</dd>
+                  {record.answers.map(({ label, value }, index) => (
+                    <Fragment key={index}>
+                      <dt>{label}</dt>
+                      <dd>{value ? 'Yes' : 'No'}</dd>
+                    </Fragment>
+                  ))}
+                  {record.responseDueAt && (
+                    <>
+                      <dt>Response due</dt>
+                      <dd>{requestTime(record.responseDueAt)}</dd>
+                    </>
+                  )}
+                  {record.attendDueAt && (
+                    <>
+                      <dt>Attendance due</dt>
+                      <dd>{requestTime(record.attendDueAt)}</dd>
+                    </>
+                  )}
+                  {record.fixDueAt && (
+                    <>
+                      <dt>Fix due</dt>
+                      <dd>{requestTime(record.fixDueAt)}</dd>
+                    </>
+                  )}
+                </>
+              )}
+            </dl>
+          </section>
+          <AttachmentPanel
+            path={filePath}
+            items={files}
+            photos
+            canUpload={own && acceptsRequestComments(record.status)}
+          />
+        </div>
         <section className="card card-b stack g3">
           <h2 className="card-t">Activity</h2>
           <ol className={styles.timeline}>

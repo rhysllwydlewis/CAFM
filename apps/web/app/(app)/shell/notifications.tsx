@@ -200,6 +200,11 @@ export function NotificationsDrawer({ onClose }: { onClose: () => void }) {
                     Open request
                   </Link>
                 )}
+                {item.assetId && (
+                  <Link href={'/app/assets/' + item.assetId + '/operations#warranties'} onClick={onClose}>
+                    Open asset warranties
+                  </Link>
+                )}
                 {!item.readAt && (
                   <Button size="sm" onClick={() => void mark(item.id)}>
                     Mark as read

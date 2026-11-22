@@ -75,6 +75,14 @@ const assetDetail = shell({ active: 'assets', crumbs: ['Assets', 'Heating & hot 
   ${card('Open items', `<div class="stack g2 sm">${[['WO-CDF-04812 Pressure loss', 'In progress'], ['PPM annual service · 1 Dec', 'Scheduled'], ['Gas safety record · expires 2 Sep 2027', 'Compliant']].map(([a, b]) => `<div class="row between"><span>${a}</span>${status(b)}</div>`).join('')}</div>`)}</div></div>`,
 ] });
 
+const assetOperations = shell({ active: 'assets', crumbs: ['Assets', 'AST-CDF-00214', 'Asset records'], eyebrow: ref('AST-CDF-00214'), title: 'Boiler 2', acts: [btn('Back to asset'), btn('Print labels', { icon: 'qr-code' })], body: [
+  tabs([['Tags'], ['Meters'], ['Warranties'], ['Documents']], 0),
+  `<div class="grid g-2">${card('Tags', table(['Type', 'Tag code', 'Status'], [['QR', ref('BOILER-2'), badge('Active', 'success')], ['Barcode', ref('CDF-00214'), badge('Active', 'success')]]), { flush: true, acts: btn('Add tag', { icon: 'add' }) })}
+  ${card('Meters', `<p class="medium">Run hours</p>${kv([['Last reading','14.2 h'], ['Cumulative total', '1,014.2 h'], ['Rollover limit', '1,000 h']])}`, { acts: btn('Record reading') })}
+  ${card('Warranties', `<p class="medium">Heatcare Wales · WTY-BOILER-2</p>${kv([['Expires','14 Dec 2026'], ['Alert before expiry','30 days']])}`, { acts: btn('Add warranty', { icon: 'add' }) })}
+  ${card('Documents', `<div class="row g2">${I('document')} <span class="medium">Boiler certificate.pdf</span></div>`, { acts: btn('Upload file', { icon: 'upload' }) })}</div>`,
+] });
+
 // ── Locations ──
 const locations = shell({ active: 'locations', crumbs: ['Locations', 'Cardiff HQ'], title: 'Cardiff HQ', eyebrow: `${ref('CDF')} · Office · 1 Callaghan Square, Cardiff CF10 5BT · England & Wales calendar`, acts: [btn('Floor plans', { icon: 'floor-plan' }), btn('QR codes', { icon: 'qr-code' }), btn('Edit site', { v: 'primary', icon: 'edit' })], body: [
   `<div class="grid g-side">${card('Hierarchy', `${search('Find a location', 200)}<div class="stack g1 sm" style="margin-top:12px">${[[0, 'Demo Estates Ltd', 'globe'], [1, 'Wales region', 'map'], [2, 'Cardiff HQ', 'site', true], [3, 'Basement', 'layers'], [4, 'Plant room B1', 'location'], [4, 'Car park', 'location'], [3, 'Ground', 'layers'], [3, 'Level 1', 'layers'], [3, 'Level 2', 'layers'], [4, 'Kitchen K2.01', 'location'], [4, 'Taff room', 'location'], [3, 'Levels 3–6', 'layers'], [2, 'Llandaff Primary School', 'site'], [2, 'Pontcanna Clinic', 'site'], [1, 'South West region', 'map'], [1, 'North West region', 'map']].map(([d, n, ic, on]) => `<div class="row" style="padding:5px 8px;padding-left:${8 + d * 14}px;border-radius:6px;${on ? 'background:var(--primary-soft);color:var(--primary-text);font-weight:500' : ''}">${d < 4 ? I('chevron-' + (d < 3 || on ? 'down' : 'right'), 's14') : '<span style="width:14px"></span>'}${I(ic, 's14')}<span>${n}</span></div>`).join('')}</div>`)}
@@ -95,6 +103,7 @@ export default [
   { id: 'ppm-01-planner', group: 'Planned maintenance', title: '52-week PPM planner', html: planner },
   { id: 'ppm-02-schedule', group: 'Planned maintenance', title: 'PPM schedule detail (SFG20 tasks)', html: ppmDetail },
   { id: 'assets-01-register', group: 'Assets & locations', title: 'Asset register', html: assetList },
+  { id: 'assets-03-records', group: 'Assets & locations', title: 'Asset records', html: assetOperations },
   { id: 'assets-02-detail', group: 'Assets & locations', title: 'Asset detail', html: assetDetail },
   { id: 'locations-01-site', group: 'Assets & locations', title: 'Location hierarchy & site detail', html: locations },
   { id: 'locations-02-map', group: 'Assets & locations', title: 'Portfolio map', html: siteMap },

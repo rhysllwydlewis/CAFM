@@ -37,6 +37,7 @@ export default async function NewRequest({
     notFound();
   const prefill = assetContext?.location ?? location ?? undefined;
   const draft = params.get('draft');
+  const fromAssetTag = params.get('source') === 'tag' || params.get('source') === 'barcode';
   return (
     <div className={styles.portalContent + ' stack g4'}>
       <div className="page-head">
@@ -47,6 +48,15 @@ export default async function NewRequest({
               View asset
             </Link>
           )}
+          {assetContext &&
+            fromAssetTag &&
+            can(user, 'assets.read') &&
+            can(user, 'assets.record_readings') &&
+            feature(user.entitlements, 'assets') && (
+              <Link className="btn" href={'/app/assets/' + assetContext.asset.id + '/operations#meters'}>
+                Record meter reading
+              </Link>
+            )}
           {prefill && can(user, 'locations.read') && feature(user.entitlements, 'locations') && (
             <Link className="btn" href={'/app/locations?id=' + prefill.id}>
               View location
@@ -61,6 +71,7 @@ export default async function NewRequest({
           scanned={prefill}
           scannedAsset={assetContext?.asset}
           fromRegister={params.get('source') === 'register'}
+          fromAssetTag={fromAssetTag}
           draftId={draft && /^[a-f0-9-]{36}$/i.test(draft) ? draft : undefined}
         />
       </section>
