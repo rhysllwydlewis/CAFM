@@ -12,11 +12,11 @@ export async function readHelpdesk<T>(path: string): Promise<T> {
 export const catalogue = () => readHelpdesk<RequestCatalogue<FieldDefinition>>('/catalogue');
 export const requestPage = (path: 'mine' | 'requests', params = '') => readHelpdesk<RequestPage>('/' + path + params);
 
-export async function requestRecord(id: string, own: boolean): Promise<RequestRecord | null> {
+export async function requestRecord(id: string, own: boolean): Promise<RequestRecord<FieldDefinition> | null> {
   const response = await apiGet('/helpdesk/' + (own ? 'mine' : 'requests') + '/' + encodeURIComponent(id));
   if (response.status === 404 || response.status === 400) return null;
   if (!response.ok) throw new Error('Could not load this request.');
-  return response.json() as Promise<RequestRecord>;
+  return response.json() as Promise<RequestRecord<FieldDefinition>>;
 }
 
 export async function reportLocation(id: string): Promise<ReportLocation | null> {

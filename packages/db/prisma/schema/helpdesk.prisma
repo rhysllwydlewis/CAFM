@@ -90,6 +90,7 @@ model ServiceRequest {
   @@index([tenantId, status, responseDueAt])
   @@index([tenantId, requesterId, createdAt, id])
   @@index([tenantId, assigneeId, status])
+  @@index([tenantId, mergedIntoId])
   @@index([tenantId, locationId, typeId, createdAt])
   @@index([tenantId, createdAt, id])
   @@map("service_request")
@@ -143,7 +144,7 @@ model ReceivedRequestMessage {
   mailbox   RequestMailbox @relation(fields: [tenantId, mailboxId], references: [tenantId, id], onDelete: Cascade)
   request   ServiceRequest @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Cascade)
 
-  @@unique([tenantId, mailboxId, messageId])
+  @@unique([tenantId, mailboxId, messageId, sender], map: "received_request_message_delivery_key")
   @@index([tenantId, requestId])
   @@map("received_request_message")
 }

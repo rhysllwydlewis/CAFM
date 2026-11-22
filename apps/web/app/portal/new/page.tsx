@@ -56,6 +56,7 @@ export default async function NewRequest({
       </div>
       <section className="card card-b">
         <RequestForm
+          key={assetContext?.asset.id ?? prefill?.id ?? draft ?? 'new-request'}
           data={data}
           scanned={prefill}
           scannedAsset={assetContext?.asset}

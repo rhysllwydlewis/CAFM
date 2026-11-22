@@ -114,7 +114,7 @@ export class HelpdeskSettingsController {
     const query = typeof q === 'string' ? q.trim().slice(0, 100) : '';
     return withTenant(this.db, tenantId, async (tx) => {
       const roles = await tx.role.findMany({
-        where: { tenantId, permissions: { has: 'requests.manage' } },
+        where: { tenantId, permissions: { hasEvery: ['requests.manage', 'requests.read'] } },
         select: { key: true },
       });
       const members = await tx.membership.findMany({

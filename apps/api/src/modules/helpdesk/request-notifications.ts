@@ -1,6 +1,5 @@
 import type { Tx } from '@cafm/db';
-import type { RequestNotificationEvent } from '@cafm/shared';
-import { enqueue } from '../../core/audit';
+import { REQUEST_STATUS_LABELS, type RequestNotificationEvent, type RequestStatus } from '@cafm/shared';
 
 const defaults: Record<RequestNotificationEvent, { title: string; body: string }> = {
   'request.received': { title: 'Request {number} received', body: 'We’ve received your request about {title}.' },
@@ -19,50 +18,116 @@ export function requestNotificationDefault(key: RequestNotificationEvent) {
   return { key, ...defaults[key], email: true, push: true };
 }
 
-export async function notifyRequester(
+type NotificationRequest = {
+  tenantId: string;
+  id: string;
+  requesterId: string | null;
+  externalEmail: string | null;
+  number: string;
+  title: string;
+};
+type RequestNotice = { request: NotificationRequest; entryId: string };
+
+async function notifyRequesters(
   tx: Tx,
-  request: {
-    tenantId: string;
-    id: string;
-    requesterId: string | null;
-    externalEmail: string | null;
-    number: string;
-    title: string;
-  },
+  tenantId: string,
+  events: RequestNotice[],
+  key: RequestNotificationEvent,
+  status: string,
+  acknowledgement?: string | null,
+) {
+  if (!events.length) return;
+  const memberIds = events.flatMap(({ request }) => (request.requesterId ? [request.requesterId] : []));
+  const [template, members] = await Promise.all([
+    tx.notificationTemplate.findUnique({ where: { tenantId_key: { tenantId, key } } }),
+    memberIds.length
+      ? tx.membership.findMany({
+          where: { tenantId, id: { in: [...new Set(memberIds)] }, status: 'active' },
+          select: { id: true, account: { select: { email: true } } },
+        })
+      : [],
+  ]);
+  const emails = new Map(members.map(({ id, account }) => [id, account.email]));
+  const { title, body, email, push } = template ?? requestNotificationDefault(key);
+  const notices = events.flatMap(({ request, entryId }) => {
+    if (request.requesterId && !emails.has(request.requesterId)) return [];
+    const recipientEmail = email
+      ? request.requesterId
+        ? (emails.get(request.requesterId) ?? null)
+        : request.externalEmail
+      : null;
+    if (!request.requesterId && !recipientEmail) return [];
+    const tokens = { number: request.number, title: request.title, status };
+    const render = (value: string) =>
+      value.replace(/\{(number|title|status)\}/g, (_, token: keyof typeof tokens) => tokens[token]);
+    return [
+      {
+        tenantId,
+        requestId: request.id,
+        recipientId: request.requesterId,
+        recipientEmail,
+        pushEnabled: push,
+        eventKey: entryId,
+        title: render(title),
+        body: render(key === 'request.received' && acknowledgement ? acknowledgement : body),
+      },
+    ];
+  });
+  if (!notices.length) return;
+  const created = await tx.notification.createManyAndReturn({
+    data: notices,
+    select: { id: true, recipientEmail: true, pushEnabled: true, recipientId: true },
+  });
+  const deliveries = created
+    .filter(({ recipientEmail, pushEnabled, recipientId }) => recipientEmail || (pushEnabled && recipientId))
+    .map(({ id }) => ({ tenantId, topic: 'notification.deliver', payload: { notificationId: id } }));
+  if (deliveries.length) await tx.outboxMessage.createMany({ data: deliveries });
+}
+
+export function notifyRequester(
+  tx: Tx,
+  request: NotificationRequest,
   key: RequestNotificationEvent,
   entryId: string,
   status: string,
   acknowledgement?: string | null,
 ) {
-  if (!request.requesterId && !request.externalEmail) return;
-  const tenantId = request.tenantId;
-  const [template, membership] = await Promise.all([
-    tx.notificationTemplate.findUnique({ where: { tenantId_key: { tenantId, key } } }),
-    request.requesterId
-      ? tx.membership.findFirst({
-          where: { id: request.requesterId, status: 'active' },
-          select: { account: { select: { email: true } } },
-        })
-      : null,
-  ]);
-  if (request.requesterId && !membership) return;
-  const { title, body, email, push } = template ?? requestNotificationDefault(key);
-  const tokens = { number: request.number, title: request.title, status };
-  const render = (value: string) =>
-    value.replace(/\{(number|title|status)\}/g, (_, token: keyof typeof tokens) => tokens[token]);
-  const notification = await tx.notification.create({
+  return notifyRequesters(tx, request.tenantId, [{ request, entryId }], key, status, acknowledgement);
+}
+
+/** Share the outcome with each reporter using only that reporter's own reference and title. */
+export async function notifyLinkedRequesters(
+  tx: Tx,
+  tenantId: string,
+  primaryId: string,
+  previous: RequestStatus,
+  status: RequestStatus,
+) {
+  const where = { tenantId, mergedIntoId: primaryId };
+  await tx.serviceRequest.updateMany({
+    where,
     data: {
-      tenantId,
-      requestId: request.id,
-      recipientId: request.requesterId,
-      recipientEmail: email ? (membership?.account.email ?? request.externalEmail) : null,
-      pushEnabled: push,
-      eventKey: entryId,
-      title: render(title),
-      body: render(key === 'request.received' && acknowledgement ? acknowledgement : body),
+      updatedAt: new Date(),
+      version: { increment: 1 },
+      ...(previous === 'completed' && status === 'in_progress' ? { rating: null, feedback: null, ratedAt: null } : {}),
     },
   });
-  if (notification.recipientEmail || (notification.pushEnabled && request.requesterId)) {
-    await enqueue(tx, tenantId, 'notification.deliver', { notificationId: notification.id });
-  }
+  const linked = await tx.serviceRequest.findMany({
+    where,
+    select: { id: true, tenantId: true, requesterId: true, externalEmail: true, title: true, number: true },
+  });
+  if (!linked.length) return;
+  const label = REQUEST_STATUS_LABELS[status];
+  const entries = await tx.requestEntry.createManyAndReturn({
+    data: linked.map(({ id }) => ({ tenantId, requestId: id, kind: 'status', body: 'Linked request · ' + label })),
+    select: { id: true, requestId: true },
+  });
+  const byRequest = new Map(linked.map((request) => [request.id, request]));
+  await notifyRequesters(
+    tx,
+    tenantId,
+    entries.map(({ id, requestId }) => ({ request: byRequest.get(requestId)!, entryId: id })),
+    status === 'completed' ? 'request.completed' : 'request.progress',
+    label,
+  );
 }

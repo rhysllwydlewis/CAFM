@@ -15,6 +15,10 @@ export const REQUEST_STATUSES = [
   'rejected',
   'merged',
 ] as const;
+export function acceptsRequestComments(status: string): boolean {
+  return status !== 'closed' && status !== 'rejected' && status !== 'merged';
+}
+
 export const REQUEST_CHANNELS = ['portal', 'qr', 'phone', 'email'] as const;
 export const REQUEST_VIEWS = ['open', 'mine', 'unassigned', 'at_risk', 'all'] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
@@ -138,17 +142,22 @@ export const listRequestsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });
 
+export const requestTriageSchema = z.object({ typeId: uuid, impact: level, urgency: level }).strict();
+export type RequestTriage = z.infer<typeof requestTriageSchema>;
+export type RequestTypeChoice = { id: string; category: string; name: string; active: boolean };
+
 export const changeRequestSchema = z
   .object({
     version,
     status: z.enum(['new', 'assigned', 'in_progress', 'completed', 'closed', 'rejected']).optional(),
     assigneeId: uuid.nullable().optional(),
+    triage: requestTriageSchema.optional(),
     note: shortText(1200).optional(),
   })
   .strict()
   .refine(
-    (change) => change.status !== undefined || change.assigneeId !== undefined,
-    'Choose a status or an assignee.',
+    (change) => change.status !== undefined || change.assigneeId !== undefined || change.triage !== undefined,
+    'Choose a status, an assignee or triage details.',
   );
 export const mergeRequestSchema = z.object({ version, targetId: uuid, targetVersion: version }).strict();
 export const requestCommentSchema = z.object({ body: shortText(6000), internal: z.boolean().default(false) }).strict();
@@ -207,6 +216,7 @@ export type RequestSummary = {
   number: string;
   title: string;
   status: RequestStatus;
+  linkedStatus: RequestStatus | null;
   channel: RequestChannel;
   priority: number;
   type: RequestTypeOption;
@@ -220,19 +230,23 @@ export type RequestSummary = {
   createdAt: string;
   rating: number | null;
 };
-export type RequestRecord = RequestSummary & {
+export type RequestRecord<CustomField = unknown> = RequestSummary & {
   version: number;
+  impact: number;
+  urgency: number;
   description: string;
   attendDueAt: string | null;
   fixDueAt: string | null;
   assigneeId: string | null;
   feedback: string | null;
   answers: { label: string; value: boolean }[];
+  customFields: { definition: CustomField; value: unknown }[];
   entries: { id: string; kind: string; body: string; internal: boolean; author: string | null; createdAt: string }[];
 };
 export type RequestPage = {
   items: RequestSummary[];
   nextCursor: string | null;
+  cursorReset?: boolean;
   counts?: {
     open: number;
     unassigned: number;
@@ -280,6 +294,8 @@ export function isBrowserPushEndpoint(endpoint: string): boolean {
     return false;
   }
 }
+
+export const pushEndpointSchema = z.object({ endpoint: z.string().max(2048).refine(isBrowserPushEndpoint) });
 
 export const pushSubscriptionSchema = z
   .object({

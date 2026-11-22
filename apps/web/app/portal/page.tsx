@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature } from '@cafm/shared';
+import { can, feature, listRequestsSchema } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { currentUser } from '@/lib/session';
 import { requestPage } from '@/lib/helpdesk';
@@ -14,9 +14,10 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const user = await currentUser('/portal');
   if (!can(user, 'requests.create') || !feature(user.entitlements, 'helpdesk')) return null;
   const input = await searchParams;
-  const cursor = typeof input.cursor === 'string' && /^[a-f0-9-]{36}$/i.test(input.cursor) ? input.cursor : undefined;
+  const parsed = listRequestsSchema.safeParse({ cursor: input.cursor });
+  const cursor = parsed.success ? parsed.data.cursor : undefined;
   const query = cursor ? '?cursor=' + encodeURIComponent(cursor) : '';
-  const { items, nextCursor } = await requestPage('mine', query);
+  const { items, nextCursor, cursorReset } = await requestPage('mine', query);
   return (
     <>
       <section className={styles.portalHero}>
@@ -39,9 +40,10 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <section id="my-requests" className="card card-b stack g3">
           <h2 className="card-t">My requests</h2>
           <RequestTable items={items} now={0} own />
-          {(cursor || nextCursor) && (
+          {cursorReset && <p className="muted">The list changed. Showing the first page.</p>}
+          {((cursor && !cursorReset) || nextCursor) && (
             <div className={styles.actions}>
-              {cursor && (
+              {cursor && !cursorReset && (
                 <Link href="/portal#my-requests" className="btn">
                   First page
                 </Link>

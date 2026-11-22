@@ -6,8 +6,8 @@ import { sendEmail } from './email';
 
 register('notification.deliver', async (raw, ctx) => {
   const { notificationId } = raw as { notificationId: string };
+  if (!ctx.tenantId) throw new Error('A notification delivery needs a tenant.');
   const tenantId = ctx.tenantId;
-  if (!tenantId) throw new Error('A notification delivery needs a tenant.');
   const data = await withTenant(ctx.db, tenantId, async (tx) => {
     const notice = await tx.notification.findFirst({
       where: { id: notificationId, tenantId },
@@ -42,8 +42,9 @@ register('notification.deliver', async (raw, ctx) => {
   });
   if (!data) return;
   const { notice, subscriptions } = data;
-  const to = notice.recipientEmail && (notice.recipientId ? notice.recipient?.account.email : notice.recipientEmail);
-  if (to && !notice.emailSentAt) {
+  async function deliverEmail() {
+    const to = notice.recipientEmail && (notice.recipientId ? notice.recipient?.account.email : notice.recipientEmail);
+    if (!to || notice.emailSentAt) return;
     const mailbox = notice.request?.receivedMessages[0]?.mailbox;
     await sendEmail(
       {
@@ -61,39 +62,58 @@ register('notification.deliver', async (raw, ctx) => {
     );
   }
 
-  const { WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT } = process.env;
-  if (!WEB_PUSH_PUBLIC_KEY || !WEB_PUSH_PRIVATE_KEY || !WEB_PUSH_SUBJECT) return;
+  async function deliverPush() {
+    const { WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_SUBJECT } = process.env;
+    if (!WEB_PUSH_PUBLIC_KEY || !WEB_PUSH_PRIVATE_KEY || !WEB_PUSH_SUBJECT) return;
 
-  for (const subscription of subscriptions) {
-    if (!isBrowserPushEndpoint(subscription.endpoint)) continue;
-    try {
-      // Keep the message generic on the lock screen. The app checks access on open.
-      await webPush.sendNotification(
-        {
-          endpoint: subscription.endpoint,
-          keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-        },
-        JSON.stringify({ id: notice.id, path: notice.requestId ? '/portal/requests/' + notice.requestId : '/app' }),
-        {
-          vapidDetails: { subject: WEB_PUSH_SUBJECT, publicKey: WEB_PUSH_PUBLIC_KEY, privateKey: WEB_PUSH_PRIVATE_KEY },
-          TTL: 86_400,
-          timeout: 10_000,
-        },
+    let failed = false;
+    for (const subscription of subscriptions) {
+      if (!isBrowserPushEndpoint(subscription.endpoint)) continue;
+      try {
+        // Keep the message generic on the lock screen. The app checks access on open.
+        await webPush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+          },
+          JSON.stringify({ id: notice.id, path: notice.requestId ? '/portal/requests/' + notice.requestId : '/app' }),
+          {
+            vapidDetails: {
+              subject: WEB_PUSH_SUBJECT,
+              publicKey: WEB_PUSH_PUBLIC_KEY,
+              privateKey: WEB_PUSH_PRIVATE_KEY,
+            },
+            TTL: 86_400,
+            timeout: 10_000,
+          },
+        );
+      } catch (error) {
+        const statusCode = error instanceof webPush.WebPushError ? error.statusCode : undefined;
+        if (statusCode === 404 || statusCode === 410) {
+          await withTenant(ctx.db, tenantId, (tx) =>
+            tx.pushSubscription.deleteMany({ where: { id: subscription.id } }),
+          );
+        } else {
+          failed = true;
+        }
+        continue;
+      }
+      await withTenant(ctx.db, tenantId, (tx) =>
+        tx.notificationPushDelivery.upsert({
+          where: {
+            tenantId_notificationId_subscriptionId: { tenantId, notificationId, subscriptionId: subscription.id },
+          },
+          create: { tenantId, notificationId, subscriptionId: subscription.id },
+          update: {},
+        }),
       );
-    } catch (error) {
-      const statusCode = error instanceof webPush.WebPushError ? error.statusCode : undefined;
-      if (statusCode !== 404 && statusCode !== 410) throw new Error('Browser push provider delivery failed.');
-      await withTenant(ctx.db, tenantId, (tx) => tx.pushSubscription.deleteMany({ where: { id: subscription.id } }));
-      continue;
     }
-    await withTenant(ctx.db, tenantId, (tx) =>
-      tx.notificationPushDelivery.upsert({
-        where: {
-          tenantId_notificationId_subscriptionId: { tenantId, notificationId, subscriptionId: subscription.id },
-        },
-        create: { tenantId, notificationId, subscriptionId: subscription.id },
-        update: {},
-      }),
-    );
+    if (failed) throw new Error('Browser push provider delivery failed.');
   }
+
+  const [email, push] = await Promise.allSettled([deliverEmail(), deliverPush()]);
+  const failed = [email.status === 'rejected' ? 'email' : '', push.status === 'rejected' ? 'browser push' : ''].filter(
+    Boolean,
+  );
+  if (failed.length) throw new Error('Could not deliver notification by ' + failed.join(' and ') + '.');
 });

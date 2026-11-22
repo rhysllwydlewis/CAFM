@@ -3,10 +3,10 @@ import type { Request } from 'express';
 import { Req } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { withTenant } from '@cafm/db';
-import { incomingRequestSchema, resolveEntitlements } from '@cafm/shared';
+import { acceptsRequestComments, incomingRequestSchema, resolveEntitlements } from '@cafm/shared';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
-import { CLOSED, createRequest } from './request-records';
+import { createRequest } from './request-records';
 import { lockRequests } from './request-scope';
 
 function bearerMatch(actual: string | undefined, secret: string | undefined) {
@@ -33,13 +33,17 @@ export class InboundMailController {
     const tenantId = tenant.id;
     return withTenant(this.db, tenantId, async (tx) => {
       await lockRequests(tx, tenantId);
-      const overrides = await tx.tenantEntitlement.findMany({ where: { tenantId } });
-      if (!resolveEntitlements(tenant.plan, overrides).features.includes('helpdesk')) throw new NotFoundException();
+      const current = await tx.tenant.findFirst({
+        where: { id: tenantId, slug, status: 'active' },
+        select: { plan: true, entitlements: true },
+      });
+      if (!current || !resolveEntitlements(current.plan, current.entitlements).features.includes('helpdesk'))
+        throw new NotFoundException();
       const mailbox = await tx.requestMailbox.findFirst({ where: { id: mailboxId, active: true, address: mail.to } });
       if (!mailbox) throw new NotFoundException();
-      const deliveryKey = { tenantId, mailboxId, messageId: mail.messageId };
+      const deliveryKey = { tenantId, mailboxId, messageId: mail.messageId, sender: mail.from };
       const existing = await tx.receivedRequestMessage.findUnique({
-        where: { tenantId_mailboxId_messageId: deliveryKey },
+        where: { tenantId_mailboxId_messageId_sender: deliveryKey },
         select: { requestId: true },
       });
       if (existing) return existing;
@@ -50,7 +54,9 @@ export class InboundMailController {
           select: { requestId: true },
         });
         requestId = referencedMail?.requestId;
-        const notificationId = mail.inReplyTo.match(/^<cafm-([a-f0-9-]{36})@cafm\.invalid>$/i)?.[1];
+        const notificationId = mail.inReplyTo.match(
+          /^<cafm-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})@cafm\.invalid>$/i,
+        )?.[1];
         if (!requestId && notificationId) {
           const notification = await tx.notification.findFirst({
             where: {
@@ -65,7 +71,7 @@ export class InboundMailController {
         }
       }
       const original = requestId && (await tx.serviceRequest.findFirst({ where: { id: requestId, tenantId } }));
-      if (original && !CLOSED.includes(original.status)) {
+      if (original && acceptsRequestComments(original.status)) {
         await tx.serviceRequest.update({ where: { id: original.id }, data: { updatedAt: new Date() } });
         await tx.requestEntry.create({
           data: { tenantId, requestId: original.id, kind: 'comment', body: mail.text },
@@ -90,11 +96,21 @@ export class InboundMailController {
           },
           null,
           undefined,
-          { tenantId, key: 'email:' + mailboxId + ':' + mail.messageId, from: mail.from },
+          {
+            tenantId,
+            key:
+              'email:' +
+              mailboxId +
+              ':' +
+              createHash('sha256')
+                .update(JSON.stringify([mail.from, mail.messageId]))
+                .digest('hex'),
+            from: mail.from,
+          },
         );
         requestId = created.id;
       }
-      await tx.receivedRequestMessage.create({ data: { ...deliveryKey, requestId, sender: mail.from } });
+      await tx.receivedRequestMessage.create({ data: { ...deliveryKey, requestId } });
       return { requestId };
     });
   }

@@ -17,7 +17,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
-- Helpdesk queue, requester portal, request catalogue and priority matrix. Report from a location QR label, an asset page, the portal, a phone call or a configured inbox. Operators can triage and link duplicates, and requesters can follow updates and rate completed requests.
+- Helpdesk queue, requester portal, request catalogue and priority matrix. Report from a location QR label, an asset page, the portal, a phone call or a configured inbox. Operators can triage and link duplicates, and each requester receives status updates and can rate their completed report.
 - Request notifications in the CAFM inbox, with templates for email and browser push.
 
 - What an asset serves: name the floors, rooms and other assets that depend on an asset, and see on its page what is affected if it goes out of service. People only see what is inside their branches.

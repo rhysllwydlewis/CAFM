@@ -15,8 +15,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { Temporal } from '@js-temporal/polyfill';
 import { withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
+  acceptsRequestComments,
   changeRequestSchema,
   createRequestSchema,
   listRequestsSchema,
@@ -41,6 +43,7 @@ import { activeCustomFields } from '../../core/config';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
+import { locationScope } from '../locations/location-tree';
 import {
   AT_RISK_MS,
   CLOSED,
@@ -50,6 +53,7 @@ import {
   requestDetail,
   requestRelations,
   requestSummary,
+  requestTargets,
 } from './request-records';
 import {
   missingRequest,
@@ -60,7 +64,7 @@ import {
   staleRequest,
   withRequestWrite,
 } from './request-scope';
-import { notifyRequester } from './request-notifications';
+import { notifyLinkedRequesters, notifyRequester } from './request-notifications';
 
 async function getRequest(tx: Tx, auth: AuthContext, id: string, own: boolean) {
   const row = await tx.serviceRequest.findFirst({
@@ -202,7 +206,7 @@ export class RequestsController {
     return withTenant(this.db, tenantId, async (tx) => {
       const request = await getRequest(tx, auth, id, false);
       const roles = await tx.role.findMany({
-        where: { tenantId, permissions: { has: 'requests.manage' } },
+        where: { tenantId, permissions: { hasEvery: ['requests.manage', 'requests.read'] } },
         select: { key: true, scope: true },
       });
       const rows = await tx.membership.findMany({
@@ -236,6 +240,47 @@ export class RequestsController {
       }
       return createRequest(tx, input, auth, req.ip);
     });
+  }
+
+  @Get('queue-filters')
+  @RequirePermission('requests.read')
+  filters(@Req() req: Request, @Query() query: unknown) {
+    const auth = req.auth!;
+    const { locationId } = parse(listRequestsSchema, query);
+    const scope = requestScope(auth, false);
+    return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
+      const [categories, location] = await Promise.all([
+        tx.requestType.findMany({
+          where: { requests: { some: scope } },
+          select: { category: true },
+          orderBy: { category: 'asc' },
+          distinct: ['category'],
+        }),
+        locationId
+          ? tx.location.findFirst({ where: { ...locationScope(auth), id: locationId }, select: reportLocationSelect })
+          : null,
+      ]);
+      return { categories: categories.map(({ category }) => category), location };
+    });
+  }
+
+  @Get('queue-locations')
+  @RequirePermission('requests.read')
+  queueLocations(@Req() req: Request, @Query('q') q?: string) {
+    const auth = req.auth!;
+    const query = typeof q === 'string' ? q.trim().slice(0, 100) : '';
+    return withTenant(this.db, auth.membership!.tenantId, (tx) =>
+      tx.location.findMany({
+        where: {
+          ...locationScope(auth),
+          descendants: { some: { descendant: { requests: { some: requestScope(auth, false) } } } },
+          OR: [{ name: { contains: query, mode: 'insensitive' } }, { code: { contains: query, mode: 'insensitive' } }],
+        },
+        select: reportLocationSelect,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: 25,
+      }),
+    );
   }
 
   @Get('requests')
@@ -285,26 +330,41 @@ export class RequestsController {
             : []),
         ],
       };
-      const cursor =
-        input.cursor &&
-        (await tx.serviceRequest.findFirst({
-          where: { AND: [where, { id: input.cursor }] },
-          select: { id: true },
-        }));
-      if (input.cursor && !cursor) throw new BadRequestException('Reload the list to continue.');
+      // The anchor may have changed status or category since the last page.
+      // Resolve it in the same access scope, then apply the current filters.
+      const cursor = input.cursor
+        ? await tx.serviceRequest.findFirst({
+            where: { AND: [scope, { id: input.cursor }] },
+            select: { id: true, createdAt: true },
+          })
+        : null;
       const rows = await tx.serviceRequest.findMany({
-        where,
+        where: cursor
+          ? {
+              AND: [
+                where,
+                {
+                  OR: [{ createdAt: { lt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { lt: cursor.id } }],
+                },
+              ],
+            }
+          : where,
         include: requestRelations,
         take: input.limit + 1,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        ...(cursor ? { cursor, skip: 1 } : {}),
       });
       const items = rows.slice(0, input.limit).map(requestSummary);
-      const page = { items, nextCursor: rows.length > input.limit ? (items.at(-1)?.id ?? null) : null };
+      const page = {
+        items,
+        nextCursor: rows.length > input.limit ? (items.at(-1)?.id ?? null) : null,
+        ...(input.cursor && !cursor ? { cursorReset: true } : {}),
+      };
       if (own || cursor) return page;
       const now = new Date();
-      const today = new Date(now);
-      today.setUTCHours(0, 0, 0, 0);
+      const today = new Date(
+        Temporal.Instant.fromEpochMilliseconds(now.getTime()).toZonedDateTimeISO('Europe/London').startOfDay()
+          .epochMilliseconds,
+      );
       const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
       const [openCount, unassigned, riskCount, loggedToday, responded, ratings] = await Promise.all([
         tx.serviceRequest.count({ where: { AND: [scope, open] } }),
@@ -358,6 +418,20 @@ export class RequestsController {
     );
   }
 
+  @Get('requests/:id/triage-types')
+  @RequirePermission('requests.manage')
+  async triageTypes(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string) {
+    const auth = req.auth!;
+    return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
+      const request = await getRequest(tx, auth, id, false);
+      return tx.requestType.findMany({
+        where: { OR: [{ active: true }, { id: request.typeId }] },
+        select: { id: true, category: true, name: true, active: true },
+        orderBy: [{ category: 'asc' }, { name: 'asc' }, { id: 'asc' }],
+      });
+    });
+  }
+
   @Patch('requests/:id')
   @RequirePermission('requests.manage')
   change(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
@@ -388,7 +462,35 @@ export class RequestsController {
         throw new NotFoundException('Available assignee not found.');
       }
       if (status === 'rejected' && !input.note) throw new UnprocessableEntityException('Enter a reason for rejection.');
-      if (status === current && assigneeId === before.assigneeId) return requestSummary(before);
+      const workflowChanged = status !== current || assigneeId !== before.assigneeId;
+      const triage = input.triage;
+      const triageChanged =
+        triage &&
+        (triage.typeId !== before.typeId || triage.impact !== before.impact || triage.urgency !== before.urgency)
+          ? triage
+          : undefined;
+      if (!workflowChanged && !triageChanged) return requestSummary(before);
+      let targets;
+      if (triageChanged) {
+        if (CLOSED.includes(current)) throw new UnprocessableEntityException('Triage is available for open requests.');
+        const type = await tx.requestType.findFirst({
+          where: { tenantId, id: triageChanged.typeId, OR: [{ active: true }, { id: before.typeId }] },
+          select: { id: true },
+        });
+        if (!type) throw new NotFoundException('Request type not found.');
+        const site = await tx.locationPath.findFirst({
+          where: { tenantId, descendantId: before.locationId, ancestor: { kind: 'site' } },
+          select: { ancestor: { select: { siteCalendar: true } } },
+        });
+        targets = await requestTargets(
+          tx,
+          tenantId,
+          triageChanged.impact,
+          triageChanged.urgency,
+          before.createdAt,
+          site?.ancestor.siteCalendar,
+        );
+      }
 
       const next = await tx.serviceRequest.update({
         where: { id },
@@ -396,7 +498,9 @@ export class RequestsController {
         data: {
           status,
           assigneeId,
-          firstResponseAt: before.firstResponseAt ?? new Date(),
+          firstResponseAt: workflowChanged ? (before.firstResponseAt ?? new Date()) : before.firstResponseAt,
+          ...triageChanged,
+          ...targets,
           ...(status === 'in_progress' && current === 'completed'
             ? { rating: null, feedback: null, ratedAt: null }
             : {}),
@@ -408,9 +512,11 @@ export class RequestsController {
           tenantId,
           requestId: id,
           authorId: auth.membership!.id,
-          kind: 'status',
-          body:
-            status === current
+          kind: workflowChanged ? 'status' : 'triage',
+          internal: !workflowChanged,
+          body: !workflowChanged
+            ? 'Classification or priority updated'
+            : status === current
               ? assigneeId
                 ? 'Assignee changed'
                 : 'Assignment cleared'
@@ -424,17 +530,33 @@ export class RequestsController {
           action: 'request.update',
           entityType: 'request',
           entityId: id,
-          changes: { before: { status: before.status, assigneeId: before.assigneeId }, after: { status, assigneeId } },
+          changes: {
+            before: {
+              status: before.status,
+              assigneeId: before.assigneeId,
+              typeId: before.typeId,
+              impact: before.impact,
+              urgency: before.urgency,
+              priority: before.priority,
+            },
+            after: {
+              status,
+              assigneeId,
+              typeId: next.typeId,
+              impact: next.impact,
+              urgency: next.urgency,
+              priority: next.priority,
+            },
+          },
         },
         req.ip,
       );
-      await notifyRequester(
-        tx,
-        next,
-        status === 'completed' ? 'request.completed' : 'request.progress',
-        entry.id,
-        REQUEST_STATUS_LABELS[status],
-      );
+      const event = status === 'completed' ? 'request.completed' : 'request.progress';
+      const label = REQUEST_STATUS_LABELS[status];
+      if (workflowChanged) await notifyRequester(tx, next, event, entry.id, label);
+      if (status !== current) {
+        await notifyLinkedRequesters(tx, next.tenantId, next.id, current, status);
+      }
       return requestSummary(next);
     });
   }
@@ -494,6 +616,11 @@ export class RequestsController {
         include: requestRelations,
         data: { mergedIntoId: target.id, status: 'merged', version: { increment: 1 } },
       });
+      // Keep a group one level deep so every original reporter follows its current primary request.
+      await tx.serviceRequest.updateMany({
+        where: { tenantId: source.tenantId, mergedIntoId: source.id },
+        data: { mergedIntoId: target.id, version: { increment: 1 } },
+      });
       await tx.serviceRequest.update({ where: { id: target.id }, data: { version: { increment: 1 } } });
       const entry = await tx.requestEntry.create({
         data: {
@@ -542,7 +669,7 @@ export class RequestsController {
     if (own && input.internal) throw new ForbiddenException();
     return withRequestWrite(this.db, req.auth!, own ? 'requests.create' : 'requests.manage', async (tx, auth) => {
       const row = await getRequest(tx, auth, id, own);
-      if (['closed', 'rejected', 'merged'].includes(row.status)) {
+      if (!acceptsRequestComments(row.status)) {
         throw new UnprocessableEntityException('This request is closed to new comments.');
       }
       const entry = await tx.requestEntry.create({
@@ -575,7 +702,7 @@ export class RequestsController {
     const input = parse(requestRatingSchema, body);
     return withRequestWrite(this.db, req.auth!, 'requests.create', async (tx, auth) => {
       const row = await getRequest(tx, auth, id, true);
-      if (!['completed', 'closed'].includes(row.status) || row.rating !== null) {
+      if (!['completed', 'closed'].includes(row.mergedInto?.status ?? row.status) || row.rating !== null) {
         throw new UnprocessableEntityException('A completed request can be rated once.');
       }
       await tx.serviceRequest.update({

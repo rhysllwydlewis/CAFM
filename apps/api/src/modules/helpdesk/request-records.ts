@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import type { FieldDefinition } from '@cafm/config-engine';
 import type { Prisma, Tx } from '@cafm/db';
 import {
   DEFAULT_SITE_CALENDAR,
@@ -18,7 +19,7 @@ import {
   type RequestStatus,
   type RequestSummary,
 } from '@cafm/shared';
-import { activeCustomFields, mergeCustom, nextNumber } from '../../core/config';
+import { activeCustomFields, mergeCustom, nextNumber, visibleCustom } from '../../core/config';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
 import { reportAssetSelect, reportLocationSelect, reportLocations } from './request-scope';
@@ -34,6 +35,7 @@ export const requestRelations = {
   },
   requester: memberLabel,
   assignee: memberLabel,
+  mergedInto: { select: { status: true } },
 } satisfies Prisma.ServiceRequestInclude;
 type RequestRow = Prisma.ServiceRequestGetPayload<{ include: typeof requestRelations }>;
 
@@ -48,6 +50,7 @@ export function requestSummary(row: RequestRow): RequestSummary {
     number: row.number,
     title: row.title,
     status: row.status as RequestStatus,
+    linkedStatus: (row.mergedInto?.status as RequestStatus | undefined) ?? null,
     channel: row.channel as RequestChannel,
     priority: row.priority,
     type: {
@@ -69,26 +72,42 @@ export function requestSummary(row: RequestRow): RequestSummary {
   };
 }
 
-export async function requestDetail(tx: Tx, record: RequestRow, staff: boolean): Promise<RequestRecord> {
-  const entries = await tx.requestEntry.findMany({
-    where: { tenantId: record.tenantId, requestId: record.id, ...(staff ? {} : { internal: false }) },
-    include: { author: memberLabel },
-    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-  });
+export async function requestDetail(
+  tx: Tx,
+  record: RequestRow,
+  staff: boolean,
+): Promise<RequestRecord<FieldDefinition>> {
+  const [entries, fields] = await Promise.all([
+    tx.requestEntry.findMany({
+      where: { tenantId: record.tenantId, requestId: record.id, ...(staff ? {} : { internal: false }) },
+      include: { author: memberLabel },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    }),
+    activeCustomFields(tx, record.tenantId, 'request'),
+  ]);
+  const questions = jsonQuestions.parse(record.type.questions);
+  const answers = Array.isArray(record.answers)
+    ? (record.answers as { label: string; value: boolean }[])
+    : Object.entries(record.answers as Record<string, boolean>).map(([key, value]) => ({
+        label: questions.find((question) => question.key === key)?.label ?? key.replaceAll('_', ' '),
+        value,
+      }));
+  const custom = visibleCustom(record.custom, fields);
   return {
     ...requestSummary(record),
     version: record.version,
+    impact: record.impact,
+    urgency: record.urgency,
     description: record.description,
     attendDueAt: record.attendDueAt?.toISOString() ?? null,
     fixDueAt: record.fixDueAt?.toISOString() ?? null,
     assigneeId: staff ? record.assigneeId : null,
     feedback: record.feedback,
-    answers: Object.entries(record.answers as Record<string, boolean>).map(([key, value]) => ({
-      label:
-        jsonQuestions.parse(record.type.questions).find((question) => question.key === key)?.label ??
-        key.replaceAll('_', ' '),
-      value,
-    })),
+    answers,
+    customFields: [...fields.values()].flatMap((definition) => {
+      const value = custom[definition.key];
+      return value == null ? [] : [{ definition, value }];
+    }),
     entries: entries.map(({ id, kind, body, internal, author, createdAt }) => ({
       id,
       kind,
@@ -107,7 +126,7 @@ export async function eligibleAssignee(tx: Tx, tenantId: string, id: string, loc
   });
   if (!member) return false;
   const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
-  if (!role?.permissions.includes('requests.manage')) return false;
+  if (!role?.permissions.includes('requests.manage') || !role.permissions.includes('requests.read')) return false;
   if (!locationId || (role.scope === 'all' && (!member.locationScoped || member.role === 'super_user'))) return true;
   return !!(await tx.membershipSite.findFirst({
     where: { tenantId, membershipId: id, location: { descendants: { some: { descendantId: locationId } } } },
@@ -206,12 +225,8 @@ export async function createRequest(
       type.defaultUrgency,
       ...questions.filter((question) => input.answers[question.key]).map((question) => question.yesUrgency ?? 3),
     );
-  const rule =
-    (await tx.requestPriority.findUnique({ where: { tenantId_impact_urgency: { tenantId, impact, urgency } } })) ??
-    defaultRequestPriority(impact, urgency);
-  const siteCalendar = siteCalendarSchema.safeParse(site.ancestor.siteCalendar);
-  const calendar = rule.businessHours ? (siteCalendar.success ? siteCalendar.data : DEFAULT_SITE_CALENDAR) : null;
   const now = new Date();
+  const targets = await requestTargets(tx, tenantId, impact, urgency, now, site.ancestor.siteCalendar);
   const fields = await activeCustomFields(tx, tenantId, 'request');
   const custom = email ? {} : mergeCustom(fields, input.custom);
   const assigneeId =
@@ -236,15 +251,15 @@ export async function createRequest(
       locationId: location.id,
       assetId: input.assetId,
       typeId: type.id,
-      answers: input.answers,
+      answers: questions.flatMap(({ label, key }) => {
+        const value = input.answers[key];
+        return value === undefined ? [] : [{ label, value }];
+      }),
       channel: email ? 'email' : input.channel,
       externalEmail: email?.from,
-      priority: rule.priority,
       createdAt: now,
       number: await nextNumber(tx, tenantId, 'request', { SITE: site.ancestor.code }),
-      responseDueAt: requestDeadline(now, rule.responseMinutes, calendar),
-      attendDueAt: requestDeadline(now, rule.attendMinutes, calendar),
-      fixDueAt: requestDeadline(now, rule.fixMinutes, calendar),
+      ...targets,
     },
     include: requestRelations,
   });
@@ -261,4 +276,25 @@ export async function createRequest(
   else await tx.auditEvent.create({ data: { tenantId, ...event } });
   await notifyRequester(tx, request, 'request.received', entry.id, REQUEST_STATUS_LABELS[status], type.acknowledgement);
   return requestSummary(request);
+}
+
+export async function requestTargets(
+  tx: Tx,
+  tenantId: string,
+  impact: number,
+  urgency: number,
+  start: Date,
+  siteCalendar: unknown,
+) {
+  const rule =
+    (await tx.requestPriority.findUnique({ where: { tenantId_impact_urgency: { tenantId, impact, urgency } } })) ??
+    defaultRequestPriority(impact, urgency);
+  const calendar = siteCalendarSchema.safeParse(siteCalendar);
+  const schedule = rule.businessHours ? (calendar.success ? calendar.data : DEFAULT_SITE_CALENDAR) : null;
+  return {
+    priority: rule.priority,
+    responseDueAt: requestDeadline(start, rule.responseMinutes, schedule),
+    attendDueAt: requestDeadline(start, rule.attendMinutes, schedule),
+    fixDueAt: requestDeadline(start, rule.fixMinutes, schedule),
+  };
 }

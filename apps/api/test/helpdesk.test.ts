@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
@@ -144,6 +144,11 @@ it('keeps internal notes private, enforces branch grants and rates a completed r
       .send({ locationIds: [site.id] })
       .expect(200);
     await operator.get(helpdesk + '/locations/' + branch.id).expect(404);
+    expect((await operator.get(helpdesk + '/queue-locations').expect(200)).body).toEqual([
+      { id: site.id, code: 'MAIN', name: 'Main site' },
+    ]);
+    await bystander.get(helpdesk + '/queue-filters').expect(403);
+
     await operator.get(helpdesk + '/requests/' + outside.id).expect(404);
     await operator
       .patch(helpdesk + '/requests/' + outside.id)
@@ -220,6 +225,33 @@ it('detects and merges matching requests without exposing the other requester', 
       .post(helpdesk + '/requests/' + target.id + '/merge')
       .send({ targetId: source.id, version: 2, targetVersion: 2 })
       .expect(422);
+    const primary = (
+      await bystander
+        .post(helpdesk + '/requests')
+        .send(input({ title: 'Primary account details' }))
+        .expect(201)
+    ).body;
+    await operator
+      .post(helpdesk + '/requests/' + target.id + '/merge')
+      .send({ targetId: primary.id, version: 2, targetVersion: 1 })
+      .expect(201);
+    await operator
+      .patch(helpdesk + '/requests/' + primary.id)
+      .send({ status: 'completed', version: 2 })
+      .expect(200);
+    const linked = (await requester.get(helpdesk + '/mine/' + source.id).expect(200)).body;
+    expect(linked).toMatchObject({ status: 'merged', linkedStatus: 'completed' });
+    expect(linked.entries.at(-1).body).toBe('Linked request · Completed');
+    expect(JSON.stringify(linked)).not.toContain('Primary account details');
+    expect((await requester.get(notifications).expect(200)).body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ requestId: source.id, title: expect.stringContaining('completed') }),
+      ]),
+    );
+    await requester
+      .post(helpdesk + '/mine/' + source.id + '/rating')
+      .send({ rating: 5 })
+      .expect(201);
   } finally {
     await cleanup();
   }
@@ -267,18 +299,190 @@ it('authenticates inbound mail, deduplicates provider deliveries and threads a v
       text: 'The leak is worse.',
     };
     expect((await deliver(reply)).body).toEqual(created);
-    expect(
-      (await deliver({ ...reply, from: 'another@example.test', messageId: '<other@example.test>' })).body.requestId,
-    ).not.toBe(created.requestId);
+    const another = { ...reply, from: 'another@example.test' };
+    const anotherRequest = (await deliver(another)).body;
+    expect(anotherRequest.requestId).not.toBe(created.requestId);
+    expect((await deliver(another)).body).toEqual(anotherRequest);
+
+    const replacement = (
+      await admin
+        .post(helpdesk + '/settings/types')
+        .send({
+          name: 'Electrical hazard',
+          category: 'Electrical',
+          problemCode: 'Hazard',
+        })
+        .expect(201)
+    ).body;
+    const triage = { typeId: replacement.id, impact: 1, urgency: 1 };
+    await requester
+      .patch(helpdesk + '/requests/' + created.requestId)
+      .send({ version: 1, triage })
+      .expect(403);
+    const reclassified = (
+      await admin
+        .patch(helpdesk + '/requests/' + created.requestId)
+        .send({ version: 1, triage })
+        .expect(200)
+    ).body;
+    expect(reclassified).toMatchObject({ priority: 1, firstResponseAt: null, type: { id: replacement.id } });
+    expect(Date.parse(reclassified.responseDueAt) - Date.parse(reclassified.createdAt)).toBe(15 * 60_000);
+    await admin
+      .patch(helpdesk + '/requests/' + created.requestId)
+      .send({ status: 'completed', version: 2 })
+      .expect(200);
+    const acknowledgement = await withTenant(db, tenant.id, (tx) =>
+      tx.notification.findFirstOrThrow({ where: { requestId: created.requestId }, orderBy: { createdAt: 'asc' } }),
+    );
+    const completedReply = {
+      ...message,
+      messageId: '<completed@example.test>',
+      inReplyTo: `<cafm-${acknowledgement.id}@cafm.invalid>`,
+      text: 'The repair is working.',
+    };
+    expect((await deliver(completedReply)).body).toEqual(created);
     const detail = (await admin.get(helpdesk + '/requests/' + created.requestId).expect(200)).body;
     expect(detail.channel).toBe('email');
     expect(detail.entries.map(({ body }: { body: string }) => body)).toEqual([
       'Request received',
       'The leak is worse.',
+      'Classification or priority updated',
+      'Completed',
+      'The repair is working.',
     ]);
   } finally {
     if (old === undefined) delete process.env.HELPDESK_INBOUND_TOKEN;
     else process.env.HELPDESK_INBOUND_TOKEN = old;
+    await cleanup();
+  }
+});
+
+it('continues from a changed queue anchor and recovers a cursor outside the caller’s scope', async () => {
+  const { operator, requester, bystander, tenant, cleanup, input } = await fixture();
+  try {
+    const older = (
+      await requester
+        .post(helpdesk + '/requests')
+        .send(input())
+        .expect(201)
+    ).body;
+    const newer = (
+      await bystander
+        .post(helpdesk + '/requests')
+        .send(input())
+        .expect(201)
+    ).body;
+    await withTenant(db, tenant.id, (tx) =>
+      tx.serviceRequest.update({
+        where: { id: older.id },
+        data: { createdAt: new Date('2026-01-01T00:00:00Z') },
+      }),
+    );
+    const first = (await operator.get(helpdesk + '/requests?limit=1').expect(200)).body;
+    expect(first.nextCursor).toBe(newer.id);
+    await operator
+      .patch(helpdesk + '/requests/' + newer.id)
+      .send({ status: 'completed', version: 1 })
+      .expect(200);
+    const next = (await operator.get(helpdesk + '/requests?limit=1&cursor=' + first.nextCursor).expect(200)).body;
+    expect(next.items.map(({ id }: { id: string }) => id)).toEqual([older.id]);
+    expect(next.nextCursor).toBeNull();
+
+    const own = (await requester.get(helpdesk + '/mine?cursor=' + newer.id).expect(200)).body;
+    expect(own.cursorReset).toBe(true);
+    expect(own.items.map(({ id }: { id: string }) => id)).toEqual([older.id]);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('shows collected custom fields and preserves submitted question labels after catalogue edits', async () => {
+  const { admin, operator, requester, cleanup, requestType, input } = await fixture();
+  try {
+    const field = (
+      await admin
+        .post('/api/config/fields')
+        .send({
+          entityType: 'request',
+          key: 'room_reference',
+          label: 'Room reference',
+          type: 'text',
+          required: true,
+        })
+        .expect(201)
+    ).body;
+    const created = (
+      await requester
+        .post(helpdesk + '/requests')
+        .send(input({ custom: { room_reference: 'Kitchen 4' } }))
+        .expect(201)
+    ).body;
+    await admin
+      .patch(helpdesk + '/settings/types/' + requestType.id)
+      .send({
+        name: 'Water leak',
+        category: 'Plumbing',
+        problemCode: 'Leak',
+        version: requestType.version,
+        questions: [{ key: 'near_electrics', label: 'Updated question' }],
+      })
+      .expect(200);
+    const detail = (await operator.get(helpdesk + '/requests/' + created.id).expect(200)).body;
+    expect(detail.answers).toEqual([{ label: 'Is water near electrics?', value: true }]);
+    expect(detail.customFields).toMatchObject([{ definition: { key: 'room_reference' }, value: 'Kitchen 4' }]);
+    await admin.delete('/api/config/fields/' + field.id).expect(204);
+    expect((await requester.get(helpdesk + '/mine/' + created.id).expect(200)).body.customFields).toEqual([]);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('binds browser notifications to each signed-in membership sharing an endpoint', async () => {
+  const { requester, bystander, cleanup } = await fixture();
+  try {
+    vi.stubEnv('WEB_PUSH_PUBLIC_KEY', 'local-public-key-fixture');
+    vi.stubEnv('WEB_PUSH_PRIVATE_KEY', 'local-private-key-fixture');
+    vi.stubEnv('WEB_PUSH_SUBJECT', 'mailto:notifications@example.test');
+    const endpoint = 'https://fcm.googleapis.com/fcm/send/local-fixture';
+    const subscription = { endpoint, keys: { p256dh: 'A'.repeat(87), auth: 'B'.repeat(22) } };
+    await requester
+      .post(notifications + '/push')
+      .send(subscription)
+      .expect(201);
+    expect(
+      (
+        await requester
+          .post(notifications + '/push/status')
+          .send({ endpoint })
+          .expect(201)
+      ).body.subscribed,
+    ).toBe(true);
+    expect(
+      (
+        await bystander
+          .post(notifications + '/push/status')
+          .send({ endpoint })
+          .expect(201)
+      ).body.subscribed,
+    ).toBe(false);
+    await bystander
+      .post(notifications + '/push')
+      .send(subscription)
+      .expect(201);
+    await bystander
+      .delete(notifications + '/push')
+      .send({ endpoint })
+      .expect(200);
+    expect(
+      (
+        await requester
+          .post(notifications + '/push/status')
+          .send({ endpoint })
+          .expect(201)
+      ).body.subscribed,
+    ).toBe(true);
+  } finally {
+    vi.unstubAllEnvs();
     await cleanup();
   }
 });

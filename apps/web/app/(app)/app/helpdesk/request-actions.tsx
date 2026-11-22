@@ -3,7 +3,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Checkbox, Field } from '@cafm/ui';
-import { REQUEST_STATUS_LABELS, REQUEST_TRANSITIONS, type RequestRecord, type RequestStatus } from '@cafm/shared';
+import {
+  acceptsRequestComments,
+  REQUEST_STATUS_LABELS,
+  REQUEST_TRANSITIONS,
+  type RequestRecord,
+  type RequestStatus,
+  type RequestTypeChoice,
+} from '@cafm/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { RecordPicker } from './record-picker';
 import styles from './helpdesk.module.css';
@@ -12,9 +19,11 @@ export function RequestActions({
   record,
   own,
   duplicates,
+  triageTypes,
 }: {
   record: RequestRecord;
   own: boolean;
+  triageTypes?: RequestTypeChoice[];
   duplicates?: { id: string; number: string; title: string; version: number }[];
 }) {
   const router = useRouter();
@@ -102,6 +111,55 @@ export function RequestActions({
   return (
     <div className="stack g4">
       {management}
+      {!own && canAssign && triageTypes && (
+        <details className="card card-b">
+          <summary className="medium">Classification and priority</summary>
+          <form
+            className="stack g3"
+            onSubmit={(event) =>
+              void submit(event, (data) =>
+                helpdeskWrite(
+                  base,
+                  {
+                    version: record.version,
+                    triage: {
+                      typeId: data.get('typeId'),
+                      impact: Number(data.get('impact')),
+                      urgency: Number(data.get('urgency')),
+                    },
+                  },
+                  'PATCH',
+                ),
+              )
+            }
+          >
+            <Field label="Request type" htmlFor="triage-type">
+              <select className={styles.control} id="triage-type" name="typeId" defaultValue={record.type.id} required>
+                {triageTypes.map(({ id, category, name, active }) => (
+                  <option value={id} key={id}>
+                    {category} · {name}
+                    {active ? '' : ' (retired)'}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className={styles.columns}>
+              {(['impact', 'urgency'] as const).map((key) => (
+                <Field key={key} label={key === 'impact' ? 'Impact' : 'Urgency'} htmlFor={'triage-' + key}>
+                  <select className={styles.control} id={'triage-' + key} name={key} defaultValue={record[key]}>
+                    <option value="1">High</option>
+                    <option value="2">Medium</option>
+                    <option value="3">Low</option>
+                  </select>
+                </Field>
+              ))}
+            </div>
+            <Button type="submit" disabled={busy}>
+              Save classification
+            </Button>
+          </form>
+        </details>
+      )}
       {duplicates && duplicates.length > 0 && canAssign && (
         <form
           className="stack g3"
@@ -133,7 +191,7 @@ export function RequestActions({
           </Button>
         </form>
       )}
-      {!['closed', 'rejected', 'merged'].includes(record.status) && (
+      {acceptsRequestComments(record.status) && (
         <form
           className="stack g3"
           onSubmit={(event) =>
@@ -154,7 +212,7 @@ export function RequestActions({
           </Button>
         </form>
       )}
-      {own && ['completed', 'closed'].includes(record.status) && record.rating === null && (
+      {own && ['completed', 'closed'].includes(record.linkedStatus ?? record.status) && record.rating === null && (
         <form
           className="stack g3"
           onSubmit={(event) =>

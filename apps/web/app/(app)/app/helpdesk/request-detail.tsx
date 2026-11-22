@@ -1,7 +1,9 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
+import type { FieldDefinition } from '@cafm/config-engine';
+import { customFieldValue } from '../locations/location-custom-fields';
 import { Icon } from '@cafm/ui';
-import { REQUEST_CHANNEL_LABELS, REQUEST_STATUS_LABELS, type RequestRecord } from '@cafm/shared';
+import { REQUEST_CHANNEL_LABELS, type RequestRecord, type RequestTypeChoice } from '@cafm/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 import { RequestStatus } from './request-table';
 import { RequestActions } from './request-actions';
@@ -12,8 +14,10 @@ export function RequestDetail({
   own,
   canManage,
   duplicates,
+  triageTypes,
 }: {
-  record: RequestRecord;
+  record: RequestRecord<FieldDefinition>;
+  triageTypes?: RequestTypeChoice[];
   own: boolean;
   canManage: boolean;
   duplicates?: { id: string; number: string; title: string; version: number }[];
@@ -53,6 +57,12 @@ export function RequestDetail({
             <dd>
               {requestTime(record.createdAt)} · {REQUEST_CHANNEL_LABELS[record.channel]}
             </dd>
+            {record.customFields.map(({ definition, value }) => (
+              <Fragment key={definition.key}>
+                <dt>{definition.label}</dt>
+                <dd>{customFieldValue(definition, value)}</dd>
+              </Fragment>
+            ))}
             {!own && (
               <>
                 <dt>Requester</dt>
@@ -112,11 +122,16 @@ export function RequestDetail({
             </div>
           )}
           {own || canManage ? (
-            <RequestActions key={record.version} record={record} own={own} duplicates={duplicates} />
+            <RequestActions
+              key={record.version}
+              record={record}
+              own={own}
+              duplicates={duplicates}
+              triageTypes={triageTypes}
+            />
           ) : null}
         </section>
       </div>
-      <span className="sr-only">{REQUEST_STATUS_LABELS[record.status]}</span>
     </div>
   );
 }

@@ -1,9 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature, listRequestsSchema, REQUEST_CHANNEL_LABELS, type RequestView } from '@cafm/shared';
+import {
+  can,
+  feature,
+  listRequestsSchema,
+  REQUEST_CHANNEL_LABELS,
+  type ReportLocation,
+  type RequestView,
+} from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { currentUser } from '@/lib/session';
 import { catalogue, readHelpdesk, requestPage } from '@/lib/helpdesk';
+import { QueueLocationFilter } from './queue-location-filter';
 import { RequestForm } from './request-form';
 import { RequestTable } from './request-table';
 import styles from './helpdesk.module.css';
@@ -51,10 +59,11 @@ export default async function HelpdeskPage({
     if (filters[key]) params.set(key, filters[key]);
   }
   const operator = can(user, 'requests.create') && can(user, 'requests.manage');
-  const [data, types, sites] = await Promise.all([
+  const filterQuery = filters.locationId ? '?locationId=' + filters.locationId : '';
+  const [data, types, queueFilters] = await Promise.all([
     requestPage('requests', '?' + params.toString()),
-    can(user, 'requests.create') ? catalogue() : null,
-    can(user, 'requests.create') ? readHelpdesk<{ id: string; name: string; code: string }[]>('/locations') : [],
+    operator && input.log === '1' ? catalogue() : null,
+    readHelpdesk<{ categories: string[]; location: ReportLocation | null }>('/queue-filters' + filterQuery),
   ]);
   const currentView = filters.view;
   const stats = data.counts;
@@ -73,9 +82,10 @@ export default async function HelpdeskPage({
     next.delete('cursor');
     return '/app/helpdesk?' + next.toString();
   };
+  if (data.cursorReset) params.delete('cursor');
   const next = new URLSearchParams(params);
   if (data.nextCursor) next.set('cursor', data.nextCursor);
-  const categories = [...new Set(types?.types.map(({ category }) => category) ?? [])];
+  const { categories, location } = queueFilters;
 
   return (
     <div className="page stack g4">
@@ -88,7 +98,7 @@ export default async function HelpdeskPage({
             </p>
           )}
         </div>
-        <div className={styles.actions}>
+        <div className={'page-actions ' + styles.actions}>
           {can(user, 'settings.manage') && (
             <Link href="/app/helpdesk/settings" className="btn">
               <Icon name="settings" /> Request catalogue
@@ -137,19 +147,7 @@ export default async function HelpdeskPage({
             <span className="label">Search requests</span>
             <input className={styles.control} type="search" name="q" defaultValue={filters.q} />
           </label>
-          {sites.length > 0 && (
-            <label className="field">
-              <span className="label">Location</span>
-              <select className={styles.control} name="locationId" defaultValue={filters.locationId ?? ''}>
-                <option value="">All locations</option>
-                {sites.map((site) => (
-                  <option value={site.id} key={site.id}>
-                    {site.name} · {site.code}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+          <QueueLocationFilter key={location?.id ?? 'all-locations'} initial={location} />
           {categories.length > 0 && (
             <label className="field">
               <span className="label">Category</span>
@@ -176,10 +174,11 @@ export default async function HelpdeskPage({
             Apply filters
           </button>
         </form>
+        {data.cursorReset && <p className="card-b muted">The list changed. Showing the first page.</p>}
         <RequestTable items={data.items} now={Date.now()} />
-        {(data.nextCursor || filters.cursor) && (
+        {(data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">
-            {filters.cursor && (
+            {params.has('cursor') && (
               <Link className="btn" href={viewHref(currentView)}>
                 First page
               </Link>

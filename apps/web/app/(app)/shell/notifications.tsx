@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import Link from 'next/link';
 import { Button, Icon } from '@cafm/ui';
 import type { NotificationItem } from '@cafm/shared';
@@ -33,10 +33,15 @@ export function NotificationsDrawer({ onClose }: { onClose: () => void }) {
       if (!response.ok) throw new Error();
       const data = (await response.json()) as Inbox;
       if (!signal?.aborted) setInbox(data);
-      if (data.pushKey && 'serviceWorker' in navigator && 'PushManager' in window) {
+      if (data.pushKey && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
         const registration = await navigator.serviceWorker.getRegistration('/notification-push.js');
         const subscription = await registration?.pushManager.getSubscription();
-        if (!signal?.aborted) setPush(!!subscription);
+        const status = subscription
+          ? await helpdeskWrite<{ subscribed: boolean }>('/notifications/push/status', {
+              endpoint: subscription.endpoint,
+            })
+          : null;
+        if (!signal?.aborted) setPush(status?.subscribed ?? false);
       }
     } catch {
       if (!signal?.aborted) setError('Could not load notifications.');
@@ -73,28 +78,31 @@ export function NotificationsDrawer({ onClose }: { onClose: () => void }) {
     setError('');
     setSaving(true);
     try {
+      // Permission prompts must run within the button's user gesture.
+      if (!push && (await Notification.requestPermission()) !== 'granted') {
+        setError('Your browser blocked notifications. You can allow them in site settings.');
+        return;
+      }
       await navigator.serviceWorker.register('/notification-push.js');
       const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
-      if (existing) {
+      if (push && existing) {
+        // The shared browser endpoint can be used by other opted-in memberships.
         await helpdeskWrite('/notifications/push', { endpoint: existing.endpoint }, 'DELETE');
-        await existing.unsubscribe();
         setPush(false);
       } else {
-        if ((await Notification.requestPermission()) !== 'granted') {
-          setError('Your browser blocked notifications. You can allow them in site settings.');
-          return;
-        }
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationKey(inbox.pushKey),
-        });
+        const subscription =
+          existing ??
+          (await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationKey(inbox.pushKey),
+          }));
         try {
           const { endpoint, keys } = subscription.toJSON();
           await helpdeskWrite('/notifications/push', { endpoint, keys });
           setPush(true);
         } catch (error) {
-          await subscription.unsubscribe();
+          if (!existing) await subscription.unsubscribe();
           throw error;
         }
       }
@@ -105,10 +113,33 @@ export function NotificationsDrawer({ onClose }: { onClose: () => void }) {
     }
   }
 
+  function keepFocusInDrawer(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key !== 'Tab') return;
+    const focusable = event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const next =
+      event.shiftKey && document.activeElement === first
+        ? last
+        : !event.shiftKey && document.activeElement === last
+          ? first
+          : null;
+    if (next) {
+      event.preventDefault();
+      next.focus();
+    }
+  }
+
   return (
     <>
       <div className="scrim shell-scrim-light" onClick={onClose} aria-hidden="true" />
-      <aside className="drawer shell-drawer" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
+      <aside
+        className="drawer shell-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notifications-title"
+        onKeyDown={keepFocusInDrawer}
+      >
         <div className="row shell-drawer-head">
           <h2 className="card-t" id="notifications-title">
             {t('shell.notifications')}
@@ -119,20 +150,28 @@ export function NotificationsDrawer({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <div className="card-b stack g3">
-          {inbox && (inbox.unread > 0 || (inbox.pushKey && 'PushManager' in window)) && (
-            <div className="row wrap g2">
-              {inbox.unread > 0 && (
-                <Button size="sm" onClick={() => void mark()}>
-                  Mark all as read
-                </Button>
-              )}
-              {inbox.pushKey && 'PushManager' in window && (
-                <Button size="sm" disabled={saving} onClick={() => void togglePush()}>
-                  {push ? 'Turn off browser notifications' : 'Enable browser notifications'}
-                </Button>
-              )}
-            </div>
-          )}
+          {inbox &&
+            (inbox.unread > 0 ||
+              (inbox.pushKey &&
+                'serviceWorker' in navigator &&
+                'PushManager' in window &&
+                'Notification' in window)) && (
+              <div className="row wrap g2">
+                {inbox.unread > 0 && (
+                  <Button size="sm" onClick={() => void mark()}>
+                    Mark all as read
+                  </Button>
+                )}
+                {inbox.pushKey &&
+                  'serviceWorker' in navigator &&
+                  'PushManager' in window &&
+                  'Notification' in window && (
+                    <Button size="sm" disabled={saving} onClick={() => void togglePush()}>
+                      {push ? 'Turn off browser notifications' : 'Enable browser notifications'}
+                    </Button>
+                  )}
+              </div>
+            )}
           {error && (
             <p role="alert" className="field-error">
               {error}

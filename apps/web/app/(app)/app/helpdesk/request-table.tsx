@@ -8,13 +8,14 @@ import styles from './helpdesk.module.css';
 
 import { requestTime } from '@/lib/helpdesk-format';
 
-export function RequestStatus({ item }: { item: Pick<RequestSummary, 'status'> }) {
-  const tone = ['completed', 'closed'].includes(item.status)
-    ? 'success'
-    : item.status === 'rejected'
-      ? 'danger'
-      : 'primary';
-  return <span className={'badge ' + tone}>{REQUEST_STATUS_LABELS[item.status]}</span>;
+export function RequestStatus({ item }: { item: Pick<RequestSummary, 'status' | 'linkedStatus'> }) {
+  const status = item.linkedStatus ?? item.status;
+  const tone = ['completed', 'closed'].includes(status) ? 'success' : status === 'rejected' ? 'danger' : 'primary';
+  return (
+    <span className={'badge ' + tone}>
+      {item.linkedStatus ? 'Linked · ' + REQUEST_STATUS_LABELS[item.linkedStatus] : REQUEST_STATUS_LABELS[item.status]}
+    </span>
+  );
 }
 
 function Sla({ item, now }: { item: RequestSummary; now: number }) {
