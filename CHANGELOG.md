@@ -12,7 +12,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
-- Assets API: classes with attribute templates, and assets with a parent and component hierarchy, in any location inside a site. References are issued automatically (`AST-00214`), the plan's asset limit applies, and people only see assets in the branches they can access. The register screens follow.
+- Assets in the signed-in app: a register with classification groups, search and filters, an asset page with its details, components and lifecycle, and forms to add and edit assets, with a cost typed in pounds and the class's own attributes. Phone friendly.
+- Assets API: classes with attribute templates, and assets with a parent and component hierarchy, in any location inside a site. References are issued automatically (`AST-00214`), the plan's asset limit applies, and people only see assets in the branches they can access.
 - Locations in the signed-in app, with a searchable hierarchy, site details, UK business calendars, a filterable portfolio map and printable QR labels.
 
 - Locations API: create and organise estate locations, search by name or code, and restrict access to assigned sites or branches of the hierarchy. Edits carry forward custom fields you leave out.

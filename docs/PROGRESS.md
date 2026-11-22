@@ -2,7 +2,7 @@
 
 The one page to read first in any new session, by any agent (Claude, Codex or other) or person. It says where the build is, what's next, and what's waiting on the product owner. Tick items off here in the same PR that finishes them.
 
-**Last updated:** 22 Nov 2026, with the asset API (P1-02a) built.
+**Last updated:** 22 Nov 2026, with the asset register screens (P1-02b) built.
 
 ## Where we are
 
@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02b: the register and asset detail screens (`assets-01-register`, `assets-02-detail`), following how Locations built `apps/web/app/(app)/app/locations`. The API is done (`docs/assets.md`). |
+| P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02c: "serves" relationships (the spaces and assets an asset serves, and an impact lookup). The API and screens for assets are done; see `docs/assets.md`. |
 
 ## Phase checklists
 
@@ -97,7 +97,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-01e** Location QR labels, printing and stable links for Helpdesk fault intake (P1-03).
 - [ ] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
   - [x] **P1-02a** Asset classes with attribute templates, and the tenant-scoped asset hierarchy and API (location link, parent and child, plan limit, custom fields, audit). ([guide](assets.md))
-  - [ ] **P1-02b** Asset register and asset detail screens in the app shell (`assets-01-register`, `assets-02-detail`).
+  - [x] **P1-02b** Asset register and asset detail screens in the app shell (`assets-01-register`, `assets-02-detail`). ([guide](assets.md))
   - [ ] **P1-02c** "Serves" relationships: the spaces and assets an asset serves, and impact lookup.
   - [ ] **P1-02d** Tags (QR, barcode, NFC), label printing and stable scan links for Helpdesk (P1-03).
   - [ ] **P1-02e** Meters and readings, with rollover handling.

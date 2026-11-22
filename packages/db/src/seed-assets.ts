@@ -271,6 +271,16 @@ const assets: Record<string, SeedAsset[]> = {
   ],
 };
 
+/**
+ * A stable ID that sorts in reference order, so the register lists the demo
+ * assets as AST-00001, AST-00002 and so on. The first eight digits are the
+ * position; the rest comes from a hash, so IDs differ between organisations.
+ */
+function assetSeedId(slug: string, key: string, index: number): string {
+  const hashed = seedId(`asset:${slug}:${key}`);
+  return `${(index + 1).toString(16).padStart(8, '0')}${hashed.slice(8)}`;
+}
+
 const pad = (n: number) => `AST-${String(n).padStart(5, '0')}`;
 
 /** Classes and assets for the demo tenants. Safe to run again: existing rows are left as people edited them. */
@@ -288,7 +298,7 @@ export async function seedAssets(db: PrismaClient): Promise<void> {
         });
       }
       for (const [index, asset] of rows.entries()) {
-        const id = seedId(`asset:${slug}:${asset.key}`);
+        const id = assetSeedId(slug, asset.key, index);
         if (await tx.asset.findUnique({ where: { id }, select: { id: true } })) continue;
         await tx.asset.create({
           data: {
@@ -297,7 +307,13 @@ export async function seedAssets(db: PrismaClient): Promise<void> {
             number: pad(index + 1),
             name: asset.name,
             locationId: seedId(`location:${slug}:${asset.location}`),
-            parentId: asset.parent ? seedId(`asset:${slug}:${asset.parent}`) : null,
+            parentId: asset.parent
+              ? assetSeedId(
+                  slug,
+                  asset.parent,
+                  rows.findIndex((r) => r.key === asset.parent),
+                )
+              : null,
             classId: asset.class ? seedId(`asset-class:${slug}:${asset.class}`) : null,
             status: asset.status ?? 'in_service',
             make: asset.make,

@@ -105,6 +105,24 @@ it('builds a hierarchy, numbers assets in order, and audits every change', async
   }
 });
 
+it('reports an asset’s location from its site down, leaving out the levels above', async () => {
+  const { agent, cleanup } = await estate();
+  try {
+    const make = async (body: object) => (await agent.post(locations).send(body).expect(201)).body;
+    const portfolio = await make({ code: 'P', name: 'Portfolio', kind: 'portfolio' });
+    const region = await make({ code: 'R', name: 'Wales region', kind: 'region', parentId: portfolio.id });
+    const site = await make({ code: 'S', name: 'Cardiff HQ', kind: 'site', parentId: region.id });
+    const floor = await make({ code: 'F', name: 'Basement', kind: 'floor', parentId: site.id });
+    const asset = (await create(agent, { name: 'Boiler', locationId: floor.id }).expect(201)).body;
+    expect(asset.locationPath).toEqual(['Cardiff HQ', 'Basement']);
+    const atSite = (await create(agent, { name: 'Roof unit', locationId: site.id }).expect(201)).body;
+    expect(atSite.locationPath).toEqual(['Cardiff HQ']);
+    expect((await agent.get(assets + '/' + asset.id).expect(200)).body.site).toMatchObject({ name: 'Cardiff HQ' });
+  } finally {
+    await cleanup();
+  }
+});
+
 it('rejects bad input, and keeps money as whole pence', async () => {
   const { agent, cleanup } = await estate();
   try {
@@ -201,6 +219,11 @@ it('validates attributes against the class template, and starts afresh when the 
     const base = { name: 'Boiler', locationId: room.id, classId: boilers.id };
     const missing = await create(agent, { ...base, attributes: {} }).expect(422);
     expect(missing.body).toMatchObject({ code: 'invalid_attributes', errors: { output_kw: 'Enter Output (kW)' } });
+    const detailOfMissing = await create(agent, { ...base, attributes: { output_kw: 1 } }).expect(201);
+    expect((await agent.get(`${assets}/${detailOfMissing.body.id}`).expect(200)).body.classAttributes).toMatchObject([
+      { key: 'output_kw', unit: 'kW' },
+      { key: 'fuel' },
+    ]);
     await create(agent, { ...base, attributes: { output_kw: 'big' } }).expect(422);
     await create(agent, { ...base, attributes: { output_kw: 0 } }).expect(422);
     await create(agent, { ...base, attributes: { output_kw: 5, fuel: 'coal' } }).expect(422);

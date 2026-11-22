@@ -38,13 +38,14 @@ it('isolates location records, paths and site grants and rejects a cross-tenant 
 });
 
 it('isolates assets and classes, and rejects a cross-tenant location, parent or class', async () => {
-  const boiler = seedId('asset:demo-estates:boiler-2');
   const boilerClass = seedId('asset-class:demo-estates:BOILER');
   expect(await db.asset.count()).toBe(0);
   expect(await db.assetClass.count()).toBe(0);
   const demoAssets = await withTenant(db, demo, (tx) => tx.asset.findMany({ include: { class: true } }));
   expect(demoAssets).toHaveLength(10);
-  expect(demoAssets.find(({ id }) => id === boiler)).toMatchObject({ number: 'AST-00003', class: { code: 'BOILER' } });
+  const boilerAsset = demoAssets.find(({ number }) => number === 'AST-00003');
+  expect(boilerAsset).toMatchObject({ name: 'Boiler 2', class: { code: 'BOILER' } });
+  const boiler = boilerAsset!.id;
   const starterRows = await withTenant(db, starter, async (tx) => ({
     assets: await tx.asset.findMany(),
     classes: await tx.assetClass.findMany(),

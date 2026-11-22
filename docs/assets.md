@@ -1,6 +1,16 @@
 # Assets
 
-The asset register holds the equipment and fabric in each location, which work orders, planned maintenance and requests will point at. This page covers what exists so far: the classification, the asset hierarchy and the API. The register and asset screens, "serves" relationships, tags, meters, warranties and attachments follow in the next steps of P1-02.
+The asset register holds the equipment and fabric in each location, which work orders, planned maintenance and requests will point at. This page covers what exists so far: the classification, the asset hierarchy, the API and the register and asset screens. "Serves" relationships, tags and labels, meters, warranties and attachments follow in the next steps of P1-02.
+
+## Using the register
+
+Open **Assets** from the signed-in menu.
+
+- **The register** lists the assets you can see, in reference order, with the location from the site down. The two tiles show how many assets there are and how many are in condition C or D. The **Classification** panel lists the groups and their counts, and selecting one filters the register. On a phone the register comes first and the classification follows it.
+- **Search and filters.** Search matches name, reference, serial, make and model. Filter by site, condition, criticality and status, then choose **Apply filters**. **Next page** and **Back to the first page** move through long lists.
+- **An asset** shows its status, condition and criticality, its details and the class's own attributes, where it is, what it is part of, its components and how much of its expected life is used. **Edit** and **Add component** are for people who can manage assets. A component starts from its parent and the parent's location.
+- **Adding or editing** takes the name, location, class, status, criticality, condition and details. Choose the location and any parent by searching. The replacement cost is typed in pounds and stored in whole pence. Choosing a class shows its attributes, and required ones must be filled in.
+- A missing asset, and one in another organisation, show the same "Asset not found" page.
 
 ## How assets are organised
 

@@ -106,6 +106,12 @@ function auditFields(row: Row) {
   };
 }
 
+/** The path from the site down: the levels above a site (portfolio, region) are noise on an asset. */
+function fromSite(levels: { name: string; kind: string }[]): string[] {
+  const site = levels.findIndex((level) => level.kind === 'site');
+  return levels.slice(site >= 0 ? site : 0).map(({ name }) => name);
+}
+
 async function toRecords(tx: Tx, auth: AuthContext, rows: Row[], fields: Fields): Promise<AssetRecord[]> {
   if (!rows.length) return [];
   const paths = await locationPaths(tx, auth, [...new Set(rows.map((row) => row.locationId))]);
@@ -123,7 +129,7 @@ async function toRecords(tx: Tx, auth: AuthContext, rows: Row[], fields: Fields)
     name: row.name,
     status: row.status as AssetRecord['status'],
     locationId: row.locationId,
-    locationPath: (paths.get(row.locationId) ?? []).map(({ name }) => name),
+    locationPath: fromSite(paths.get(row.locationId) ?? []),
     // A parent the member can't see is hidden, as with locations.
     parentId: row.parentId && visibleParents.has(row.parentId) ? row.parentId : null,
     classId: row.classId,
@@ -303,6 +309,8 @@ export class AssetsController {
       const site = paths.get(row.locationId)?.find((level) => level.kind === 'site') ?? null;
       return {
         ...asset!,
+        // The class's attributes, even if the class has since been retired, so the values can be labelled.
+        classAttributes: row.class ? ((row.class.attributes ?? []) as unknown as AssetAttribute[]) : [],
         parent,
         site: site && { id: site.id, name: site.name },
         componentCount: await tx.asset.count({ where: { ...assetScope(auth), parentId: row.id } }),
