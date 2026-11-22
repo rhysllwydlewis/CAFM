@@ -32,8 +32,11 @@ export interface Visit {
 }
 
 const dayOf = (value: Date) => value.toISOString().slice(0, 10);
-/** More visits than this for one asset in a view would be a mistake in the schedule, not a plan. */
-const MAX_PROJECTED = 400;
+/**
+ * The most visits projected for one asset in a view. A daily schedule over the longest window the planner and forecast
+ * allow (36 months) is about 1,100; more than this would be a mistake in the schedule, not a plan.
+ */
+const MAX_PROJECTED = 1100;
 const DONE = ['completed', 'verified', 'closed'];
 
 /**
@@ -74,8 +77,14 @@ export async function loadVisits(
   const byId = new Map(schedules.map((schedule) => [schedule.id, schedule]));
   const [rows, jobs] = await Promise.all([
     tx.ppmScheduleAsset.findMany({
-      where: { tenantId, active: true, scheduleId: { in: ids }, nextDueOn: { not: null }, asset: assetScope(auth) },
-      select: { scheduleId: true, nextDueOn: true },
+      where: {
+        tenantId,
+        active: true,
+        scheduleId: { in: ids },
+        // A decommissioned asset is never raised, so it isn't planned either.
+        asset: { ...assetScope(auth), status: { not: 'decommissioned' } },
+      },
+      select: { id: true, scheduleId: true, nextDueOn: true },
     }),
     tx.workOrder.findMany({
       where: {
@@ -110,9 +119,39 @@ export async function loadVisits(
       jobId: job.id,
     });
   }
+  // A floating calendar schedule has no next date while its visit is waiting to be done. It is counted on from that
+  // visit, on the same assumption that it is done on its day.
+  const waiting = rows.filter(
+    (row) =>
+      !row.nextDueOn &&
+      byId.get(row.scheduleId)!.freqType === 'calendar' &&
+      byId.get(row.scheduleId)!.mode === 'floating',
+  );
+  const outstanding = new Map<string, string>();
+  if (waiting.length) {
+    const open = await tx.workOrder.findMany({
+      where: {
+        tenantId,
+        ppmScheduleAssetId: { in: waiting.map((row) => row.id) },
+        status: { notIn: [...WORK_ORDER_FINISHED] },
+      },
+      select: { ppmScheduleAssetId: true, scheduledFor: true },
+    });
+    for (const job of open) {
+      const key = job.ppmScheduleAssetId!;
+      const date = dayOf(job.scheduledFor!);
+      if (!outstanding.has(key) || date > outstanding.get(key)!) outstanding.set(key, date);
+    }
+  }
   for (const row of rows) {
     const schedule = byId.get(row.scheduleId)!;
-    for (const date of projectDates(dayOf(row.nextDueOn!), schedule, to)) {
+    let first = row.nextDueOn ? dayOf(row.nextDueOn) : null;
+    if (!first) {
+      const raised = outstanding.get(row.id);
+      if (!raised) continue;
+      first = addInterval(raised, schedule.calendarUnit as PpmCalendarUnit, schedule.interval!);
+    }
+    for (const date of projectDates(first, schedule, to)) {
       visits.push({
         scheduleId: schedule.id,
         date,

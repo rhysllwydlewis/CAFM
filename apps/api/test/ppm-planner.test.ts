@@ -292,6 +292,48 @@ it('filters the planner, keeps meter schedules out of the calendar, and checks w
   }
 });
 
+it('keeps counting a floating schedule on from its raised visit, and leaves out decommissioned assets', async () => {
+  const { admin, planner, cleanup, schedule, asset, get } = await fixture();
+  try {
+    const pump = await asset('Pump 1');
+    const fan = await asset('Fan 1');
+    const floating = await schedule(admin, {
+      title: 'Floating check',
+      mode: 'floating',
+      assets: [{ assetId: pump.id }],
+    });
+    const visits = (grid: PpmPlanner) =>
+      grid.totals.reduce((count, week) => count + week.scheduled + week.due + week.overdue + week.completed, 0);
+    const before = visits(await get<PpmPlanner>(planner, '/planner'));
+    expect(before).toBeGreaterThan(6);
+
+    // Raising the first visit moves the row to waiting for it, but the rest of the year is still planned.
+    await admin
+      .post(schedules + '/' + floating.id + '/generate')
+      .send({})
+      .expect(201);
+    const after = await get<PpmPlanner>(planner, '/planner');
+    expect(visits(after)).toBe(before);
+    expect(after.totals[0]!.due).toBe(1);
+    const forecast = await get<PpmForecast>(planner, '/forecast?months=12');
+    expect(forecast.months.reduce((count, month) => count + month.visits, 0)).toBeGreaterThan(6);
+
+    // An asset that is decommissioned is never raised, so it is not planned.
+    await schedule(admin, { title: 'Fan check', assets: [{ assetId: fan.id }] });
+    expect((await get<PpmPlanner>(planner, '/planner')).rows.find((row) => row.title === 'Fan check')!.assets).toBe(1);
+    await admin
+      .patch('/api/assets/' + fan.id)
+      .send({ version: 1, status: 'decommissioned' })
+      .expect(200);
+    const gone = await get<PpmPlanner>(planner, '/planner');
+    const fanRow = gone.rows.find((row) => row.title === 'Fan check')!;
+    expect(Object.keys(fanRow.weeks)).toHaveLength(0);
+    expect(visits(gone)).toBe(before);
+  } finally {
+    await cleanup();
+  }
+});
+
 it('gives the screens’ numbers only to people who may read planned maintenance, and only for their sites', async () => {
   const { admin, planner, auditor, tech, reporter, cleanup, tenant, accounts, annex, schedule, asset, get } =
     await fixture();

@@ -22,6 +22,7 @@ const VIEWS = [
 ] as const;
 type View = (typeof VIEWS)[number][0];
 
+const PAGE_SIZE = 50;
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) || undefined;
 
 export default async function PpmPage({
@@ -42,6 +43,7 @@ export default async function PpmPage({
     discipline: one(input.discipline),
     status: one(input.status),
   };
+  const offset = Math.max(0, Math.floor(Number(one(input.offset))) || 0);
   const canManage = can(user, 'ppm.manage');
   const seesCosts = can(user, 'costs.read');
 
@@ -97,7 +99,7 @@ export default async function PpmPage({
     view === 'planner'
       ? await ppmPlanner({ q: filters.q, criticality: filters.criticality, discipline: filters.discipline })
       : view === 'list'
-        ? await ppmSchedules(filters)
+        ? await ppmSchedules({ ...filters, limit: String(PAGE_SIZE), offset: offset ? String(offset) : undefined })
         : view === 'forecast'
           ? await ppmForecast(12)
           : view === 'overdue'
@@ -110,6 +112,14 @@ export default async function PpmPage({
     for (const key of ['q', 'criticality', 'discipline'] as const)
       if (filters[key] && (target === 'planner' || target === 'list')) next.set(key, filters[key]!);
     return '/app/ppm' + (next.size ? '?' + next.toString() : '');
+  };
+
+  const pageHref = (target: number) => {
+    const next = new URLSearchParams({ view: 'list' });
+    for (const key of ['q', 'criticality', 'discipline', 'status'] as const)
+      if (filters[key]) next.set(key, filters[key]!);
+    if (target) next.set('offset', String(target));
+    return '/app/ppm?' + next.toString();
   };
 
   return (
@@ -228,7 +238,32 @@ export default async function PpmPage({
             )}
           </>
         )}
-        {view === 'list' && data && 'items' in data && <ScheduleTable items={data.items} />}
+        {view === 'list' && data && 'items' in data && (
+          <>
+            <ScheduleTable items={data.items} />
+            {data.total > PAGE_SIZE && (
+              <nav aria-label="Schedule pages" className={'card-b row between wrap g2 ' + styles.pages}>
+                <span className="sm muted">
+                  {data.items.length
+                    ? `Showing ${offset + 1} to ${offset + data.items.length} of ${data.total}`
+                    : 'No more schedules'}
+                </span>
+                <span className="row g2">
+                  {offset > 0 && (
+                    <Link className="btn sm" href={pageHref(Math.max(0, offset - PAGE_SIZE))}>
+                      Previous
+                    </Link>
+                  )}
+                  {offset + PAGE_SIZE < data.total && (
+                    <Link className="btn sm" href={pageHref(offset + PAGE_SIZE)}>
+                      Next
+                    </Link>
+                  )}
+                </span>
+              </nav>
+            )}
+          </>
+        )}
         {view === 'forecast' && data && 'months' in data && <ForecastTable forecast={data} />}
         {view === 'overdue' && Array.isArray(data) && (
           <OverdueTable items={data as Parameters<typeof OverdueTable>[0]['items']} />
