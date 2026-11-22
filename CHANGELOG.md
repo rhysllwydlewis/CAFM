@@ -8,7 +8,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 - Fix a site whose opening hours end at 24:00 (the way overnight opening is entered) being unable to receive Helpdesk requests, because the response deadline couldn't be worked out.
 
-- Stop email auto-replies, bounces and the Helpdesk mailbox writing to itself from opening requests and replying to each other in a loop. Outgoing Helpdesk email is marked as automatic.
+- Stop email auto-replies, bounces and the Helpdesk mailbox writing to itself from opening requests and replying to each other in a loop. Email sent by CAFM is now marked as automatic.
 
 - Keep accented filenames intact on uploads, link duplicate-report photos from the primary Helpdesk request, and cancel queued warranty deliveries when cover is renewed or archived.
 

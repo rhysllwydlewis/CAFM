@@ -325,9 +325,13 @@ it('authenticates inbound mail, deduplicates provider deliveries and threads a v
         .set('Authorization', 'Bearer ' + token)
         .send(payload)
         .expect(201);
+    const requestCount = () => withTenant(db, tenant.id, (tx) => tx.serviceRequest.count());
+    const before = await requestCount();
+    expect(before).toBeGreaterThan(0);
     const auto = { ...message, from: 'robot@example.test', messageId: '<auto@example.test>', autoSubmitted: true };
     expect((await post(auto)).body).toEqual({ ignored: true });
     expect((await post({ ...auto, autoSubmitted: undefined, from: address })).body).toEqual({ ignored: true });
+    expect(await requestCount()).toBe(before);
     await admin
       .post(url)
       .set('Authorization', 'Bearer ' + token)
