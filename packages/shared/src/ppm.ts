@@ -332,3 +332,88 @@ export type PpmScheduleRecord = PpmScheduleSummary & {
 };
 
 export type PpmGenerateResult = { created: number; skipped: number };
+
+/* Planner, forecast and compliance ------------------------------------------------------------------------------ */
+
+export type PpmCompliance = {
+  /** Visits done on time as a share of the visits that fell due, to a tenth of a percent. Null when none fell due. */
+  percent: number | null;
+  onTime: number;
+  late: number;
+  /** Visits that fell due, are not done and are now late. */
+  overdue: number;
+};
+export type PpmComplianceGroup = PpmCompliance & { key: string; label: string };
+
+export type PpmSummary = {
+  schedules: number;
+  /** Visits due in the current week (Monday to Sunday), and how many of them nobody has been given. */
+  dueThisWeek: number;
+  dueThisWeekUnassigned: number;
+  overdue: number;
+  overdueStatutory: number;
+  /** The last 12 months, and the 12 before them for comparison. */
+  compliance: PpmCompliance;
+  previousCompliance: PpmCompliance;
+  byCriticality: PpmComplianceGroup[];
+  byDiscipline: PpmComplianceGroup[];
+  disciplines: string[];
+};
+
+/** Counts for one schedule in one week: still to come, raised and open, late, and done. */
+export type PpmWeekCounts = { scheduled: number; due: number; overdue: number; completed: number };
+
+export type PpmPlannerRow = {
+  id: string;
+  number: string;
+  title: string;
+  criticality: PpmCriticality;
+  discipline: string | null;
+  assets: number;
+  assigneeName: string | null;
+  frequency: PpmFrequency;
+  /** By week index. A week with nothing in it has no entry. */
+  weeks: Record<string, PpmWeekCounts>;
+};
+
+export type PpmPlanner = {
+  today: string;
+  /** The Monday each column starts on. */
+  weekStarts: string[];
+  rows: PpmPlannerRow[];
+  totals: PpmWeekCounts[];
+  /** Meter-based schedules can't be placed on a calendar, so they aren't in the grid. */
+  meterSchedules: number;
+};
+
+export type PpmForecastMonth = {
+  month: string;
+  visits: number;
+  labourMinutes: number;
+  /** Null unless the person can see costs. */
+  costMinor: number | null;
+  /** Visits whose schedule has no estimated cost. */
+  uncosted: number;
+};
+export type PpmForecast = {
+  months: PpmForecastMonth[];
+  currency: string;
+  meterSchedules: number;
+};
+
+export type PpmOverdueItem = {
+  jobId: string;
+  number: string;
+  title: string;
+  status: string;
+  scheduleId: string;
+  scheduleNumber: string;
+  criticality: PpmCriticality;
+  asset: { id: string; number: string; name: string } | null;
+  location: string;
+  dueOn: string;
+  daysLate: number;
+  assigneeName: string | null;
+};
+
+export type PpmAssigneeOption = { id: string; name: string; role: string };
