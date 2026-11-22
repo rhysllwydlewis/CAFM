@@ -238,3 +238,21 @@
     print-color-adjust: exact;
   }
 }
+
+.path {
+  margin: 0 0 var(--space-1);
+}
+.path ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.path li + li::before {
+  content: '›';
+  margin-right: var(--space-1);
+}

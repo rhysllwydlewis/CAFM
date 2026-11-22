@@ -32,6 +32,13 @@ const numberFields = [
   ['netArea', 'Net internal area (m²)'],
 ] as const;
 
+/** Every message the API gave, whether it came as a list, a single message or a message per field. */
+function errorText(result: { message?: string | string[]; errors?: Record<string, string> }) {
+  if (result.errors) return Object.values(result.errors).join(' ');
+  if (Array.isArray(result.message)) return result.message.join(' ');
+  return result.message ?? 'Could not save this location.';
+}
+
 function useLocationSave() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -47,12 +54,7 @@ function useLocationSave() {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
-        const result = (await response.json().catch(() => ({}))) as { message?: string | string[] };
-        setError(
-          Array.isArray(result.message)
-            ? result.message.join(' ')
-            : (result.message ?? 'Could not save this location.'),
-        );
+        setError(errorText((await response.json().catch(() => ({}))) as Parameters<typeof errorText>[0]));
         return;
       }
       const saved = (await response.json()) as LocationRecord;
@@ -279,6 +281,12 @@ export function CalendarForm({ location }: { location: LocationRecord }) {
           checked={calendar.observeBankHolidays}
           onChange={(event) => setCalendar({ ...calendar, observeBankHolidays: event.target.checked })}
         />
+        {calendar.jurisdiction === 'other' && (
+          <p className="hint">
+            Bank holidays are built in for England, Wales, Scotland and Northern Ireland. For anywhere else, add the
+            days as custom closures.
+          </p>
+        )}
         <fieldset className={styles.calendarGroup}>
           <legend>Weekly opening hours</legend>
           {calendar.hours.map((window, index) => (

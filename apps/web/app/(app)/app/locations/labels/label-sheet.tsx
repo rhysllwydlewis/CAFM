@@ -9,12 +9,22 @@ import styles from '../locations.module.css';
 const subscribe = () => () => undefined;
 type LabelLocation = Pick<LocationRecord, 'id' | 'name' | 'code'>;
 
-export function LabelSheet({ primaryId, locations }: { primaryId: string; locations: LabelLocation[] }) {
-  const origin = useSyncExternalStore(
+export function LabelSheet({
+  primaryId,
+  locations,
+  baseUrl,
+}: {
+  primaryId: string;
+  locations: LabelLocation[];
+  /** The deployment's own address. Without one, labels use the address this page was opened at. */
+  baseUrl?: string;
+}) {
+  const browserOrigin = useSyncExternalStore(
     subscribe,
     () => window.location.origin,
     () => '',
   );
+  const origin = baseUrl ?? browserOrigin;
   const [selected, setSelected] = useState(() => new Set([primaryId]));
   const [search, setSearch] = useState('');
   const labels = locations.filter((location) => selected.has(location.id));
@@ -53,6 +63,12 @@ export function LabelSheet({ primaryId, locations }: { primaryId: string; locati
               />
             ))}
         </div>
+        {origin && (
+          <p className="muted sm">
+            Labels open <span className="mono">{origin}</span>. Check this is the address people will use before you
+            print.
+          </p>
+        )}
         <Button variant="primary" disabled={!labels.length || !origin} onClick={() => window.print()}>
           Print labels
         </Button>
