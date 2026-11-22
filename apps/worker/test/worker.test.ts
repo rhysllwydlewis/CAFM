@@ -38,12 +38,32 @@ async function waitFor(check: () => boolean | Promise<boolean>, ms = 10000): Pro
   }
 }
 
+/**
+ * Dispatches until this message is queued. Other tests leave unsent messages in
+ * the outbox, and one dispatch takes at most 50, so a single call can miss it.
+ */
+async function dispatchUntilQueued(id: string): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    await worker.dispatchOnce();
+    if (await worker.queue.getJob(id)) return;
+  }
+  // Say why, so a failure on CI can be diagnosed: a failed queue.add leaves the message waiting out a backoff.
+  const row = await withTenant(db, tenantId, (tx) => tx.outboxMessage.findUnique({ where: { id } }));
+  throw new Error(
+    `Outbox message ${id} was never queued: ` +
+      (row
+        ? `attempts ${row.attempts}, processed ${row.processedAt?.toISOString() ?? 'no'}, ` +
+          `last error ${row.lastError ?? 'none'}, next try ${row.availableAt.toISOString()}`
+        : 'it is not visible in the starter-demo tenant'),
+  );
+}
+
 describe('outbox worker', () => {
   it('delivers an outbox message to its handler with its tenant, and marks it processed', async () => {
     const msg = await withTenant(db, tenantId, (tx) =>
       tx.outboxMessage.create({ data: { tenantId, topic: 'test.echo', payload: { hello: 'world' } } }),
     );
-    expect(await worker.dispatchOnce()).toBeGreaterThanOrEqual(1);
+    await dispatchUntilQueued(msg.id);
     await waitFor(() => seen.some((s) => (s.payload as { hello?: string }).hello === 'world'));
     expect(seen.find((s) => (s.payload as { hello?: string }).hello === 'world')?.tenantId).toBe(tenantId);
     const row = await withTenant(db, tenantId, (tx) => tx.outboxMessage.findUnique({ where: { id: msg.id } }));
@@ -51,21 +71,22 @@ describe('outbox worker', () => {
   });
 
   it('retries a failing job', async () => {
-    await withTenant(db, tenantId, (tx) =>
+    const msg = await withTenant(db, tenantId, (tx) =>
       tx.outboxMessage.create({ data: { tenantId, topic: 'test.flaky', payload: {} } }),
     );
-    await worker.dispatchOnce();
-    const job = await new Promise<string>((resolve) =>
+    // Listen before dispatching, so the completion can't be missed.
+    const completed = new Promise<string>((resolve) =>
       worker.worker.on('completed', (j) => j.name === 'test.flaky' && resolve(j.id!)),
     );
-    expect((await worker.queue.getJob(job))?.attemptsMade).toBe(2);
-  }, 20000);
+    await dispatchUntilQueued(msg.id);
+    expect((await worker.queue.getJob(await completed))?.attemptsMade).toBe(2);
+  }, 30000);
 
   it('fails a message with no handler, so it is retried rather than lost', async () => {
     const msg = await withTenant(db, tenantId, (tx) =>
       tx.outboxMessage.create({ data: { tenantId, topic: 'test.unhandled', payload: {} } }),
     );
-    await worker.dispatchOnce();
+    await dispatchUntilQueued(msg.id);
     // The job ID is the outbox message ID. After a failed attempt it waits (delayed) for its retry.
     await waitFor(async () => ((await worker.queue.getJob(msg.id))?.attemptsMade ?? 0) >= 1);
     const job = await worker.queue.getJob(msg.id);
@@ -77,8 +98,11 @@ describe('outbox worker', () => {
 describe('email.send', () => {
   it('captures a platform email when no mail server is configured', async () => {
     const to = `reset-${Date.now()}@test.example`;
-    await db.$queryRaw`SELECT enqueue_platform('email.send', ${JSON.stringify({ to, subject: 'Reset', text: 'link' })}::jsonb)`;
-    await worker.dispatchOnce();
+    const rows = await db.$queryRaw<
+      { enqueue_platform: string }[]
+    >`SELECT enqueue_platform('email.send', ${JSON.stringify({ to, subject: 'Reset', text: 'link' })}::jsonb)`;
+    const id = rows[0]!.enqueue_platform;
+    await dispatchUntilQueued(id);
     await waitFor(async () => (await db.capturedEmail.count({ where: { to } })) === 1);
     expect(await db.capturedEmail.findFirst({ where: { to } })).toMatchObject({
       tenantId: null,
@@ -88,12 +112,12 @@ describe('email.send', () => {
 
   it('always captures demo-tenant email', async () => {
     const to = `invite-${Date.now()}@test.example`;
-    await withTenant(db, tenantId, (tx) =>
+    const msg = await withTenant(db, tenantId, (tx) =>
       tx.outboxMessage.create({
         data: { tenantId, topic: 'email.send', payload: { to, subject: 'Invite', text: 'link', capture: true } },
       }),
     );
-    await worker.dispatchOnce();
+    await dispatchUntilQueued(msg.id);
     await waitFor(async () => (await db.capturedEmail.count({ where: { to } })) === 1);
     expect(await db.capturedEmail.findFirst({ where: { to } })).toMatchObject({ tenantId, reason: 'demo' });
   });

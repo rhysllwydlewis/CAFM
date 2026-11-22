@@ -1,0 +1,170 @@
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.kpis,
+.formGrid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+.kpis {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.formGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.registerLayout,
+.detailLayout {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+.registerLayout {
+  grid-template-columns: minmax(13rem, 18rem) minmax(0, 1fr);
+}
+.detailLayout {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem);
+}
+
+.groupList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.groupLink {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.groupLink[aria-current] {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: 500;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.filter {
+  display: grid;
+  gap: var(--space-1);
+}
+.filter label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.filters select,
+.filters input[type='search'] {
+  min-width: 9rem;
+}
+.control {
+  display: block;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text);
+  font: inherit;
+}
+.control:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.assetName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.componentList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.componentList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.componentList li:last-child {
+  border-bottom: 0;
+}
+
+.picker {
+  position: relative;
+}
+.pickerList {
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  z-index: 10;
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1);
+  list-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.pickerList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.pickerList li[aria-selected='true'] {
+  background: var(--primary-softer);
+}
+.chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+@media (max-width: 60rem) {
+  .registerLayout,
+  .detailLayout,
+  .formGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* On a phone the register comes first; the classification follows it. */
+  .registerLayout > :first-child {
+    order: 2;
+  }
+}

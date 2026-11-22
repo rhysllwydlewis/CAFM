@@ -37,6 +37,86 @@ it('isolates location records, paths and site grants and rejects a cross-tenant 
   ).rejects.toThrow(/Foreign key constraint/);
 });
 
+it('isolates assets and classes, and rejects a cross-tenant location, parent or class', async () => {
+  const boilerClass = seedId('asset-class:demo-estates:BOILER');
+  expect(await db.asset.count()).toBe(0);
+  expect(await db.assetClass.count()).toBe(0);
+  const demoAssets = await withTenant(db, demo, (tx) => tx.asset.findMany({ include: { class: true } }));
+  expect(demoAssets).toHaveLength(10);
+  const boilerAsset = demoAssets.find(({ number }) => number === 'AST-00003');
+  expect(boilerAsset).toMatchObject({ name: 'Boiler 2', class: { code: 'BOILER' } });
+  const boiler = boilerAsset!.id;
+  const starterRows = await withTenant(db, starter, async (tx) => ({
+    assets: await tx.asset.findMany(),
+    classes: await tx.assetClass.findMany(),
+    demoAsset: await tx.asset.findUnique({ where: { id: boiler } }),
+  }));
+  expect(starterRows.assets.map(({ name }) => name)).toEqual(['Dock leveller 1']);
+  expect(starterRows.classes).toHaveLength(13);
+  expect(starterRows.demoAsset).toBeNull();
+  const starterSite = seedId('location:starter-demo:ST-WH');
+  const demoSite = seedId('location:demo-estates:CDF');
+  const create = (data: { locationId?: string; parentId?: string; classId?: string }) =>
+    withTenant(db, starter, (tx) =>
+      tx.asset.create({
+        data: { tenantId: starter, locationId: starterSite, number: 'X-1', name: 'Outside', ...data },
+      }),
+    );
+  await expect(create({ locationId: demoSite })).rejects.toThrow(/Foreign key constraint/);
+  await expect(create({ parentId: boiler })).rejects.toThrow(/Foreign key constraint/);
+  await expect(create({ classId: boilerClass })).rejects.toThrow(/Foreign key constraint/);
+});
+
+it('isolates what assets serve, and refuses links across organisations, to nothing, to two things or to itself', async () => {
+  expect(await db.assetServes.count()).toBe(0);
+  const demoLinks = await withTenant(db, demo, (tx) => tx.assetServes.findMany({ include: { asset: true } }));
+  expect(demoLinks.length).toBeGreaterThanOrEqual(5);
+  expect(demoLinks.some(({ asset }) => asset.name === 'LTHW heating system')).toBe(true);
+  expect(await withTenant(db, starter, (tx) => tx.assetServes.count())).toBe(0);
+
+  const starterAsset = await withTenant(db, starter, (tx) => tx.asset.findFirstOrThrow());
+  const demoAsset = demoLinks[0]!.assetId;
+  const demoSite = seedId('location:demo-estates:CDF');
+  const link = (data: Record<string, unknown>) =>
+    withTenant(db, starter, (tx) =>
+      tx.assetServes.create({ data: { tenantId: starter, assetId: starterAsset.id, ...data } as never }),
+    );
+  await expect(link({ locationId: demoSite })).rejects.toThrow(/Foreign key constraint/);
+  await expect(link({ servedAssetId: demoAsset })).rejects.toThrow(/Foreign key constraint/);
+  await expect(link({})).rejects.toThrow(/asset_serves_one_target/);
+  await expect(
+    link({ locationId: seedId('location:starter-demo:ST-WH'), servedAssetId: starterAsset.id }),
+  ).rejects.toThrow(/asset_serves_one_target|asset_serves_not_self/);
+  await expect(link({ servedAssetId: starterAsset.id })).rejects.toThrow(/asset_serves_not_self/);
+
+  // A place can be named once per asset.
+  const site = seedId('location:starter-demo:ST-WH');
+  await withTenant(db, starter, (tx) =>
+    tx.assetServes.create({ data: { tenantId: starter, assetId: starterAsset.id, locationId: site } }),
+  );
+  try {
+    await expect(link({ locationId: site })).rejects.toThrow(/Unique constraint/);
+  } finally {
+    await withTenant(db, starter, (tx) => tx.assetServes.deleteMany({ where: { assetId: starterAsset.id } }));
+  }
+});
+
+it('refuses assets the database rules forbid, whatever the API checks', async () => {
+  const site = seedId('location:starter-demo:ST-WH');
+  const make = (n: number, data: Record<string, unknown>) =>
+    withTenant(db, starter, (tx) =>
+      tx.asset.create({ data: { tenantId: starter, locationId: site, number: `RULE-${n}`, name: 'Rule', ...data } }),
+    );
+  await expect(make(1, { status: 'broken' })).rejects.toThrow(/asset_status_check/);
+  await expect(make(2, { criticality: 'urgent' })).rejects.toThrow(/asset_criticality_check/);
+  await expect(make(3, { condition: 'E' })).rejects.toThrow(/asset_condition_check/);
+  await expect(make(4, { replacementCostMinor: -1 })).rejects.toThrow(/asset_cost_check/);
+  await expect(make(5, { currency: 'pounds' })).rejects.toThrow(/asset_currency_check/);
+  await expect(make(6, { expectedLifeYears: 0 })).rejects.toThrow(/asset_life_check/);
+  // A reference is never reused within a tenant.
+  await expect(make(7, { number: 'AST-00001' })).rejects.toThrow(/Unique constraint/);
+});
+
 describe('row-level security on membership', () => {
   it('connects as a role that cannot bypass RLS', async () => {
     const [row] = await db.$queryRaw<{ rolbypassrls: boolean; rolsuper: boolean }[]>`

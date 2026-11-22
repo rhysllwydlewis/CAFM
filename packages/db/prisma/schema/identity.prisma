@@ -20,6 +20,9 @@ model Tenant {
   outbox         OutboxMessage[]
   entitlements   TenantEntitlement[]
   locations      Location[]
+  assetClasses   AssetClass[]
+  assets         Asset[]
+  assetServes    AssetServes[]
 
   @@map("tenant")
 }

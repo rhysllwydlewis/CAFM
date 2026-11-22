@@ -4,3 +4,4 @@ export * from './locations';
 export * from './site-calendar';
 export * from './permissions';
 export * from './personas';
+export * from './assets';
