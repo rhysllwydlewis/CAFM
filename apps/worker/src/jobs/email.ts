@@ -1,11 +1,13 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import { register } from '../handlers';
+import { register, type JobContext } from '../handlers';
 
 export interface EmailPayload {
   to: string;
   subject: string;
   text: string;
   capture?: boolean;
+  replyTo?: string;
+  messageId?: string;
 }
 
 let transport: Transporter | null | undefined;
@@ -21,8 +23,7 @@ function smtp(): Transporter | null {
  * Sends an email, or captures it instead: always for demo tenants (doc 06:
  * demo email is never sent) and whenever no mail server is configured.
  */
-register('email.send', async (raw, ctx) => {
-  const email = raw as EmailPayload;
+export async function sendEmail(email: EmailPayload, ctx: JobContext) {
   const server = smtp();
   if (email.capture || !server) {
     await ctx.db.capturedEmail.create({
@@ -34,7 +35,7 @@ register('email.send', async (raw, ctx) => {
         reason: email.capture ? 'demo' : 'no_mail_server',
       },
     });
-    ctx.log(`email to ${email.to} captured (${email.capture ? 'demo' : 'no mail server'}): ${email.subject}`);
+    ctx.log(`email captured (${email.capture ? 'demo' : 'no mail server'})`);
     return;
   }
   await server.sendMail({
@@ -42,6 +43,10 @@ register('email.send', async (raw, ctx) => {
     to: email.to,
     subject: email.subject,
     text: email.text,
+    replyTo: email.replyTo,
+    messageId: email.messageId,
   });
-  ctx.log(`email sent to ${email.to}: ${email.subject}`);
-});
+  ctx.log('email sent');
+}
+
+register('email.send', (raw, ctx) => sendEmail(raw as EmailPayload, ctx));

@@ -284,3 +284,37 @@ describe('every tenant table is protected', () => {
     await withTenant(db, demo, (tx) => tx.invite.delete({ where: { id: invite.id } }));
   });
 });
+
+it('isolates Helpdesk catalogue, requests and notifications and denies a cross-tenant location', async () => {
+  const [types, requests, notices] = await Promise.all([
+    db.requestType.count(),
+    db.serviceRequest.count(),
+    db.notification.count(),
+  ]);
+  expect([types, requests, notices]).toEqual([0, 0, 0]);
+  expect(await withTenant(db, demo, (tx) => tx.serviceRequest.count())).toBeGreaterThan(0);
+  const starterType = await withTenant(db, starter, (tx) => tx.requestType.findFirstOrThrow());
+  const foreignLocation = seedId('location:demo-estates:CDF');
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.serviceRequest.create({
+        data: {
+          tenantId: starter,
+          number: 'REQ-T1',
+          title: 'Outside',
+          description: 'Outside',
+          locationId: foreignLocation,
+          typeId: starterType.id,
+          status: 'new',
+          channel: 'portal',
+          impact: 2,
+          urgency: 2,
+          priority: 3,
+          submissionKey: 'foreign-location',
+          submissionHash: 'test',
+        },
+      }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  expect(await withTenant(db, starter, (tx) => tx.notification.count())).toBe(0);
+});

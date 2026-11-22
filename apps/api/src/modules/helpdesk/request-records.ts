@@ -1,0 +1,264 @@
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import type { Prisma, Tx } from '@cafm/db';
+import {
+  DEFAULT_SITE_CALENDAR,
+  defaultRequestPriority,
+  REQUEST_STATUS_LABELS,
+  requestQuestionSchema,
+  siteCalendarSchema,
+  type CreateRequest,
+  type RequestChannel,
+  type RequestRecord,
+  type RequestStatus,
+  type RequestSummary,
+} from '@cafm/shared';
+import { activeCustomFields, mergeCustom, nextNumber } from '../../core/config';
+import { audit } from '../../core/audit';
+import type { AuthContext } from '../../core/session';
+import { reportAssetSelect, reportLocationSelect, reportLocations } from './request-scope';
+import { requestDeadline } from './request-sla';
+import { notifyRequester } from './request-notifications';
+
+const memberLabel = { select: { account: { select: { name: true } } } } as const;
+export const requestRelations = {
+  location: { select: reportLocationSelect },
+  asset: { select: reportAssetSelect },
+  type: {
+    select: { id: true, name: true, category: true, problemCode: true, questions: true, duplicateWindowHours: true },
+  },
+  requester: memberLabel,
+  assignee: memberLabel,
+} satisfies Prisma.ServiceRequestInclude;
+type RequestRow = Prisma.ServiceRequestGetPayload<{ include: typeof requestRelations }>;
+
+export const CLOSED = ['completed', 'closed', 'rejected', 'merged'];
+export const AT_RISK_MS = 60 * 60_000;
+
+export const jsonQuestions = requestQuestionSchema.array();
+
+export function requestSummary(row: RequestRow): RequestSummary {
+  return {
+    id: row.id,
+    number: row.number,
+    title: row.title,
+    status: row.status as RequestStatus,
+    channel: row.channel as RequestChannel,
+    priority: row.priority,
+    type: {
+      id: row.type.id,
+      name: row.type.name,
+      category: row.type.category,
+      problemCode: row.type.problemCode,
+      questions: jsonQuestions.parse(row.type.questions),
+    },
+    location: row.location,
+    asset: row.asset?.locationId === row.location.id ? row.asset : null,
+    responseDueAt: row.responseDueAt?.toISOString() ?? null,
+    firstResponseAt: row.firstResponseAt?.toISOString() ?? null,
+    requesterName: row.requester?.account.name ?? null,
+    assigneeName: row.assignee?.account.name ?? null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    rating: row.rating,
+  };
+}
+
+export async function requestDetail(tx: Tx, record: RequestRow, staff: boolean): Promise<RequestRecord> {
+  const entries = await tx.requestEntry.findMany({
+    where: { tenantId: record.tenantId, requestId: record.id, ...(staff ? {} : { internal: false }) },
+    include: { author: memberLabel },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+  });
+  return {
+    ...requestSummary(record),
+    version: record.version,
+    description: record.description,
+    attendDueAt: record.attendDueAt?.toISOString() ?? null,
+    fixDueAt: record.fixDueAt?.toISOString() ?? null,
+    assigneeId: staff ? record.assigneeId : null,
+    feedback: record.feedback,
+    answers: Object.entries(record.answers as Record<string, boolean>).map(([key, value]) => ({
+      label:
+        jsonQuestions.parse(record.type.questions).find((question) => question.key === key)?.label ??
+        key.replaceAll('_', ' '),
+      value,
+    })),
+    entries: entries.map(({ id, kind, body, internal, author, createdAt }) => ({
+      id,
+      kind,
+      body,
+      internal,
+      author: author?.account.name ?? null,
+      createdAt: createdAt.toISOString(),
+    })),
+  };
+}
+
+export async function eligibleAssignee(tx: Tx, tenantId: string, id: string, locationId?: string) {
+  const member = await tx.membership.findFirst({
+    where: { tenantId, id, status: 'active', licence: 'full' },
+    select: { role: true, locationScoped: true },
+  });
+  if (!member) return false;
+  const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
+  if (!role?.permissions.includes('requests.manage')) return false;
+  if (!locationId || (role.scope === 'all' && (!member.locationScoped || member.role === 'super_user'))) return true;
+  return !!(await tx.membershipSite.findFirst({
+    where: { tenantId, membershipId: id, location: { descendants: { some: { descendantId: locationId } } } },
+    select: { membershipId: true },
+  }));
+}
+
+type EmailSource = { tenantId: string; key: string; from: string };
+function payloadHash(input: CreateRequest) {
+  return createHash('sha256')
+    .update(
+      JSON.stringify(input, (_, value) =>
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? Object.fromEntries(
+              Object.keys(value)
+                .sort()
+                .map((key) => [key, value[key]]),
+            )
+          : value,
+      ),
+    )
+    .digest('hex');
+}
+
+export async function createRequest(
+  tx: Tx,
+  input: CreateRequest,
+  auth: AuthContext | null,
+  ip?: string,
+  email?: EmailSource,
+): Promise<RequestSummary> {
+  const member = auth?.membership;
+  const tenantId = member?.tenantId ?? email!.tenantId;
+  const submissionKey = member ? member.id + ':' + input.submissionId : email!.key;
+  const submissionHash = payloadHash(input);
+  const old = await tx.serviceRequest.findUnique({
+    where: { tenantId_submissionKey: { tenantId, submissionKey } },
+    include: requestRelations,
+  });
+  if (old) {
+    if (old.submissionHash !== submissionHash) throw new ConflictException('This submission was already used.');
+    return requestSummary(old);
+  }
+
+  const [location, type] = await Promise.all([
+    tx.location.findFirst({
+      where: { ...(auth ? reportLocations(auth) : { tenantId, status: 'open' }), id: input.locationId },
+      select: { id: true },
+    }),
+    tx.requestType.findFirst({ where: { id: input.typeId, tenantId, active: true } }),
+  ]);
+  if (!location) throw new NotFoundException('Reportable location not found.');
+  if (!type) throw new NotFoundException('Request type not found.');
+
+  const selectedAsset =
+    input.assetId &&
+    (await tx.asset.findFirst({
+      where: { tenantId, id: input.assetId, locationId: location.id, status: { not: 'disposed' } },
+      select: { id: true },
+    }));
+  if (input.assetId && !selectedAsset) throw new NotFoundException('Asset not found at this location.');
+
+  const site = await tx.locationPath.findFirst({
+    where: { tenantId, descendantId: location.id, ancestor: { kind: 'site', status: 'open' } },
+    select: { ancestor: { select: { code: true, siteCalendar: true } } },
+  });
+  if (!site) throw new BadRequestException('Choose a location within an open site.');
+
+  const requesterId = input.requesterId ?? member?.id ?? null;
+  if (
+    requesterId &&
+    requesterId !== member?.id &&
+    !(await tx.membership.findFirst({
+      where: { id: requesterId, tenantId, status: 'active' },
+      select: { id: true },
+    }))
+  )
+    throw new NotFoundException('Requester not found.');
+
+  const questions = jsonQuestions.parse(type.questions);
+  if (!email && questions.some(({ key, required }) => required && !Object.hasOwn(input.answers, key))) {
+    throw new UnprocessableEntityException('Answer the required triage questions.');
+  }
+  if (Object.keys(input.answers).some((key) => !questions.some((question) => question.key === key))) {
+    throw new UnprocessableEntityException('Some triage questions have changed. Refresh the form.');
+  }
+  const impact =
+    input.impact ??
+    Math.min(
+      type.defaultImpact,
+      ...questions.filter((question) => input.answers[question.key]).map((question) => question.yesImpact ?? 3),
+    );
+  const urgency =
+    input.urgency ??
+    Math.min(
+      type.defaultUrgency,
+      ...questions.filter((question) => input.answers[question.key]).map((question) => question.yesUrgency ?? 3),
+    );
+  const rule =
+    (await tx.requestPriority.findUnique({ where: { tenantId_impact_urgency: { tenantId, impact, urgency } } })) ??
+    defaultRequestPriority(impact, urgency);
+  const siteCalendar = siteCalendarSchema.safeParse(site.ancestor.siteCalendar);
+  const calendar = rule.businessHours ? (siteCalendar.success ? siteCalendar.data : DEFAULT_SITE_CALENDAR) : null;
+  const now = new Date();
+  const fields = await activeCustomFields(tx, tenantId, 'request');
+  const custom = email ? {} : mergeCustom(fields, input.custom);
+  const assigneeId =
+    !email && type.assigneeId && (await eligibleAssignee(tx, tenantId, type.assigneeId, location.id))
+      ? type.assigneeId
+      : null;
+  const status = assigneeId ? 'assigned' : 'new';
+
+  const request = await tx.serviceRequest.create({
+    data: {
+      tenantId,
+      requesterId,
+      assigneeId,
+      status,
+      submissionKey,
+      submissionHash,
+      impact,
+      urgency,
+      custom,
+      title: input.title,
+      description: input.description,
+      locationId: location.id,
+      assetId: input.assetId,
+      typeId: type.id,
+      answers: input.answers,
+      channel: email ? 'email' : input.channel,
+      externalEmail: email?.from,
+      priority: rule.priority,
+      createdAt: now,
+      number: await nextNumber(tx, tenantId, 'request', { SITE: site.ancestor.code }),
+      responseDueAt: requestDeadline(now, rule.responseMinutes, calendar),
+      attendDueAt: requestDeadline(now, rule.attendMinutes, calendar),
+      fixDueAt: requestDeadline(now, rule.fixMinutes, calendar),
+    },
+    include: requestRelations,
+  });
+  const entry = await tx.requestEntry.create({
+    data: { tenantId, requestId: request.id, authorId: member?.id, kind: 'status', body: 'Request received' },
+  });
+  const event = {
+    action: 'request.create',
+    entityType: 'request',
+    entityId: request.id,
+    changes: { channel: request.channel },
+  };
+  if (auth) await audit(tx, auth, event, ip);
+  else await tx.auditEvent.create({ data: { tenantId, ...event } });
+  await notifyRequester(tx, request, 'request.received', entry.id, REQUEST_STATUS_LABELS[status], type.acknowledgement);
+  return requestSummary(request);
+}
