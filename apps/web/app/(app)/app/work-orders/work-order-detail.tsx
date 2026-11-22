@@ -2,11 +2,19 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import type { FieldDefinition } from '@cafm/config-engine';
 import { Icon } from '@cafm/ui';
-import type { WorkOrderCosts, WorkOrderRecord } from '@cafm/shared';
+import type {
+  Checklist,
+  ChecklistTemplateItem,
+  WorkOrderCosts,
+  WorkOrderPhoto,
+  WorkOrderRecord,
+  WorkOrderSignature,
+} from '@cafm/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 import { customFieldValue } from '../locations/location-custom-fields';
 import { WorkOrderActions } from './work-order-actions';
 import { WorkOrderCostsCard } from './work-order-costs';
+import { ChecklistsCard, JobSheetCard, PhotosCard, SignOffCard } from './work-order-forms';
 import { WorkOrderSla } from './work-order-sla';
 import { PriorityBadge, StatusBadge } from './work-order-parts';
 import styles from './work-orders.module.css';
@@ -24,6 +32,8 @@ export function WorkOrderDetail({
   now,
   costs,
   canEditCosts,
+  forms,
+  memberId,
 }: {
   record: WorkOrderRecord<FieldDefinition>;
   canEdit: boolean;
@@ -34,7 +44,16 @@ export function WorkOrderDetail({
   /** Set when the person may see costs. */
   costs?: WorkOrderCosts;
   canEditCosts: boolean;
+  /** The signed-in person, to know whether the job is theirs. */
+  memberId: string;
+  forms: {
+    checklists: Checklist[];
+    photos: WorkOrderPhoto[];
+    signatures: WorkOrderSignature[];
+    templates: ChecklistTemplateItem[];
+  };
 }) {
+  const locked = record.status === 'closed' || record.status === 'cancelled';
   const times: [string, string | null][] = [
     ['Response due', when(record.responseDueAt)],
     ['Attendance due', when(record.attendDueAt)],
@@ -123,6 +142,34 @@ export function WorkOrderDetail({
             </dl>
           </section>
           <WorkOrderSla record={record} now={now} />
+          <ChecklistsCard
+            key={'checklists:' + record.id}
+            jobId={record.id}
+            initial={forms.checklists}
+            templates={forms.templates}
+            canAnswer={canNote}
+            canEdit={canEdit}
+            locked={locked}
+          />
+          <PhotosCard
+            key={'photos:' + record.id}
+            jobId={record.id}
+            photos={forms.photos}
+            canAdd={canNote}
+            canRemove={canEdit}
+            locked={locked}
+          />
+          <SignOffCard
+            key={'signoff:' + record.id}
+            jobId={record.id}
+            status={record.status}
+            initial={forms.signatures}
+            canSign={canNote}
+            isAssignee={record.assigneeId === memberId}
+            canRemove={canEdit}
+            locked={locked}
+          />
+          <JobSheetCard jobId={record.id} status={record.status} canEmail={canEdit} />
           {costs && (
             <WorkOrderCostsCard
               key={record.id}
@@ -130,7 +177,7 @@ export function WorkOrderDetail({
               version={record.version}
               initial={costs}
               canEdit={canEditCosts}
-              locked={record.status === 'closed' || record.status === 'cancelled'}
+              locked={locked}
             />
           )}
         </div>

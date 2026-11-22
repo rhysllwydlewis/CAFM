@@ -1,6 +1,6 @@
 # Work orders
 
-Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. Checklists and photos, and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
+Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. 
 
 ## Screens
 
@@ -34,7 +34,9 @@ Assigning someone moves a logged job to Assigned. Clearing the assignee returns 
 | See jobs | `work_orders.read` |
 | Raise or edit a job, verify, close, cancel or reopen it | `work_orders.edit` |
 | Assign or unassign | `work_orders.assign` |
-| Accept, travel, go on site, pause or complete a job, and add notes | `work_orders.close` or `work_orders.edit` |
+| Accept, travel, go on site, pause or complete a job, add notes, answer checklists, add photos and sign off | `work_orders.close` or `work_orders.edit` |
+| Add or remove a checklist, remove a photo or a sign-off, email the job sheet | `work_orders.edit` |
+| Create or retire a checklist template | `settings.manage` |
 | Convert a request | `work_orders.edit` and `requests.manage` (and the Helpdesk plan) |
 
 Everything needs the Work orders feature on the plan. A member limited to their own work (a technician) sees only the jobs assigned to them, and only at locations they have been given. Anyone else sees the jobs at the locations they can see. A job at a location someone can't see is reported as not found.
@@ -76,6 +78,33 @@ The job page has a **Costs** card for what the job has cost, and the work order 
 - **Not-to-exceed limit.** A job can have a limit. Spend that would take the total over it is refused, with the new total and the limit in the message, unless the person gives the reason to go over it. The reason is kept with that cost, shown on it and audited. Clearing the limit lifts the block, and a limit set below what is already spent blocks further spend. The full approval of variations arrives with the approvals engine (P2A-06).
 - **Who can do what:** seeing costs needs `costs.read`. Adding or removing a cost, or setting the limit, also needs `work_orders.edit`, so technicians and Helpdesk, who don't have `costs.read`, never see rates or totals, and Finance can read costs but not change them. Costs can't be added, removed or the limit changed once a job is closed or cancelled.
 - **Not built yet:** mark-up on parts, charge-out to a client or cost centre, and sub-contractor invoices matched to purchase orders. These follow with Finance.
+
+## Checklists
+
+A job can carry checklists: the steps to follow and the answers, from a template or written out for that job. The job page has a **Checklists** card, and the contractor's page shows them too.
+
+- **Steps** are one of four kinds: **done** (a tick), **pass or fail** (or not applicable; a fail has to say what failed), a **reading** (a number such as 1.4, with a unit) and a **comment**. Each is optional or required.
+- **Holding back.** A checklist can hold back **starting work** (going on site) or **completing the job**. The required steps must be answered first, and the message says how many are left. The same rules apply on the job page, the board and a contractor's link. Completing waits for every checklist that holds something back, so a before-starting checklist counts too. Reopening a completed job is not held back. Optional steps never are.
+- **Templates** are the organisation's reusable checklists (`GET/POST /api/checklist-templates`, `DELETE /api/checklist-templates/{id}` to retire one). Using a template copies its steps onto the job, so changing it later never rewrites a job's record. People who change settings (`settings.manage`) manage them. There is no template screen yet: it arrives with the admin console (P1-09), and the task library with PPM (P1-05). Until then a supervisor can write a checklist out on the job, one step per line.
+- **Answers** are recorded with who gave them and when. Clearing an answer puts the step back. Answering needs `work_orders.close` or `work_orders.edit`, as far as the person's scope allows. A job holds at most 10 checklists of 50 steps each, and they can't be changed once the job is closed or cancelled.
+- Checklist changes are audited (`work_order_checklist.add`, `.remove` and `.answer`). Contractor answers are audited with their name.
+
+## Photos and sign-off
+
+- **Photos** (`/api/work-orders/{id}/photos`) are JPEG, PNG or WebP up to 8 MB, marked **before**, **after** or **other** with an optional caption. They are stored like asset photos (see [Assets](assets.md#attachment-storage)): private, virus scanned and checked when read back. A job holds up to 42 files with its two signatures. People who do the job add them; a supervisor removes them. They can't be added once the job is closed or cancelled.
+- **Sign-off** (`/api/work-orders/{id}/signatures`) is the **customer's** (a typed name and a drawn signature) and the **technician's** (the signed-in person, whatever name is sent). A job has at most one of each, once work has started, and only the technician the job is assigned to can give the technician's sign-off, so a supervisor can't sign in their name. To sign again a supervisor removes the earlier one, and the removal is audited. The drawing is a PNG of up to 60 KB, and names can be up to 120 characters, kept as a private file.
+- Drawing needs a pointer (a finger, stylus or mouse). A typed customer name is always recorded with it.
+- Not built yet: image annotation, video and voice notes, risk assessment and RAMS acknowledgement as their own step, geo-verified arrival, and photos or signatures from a contractor's link. The mobile app (P1-06) takes photos and signatures offline.
+
+## Job sheet
+
+`GET /api/work-orders/{id}/job-sheet` returns the job as an A4 PDF (`wo-04-job-sheet`): the job, location and asset, the problem reported, notes, checklist answers, labour and parts, photos and sign-offs.
+
+- **Money** is on the sheet only for people who can see costs (`costs.read`). Everyone else, and the copy sent to the requester, gets a sheet with no costs.
+- **Internal notes and staff names on the timeline** never appear. Notes, and the note given when the job was completed, are shown without their author.
+- **Photos** are drawn into the sheet when they are small JPEG or PNG files (up to 400 KB each, six in all); larger ones are listed with their caption. The emailed copy lists photos without drawing them, to keep it small.
+- **Email to the requester.** `POST /api/work-orders/{id}/job-sheet/email` (`work_orders.edit`) sends the customer copy to whoever reported the job, once it is completed, verified or closed. A job that didn't come from a request has no one to send it to. It isn't sent again within a minute. Photo captions and checklist notes are on the copy the requester gets, so keep them fit to be read by them. The send is recorded on the job's timeline (internally) and audited without the address. It is sent when asked for, not automatically, so it can wait for the sign-off. Demo organisations capture the email instead of sending it.
+- The text is set in the standard PDF fonts, which hold Western European letters. Anything else is shown as its base letter (the Welsh ŵ and ŷ become w and y) or a question mark.
 
 ## Contractors
 

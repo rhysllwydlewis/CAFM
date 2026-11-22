@@ -9,17 +9,17 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 11%** of the planned build (19 of 83 top-level roadmap items) |
+| **Overall progress** | **About 12%** of the planned build (20 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
-| **Next up** | Phase 1 reactive work orders (P1-04) |
+| **Next up** | Phase 1 PPM (P1-05) |
 
 <!-- approved-phase: 1 -->
 
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 4 / 13 | In progress |
+| 1 · Core CAFM MVP | 5 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -54,7 +54,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04e are done (04e is in the open PR). Next 04f: checklists on a job (templates, steps, answers), photos and signatures (customer and technician sign-off), reusing the attachment storage. Then 04g job-sheet PDFs, emailed to the requester. |
 
 ## Phase checklists
 
@@ -104,14 +103,14 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-02f** Warranties with expiry alerts.
   - [x] **P1-02g** Attachments (photos and documents) on assets. ([guide](assets.md#attachment-storage))
 - [x] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT. ([guide](helpdesk.md))
-- [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
+- [x] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
   - [x] **P1-04a** Work order model and lifecycle: statuses and transitions, numbering, location and asset links, priority and SLA due dates from the request, convert a request into one or many work orders, API with audit and custom fields. ([guide](work-orders.md))
   - [x] **P1-04b** Work order list, detail and board screens in the app shell (`wo-01-list`, `wo-02-detail`, `wo-03-board`), and raising work from a Helpdesk request. ([guide](work-orders.md#screens))
   - [x] **P1-04c** Assignment to people and to contractors, with a magic link so a contractor can update the job without an account. Teams are not built yet. ([guide](work-orders.md#contractors))
   - [x] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation. Escalation chains are fixed (assignee, then supervisors) until the workflow builder. ([guide](work-orders.md#sla-targets-pauses-and-alerts))
   - [x] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job, with a not-to-exceed limit. Mark-up and charge-out follow with Finance. ([guide](work-orders.md#costs))
-  - [ ] **P1-04f** Checklists, photos and signatures.
-  - [ ] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester.
+  - [x] **P1-04f** Checklists (templates and written out, with required steps that hold back starting and completing), before and after photos, and customer and technician sign-off. ([guide](work-orders.md#checklists))
+  - [x] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester. ([guide](work-orders.md#job-sheet))
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))

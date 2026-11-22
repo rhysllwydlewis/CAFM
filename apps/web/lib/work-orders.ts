@@ -1,6 +1,15 @@
 import 'server-only';
 import type { FieldDefinition } from '@cafm/config-engine';
-import type { WorkOrderCosts, WorkOrderPage, WorkOrderRecord, WorkOrderSummary } from '@cafm/shared';
+import type {
+  Checklist,
+  ChecklistTemplateItem,
+  WorkOrderCosts,
+  WorkOrderPage,
+  WorkOrderPhoto,
+  WorkOrderRecord,
+  WorkOrderSignature,
+  WorkOrderSummary,
+} from '@cafm/shared';
 import { apiGet } from './api';
 
 export async function workOrderPage(params = ''): Promise<WorkOrderPage> {
@@ -27,4 +36,21 @@ export async function workOrderCosts(id: string): Promise<WorkOrderCosts | undef
   const response = await apiGet('/work-orders/' + encodeURIComponent(id) + '/costs');
   if (!response.ok) return undefined;
   return response.json() as Promise<WorkOrderCosts>;
+}
+
+async function list<T>(path: string): Promise<T[]> {
+  const response = await apiGet(path);
+  return response.ok ? ((await response.json()) as T[]) : [];
+}
+
+/** Checklists, photos and sign-offs on a job, and the templates a checklist can be added from. */
+export async function workOrderForms(id: string, withTemplates: boolean) {
+  const base = '/work-orders/' + encodeURIComponent(id);
+  const [checklists, photos, signatures, templates] = await Promise.all([
+    list<Checklist>(base + '/checklists'),
+    list<WorkOrderPhoto>(base + '/photos'),
+    list<WorkOrderSignature>(base + '/signatures'),
+    withTemplates ? list<ChecklistTemplateItem>('/checklist-templates') : Promise.resolve([]),
+  ]);
+  return { checklists, photos, signatures, templates };
 }

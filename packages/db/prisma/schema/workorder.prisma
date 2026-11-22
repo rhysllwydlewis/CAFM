@@ -50,6 +50,9 @@ model WorkOrder {
   contractors      WorkOrderContractor[]
   notifications    Notification[]
   costs            WorkOrderCost[]
+  checklists       WorkOrderChecklist[]
+  signatures       WorkOrderSignature[]
+  attachments      RecordAttachment[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, number])
@@ -137,4 +140,93 @@ model WorkOrderCost {
   @@unique([tenantId, id])
   @@index([tenantId, workOrderId, createdAt, id])
   @@map("work_order_cost")
+}
+
+/// A reusable checklist an organisation keeps. The steps are copied onto a job when it is used, so changing a
+/// template later never rewrites a job's record.
+model ChecklistTemplate {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  description String?
+  /// none, start or completion: what the checklist holds back on a job.
+  gate        String   @default("none")
+  /// The steps: a list of { label, kind, required, unit? }.
+  items       Json
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@map("checklist_template")
+}
+
+/// A checklist on one job, with its own copy of the steps.
+model WorkOrderChecklist {
+  id          String                   @id @default(uuid(7)) @db.Uuid
+  tenantId    String                   @map("tenant_id") @db.Uuid
+  workOrderId String                   @map("work_order_id") @db.Uuid
+  title       String
+  /// none, start or completion: what the checklist holds back.
+  gate        String                   @default("none")
+  createdById String?                  @map("created_by_id") @db.Uuid
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant                   @relation(fields: [tenantId], references: [id])
+  workOrder   WorkOrder                @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  createdBy   Membership?              @relation(fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
+  items       WorkOrderChecklistItem[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId, createdAt, id])
+  @@map("work_order_checklist")
+}
+
+model WorkOrderChecklistItem {
+  id             String             @id @default(uuid(7)) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  checklistId    String             @map("checklist_id") @db.Uuid
+  position       Int
+  /// tick, pass_fail, number or text.
+  kind           String
+  label          String
+  required       Boolean            @default(false)
+  unit           String?
+  /// tick: done. pass_fail: pass, fail or na. number: a decimal. text: the comment. Null until answered.
+  answer         String?
+  note           String?
+  answeredById   String?            @map("answered_by_id") @db.Uuid
+  /// Who answered when it was someone outside the organisation on a contractor link.
+  answeredByName String?            @map("answered_by_name")
+  answeredAt     DateTime?          @map("answered_at") @db.Timestamptz(3)
+  tenant         Tenant             @relation(fields: [tenantId], references: [id])
+  checklist      WorkOrderChecklist @relation(fields: [tenantId, checklistId], references: [tenantId, id], onDelete: Cascade)
+  answeredBy     Membership?        @relation(fields: [tenantId, answeredById], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, checklistId, position])
+  @@map("work_order_checklist_item")
+}
+
+/// A sign-off on a job: the customer's or the technician's. The drawing is kept as a private attachment.
+model WorkOrderSignature {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  tenantId     String           @map("tenant_id") @db.Uuid
+  workOrderId  String           @map("work_order_id") @db.Uuid
+  /// customer or technician. A job has at most one of each.
+  role         String
+  signerName   String           @map("signer_name")
+  attachmentId String           @map("attachment_id") @db.Uuid
+  recordedById String?          @map("recorded_by_id") @db.Uuid
+  signedAt     DateTime         @default(now()) @map("signed_at") @db.Timestamptz(3)
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  workOrder    WorkOrder        @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  attachment   RecordAttachment @relation(fields: [tenantId, attachmentId], references: [tenantId, id], onDelete: Cascade)
+  recordedBy   Membership?      @relation(fields: [tenantId, recordedById], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, workOrderId, role])
+  @@unique([tenantId, attachmentId])
+  @@map("work_order_signature")
 }

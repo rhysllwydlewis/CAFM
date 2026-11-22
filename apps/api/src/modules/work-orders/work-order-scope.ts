@@ -57,3 +57,9 @@ export const staleWorkOrder = () =>
     code: 'stale_work_order',
     message: 'This work order has changed. Refresh it and try again.',
   });
+
+/** Doing the job (answering, photographing, signing off) needs `work_orders.close` or `work_orders.edit`. */
+export function assertCanWorkJob(auth: AuthContext): void {
+  const permissions = auth.access?.permissions;
+  if (!permissions?.has('work_orders.edit') && !permissions?.has('work_orders.close')) throw new ForbiddenException();
+}

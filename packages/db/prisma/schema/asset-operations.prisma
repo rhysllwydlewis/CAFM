@@ -74,21 +74,28 @@ model AssetWarranty {
 }
 
 model RecordAttachment {
-  id         String             @id @default(uuid(7)) @db.Uuid
-  tenantId   String             @map("tenant_id") @db.Uuid
-  assetId    String?            @map("asset_id") @db.Uuid
-  requestId  String?            @map("request_id") @db.Uuid
-  filename   String
-  mediaType  String             @map("media_type")
-  byteLength Int                @map("byte_length")
-  checksum   String
-  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  tenant     Tenant             @relation(fields: [tenantId], references: [id])
-  asset      Asset?             @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
-  request    ServiceRequest?    @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Cascade)
-  storage    AttachmentContent?
+  id          String              @id @default(uuid(7)) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  assetId     String?             @map("asset_id") @db.Uuid
+  requestId   String?             @map("request_id") @db.Uuid
+  workOrderId String?             @map("work_order_id") @db.Uuid
+  /// For a job's photos: before, after or other. A signature's drawing has none.
+  phase       String?
+  caption     String?
+  filename    String
+  mediaType   String              @map("media_type")
+  byteLength  Int                 @map("byte_length")
+  checksum    String
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  asset       Asset?              @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+  request     ServiceRequest?     @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Cascade)
+  workOrder   WorkOrder?          @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  signature   WorkOrderSignature?
+  storage     AttachmentContent?
 
   @@unique([tenantId, id])
+  @@index([tenantId, workOrderId, createdAt])
   @@index([tenantId, assetId, createdAt])
   @@index([tenantId, requestId, createdAt])
   @@map("record_attachment")

@@ -8,6 +8,8 @@ export interface EmailMessage {
   text: string;
   /** Capture instead of sending: always for demo tenants (doc 06). */
   capture?: boolean;
+  /** Files to send with it, as base64. Keep them small: they travel in the outbox. */
+  attachments?: { filename: string; contentType: string; contentBase64: string }[];
 }
 
 /**

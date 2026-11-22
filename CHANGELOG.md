@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Work order checklists, photos, sign-off and job sheets: add checklists to a job from a template or written out, with steps to tick, pass or fail, read or comment on; a checklist can hold back starting work or completing the job until its required steps are answered, including from a contractor's link. Add before and after photos, take the customer's and the technician's drawn sign-off, and download the job as a PDF job sheet or email it to the requester (without costs). See [Work orders](docs/work-orders.md#checklists).
+
 - Work order costs: record labour, parts, sub-contract and expenses on a job, with the total on the job and in the list. Amounts are worked out in whole pence on the server. A job can have a not-to-exceed limit, and spend over it needs a recorded reason. Only people who can see costs see them. See [Work orders](docs/work-orders.md#costs).
 
 - Work order SLA clocks: pausing a job for parts, access or approval stops its clock and the targets move out by the business time lost when work resumes ("awaiting contractor" and "other" don't stop it). The job page shows how it stands against its response, attendance and fix targets. People are alerted when a job is close to one of them and again when it is missed: the assignee first, and supervisors for that location on a breach. See [Work orders](docs/work-orders.md#sla-targets-pauses-and-alerts).

@@ -486,3 +486,138 @@ test('records costs, applies a not-to-exceed limit, and keeps costs from field s
   await expect(page.getByRole('link', { name: /^WO-/ }).first()).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Cost' })).toHaveCount(0);
 });
+
+test('works through a checklist, adds a photo, signs the job off and makes a job sheet', async ({ page }) => {
+  test.setTimeout(150_000);
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'manager');
+  const created = await page.request.post('/api/work-orders', {
+    data: {
+      submissionId: randomUUID(),
+      title: 'E2E forms ' + suffix,
+      description: 'Created by a browser test.',
+      locationId: seedId('location:demo-estates:CDF'),
+      impact: 2,
+      urgency: 2,
+      assigneeId: seedId('membership:demo-estates:technician'),
+    },
+  });
+  expect(created.ok()).toBe(true);
+  const job = (await created.json()) as { id: string };
+
+  // The manager adds a checklist from the organisation's templates, which holds back completing the job.
+  await page.goto('/app/work-orders/' + job.id);
+  const checklists = page.getByRole('region', { name: 'Checklists', exact: true });
+  await expect(checklists.getByText('No checklists on this job.')).toBeVisible();
+  await checklists.getByLabel('Add from a template').selectOption({ label: 'Plant room repair' });
+  await checklists.getByRole('button', { name: 'Add checklist' }).first().click();
+  await expect(checklists.getByRole('heading', { name: 'Plant room repair' })).toBeVisible();
+  await expect(checklists.getByText('4 required to answer')).toBeVisible();
+  await assertAccessible(page);
+
+  // The technician can't complete the job until the required steps are answered.
+  await signInAs(page, 'technician');
+  await page.goto('/app/work-orders/' + job.id);
+  await expectStatus(page, 'Assigned');
+  await updateStatus(page, 'On site');
+  await expectStatus(page, 'On site');
+  await updateStatus(page, 'Completed');
+  await expect(page.getByRole('alert').filter({ hasText: 'required checklist steps before completing' })).toBeVisible();
+  await expectStatus(page, 'On site');
+
+  const list = page.getByRole('region', { name: 'Checklists', exact: true });
+  await list.getByLabel(/^Risk assessment and RAMS acknowledged/).click();
+  await expect(list.getByLabel(/^Risk assessment and RAMS acknowledged/)).toBeChecked();
+  await expect(list.getByText('3 required to answer')).toBeVisible();
+  await list.getByLabel(/^System isolated and made safe/).click();
+  await expect(list.getByLabel(/^System isolated and made safe/)).toBeChecked();
+  await list.getByLabel(/^Area left clean and tidy/).click();
+  await expect(list.getByLabel(/^Area left clean and tidy/)).toBeChecked();
+  await expect(list.getByText('1 required to answer')).toBeVisible();
+  // A failed test is an answer, but it has to say what failed.
+  await list.getByLabel(/^Pressure test after repair/).selectOption({ label: 'Fail' });
+  await list.getByRole('button', { name: 'Save answer' }).nth(1).click();
+  await expect(list.getByText('Say what failed.')).toBeVisible();
+  await list.getByLabel('What failed: Pressure test after repair (2 hours)').fill('Pressure fell to 0.9 bar');
+  await list.getByRole('button', { name: 'Save answer' }).nth(1).click();
+  await expect(list.getByText('Complete', { exact: true })).toBeVisible();
+  // A reading must be a number.
+  await list.getByLabel(/^Pressure after repair/).fill('about one');
+  await list.getByRole('button', { name: 'Save answer' }).first().click();
+  await expect(list.getByText('Enter a number, for example 1.4.')).toBeVisible();
+  await list.getByLabel(/^Pressure after repair/).fill('1.4');
+  await list.getByRole('button', { name: 'Save answer' }).first().click();
+  await expect(list.getByText('Answered by Tom Price').first()).toBeVisible();
+  // Changing a failure to a pass does not carry the reason for the failure along.
+  await list.getByLabel(/^Pressure test after repair/).selectOption({ label: 'Pass' });
+  await list.getByRole('button', { name: 'Save answer' }).nth(1).click();
+  // The answer is saved, not just chosen, and the reason went with the failure.
+  await expect
+    .poll(async () => {
+      const stored = (await (await page.request.get('/api/work-orders/' + job.id + '/checklists')).json()) as {
+        items: { label: string; answer: string | null; note: string | null }[];
+      }[];
+      const step = stored[0]!.items.find((item) => item.label.startsWith('Pressure test'));
+      return [step?.answer, step?.note];
+    })
+    .toEqual(['pass', null]);
+  await updateStatus(page, 'Completed');
+  await expectStatus(page, 'Completed');
+
+  // A photo, with when it was taken and what it shows.
+  const photos = page.getByRole('region', { name: 'Photos', exact: true });
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=',
+    'base64',
+  );
+  await expect(photos.getByText('No photos on this job.')).toBeVisible();
+  await photos.getByLabel('Choose a photo').setInputFiles({ name: 'repaired.png', mimeType: 'image/png', buffer: png });
+  await photos.getByLabel('When was it taken?').selectOption({ label: 'After' });
+  await photos.getByLabel('Caption (optional)').fill('Valve replaced');
+  await photos.getByRole('button', { name: 'Add photo' }).click();
+  await expect(photos.getByRole('img', { name: 'After photo: Valve replaced' })).toBeVisible();
+  await expect(photos.getByText('Photo added.')).toBeVisible();
+
+  // Both sign-offs are drawn. The technician's name is their own; the customer's is typed.
+  const signoff = page.getByRole('region', { name: 'Sign-off', exact: true });
+  const draw = async (form: ReturnType<typeof signoff.getByRole>) => {
+    const pad = form.getByRole('img');
+    const box = (await pad.boundingBox())!;
+    await page.mouse.move(box.x + 20, box.y + 40);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 120, box.y + 90, { steps: 8 });
+    await page.mouse.move(box.x + 220, box.y + 30, { steps: 8 });
+    await page.mouse.up();
+  };
+  const customer = signoff.getByRole('form', { name: 'Customer sign-off' });
+  await customer.getByRole('button', { name: 'Save sign-off' }).click();
+  await expect(customer.getByText('Draw a signature first.')).toBeVisible();
+  await draw(customer);
+  await customer.getByRole('button', { name: 'Save sign-off' }).click();
+  await expect(customer.getByText('Enter the customer’s name.')).toBeVisible();
+  await customer.getByLabel('Customer’s name').fill('Hana Patel');
+  await customer.getByRole('button', { name: 'Save sign-off' }).click();
+  await expect(signoff.getByRole('img', { name: 'Signature of Hana Patel' })).toBeVisible();
+  const technician = signoff.getByRole('form', { name: 'Technician sign-off' });
+  await draw(technician);
+  await technician.getByRole('button', { name: 'Save sign-off' }).click();
+  await expect(signoff.getByRole('img', { name: 'Signature of Tom Price' })).toBeVisible();
+  await expect(signoff.getByRole('form')).toHaveCount(0);
+  await assertAccessible(page);
+
+  // The job sheet is a PDF. A technician has no costs on it and cannot email it.
+  const sheet = page.getByRole('region', { name: 'Job sheet', exact: true });
+  await expect(sheet.getByRole('link', { name: 'Download job sheet (PDF)' })).toBeVisible();
+  await expect(sheet.getByRole('button', { name: 'Email to the requester' })).toHaveCount(0);
+  const pdf = await page.request.get('/api/work-orders/' + job.id + '/job-sheet');
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()['content-type']).toContain('application/pdf');
+  expect((await pdf.body()).subarray(0, 5).toString('latin1')).toBe('%PDF-');
+
+  // The manager can email it, but this job did not come from a request, so there is no one to send it to.
+  await signInAs(page, 'manager');
+  await page.goto('/app/work-orders/' + job.id);
+  const managerSheet = page.getByRole('region', { name: 'Job sheet', exact: true });
+  await managerSheet.getByRole('button', { name: 'Email to the requester' }).click();
+  await expect(managerSheet.getByRole('alert')).toContainText('no requester');
+});

@@ -54,6 +54,13 @@ describe('demo reset', () => {
         },
       });
       await db.auditEvent.create({ data: { tenantId: tenant.id, action: 'x', entityType: 'x' } });
+      await db.checklistTemplate.create({
+        data: {
+          tenantId: tenant.id,
+          name: 'Visitor checklist',
+          items: [{ label: 'Step', kind: 'tick', required: false }],
+        },
+      });
 
       const result = await resetDemo(db, { tenantIds: [tenant.id], reseed: false });
 
@@ -65,6 +72,7 @@ describe('demo reset', () => {
           .permissions,
       ).toContain('people.read');
       expect(await db.invite.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.checklistTemplate.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.auditEvent.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.asset.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.assetClass.count({ where: { tenantId: tenant.id } })).toBe(0);

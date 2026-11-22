@@ -463,6 +463,112 @@ it('isolates work order costs and refuses figures the API never produces', async
   ).rejects.toThrow(/work_order_nte_valid/);
 });
 
+it('isolates checklists, sign-offs and job photos and refuses answers the API never produces', async () => {
+  for (const count of [
+    db.checklistTemplate.count(),
+    db.workOrderChecklist.count(),
+    db.workOrderChecklistItem.count(),
+    db.workOrderSignature.count(),
+  ]) {
+    expect(await count).toBe(0);
+  }
+  const boilerJob = seedId('work-order:demo-estates:WO-10412');
+  const checklist = seedId('work-order-checklist:demo-estates:boiler');
+  // The demo boiler job has the plant room checklist, all answered, and the organisation keeps three templates.
+  const seen = await withTenant(db, demo, async (tx) => ({
+    templates: await tx.checklistTemplate.count({ where: { active: true } }),
+    steps: await tx.workOrderChecklistItem.count({ where: { checklistId: checklist } }),
+    waiting: await tx.workOrderChecklistItem.count({ where: { checklistId: checklist, required: true, answer: null } }),
+  }));
+  expect(seen).toEqual({ templates: 3, steps: 5, waiting: 0 });
+  expect(
+    await withTenant(db, starter, async (tx) => [
+      await tx.checklistTemplate.count(),
+      await tx.workOrderChecklist.count(),
+      await tx.workOrderChecklistItem.count(),
+    ]),
+  ).toEqual([0, 0, 0]);
+  expect(
+    await withTenant(db, starter, (tx) =>
+      tx.workOrderChecklistItem.updateMany({ where: { checklistId: checklist }, data: { label: 'x' } }),
+    ),
+  ).toEqual({ count: 0 });
+
+  // A checklist cannot be put on another organisation's job, nor a step on another organisation's checklist.
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.workOrderChecklist.create({ data: { tenantId: starter, workOrderId: boilerJob, title: 'Theirs' } }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  const step = (tenantId: string, data: object = {}) =>
+    withTenant(db, tenantId, (tx) =>
+      tx.workOrderChecklistItem.create({
+        data: { tenantId, checklistId: checklist, position: 99, kind: 'tick', label: 'Extra', ...data } as never,
+      }),
+    );
+  await expect(step(starter)).rejects.toThrow(/Foreign key constraint/);
+  // Nor can the database hold an answer that does not fit its kind, an unanswered step with a time, or a failure
+  // with no reason.
+  const answered = new Date('2026-11-23T10:00:00Z');
+  await expect(step(demo, { kind: 'tickle' })).rejects.toThrow(/work_order_checklist_item_kind_valid/);
+  await expect(step(demo, { kind: 'tick', answer: 'yes', answeredAt: answered })).rejects.toThrow(
+    /work_order_checklist_item_answer_valid/,
+  );
+  await expect(step(demo, { kind: 'pass_fail', answer: 'maybe', answeredAt: answered })).rejects.toThrow(
+    /work_order_checklist_item_answer_valid/,
+  );
+  await expect(step(demo, { kind: 'pass_fail', answer: 'fail', answeredAt: answered })).rejects.toThrow(
+    /work_order_checklist_item_answer_valid/,
+  );
+  await expect(step(demo, { kind: 'number', answer: '1,4', answeredAt: answered })).rejects.toThrow(
+    /work_order_checklist_item_answer_valid/,
+  );
+  await expect(step(demo, { kind: 'tick', answer: 'done' })).rejects.toThrow(/work_order_checklist_item_answer_valid/);
+  await expect(step(demo, { kind: 'tick', answeredAt: answered })).rejects.toThrow(
+    /work_order_checklist_item_answer_valid/,
+  );
+  await expect(step(demo, { kind: 'tick', unit: 'bar' })).rejects.toThrow(/work_order_checklist_item_text_valid/);
+  await expect(step(demo, { label: ' ' })).rejects.toThrow(/work_order_checklist_item_text_valid/);
+  await expect(
+    withTenant(db, demo, (tx) =>
+      tx.workOrderChecklist.create({ data: { tenantId: demo, workOrderId: boilerJob, title: 'X', gate: 'sometimes' } }),
+    ),
+  ).rejects.toThrow(/work_order_checklist_gate_valid/);
+  await expect(
+    withTenant(db, demo, (tx) => tx.checklistTemplate.create({ data: { tenantId: demo, name: 'Empty', items: [] } })),
+  ).rejects.toThrow(/checklist_template_items_valid/);
+  await expect(
+    withTenant(db, demo, (tx) =>
+      tx.workOrderSignature.create({
+        data: { tenantId: demo, workOrderId: boilerJob, role: 'witness', signerName: 'X', attachmentId: randomUUID() },
+      }),
+    ),
+  ).rejects.toThrow(/work_order_signature_role_valid/);
+
+  // A file belongs to exactly one record, and only a job's photo has a phase and a caption.
+  const file = (data: object) =>
+    withTenant(db, demo, (tx) =>
+      tx.recordAttachment.create({
+        data: {
+          tenantId: demo,
+          filename: 'a.png',
+          mediaType: 'image/png',
+          byteLength: 1,
+          checksum: 'x',
+          ...data,
+        } as never,
+      }),
+    );
+  await expect(file({ workOrderId: boilerJob, assetId: seedId('asset:demo-estates:boiler-2') })).rejects.toThrow(
+    /record_attachment_parent_check/,
+  );
+  await expect(file({ workOrderId: boilerJob, phase: 'during' })).rejects.toThrow(/record_attachment_phase_valid/);
+  await expect(file({ workOrderId: boilerJob, caption: 'x'.repeat(151) })).rejects.toThrow(
+    /record_attachment_caption_valid/,
+  );
+  await expect(file({ requestId: randomUUID(), phase: 'before' })).rejects.toThrow(/record_attachment_/);
+});
+
 it('isolates contractor links, hides them from other organisations and looks one up only by its exact hash', async () => {
   expect(await db.workOrderContractor.count()).toBe(0);
   const job = await withTenant(db, demo, (tx) => tx.workOrder.findFirstOrThrow());
