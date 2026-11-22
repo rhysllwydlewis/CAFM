@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '@cafm/ui';
-import type { WorkOrderSummary } from '@cafm/shared';
+import { formatMinor, type WorkOrderSummary } from '@cafm/shared';
 import { FixSla, PriorityBadge, StatusBadge } from './work-order-parts';
 import styles from './work-orders.module.css';
 
@@ -19,6 +19,8 @@ export function useClock(now: number) {
 
 export function WorkOrderTable({ items, now }: { items: WorkOrderSummary[]; now: number }) {
   const clock = useClock(now);
+  // The cost column is there only for people who may see costs.
+  const showCost = items.some(({ costTotalMinor }) => costTotalMinor !== undefined);
   if (!items.length)
     return (
       <div className="empty">
@@ -31,7 +33,15 @@ export function WorkOrderTable({ items, now }: { items: WorkOrderSummary[]; now:
       <table className="tbl">
         <thead>
           <tr>
-            {['Ref', 'Title and location', 'Priority', 'Status', 'Assigned to', 'SLA (fix)'].map((label) => (
+            {[
+              'Ref',
+              'Title and location',
+              'Priority',
+              'Status',
+              'Assigned to',
+              'SLA (fix)',
+              ...(showCost ? ['Cost'] : []),
+            ].map((label) => (
               <th key={label} scope="col">
                 {label}
               </th>
@@ -65,6 +75,7 @@ export function WorkOrderTable({ items, now }: { items: WorkOrderSummary[]; now:
               <td>
                 <FixSla item={item} now={clock} />
               </td>
+              {showCost && <td>{formatMinor(item.costTotalMinor ?? 0, item.currency)}</td>}
             </tr>
           ))}
         </tbody>

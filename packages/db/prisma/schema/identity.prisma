@@ -43,6 +43,7 @@ model Tenant {
   notificationTemplates      NotificationTemplate[]
   pushSubscriptions          PushSubscription[]
   notificationPushDeliveries NotificationPushDelivery[]
+  workOrderCosts             WorkOrderCost[]
 
   @@map("tenant")
 }
@@ -94,6 +95,7 @@ model Membership {
   notifications        Notification[]
   pushSubscriptions    PushSubscription[]
   workOrderContractors WorkOrderContractor[]
+  workOrderCosts       WorkOrderCost[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, accountId])

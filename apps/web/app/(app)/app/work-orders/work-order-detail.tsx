@@ -2,10 +2,11 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import type { FieldDefinition } from '@cafm/config-engine';
 import { Icon } from '@cafm/ui';
-import type { WorkOrderRecord } from '@cafm/shared';
+import type { WorkOrderCosts, WorkOrderRecord } from '@cafm/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 import { customFieldValue } from '../locations/location-custom-fields';
 import { WorkOrderActions } from './work-order-actions';
+import { WorkOrderCostsCard } from './work-order-costs';
 import { WorkOrderSla } from './work-order-sla';
 import { PriorityBadge, StatusBadge } from './work-order-parts';
 import styles from './work-orders.module.css';
@@ -21,6 +22,8 @@ export function WorkOrderDetail({
   canNote,
   showRequest,
   now,
+  costs,
+  canEditCosts,
 }: {
   record: WorkOrderRecord<FieldDefinition>;
   canEdit: boolean;
@@ -28,6 +31,9 @@ export function WorkOrderDetail({
   canNote: boolean;
   showRequest: boolean;
   now: number;
+  /** Set when the person may see costs. */
+  costs?: WorkOrderCosts;
+  canEditCosts: boolean;
 }) {
   const times: [string, string | null][] = [
     ['Response due', when(record.responseDueAt)],
@@ -117,6 +123,16 @@ export function WorkOrderDetail({
             </dl>
           </section>
           <WorkOrderSla record={record} now={now} />
+          {costs && (
+            <WorkOrderCostsCard
+              key={record.id}
+              jobId={record.id}
+              version={record.version}
+              initial={costs}
+              canEdit={canEditCosts}
+              locked={record.status === 'closed' || record.status === 'cancelled'}
+            />
+          )}
         </div>
         <section className="card card-b stack g3">
           <h2 className="card-t">Activity</h2>

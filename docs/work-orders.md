@@ -1,6 +1,6 @@
 # Work orders
 
-Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. Costs, checklists and photos, and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
+Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. Checklists and photos, and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
 
 ## Screens
 
@@ -65,6 +65,17 @@ The priority matrix has one fix target. The catalogue also lists separate tempor
 | A target has been missed | The assignee and the supervisors for that location |
 
 Supervisors are people whose role can assign work and who can see the job's location. Each alert is sent once for a given target time, in the app and by email, and as a browser push if set up. If the target moves, the clock is paused or the job is finished before the alert is delivered, it is dropped, so no one is told something that is no longer true. Alerts appear in the notification drawer and link to the job. Who is told, and when, is fixed for now; configurable escalation chains arrive with the workflow builder (P2A-06).
+
+## Costs
+
+The job page has a **Costs** card for what the job has cost, and the work order list has a **Cost** column.
+
+- **Types:** labour (hours at a rate, as on site, travel or overtime), parts and materials (a quantity at a cost each), sub-contract (with an invoice reference) and expenses. Each has a description, an optional reference and the date it was incurred.
+- **Money is whole pence plus a currency code**, never a floating point number. The amount is worked out on the server from the quantity (in thousandths) and the cost each, rounded half up to the penny, and any amount sent by a client is refused. A job's costs are in the job's currency (pounds, for now). No cost or limit can be more than £10 million, and a job holds at most 200 costs. Dates must be real ones (31 February is refused).
+- **The total** is on the card with a breakdown by type, and in the list. Costs are removed, not edited, so every change is in the audit log (`work_order_cost.add`, `.remove` and `.limit`). Costs stay out of the job's timeline, which people who can't see costs can read.
+- **Not-to-exceed limit.** A job can have a limit. Spend that would take the total over it is refused, with the new total and the limit in the message, unless the person gives the reason to go over it. The reason is kept with that cost, shown on it and audited. Clearing the limit lifts the block, and a limit set below what is already spent blocks further spend. The full approval of variations arrives with the approvals engine (P2A-06).
+- **Who can do what:** seeing costs needs `costs.read`. Adding or removing a cost, or setting the limit, also needs `work_orders.edit`, so technicians and Helpdesk, who don't have `costs.read`, never see rates or totals, and Finance can read costs but not change them. Costs can't be added, removed or the limit changed once a job is closed or cancelled.
+- **Not built yet:** mark-up on parts, charge-out to a client or cost centre, and sub-contractor invoices matched to purchase orders. These follow with Finance.
 
 ## Contractors
 

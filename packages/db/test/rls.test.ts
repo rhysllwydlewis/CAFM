@@ -407,6 +407,62 @@ it('isolates work orders and their timeline and refuses foreign locations, reque
   ).toEqual({ count: 0 });
 });
 
+it('isolates work order costs and refuses figures the API never produces', async () => {
+  expect(await db.workOrderCost.count()).toBe(0);
+  // Other tests add costs to jobs of their own, so look at the seeded boiler job.
+  const boiler = { workOrderId: seedId('work-order:demo-estates:WO-10412') };
+  const [costs, total] = await withTenant(db, demo, async (tx) => [
+    await tx.workOrderCost.count({ where: boiler }),
+    (await tx.workOrderCost.aggregate({ where: boiler, _sum: { amountMinor: true } }))._sum.amountMinor,
+  ]);
+  expect(costs).toBe(3);
+  // The demo boiler job: 2.5 hours at £46.00, a £48.90 valve and a £22.50 sealing kit.
+  expect(total).toBe(18_640);
+  expect(await withTenant(db, starter, (tx) => tx.workOrderCost.count())).toBe(0);
+
+  const job = await withTenant(db, demo, (tx) =>
+    tx.workOrder.findUniqueOrThrow({ where: { id: seedId('work-order:demo-estates:WO-10412') } }),
+  );
+  expect(job).toMatchObject({ currency: 'GBP', nteMinor: 75_000 });
+  const cost = (tenantId: string, data: object = {}) =>
+    withTenant(db, tenantId, (tx) =>
+      tx.workOrderCost.create({
+        data: {
+          tenantId,
+          workOrderId: job.id,
+          kind: 'expense',
+          description: 'Parking',
+          quantityMilli: 1000,
+          unitCostMinor: 650,
+          amountMinor: 650,
+          incurredOn: new Date('2026-11-23T00:00:00Z'),
+          ...data,
+        } as never,
+      }),
+    );
+  // A cost cannot be put on another organisation's job.
+  await expect(cost(starter)).rejects.toThrow(/Foreign key constraint/);
+  expect(
+    await withTenant(db, starter, (tx) => tx.workOrderCost.deleteMany({ where: { workOrderId: job.id } })),
+  ).toEqual({ count: 0 });
+  // Nor can the database hold a negative amount, an unknown kind, labour with no type, or an overrun with no reason.
+  await expect(cost(demo, { amountMinor: -1 })).rejects.toThrow(/work_order_cost_amounts_valid/);
+  await expect(cost(demo, { quantityMilli: 0 })).rejects.toThrow(/work_order_cost_amounts_valid/);
+  await expect(cost(demo, { amountMinor: 1_000_000_001 })).rejects.toThrow(/work_order_cost_amounts_valid/);
+  await expect(cost(demo, { kind: 'bribe' })).rejects.toThrow(/work_order_cost_kind_valid/);
+  await expect(cost(demo, { kind: 'labour' })).rejects.toThrow(/work_order_cost_labour_valid/);
+  await expect(cost(demo, { labourType: 'on_site' })).rejects.toThrow(/work_order_cost_labour_valid/);
+  await expect(cost(demo, { overNte: true })).rejects.toThrow(/work_order_cost_override_valid/);
+  await expect(cost(demo, { overNteReason: 'Agreed' })).rejects.toThrow(/work_order_cost_override_valid/);
+  await expect(cost(demo, { description: '  ' })).rejects.toThrow(/work_order_cost_text_valid/);
+  await expect(
+    withTenant(db, demo, (tx) => tx.workOrder.updateMany({ where: { id: job.id }, data: { currency: 'pounds' } })),
+  ).rejects.toThrow(/work_order_currency_valid/);
+  await expect(
+    withTenant(db, demo, (tx) => tx.workOrder.updateMany({ where: { id: job.id }, data: { nteMinor: -1 } })),
+  ).rejects.toThrow(/work_order_nte_valid/);
+});
+
 it('isolates contractor links, hides them from other organisations and looks one up only by its exact hash', async () => {
   expect(await db.workOrderContractor.count()).toBe(0);
   const job = await withTenant(db, demo, (tx) => tx.workOrder.findFirstOrThrow());

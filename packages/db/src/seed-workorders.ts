@@ -112,6 +112,8 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
         firstResponseAt: job.assignee ? minutes(createdAt, 10) : null,
         attendedAt: 'attended' in job ? minutes(createdAt, 90) : null,
         completedAt: 'completed' in job ? minutes(createdAt, 150) : null,
+        // The boiler job has a not-to-exceed limit of £750.
+        nteMinor: job.number === 'WO-10412' ? 75_000 : null,
         submissionKey: 'demo:' + job.number,
         submissionHash: 'demo-seed',
         createdAt,
@@ -141,6 +143,58 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
               : []),
           ],
         },
+      },
+    });
+  }
+
+  // Costs on the boiler job: 2.5 hours at £46, a pressure relief valve and a sealing kit, £186.40 in all.
+  const boilerJob = seedId('work-order:demo-estates:WO-10412');
+  const manager = seedId('membership:demo-estates:manager');
+  const costs = [
+    {
+      key: 'labour',
+      kind: 'labour',
+      labourType: 'on_site',
+      description: 'Engineer, pressure fault',
+      quantityMilli: 2500,
+      unitCostMinor: 4600,
+    },
+    {
+      key: 'prv',
+      kind: 'parts',
+      labourType: null,
+      description: 'PRV 3 bar',
+      reference: 'PRV-3B',
+      quantityMilli: 1000,
+      unitCostMinor: 4890,
+    },
+    {
+      key: 'seal',
+      kind: 'parts',
+      labourType: null,
+      description: 'Sealing kit',
+      quantityMilli: 1000,
+      unitCostMinor: 2250,
+    },
+  ] as const;
+  for (const cost of costs) {
+    const id = seedId('work-order-cost:demo-estates:' + cost.key);
+    await db.workOrderCost.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        tenantId,
+        workOrderId: boilerJob,
+        kind: cost.kind,
+        labourType: cost.labourType,
+        description: cost.description,
+        reference: 'reference' in cost ? cost.reference : null,
+        quantityMilli: cost.quantityMilli,
+        unitCostMinor: cost.unitCostMinor,
+        amountMinor: Math.floor((cost.quantityMilli * cost.unitCostMinor + 500) / 1000),
+        incurredOn: new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z'),
+        recordedById: manager,
       },
     });
   }

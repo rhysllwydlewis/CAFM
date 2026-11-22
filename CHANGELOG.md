@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Work order costs: record labour, parts, sub-contract and expenses on a job, with the total on the job and in the list. Amounts are worked out in whole pence on the server. A job can have a not-to-exceed limit, and spend over it needs a recorded reason. Only people who can see costs see them. See [Work orders](docs/work-orders.md#costs).
+
 - Work order SLA clocks: pausing a job for parts, access or approval stops its clock and the targets move out by the business time lost when work resumes ("awaiting contractor" and "other" don't stop it). The job page shows how it stands against its response, attendance and fix targets. People are alerted when a job is close to one of them and again when it is missed: the assignee first, and supervisors for that location on a breach. See [Work orders](docs/work-orders.md#sla-targets-pauses-and-alerts).
 
 - Work orders: reactive jobs with a lifecycle from Logged to Closed, assignment to people who can do the job at that location, notes, and a history of every change. A Helpdesk request can be turned into one or more jobs, which keep the request's priority and targets, and the request is completed and the requester told when all the work is done. There is a list, a board and a page for each job, and a panel on Helpdesk requests to raise work. A job can be sent to an outside contractor by an emailed link, with no account needed: they accept it, update its progress and add notes. SLA clocks, costs, checklists and job sheets follow. See [Work orders](docs/work-orders.md).
