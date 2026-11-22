@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-05 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | Starting 05a and 05b together: PPM model, task library and schedules API, the generator (worker, plus Generate now) and the completion hooks. Then 05c: the planner, forecast and compliance KPI screens. |
 
 ## Phase checklists
 
@@ -112,6 +113,9 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-04f** Checklists (templates and written out, with required steps that hold back starting and completing), before and after photos, and customer and technician sign-off. ([guide](work-orders.md#checklists))
   - [x] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester. ([guide](work-orders.md#job-sheet))
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
+  - [ ] **P1-05a** Task library: maintenance task templates with steps, duration, skills, criticality and safety notes.
+  - [ ] **P1-05b** PPM schedules (calendar and meter-based, fixed or floating) on assets, and the generator that raises PPM work orders ahead of the due date, each with the task's checklist.
+  - [ ] **P1-05c** 52-week planner, calendar and forecast screens, and the compliance KPI (`ppm-01-planner`, `ppm-02-schedule`).
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
