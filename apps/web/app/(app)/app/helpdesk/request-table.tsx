@@ -69,7 +69,7 @@ export function RequestTable({ items, now, own = false }: { items: RequestSummar
     );
   return (
     <div className={styles.tableWrap} role="region" aria-label="Request results" tabIndex={0}>
-      <table className="table">
+      <table className="tbl">
         <thead>
           <tr>
             {['Ref', 'Request', 'Category', 'Priority', 'SLA (response)', 'Status', 'Requester', 'Channel'].map(
