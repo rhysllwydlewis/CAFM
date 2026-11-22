@@ -183,6 +183,8 @@ export const incomingRequestSchema = z.object({
   inReplyTo: shortText(500).optional(),
   subject: shortText(160),
   text: shortText(6000),
+  /** True when the message carries `Auto-Submitted` (other than `no`) or is a bounce. */
+  autoSubmitted: z.boolean().optional(),
 });
 
 export const NOTIFICATION_EVENTS = [

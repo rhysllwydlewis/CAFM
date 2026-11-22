@@ -15,9 +15,10 @@ export function requestDeadline(start: Date, minutes: number, calendar: SiteCale
     const day = firstDay.add({ days: offset });
     for (const window of siteBusinessHoursOn(calendar, day.toString())) {
       const opens = day.toPlainDateTime(window.opens).toZonedDateTime(calendar.timeZone).epochMilliseconds;
-      const closes = day
-        .toPlainDateTime(window.closes)
-        .toZonedDateTime(calendar.timeZone, { disambiguation: 'later' }).epochMilliseconds;
+      // A window may end at 24:00 (midnight at the end of the day), which Temporal has no time for.
+      const closing =
+        window.closes === '24:00' ? day.add({ days: 1 }).toPlainDateTime('00:00') : day.toPlainDateTime(window.closes);
+      const closes = closing.toZonedDateTime(calendar.timeZone, { disambiguation: 'later' }).epochMilliseconds;
       const from = Math.max(opens, cursor);
       if (closes <= from) continue;
       const available = closes - from;
