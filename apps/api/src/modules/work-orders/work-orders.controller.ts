@@ -24,10 +24,8 @@ import {
   createWorkOrderSchema,
   listWorkOrdersSchema,
   WORK_ORDER_FINISHED,
-  WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_REASSIGNABLE,
   WORK_ORDER_UNASSIGNABLE,
-  WORK_ORDER_STATUS_LABELS,
   workOrderCommentSchema,
   workOrderNextStatuses,
   type RequestStatus,
@@ -64,6 +62,7 @@ import {
   getWorkOrder,
   insertWorkOrder,
   statusChange,
+  statusEntryBody,
   JOB_LICENCES,
   submissionHash,
   workOrderDetail,
@@ -378,6 +377,8 @@ export class WorkOrdersController {
         attendDueAt: request.attendDueAt,
         fixDueAt: request.fixDueAt,
       };
+      // One moment for both: converting is the response if the request hasn't had one.
+      const responded = request.firstResponseAt ?? new Date();
       const rows: WorkOrderRow[] = [];
       for (const [index, job] of input.jobs.entries()) {
         const row = await insertWorkOrder(tx, auth, {
@@ -392,7 +393,7 @@ export class WorkOrdersController {
           impact: request.impact,
           urgency: request.urgency,
           custom: {},
-          from: { createdAt: request.createdAt, targets },
+          from: { createdAt: request.createdAt, targets, respondedAt: responded },
         });
         await audit(
           tx,
@@ -424,7 +425,7 @@ export class WorkOrdersController {
           where: { id: request.id },
           data: {
             status: 'in_progress',
-            firstResponseAt: request.firstResponseAt ?? new Date(),
+            firstResponseAt: responded,
             version: { increment: 1 },
           },
         });
@@ -554,25 +555,13 @@ export class WorkOrdersController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const to = input.status;
-      const { reopened, data } = await statusChange(tx, before, current, to, input.pauseReason, new Date());
+      const { reopened, data, clockNote } = await statusChange(tx, before, current, to, input.pauseReason, new Date());
       const next = await tx.workOrder.update({
         where: { id },
         include: workOrderRelations,
         data: { ...data, version: { increment: 1 } },
       });
-      await entry(
-        tx,
-        before,
-        auth,
-        'status',
-        [
-          WORK_ORDER_STATUS_LABELS[to],
-          input.pauseReason ? WORK_ORDER_PAUSE_LABELS[input.pauseReason] : null,
-          input.note,
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      );
+      await entry(tx, before, auth, 'status', statusEntryBody(to, input.pauseReason, input.note, clockNote));
       await audit(
         tx,
         auth,
@@ -580,7 +569,11 @@ export class WorkOrdersController {
           action: 'work_order.status',
           entityType: 'work_order',
           entityId: id,
-          changes: { before: { status: current }, after: { status: to, pauseReason: input.pauseReason ?? null } },
+          changes: {
+            before: { status: current },
+            after: { status: to, pauseReason: input.pauseReason ?? null },
+            sla: clockNote,
+          },
         },
         req.ip,
       );

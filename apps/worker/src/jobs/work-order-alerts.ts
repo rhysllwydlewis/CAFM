@@ -4,12 +4,14 @@ import { resolveEntitlements, WORK_ORDER_FINISHED, type WorkOrderStatus } from '
 import { register } from '../handlers';
 import type { JobData } from '../index';
 
-/** How long before a target an alert says the job is at risk. */
+/** At most this long before a target, an alert says the job is at risk. */
 export const AT_RISK_MS = 60 * 60_000;
+/** A target of a few minutes, such as an emergency's, is at risk for a quarter of its length, not for an hour. */
+const AT_RISK_SHARE = 0.25;
 const BATCH = 100;
 export const WORK_ORDER_SLA_SCHEDULE = { every: 5 * 60_000 };
 
-export type SlaTarget = 'attend' | 'fix';
+export type SlaTarget = 'respond' | 'attend' | 'fix';
 export type SlaLevel = 'risk' | 'breach';
 export interface SlaAlert {
   target: SlaTarget;
@@ -17,7 +19,7 @@ export interface SlaAlert {
   due: Date;
 }
 
-const TARGET_LABELS: Record<SlaTarget, string> = { attend: 'attendance', fix: 'fix' };
+const TARGET_LABELS: Record<SlaTarget, string> = { respond: 'response', attend: 'attendance', fix: 'fix' };
 const DATE_TIME = new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'medium',
   timeStyle: 'short',
@@ -26,12 +28,15 @@ const DATE_TIME = new Intl.DateTimeFormat('en-GB', {
 
 /**
  * Which targets a job needs an alert for right now. A job whose clock is stopped by a pause, or which is
- * finished, is not running late. Attendance stops mattering once someone has been on site.
+ * finished, is not running late.
  */
 export function slaAlerts(
   job: {
     status: string;
+    createdAt: Date;
     slaPausedAt: Date | null;
+    firstResponseAt: Date | null;
+    responseDueAt: Date | null;
     attendedAt: Date | null;
     attendDueAt: Date | null;
     fixDueAt: Date | null;
@@ -43,9 +48,12 @@ export function slaAlerts(
   const check = (target: SlaTarget, due: Date | null) => {
     if (!due) return;
     const left = due.getTime() - now.getTime();
+    const window = Math.min(AT_RISK_MS, Math.max(0, due.getTime() - job.createdAt.getTime()) * AT_RISK_SHARE);
     if (left <= 0) alerts.push({ target, level: 'breach', due });
-    else if (left <= AT_RISK_MS) alerts.push({ target, level: 'risk', due });
+    else if (left <= window) alerts.push({ target, level: 'risk', due });
   };
+  // Response stops mattering once someone has picked the job up, and attendance once someone has been on site.
+  if (!job.firstResponseAt) check('respond', job.responseDueAt);
   if (!job.attendedAt) check('attend', job.attendDueAt);
   check('fix', job.fixDueAt);
   return alerts;
@@ -62,7 +70,11 @@ async function alertBatch(tx: Tx, tenantId: string, now: Date, after?: string) {
       tenantId,
       status: { notIn: [...WORK_ORDER_FINISHED] },
       slaPausedAt: null,
-      OR: [{ attendedAt: null, attendDueAt: { lte: soon } }, { fixDueAt: { lte: soon } }],
+      OR: [
+        { firstResponseAt: null, responseDueAt: { lte: soon } },
+        { attendedAt: null, attendDueAt: { lte: soon } },
+        { fixDueAt: { lte: soon } },
+      ],
       ...(after && { id: { gt: after } }),
     },
     orderBy: { id: 'asc' },

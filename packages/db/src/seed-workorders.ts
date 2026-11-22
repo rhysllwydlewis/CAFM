@@ -96,6 +96,8 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
         description: job.description,
         status: job.status,
         pauseReason: 'pause' in job ? job.pause : null,
+        // Paused for parts, so the SLA clock is stopped.
+        slaPausedAt: 'pause' in job ? minutes(now, -600) : null,
         locationId: location(job.location),
         assetId: 'asset' in job ? job.asset : null,
         requestId: request ? seedId(`request:${slug}:${request}`) : null,

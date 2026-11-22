@@ -4,6 +4,8 @@ import type { FieldDefinition } from '@cafm/config-engine';
 import type { Prisma, Tx } from '@cafm/db';
 import {
   SLA_PAUSING_REASONS,
+  WORK_ORDER_PAUSE_LABELS,
+  WORK_ORDER_STATUS_LABELS,
   workOrderNextStatuses,
   type WorkOrderPauseReason,
   type WorkOrderRecord,
@@ -158,7 +160,12 @@ export interface NewWorkOrder {
   urgency: number;
   custom: Prisma.InputJsonObject;
   /** Request targets carry over, so the clock keeps running from when the problem was reported. */
-  from?: { createdAt: Date; targets?: Awaited<ReturnType<typeof requestTargets>> };
+  from?: {
+    createdAt: Date;
+    targets?: Awaited<ReturnType<typeof requestTargets>>;
+    /** When the requester was first answered. Work raised from a request has already had its response. */
+    respondedAt?: Date;
+  };
 }
 
 /** Creates the job and its first timeline entry. Checks that location, asset and assignee belong together. */
@@ -196,6 +203,8 @@ export async function insertWorkOrder(tx: Tx, auth: AuthContext, input: NewWorkO
       title: input.title,
       description: input.description,
       status,
+      // Giving the job to someone is the response. So is raising it from a request, which has been answered.
+      firstResponseAt: input.from?.respondedAt ?? (input.assigneeId ? start : null),
       locationId: location.id,
       assetId: input.assetId,
       requestId: input.requestId,
@@ -220,6 +229,21 @@ export async function insertWorkOrder(tx: Tx, auth: AuthContext, input: NewWorkO
     },
   });
   return row;
+}
+
+const minutesText = (minutes: number) =>
+  minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'm';
+
+/** The timeline line for a status step, saying when the step also stopped or restarted the SLA clock. */
+export function statusEntryBody(
+  to: WorkOrderStatus,
+  pauseReason: WorkOrderPauseReason | undefined,
+  note: string | undefined,
+  clockNote: string | null,
+) {
+  return [WORK_ORDER_STATUS_LABELS[to], pauseReason ? WORK_ORDER_PAUSE_LABELS[pauseReason] : null, note, clockNote]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /** What the clock-and-status change needs to know about the job before the step. */
@@ -256,8 +280,11 @@ export async function statusChange(
   const reopened = to === 'on_site' && (current === 'completed' || current === 'verified');
   const stopsClock = to === 'paused' && !!pauseReason && SLA_PAUSING_REASONS.includes(pauseReason);
   const clock: Prisma.WorkOrderUpdateInput = {};
-  if (stopsClock) clock.slaPausedAt = now;
-  else if (before.slaPausedAt) {
+  let clockNote: string | null = null;
+  if (stopsClock) {
+    clock.slaPausedAt = now;
+    clockNote = 'SLA clock stopped';
+  } else if (before.slaPausedAt) {
     const site = await tx.locationPath.findFirst({
       where: { tenantId: before.tenantId, descendantId: before.locationId, ancestor: { kind: 'site' } },
       select: { ancestor: { select: { siteCalendar: true } } },
@@ -272,6 +299,10 @@ export async function statusChange(
     const lost = elapsedMinutes(before.slaPausedAt, now, schedule);
     clock.slaPausedAt = null;
     clock.slaPausedMinutes = before.slaPausedMinutes + Math.ceil(lost);
+    clockNote =
+      Math.ceil(lost) > 0
+        ? `SLA clock restarted, ${minutesText(Math.ceil(lost))} added to the targets`
+        : 'SLA clock restarted';
     // A target that has already been met doesn't move.
     if (before.attendDueAt && !before.attendedAt)
       clock.attendDueAt = requestDeadline(before.attendDueAt, lost, schedule);
@@ -288,5 +319,5 @@ export async function statusChange(
     ...(reopened ? { completedAt: null, verifiedAt: null } : {}),
     ...clock,
   };
-  return { reopened, data };
+  return { reopened, data, clockNote };
 }

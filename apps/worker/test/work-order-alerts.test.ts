@@ -23,7 +23,11 @@ it('decides which targets need an alert, and ignores paused and finished jobs', 
   const now = new Date('2026-11-23T12:00:00Z');
   const job = {
     status: 'on_site',
+    createdAt: minutes(now, -600),
     slaPausedAt: null,
+    // Already picked up, so the response target doesn't matter.
+    firstResponseAt: now as Date | null,
+    responseDueAt: minutes(now, -240) as Date | null,
     attendedAt: null as Date | null,
     attendDueAt: minutes(now, 30) as Date | null,
     fixDueAt: minutes(now, 600) as Date | null,
@@ -36,6 +40,20 @@ it('decides which targets need an alert, and ignores paused and finished jobs', 
     { target: 'attend', level: 'breach' },
   ]);
   expect(slaAlerts({ ...job, attendDueAt: now }, now)).toMatchObject([{ level: 'breach' }]);
+  // A short target is at risk for a quarter of its length, so a new emergency is not alerted the moment it is raised.
+  const quick = { ...job, createdAt: minutes(now, -10), attendDueAt: minutes(now, 20), fixDueAt: null };
+  expect(slaAlerts(quick, now)).toEqual([]);
+  expect(slaAlerts(quick, minutes(now, 12))).toEqual([]);
+  expect(slaAlerts(quick, minutes(now, 13))).toMatchObject([{ target: 'attend', level: 'risk' }]);
+  // A job nobody has picked up is judged on its response target, which is the first to be missed.
+  expect(slaAlerts({ ...job, firstResponseAt: null, responseDueAt: minutes(now, 20) }, now)).toMatchObject([
+    { target: 'respond', level: 'risk' },
+    { target: 'attend', level: 'risk' },
+  ]);
+  expect(slaAlerts({ ...job, firstResponseAt: null, responseDueAt: minutes(now, -1) }, now)).toMatchObject([
+    { target: 'respond', level: 'breach' },
+    { target: 'attend', level: 'risk' },
+  ]);
   // Once someone has been on site the attendance target no longer matters.
   expect(slaAlerts({ ...job, attendedAt: now, attendDueAt: minutes(now, -60) }, now)).toEqual([]);
   // Both targets can be in trouble at once, each at its own level.
@@ -150,6 +168,8 @@ it('tells the assignee when a job is at risk, adds supervisors for a breach, and
       completedAt: minutes(now, -400),
     });
     await job({ status: 'logged', fixDueAt: minutes(now, 3000) });
+    // Nobody has picked this one up and its response target has passed.
+    const unanswered = await job({ status: 'logged', responseDueAt: minutes(now, -10), fixDueAt: minutes(now, 3000) });
 
     await Promise.all([notifyWorkOrderSla(db, tenant.id, now), notifyWorkOrderSla(db, tenant.id, now)]);
     const notices = await owner.notification.findMany({ where, orderBy: { eventKey: 'asc' } });
@@ -164,7 +184,11 @@ it('tells the assignee when a job is at risk, adds supervisors for a breach, and
     expect(who(nobody.id)).toEqual([supervisor.id, branchSupervisor.id].sort());
     // A breach goes to the assignee and the supervisors, once each.
     expect(who(missed.id)).toEqual([tech.id, supervisor.id, branchSupervisor.id].sort());
-    expect(notices).toHaveLength(6);
+    expect(who(unanswered.id)).toEqual([supervisor.id, branchSupervisor.id].sort());
+    expect(notices.find((notice) => notice.workOrderId === unanswered.id)!.title).toBe(
+      'Work order WO-7 has missed its response target',
+    );
+    expect(notices).toHaveLength(8);
     expect(notices.find((notice) => notice.workOrderId === missed.id)).toMatchObject({
       title: 'Work order WO-3 has missed its fix target',
       assetId: null,
@@ -173,14 +197,14 @@ it('tells the assignee when a job is at risk, adds supervisors for a breach, and
     expect(notices.find((notice) => notice.workOrderId === atRisk.id)!.title).toBe(
       'Work order WO-1 is close to its fix target',
     );
-    expect(await owner.outboxMessage.count({ where: { ...where, topic: 'notification.deliver' } })).toBe(6);
+    expect(await owner.outboxMessage.count({ where: { ...where, topic: 'notification.deliver' } })).toBe(8);
 
     // Running the scan again later sends nothing new, but moving a target allows a fresh alert.
     await notifyWorkOrderSla(db, tenant.id, minutes(now, 2));
-    expect(await owner.notification.count({ where })).toBe(6);
+    expect(await owner.notification.count({ where })).toBe(8);
     await owner.workOrder.update({ where: { id: missed.id }, data: { fixDueAt: minutes(now, -5) } });
     await notifyWorkOrderSla(db, tenant.id, minutes(now, 2));
-    expect(await owner.notification.count({ where })).toBe(9);
+    expect(await owner.notification.count({ where })).toBe(11);
     // The risk alert becomes a breach once the time passes, which is a separate alert.
     await notifyWorkOrderSla(db, tenant.id, minutes(now, 45));
     expect(await owner.notification.count({ where: { ...where, workOrderId: atRisk.id } })).toBe(4);

@@ -344,6 +344,14 @@ test('stops the SLA clock for a pause that is not the team’s fault, and links 
     await updateStatus(page, 'On site');
     await expectStatus(page, 'On site');
 
+    // The job page shows where it stands on each target. Giving it to someone was the response.
+    const sla = page.getByRole('region', { name: 'SLA targets' });
+    const target = (label: string) =>
+      sla.locator('div.row').filter({ has: page.locator('dt', { hasText: new RegExp('^' + label + '$') }) });
+    await expect(target('Response').getByText('Met')).toBeVisible();
+    await expect(target('Attendance').getByText('Met')).toBeVisible();
+    await expect(target('Fix').getByText(/left|Breached/)).toBeVisible();
+
     // The screen says which reasons stop the clock before the pause is saved.
     await page.getByLabel('New status').selectOption({ label: 'Paused' });
     await page.getByLabel('Why is it paused?').selectOption({ label: 'Awaiting contractor' });
@@ -353,6 +361,7 @@ test('stops the SLA clock for a pause that is not the team’s fault, and links 
     await page.getByRole('button', { name: 'Update status' }).click();
     await expectStatus(page, 'Paused · Awaiting parts');
     await expect(page.getByText(/Stopped since/)).toBeVisible();
+    await expect(target('Fix').getByText('Clock stopped')).toBeVisible();
 
     // The list shows no countdown while the clock is stopped.
     await page.goto('/app/work-orders?view=all&q=' + suffix);

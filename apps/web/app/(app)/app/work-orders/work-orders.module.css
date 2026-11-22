@@ -159,3 +159,13 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.sla {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.sla dd {
+  margin: 0;
+}

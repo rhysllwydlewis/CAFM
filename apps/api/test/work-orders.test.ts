@@ -101,7 +101,7 @@ async function fixture() {
 }
 
 it('raises a job, sets the targets from the priority matrix and returns the same job for a retry', async () => {
-  const { manager, tech, reporter, cleanup, site, job } = await fixture();
+  const { manager, tech, reporter, cleanup, site, job, member } = await fixture();
   try {
     const input = job();
     const created = (await manager.post(jobs).send(input).expect(201)).body;
@@ -115,6 +115,18 @@ it('raises a job, sets the targets from the priority matrix and returns the same
       request: null,
     });
     expect(created.number).toMatch(/^WO-\d{5}$/);
+    // A job nobody has picked up has had no response yet. Giving it to someone is the response.
+    expect((await manager.get(jobs + '/' + created.id).expect(200)).body.firstResponseAt).toBeNull();
+    const given = (
+      await manager
+        .post(jobs)
+        .send(job({ assigneeId: member('tech') }))
+        .expect(201)
+    ).body;
+    expect((await manager.get(jobs + '/' + given.id).expect(200)).body).toMatchObject({
+      status: 'assigned',
+      firstResponseAt: expect.any(String),
+    });
     expect(Date.parse(created.responseDueAt)).toBeGreaterThan(Date.now());
     expect(Date.parse(created.attendDueAt)).toBeGreaterThanOrEqual(Date.parse(created.responseDueAt));
     expect(Date.parse(created.fixDueAt)).toBeGreaterThanOrEqual(Date.parse(created.attendDueAt));
@@ -266,8 +278,8 @@ it('takes a job from logged to closed, with only the right people allowed each s
       expect.stringMatching(/^Assigned to /),
       'Accepted',
       'On site',
-      'Paused · Awaiting parts · Seal ordered',
-      'On site',
+      'Paused · Awaiting parts · Seal ordered · SLA clock stopped',
+      expect.stringMatching(/^On site · SLA clock restarted/),
       'Completed',
       'Seal replaced and pressure tested.',
       'Check the guard.',
@@ -473,6 +485,12 @@ it('turns a request into several jobs, keeps the request in step and tells the r
     expect(created[1]).toMatchObject({ title: 'Dry out the wall', status: 'logged' });
     // The jobs carry the request's priority and targets, so the clock does not restart.
     expect(created[0]).toMatchObject({ priority: request.priority, fixDueAt: expect.any(String) });
+    // Raising work from an answered request is not a new request waiting for a response.
+    const answered = (await desk.get(helpdesk + '/requests/' + request.id).expect(200)).body;
+    expect((await desk.get(jobs + '/' + created[0].id).expect(200)).body.firstResponseAt).toBe(
+      answered.firstResponseAt,
+    );
+    expect((await desk.get(jobs + '/' + created[1].id).expect(200)).body.firstResponseAt).not.toBeNull();
     expect(Date.parse(created[0].fixDueAt)).toBe(
       Date.parse((await desk.get(helpdesk + '/requests/' + request.id).expect(200)).body.fixDueAt),
     );
@@ -859,6 +877,17 @@ it('stops the SLA clock while a job is paused for parts, and moves the targets o
     expect(resumed).toMatchObject({ slaPausedAt: null, slaPausedMinutes: expect.any(Number) });
     expect(resumed.slaPausedMinutes).toBeGreaterThanOrEqual(180);
     expect(resumed.slaPausedMinutes).toBeLessThanOrEqual(181);
+    // The timeline says so, and the audit log keeps the same note.
+    expect(resumed.entries.map(({ body }: { body: string }) => body)).toEqual(
+      expect.arrayContaining([
+        'Paused · Awaiting parts · SLA clock stopped',
+        expect.stringMatching(/^On site · SLA clock restarted, 3h [01]m added to the targets$/),
+      ]),
+    );
+    const audited = await withTenant(db, tenant.id, (tx) =>
+      tx.auditEvent.findMany({ where: { entityId: created.id, action: 'work_order.status' } }),
+    );
+    expect(JSON.stringify(audited.map(({ changes }) => changes))).toMatch(/SLA clock restarted, 3h [01]m added/);
     // The job had already been attended, so that target stays where it was. It is no longer late.
     expect(resumed.attendDueAt).toBe(attendBefore);
     expect(await overdueIds()).not.toContain(created.id);

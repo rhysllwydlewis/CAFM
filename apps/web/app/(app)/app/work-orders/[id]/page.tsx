@@ -21,6 +21,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ id: 
       canAssign={can(user, 'work_orders.assign')}
       canNote={canEdit || can(user, 'work_orders.close')}
       showRequest={can(user, 'requests.read') && feature(user.entitlements, 'helpdesk')}
+      now={Date.now()}
     />
   );
 }

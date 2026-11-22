@@ -56,7 +56,16 @@ register('notification.deliver', async (raw, ctx) => {
           location: scopedLocations(member, role.scope),
           ...(role.scope === 'own' ? { assigneeId: member.id } : {}),
         },
-        select: { status: true, slaPausedAt: true, attendedAt: true, attendDueAt: true, fixDueAt: true },
+        select: {
+          status: true,
+          createdAt: true,
+          slaPausedAt: true,
+          firstResponseAt: true,
+          responseDueAt: true,
+          attendedAt: true,
+          attendDueAt: true,
+          fixDueAt: true,
+        },
       });
       // Send it only while it is still true: the job is unfinished, its clock is running and the target has not moved.
       const [, , target, level, dueMs] = notice.eventKey.split(':');

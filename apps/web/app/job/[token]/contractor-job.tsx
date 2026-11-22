@@ -3,10 +3,12 @@
 import { useState, type FormEvent } from 'react';
 import { Button, Field } from '@cafm/ui';
 import {
+  SLA_PAUSING_REASONS,
   WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_PAUSE_REASONS,
   WORK_ORDER_STATUS_LABELS,
   type ContractorJob,
+  type WorkOrderPauseReason,
   type WorkOrderStatus,
 } from '@cafm/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
@@ -25,6 +27,7 @@ const STEP_LABELS: Record<string, string> = {
 export function ContractorJobView({ token, initial }: { token: string; initial: ContractorJob }) {
   const [job, setJob] = useState(initial);
   const [status, setStatus] = useState<WorkOrderStatus | ''>('');
+  const [reason, setReason] = useState<WorkOrderPauseReason | ''>('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [done, setDone] = useState('');
@@ -44,6 +47,7 @@ export function ContractorJobView({ token, initial }: { token: string; initial: 
       setJob(await call(new FormData(form)));
       form.reset();
       setStatus('');
+      setReason('');
       setDone(ok);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save this change.');
@@ -140,7 +144,14 @@ export function ContractorJobView({ token, initial }: { token: string; initial: 
           </Field>
           {status === 'paused' && (
             <Field label="Why is it paused?" htmlFor="job-pause">
-              <select id="job-pause" name="pauseReason" className={styles.control} required defaultValue="">
+              <select
+                id="job-pause"
+                name="pauseReason"
+                className={styles.control}
+                required
+                value={reason}
+                onChange={(event) => setReason(event.target.value as WorkOrderPauseReason | '')}
+              >
                 <option value="">Choose a reason</option>
                 {WORK_ORDER_PAUSE_REASONS.map((reason) => (
                   <option key={reason} value={reason}>
@@ -148,6 +159,13 @@ export function ContractorJobView({ token, initial }: { token: string; initial: 
                   </option>
                 ))}
               </select>
+              {reason && (
+                <small className="muted">
+                  {SLA_PAUSING_REASONS.includes(reason)
+                    ? 'The team’s clock is stopped while the job is paused for this reason.'
+                    : 'The team’s clock keeps running for this reason.'}
+                </small>
+              )}
             </Field>
           )}
           <Field label="Note (optional)" htmlFor="job-status-note">

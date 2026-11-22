@@ -14,8 +14,6 @@ import {
   contractorStatusSchema,
   resolveEntitlements,
   WORK_ORDER_FIELD_STATUSES,
-  WORK_ORDER_PAUSE_LABELS,
-  WORK_ORDER_STATUS_LABELS,
   workOrderNextStatuses,
   type ContractorJob,
   type WorkOrderPauseReason,
@@ -24,7 +22,7 @@ import {
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { syncRequest } from './request-sync';
-import { statusChange } from './work-order-records';
+import { statusChange, statusEntryBody } from './work-order-records';
 import { lockWorkOrders } from './work-order-scope';
 
 /** What someone with only a link may do: the steps of doing the job, and nothing that needs an account. */
@@ -133,7 +131,7 @@ export class ContractorJobsController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const now = new Date();
-      const { reopened, data } = await statusChange(tx, job, current, input.status, input.pauseReason, now);
+      const { reopened, data, clockNote } = await statusChange(tx, job, current, input.status, input.pauseReason, now);
       const next = await tx.workOrder.update({ where: { id: job.id }, data: { ...data, version: { increment: 1 } } });
       await tx.workOrderEntry.create({
         data: {
@@ -141,13 +139,7 @@ export class ContractorJobsController {
           workOrderId: job.id,
           actorName: link.name,
           kind: 'status',
-          body: [
-            WORK_ORDER_STATUS_LABELS[input.status],
-            input.pauseReason ? WORK_ORDER_PAUSE_LABELS[input.pauseReason] : null,
-            input.note,
-          ]
-            .filter(Boolean)
-            .join(' · '),
+          body: statusEntryBody(input.status, input.pauseReason, input.note, clockNote),
         },
       });
       await tx.workOrderContractor.update({ where: { id: link.id }, data: { lastUsedAt: now } });
@@ -160,6 +152,7 @@ export class ContractorJobsController {
           changes: {
             before: { status: current },
             after: { status: input.status },
+            sla: clockNote,
             via: 'contractor_link',
             contractor: link.name,
           },

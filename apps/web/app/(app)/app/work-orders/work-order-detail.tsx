@@ -6,6 +6,7 @@ import type { WorkOrderRecord } from '@cafm/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 import { customFieldValue } from '../locations/location-custom-fields';
 import { WorkOrderActions } from './work-order-actions';
+import { WorkOrderSla } from './work-order-sla';
 import { PriorityBadge, StatusBadge } from './work-order-parts';
 import styles from './work-orders.module.css';
 
@@ -19,12 +20,14 @@ export function WorkOrderDetail({
   canAssign,
   canNote,
   showRequest,
+  now,
 }: {
   record: WorkOrderRecord<FieldDefinition>;
   canEdit: boolean;
   canAssign: boolean;
   canNote: boolean;
   showRequest: boolean;
+  now: number;
 }) {
   const times: [string, string | null][] = [
     ['Response due', when(record.responseDueAt)],
@@ -50,68 +53,71 @@ export function WorkOrderDetail({
         </div>
       </div>
       <div className={styles.columns}>
-        <section className="card card-b stack g3">
-          <h2 className="card-t">Details</h2>
-          <p className={styles.bodyText}>{record.description}</p>
-          <div className="row wrap g2 muted">
-            <Icon name="location" />
-            {record.location.name} · {record.location.code}
-          </div>
-          {record.asset && (
-            <div className="row wrap g2">
-              <Icon name="asset" />
-              <Link href={'/app/assets/' + record.asset.id}>
-                {record.asset.name} · {record.asset.number}
-              </Link>
+        <div className="stack g3">
+          <section className="card card-b stack g3">
+            <h2 className="card-t">Details</h2>
+            <p className={styles.bodyText}>{record.description}</p>
+            <div className="row wrap g2 muted">
+              <Icon name="location" />
+              {record.location.name} · {record.location.code}
             </div>
-          )}
-          <dl className="kv">
-            <dt>Assigned to</dt>
-            <dd>{record.assigneeName ?? 'Unassigned'}</dd>
-            {record.request && (
-              <>
-                <dt>Raised from</dt>
-                <dd>
-                  {showRequest ? (
-                    <Link href={'/app/helpdesk/' + record.request.id}>{record.request.number}</Link>
-                  ) : (
-                    record.request.number
-                  )}
-                </dd>
-              </>
+            {record.asset && (
+              <div className="row wrap g2">
+                <Icon name="asset" />
+                <Link href={'/app/assets/' + record.asset.id}>
+                  {record.asset.name} · {record.asset.number}
+                </Link>
+              </div>
             )}
-            <dt>Raised by</dt>
-            <dd>{record.createdByName ?? '—'}</dd>
-            <dt>Raised</dt>
-            <dd>{requestTime(record.createdAt)}</dd>
-            {times.map(([label, value]) =>
-              value ? (
-                <Fragment key={label}>
-                  <dt>{label}</dt>
-                  <dd>{value}</dd>
+            <dl className="kv">
+              <dt>Assigned to</dt>
+              <dd>{record.assigneeName ?? 'Unassigned'}</dd>
+              {record.request && (
+                <>
+                  <dt>Raised from</dt>
+                  <dd>
+                    {showRequest ? (
+                      <Link href={'/app/helpdesk/' + record.request.id}>{record.request.number}</Link>
+                    ) : (
+                      record.request.number
+                    )}
+                  </dd>
+                </>
+              )}
+              <dt>Raised by</dt>
+              <dd>{record.createdByName ?? '—'}</dd>
+              <dt>Raised</dt>
+              <dd>{requestTime(record.createdAt)}</dd>
+              {times.map(([label, value]) =>
+                value ? (
+                  <Fragment key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </Fragment>
+                ) : null,
+              )}
+              {record.slaPausedAt && (
+                <>
+                  <dt>SLA clock</dt>
+                  <dd>Stopped since {requestTime(record.slaPausedAt)}</dd>
+                </>
+              )}
+              {record.slaPausedMinutes > 0 && (
+                <>
+                  <dt>Time paused</dt>
+                  <dd>{duration(record.slaPausedMinutes)} of business time, already added to the targets</dd>
+                </>
+              )}
+              {record.customFields.map(({ definition, value }) => (
+                <Fragment key={definition.key}>
+                  <dt>{definition.label}</dt>
+                  <dd>{customFieldValue(definition, value)}</dd>
                 </Fragment>
-              ) : null,
-            )}
-            {record.slaPausedAt && (
-              <>
-                <dt>SLA clock</dt>
-                <dd>Stopped since {requestTime(record.slaPausedAt)}</dd>
-              </>
-            )}
-            {record.slaPausedMinutes > 0 && (
-              <>
-                <dt>Time paused</dt>
-                <dd>{duration(record.slaPausedMinutes)} of business time, already added to the targets</dd>
-              </>
-            )}
-            {record.customFields.map(({ definition, value }) => (
-              <Fragment key={definition.key}>
-                <dt>{definition.label}</dt>
-                <dd>{customFieldValue(definition, value)}</dd>
-              </Fragment>
-            ))}
-          </dl>
-        </section>
+              ))}
+            </dl>
+          </section>
+          <WorkOrderSla record={record} now={now} />
+        </div>
         <section className="card card-b stack g3">
           <h2 className="card-t">Activity</h2>
           <ol className={styles.timeline}>

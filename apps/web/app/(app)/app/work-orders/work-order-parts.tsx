@@ -34,7 +34,7 @@ export function StatusBadge({ item }: { item: Pick<WorkOrderSummary, 'status' | 
   );
 }
 
-function duration(ms: number) {
+export function duration(ms: number) {
   const minutes = Math.ceil(Math.abs(ms) / 60_000);
   if (minutes < 60) return minutes + ' min';
   if (minutes < 2880) return Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'm';
