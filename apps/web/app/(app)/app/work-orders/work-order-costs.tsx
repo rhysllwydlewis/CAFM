@@ -63,7 +63,9 @@ export function WorkOrderCostsCard({
   const base = '/work-orders/' + jobId + '/costs';
   const { currency, nteMinor, totalMinor } = costs;
   const money = (minor: number) => formatMinor(minor, currency);
-  const used = nteMinor ? Math.round((totalMinor / nteMinor) * 100) : null;
+  // A limit of nothing is allowed (it blocks all spend), so zero is a limit like any other.
+  const used =
+    nteMinor === null ? null : nteMinor === 0 ? (totalMinor > 0 ? 100 : 0) : Math.round((totalMinor / nteMinor) * 100);
   const editable = canEdit && !locked;
   const single = kind === 'subcontract' || kind === 'expense';
 
@@ -125,11 +127,11 @@ export function WorkOrderCostsCard({
     );
   }
 
-  function setLimit(event: FormEvent<HTMLFormElement>, clear: boolean) {
+  function setLimit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = String(new FormData(event.currentTarget).get('limit') ?? '');
-    const nteMinor = clear ? null : parseMoneyMinor(text);
-    if (!clear && nteMinor === null) {
+    const nteMinor = parseMoneyMinor(text);
+    if (nteMinor === null) {
       setMessage('Enter the limit in pounds, like 750.');
       return;
     }
@@ -152,7 +154,7 @@ export function WorkOrderCostsCard({
               className={styles.meter}
               aria-label="Share of the cost limit used"
               value={Math.min(totalMinor, nteMinor ?? 0)}
-              max={nteMinor ?? 1}
+              max={Math.max(nteMinor ?? 1, 1)}
             />
             <span className={'badge ' + (totalMinor > (nteMinor ?? 0) ? 'danger' : used >= 80 ? 'warning' : '')}>
               {totalMinor > (nteMinor ?? 0) ? 'Over the limit' : used + '% used'}
@@ -300,7 +302,7 @@ export function WorkOrderCostsCard({
           </div>
           {needReason && (
             <Field label="Why does this go over the limit?" htmlFor="cost-reason">
-              <TextInput id="cost-reason" name="reason" required maxLength={500} />
+              <TextInput id="cost-reason" name="reason" maxLength={500} />
             </Field>
           )}
           <div>
@@ -312,7 +314,7 @@ export function WorkOrderCostsCard({
       )}
 
       {editable && (
-        <form className="stack g3" onSubmit={(event) => setLimit(event, false)} aria-label="Cost limit">
+        <form className="stack g3" onSubmit={setLimit} aria-label="Cost limit">
           <h3 className="card-t">Not-to-exceed limit</h3>
           <Field label={'Limit (' + currency + ')'} htmlFor="cost-limit">
             <TextInput

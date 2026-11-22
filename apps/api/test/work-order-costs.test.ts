@@ -220,9 +220,17 @@ it('refuses figures the server would not work out for itself, and invalid costs'
       { incurredOn: '2999-01-01' },
       { incurredOn: 'yesterday' },
       { incurredOn: '2026-13-45' },
+      { incurredOn: '2026-02-31' },
+      { incurredOn: '2025-02-29' },
+      { incurredOn: '2026-04-31' },
     ]) {
       await manager.post(url).send(labour(bad)).expect(400);
     }
+    // A real leap day is fine.
+    await manager
+      .post(url)
+      .send(labour({ incurredOn: '2024-02-29' }))
+      .expect(201);
     await manager
       .post(url)
       .send({ ...labour(), kind: 'bribe' })
@@ -246,7 +254,7 @@ it('refuses figures the server would not work out for itself, and invalid costs'
       .post(url)
       .send(labour({ quantityMilli: 10_000_000, unitCostMinor: 100_000_000 }))
       .expect(422);
-    expect((await manager.get(url).expect(200)).body.items).toEqual([]);
+    expect((await manager.get(url).expect(200)).body.items).toHaveLength(1);
   } finally {
     await cleanup();
   }
@@ -347,15 +355,19 @@ it('blocks spend over the not-to-exceed limit unless the reason is given, and ke
     await manager.post(url).send(expense(1)).expect(422);
     expect((await limit(4, null).expect(200)).body.nteMinor).toBeNull();
     await manager.post(url).send(expense(1)).expect(201);
-    await limit(5, -1).expect(400);
-    await limit(5, 1_000_000_001).expect(400);
-    await limit(5, 100.5).expect(400);
+    // A limit of nothing is a limit: it blocks all spend.
+    expect((await limit(5, 0).expect(200)).body.nteMinor).toBe(0);
+    await manager.post(url).send(expense(1)).expect(422);
+    expect((await limit(6, 1_000).expect(200)).body.nteMinor).toBe(1000);
+    await limit(7, -1).expect(400);
+    await limit(7, 1_000_000_001).expect(400);
+    await limit(7, 100.5).expect(400);
 
     const audited = await withTenant(db, tenant.id, (tx) =>
       tx.auditEvent.findMany({ where: { entityId: created.id, action: { startsWith: 'work_order_cost.' } } }),
     );
     expect(audited.map(({ action }) => action).sort()).toEqual(
-      [...Array(5).fill('work_order_cost.add'), ...Array(4).fill('work_order_cost.limit')].sort(),
+      [...Array(5).fill('work_order_cost.add'), ...Array(6).fill('work_order_cost.limit')].sort(),
     );
     expect(JSON.stringify(audited.map(({ changes }) => changes))).toContain('Extra crane hire agreed by phone');
   } finally {

@@ -438,6 +438,8 @@ test('records costs, applies a not-to-exceed limit, and keeps costs from field s
   await add.getByLabel(/^Amount/).fill('6.50');
   await add.getByRole('button', { name: 'Add cost' }).click();
   await expect(total).toHaveText('£121.50');
+  // The form keeps the type that was chosen, so several of one kind can be entered in a row.
+  await expect(add.getByLabel('Type')).toHaveValue('expense');
 
   // Bad figures are explained, not sent.
   await add.getByLabel('Description').fill('E2E bad');

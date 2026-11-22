@@ -62,7 +62,11 @@ export function formatMinor(minor: number, currency = 'GBP'): string {
 const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a date.')
-  .refine((value) => !Number.isNaN(Date.parse(value + 'T00:00:00Z')), 'Enter a date.')
+  // JavaScript rolls 31 February over to 3 March, so the date has to come back unchanged to be a real one.
+  .refine((value) => {
+    const parsed = new Date(value + 'T00:00:00Z');
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }, 'Enter a date.')
   .refine(
     (value) => value <= new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
     'Enter a date that has happened.',
