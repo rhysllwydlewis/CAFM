@@ -41,8 +41,9 @@ test.describe('app shell', () => {
       page.getByRole('heading', { name: 'Compliance and inspections is part of the Professional plan' }),
     ).toBeVisible();
     await noAxeViolations(page);
-    await page.goto('/app/ppm');
-    await expect(page.getByRole('heading', { name: 'Coming in Phase 1' })).toBeVisible();
+    // A module the plan includes but that isn't built yet says when it arrives.
+    await page.goto('/app/documents');
+    await expect(page.getByRole('heading', { name: 'Coming in Phase 2A' })).toBeVisible();
   });
 
   test('a role without access to a module is told so', async ({ page }) => {

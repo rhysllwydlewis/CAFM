@@ -7,6 +7,7 @@ import {
   endOfLocalDay,
   firstOccurrenceOnOrAfter,
   frequencyText,
+  isoWeek,
   localDate,
   nextOccurrenceAfter,
   occurrence,
@@ -96,6 +97,17 @@ describe('PPM dates', () => {
     expect(endOfLocalDay('2026-03-29', 'Europe/London').toISOString()).toBe('2026-03-29T22:59:59.000Z');
     expect(endOfLocalDay('2026-10-25', 'Europe/London').toISOString()).toBe('2026-10-25T23:59:59.000Z');
     expect(endOfLocalDay('2026-07-15', 'America/New_York').toISOString()).toBe('2026-07-16T03:59:59.000Z');
+  });
+
+  it('numbers weeks the ISO way', () => {
+    expect(isoWeek('2026-11-23')).toBe(48);
+    expect(isoWeek('2026-11-29')).toBe(48);
+    expect(isoWeek('2026-12-28')).toBe(53);
+    expect(isoWeek('2027-01-01')).toBe(53);
+    expect(isoWeek('2027-01-04')).toBe(1);
+    expect(isoWeek('2026-01-01')).toBe(1);
+    expect(isoWeek('2024-12-30')).toBe(1);
+    expect(isoWeek('2021-01-03')).toBe(53);
   });
 
   it('reads the calendar day an instant falls on in a time zone', () => {

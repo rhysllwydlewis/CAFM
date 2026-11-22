@@ -1,6 +1,20 @@
 # Planned preventive maintenance (PPM)
 
-Maintenance that is done on a schedule, not when something breaks. This page covers how it works and the API. The planner, forecast and compliance screens follow in the next P1-05 sub-item (see [PROGRESS](PROGRESS.md)).
+Maintenance that is done on a schedule, not when something breaks. This page covers the screens, how it works and the API.
+
+## Screens
+
+- **Planned maintenance** (`/app/ppm`) has the numbers at the top (visits due this week and how many nobody has, overdue and how many are statutory, the share done on time over 12 months against the year before, and this month's labour and, for people who can see costs, estimated cost), and five views:
+  - **Planner**: one row for each schedule against 52 weeks, numbered the ISO way, with a dot in each week that has visits (scheduled, due, overdue or done). The first week also holds anything late from before it. Visits to come are worked out from each asset's next date and how often the schedule repeats. It scrolls sideways and the schedule column stays put. Every cell is also described in words for screen readers.
+  - **Schedules**: the list, with search and filters, and archived ones on request.
+  - **Forecast**: visits, labour and estimated cost by month for the next 12 months.
+  - **Overdue**: raised visits not done whose day has passed, statutory first, then the longest overdue.
+  - **Compliance**: visits done on time, done late and overdue in the last 12 months, by criticality and by discipline.
+- **A schedule** (`/app/ppm/schedules/{id}`) shows its facts, the assets on it and where each has got to, the task's steps and safety notes. Planners can raise its jobs now, edit it, and put assets on and take them off.
+- **New schedule** and **Edit schedule** are one form. Choosing a task fills in its criticality, discipline and time, which can still be changed. **Generate jobs now** on the main page raises jobs for every schedule.
+- **Task library** (`/app/ppm/tasks`) lists tasks; planners add, edit and retire them, with the steps edited row by row.
+
+The forecast does not count meter schedules (they have no dates to place), and the planner shows them only once a job is raised.
 
 ## The task library
 
@@ -41,9 +55,21 @@ The generator raises a work order for each visit that falls due within its lead 
 - Each job has type PPM, the schedule's priority and assignee (only if that person can still do jobs at the asset's place; otherwise it is left for someone to assign), a fix target of the end of the due day (in the site's time zone), and a **checklist copied from the task's steps that holds back completing the job** (see [Work orders](work-orders.md#checklists)). The description carries the task's notes, skills and safety notes. The job page says which schedule it came from.
 - When the job is **completed**, a fixed schedule keeps its dates and remembers the last visit; a floating one is now due a set time after the visit (from the meter's reading, for a meter schedule). When it is **cancelled**, a floating schedule counts on from the day the visit was due, so it doesn't wait for ever.
 
+## The planner, forecast and compliance API
+
+All need `ppm.read` and show what the person can see (those limited to some sites see only their sites).
+
+- `GET /api/ppm/summary`: the numbers, and compliance overall and by criticality and discipline.
+- `GET /api/ppm/planner` (`from`, `weeks` 1 to 104, `q`, `criticality`, `discipline`): each schedule against weeks, with counts of what is scheduled, due, overdue and done in each.
+- `GET /api/ppm/forecast` (`months` 1 to 36): visits, labour minutes and, only with `costs.read`, the estimated cost by month.
+- `GET /api/ppm/overdue`: the overdue visits.
+- `GET /api/ppm/assignees` (`ppm.manage`): the people a schedule can be given to.
+
+**Compliance** counts the visits that fell due in the last 12 months. One done on or before its due day was on time; one done after was late; one not done whose day has passed is overdue. Visits not yet due and cancelled ones don't count.
+
 ## Not built yet
 
-- The planner, calendar and forecast screens, and the compliance KPI (the next sub-item).
+- A calendar view and drag to reschedule, forecast against a capacity or a budget, and compliance by site or contract.
 - SFG20 import, condition-based schedules, seasonal rules, shutdown and outage planning.
 - Combining tasks into one visit (nested frequencies, such as a 12-monthly visit replacing that month's monthly one), grouping by route or contractor, and one job for several assets.
-- Contractor assignment of PPM jobs (jobs go to a person), custom fields on schedules, and recording asset condition at each visit.
+- Contractor assignment of PPM jobs (jobs go to a person), missed-visit reasons, custom fields on schedules, and recording asset condition at each visit.

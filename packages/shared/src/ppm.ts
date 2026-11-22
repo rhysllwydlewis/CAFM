@@ -417,3 +417,13 @@ export type PpmOverdueItem = {
 };
 
 export type PpmAssigneeOption = { id: string; name: string; role: string };
+
+/** The ISO week number (1 to 53) of a calendar day, which is how planners number their weeks. */
+export function isoWeek(value: string): number {
+  const { year, month, day } = parseDate(value);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // The week belongs to the year of its Thursday.
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1);
+  return Math.ceil(((date.getTime() - yearStart) / 86_400_000 + 1) / 7);
+}
