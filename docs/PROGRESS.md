@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04c are on `main`. Building 04d: the SLA clock stops while a job is paused for parts, access or approval and the targets move by the time lost (business-hours aware); a worker scan sends at-risk and breached alerts to the assignee and, when breached, to supervisors. Then 04e costs, 04f checklists and photos, 04g job sheet. |
+| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04d are done (04d is in the open PR). Next 04e: labour, parts and sub-contract costs and the job's cost total (money in minor units, with a not-to-exceed limit). Then 04f checklists, photos and signatures, 04g job sheet. |
 
 ## Phase checklists
 
@@ -108,7 +108,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-04a** Work order model and lifecycle: statuses and transitions, numbering, location and asset links, priority and SLA due dates from the request, convert a request into one or many work orders, API with audit and custom fields. ([guide](work-orders.md))
   - [x] **P1-04b** Work order list, detail and board screens in the app shell (`wo-01-list`, `wo-02-detail`, `wo-03-board`), and raising work from a Helpdesk request. ([guide](work-orders.md#screens))
   - [x] **P1-04c** Assignment to people and to contractors, with a magic link so a contractor can update the job without an account. Teams are not built yet. ([guide](work-orders.md#contractors))
-  - [ ] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation.
+  - [x] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation. Escalation chains are fixed (assignee, then supervisors) until the workflow builder. ([guide](work-orders.md#sla-targets-pauses-and-alerts))
   - [ ] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job.
   - [ ] **P1-04f** Checklists, photos and signatures.
   - [ ] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester.

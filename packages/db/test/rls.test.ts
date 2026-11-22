@@ -364,6 +364,37 @@ it('isolates work orders and their timeline and refuses foreign locations, reque
   await expect(make({ priority: 9 })).rejects.toThrow(/work_order_levels_valid/);
   await expect(make({ title: '   ' })).rejects.toThrow(/work_order_text_valid/);
 
+  // A notification cannot point at another organisation's job either.
+  const someone = await withTenant(db, starter, (tx) => tx.membership.findFirstOrThrow());
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.notification.create({
+        data: {
+          tenantId: starter,
+          workOrderId: seedId('work-order:demo-estates:WO-10412'),
+          recipientId: someone.id,
+          eventKey: 'foreign-' + randomUUID(),
+          title: 'Foreign',
+          body: 'Foreign',
+        },
+      }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  // A notification points at one thing at most.
+  await expect(
+    withTenant(db, demo, (tx) =>
+      tx.notification.create({
+        data: {
+          tenantId: demo,
+          workOrderId: seedId('work-order:demo-estates:WO-10412'),
+          requestId: seedId('request:demo-estates:REQ-10480'),
+          eventKey: 'two-targets-' + randomUUID(),
+          title: 'Two',
+          body: 'Two',
+        },
+      }),
+    ),
+  ).rejects.toThrow(/notification_one_target/);
   // A job in one organisation cannot be written to from another, nor can a timeline entry point at it.
   const demoJob = await withTenant(db, demo, (tx) => tx.workOrder.findFirstOrThrow());
   await expect(

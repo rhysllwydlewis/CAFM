@@ -157,6 +157,7 @@ model Notification {
   recipientId    String?                    @map("recipient_id") @db.Uuid
   requestId      String?                    @map("request_id") @db.Uuid
   assetId        String?                    @map("asset_id") @db.Uuid
+  workOrderId    String?                    @map("work_order_id") @db.Uuid
   recipientEmail String?                    @map("recipient_email")
   pushEnabled    Boolean                    @default(true) @map("push_enabled")
   eventKey       String                     @map("event_key")
@@ -169,6 +170,7 @@ model Notification {
   recipient      Membership?                @relation(fields: [tenantId, recipientId], references: [tenantId, id], onDelete: Cascade)
   request        ServiceRequest?            @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Cascade)
   asset          Asset?                     @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+  workOrder      WorkOrder?                 @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
   pushDeliveries NotificationPushDelivery[]
 
   @@unique([tenantId, id])

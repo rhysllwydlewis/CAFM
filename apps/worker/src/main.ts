@@ -2,6 +2,7 @@ import { PrismaClient } from '@cafm/db';
 import { createWorker } from './index';
 import { scheduleDemoReset } from './jobs/demo-reset';
 import { scheduleWarrantyAlerts } from './jobs/warranty-alerts';
+import { scheduleWorkOrderAlerts } from './jobs/work-order-alerts';
 
 const appUrl = process.env.APP_DATABASE_URL;
 const redisUrl = process.env.REDIS_URL;
@@ -17,6 +18,9 @@ worker.start();
 console.log('[worker] started');
 scheduleWarrantyAlerts(worker.queue).catch((error: unknown) =>
   log(`could not schedule warranty alerts: ${error instanceof Error ? error.message : String(error)}`),
+);
+scheduleWorkOrderAlerts(worker.queue).catch((error: unknown) =>
+  log(`could not schedule work order alerts: ${error instanceof Error ? error.message : String(error)}`),
 );
 
 // Demo environments only: the nightly reset needs the owner role (doc 06).

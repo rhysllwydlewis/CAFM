@@ -9,6 +9,8 @@ import { WorkOrderActions } from './work-order-actions';
 import { PriorityBadge, StatusBadge } from './work-order-parts';
 import styles from './work-orders.module.css';
 
+const duration = (minutes: number) =>
+  minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'm';
 const when = (value: string | null) => (value ? requestTime(value) : null);
 
 export function WorkOrderDetail({
@@ -89,6 +91,18 @@ export function WorkOrderDetail({
                   <dd>{value}</dd>
                 </Fragment>
               ) : null,
+            )}
+            {record.slaPausedAt && (
+              <>
+                <dt>SLA clock</dt>
+                <dd>Stopped since {requestTime(record.slaPausedAt)}</dd>
+              </>
+            )}
+            {record.slaPausedMinutes > 0 && (
+              <>
+                <dt>Time paused</dt>
+                <dd>{duration(record.slaPausedMinutes)} of business time, already added to the targets</dd>
+              </>
             )}
             {record.customFields.map(({ definition, value }) => (
               <Fragment key={definition.key}>

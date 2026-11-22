@@ -265,6 +265,7 @@ export type NotificationItem = {
   body: string;
   requestId: string | null;
   assetId: string | null;
+  workOrderId: string | null;
   readAt: string | null;
   createdAt: string;
 };

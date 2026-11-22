@@ -7,6 +7,7 @@ import {
   WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_PAUSE_REASONS,
   WORK_ORDER_REASSIGNABLE,
+  SLA_PAUSING_REASONS,
   WORK_ORDER_UNASSIGNABLE,
   WORK_ORDER_STATUS_LABELS,
   type WorkOrderPauseReason,
@@ -39,6 +40,7 @@ export function WorkOrderActions({
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<WorkOrderStatus | ''>('');
+  const [reason, setReason] = useState<WorkOrderPauseReason | ''>('');
   const [assignee, setAssignee] = useState(
     record.assigneeId && record.assigneeName ? { id: record.assigneeId, name: record.assigneeName } : null,
   );
@@ -54,6 +56,7 @@ export function WorkOrderActions({
       await run(new FormData(form));
       form.reset();
       setStatus('');
+      setReason('');
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save this change.');
@@ -97,7 +100,14 @@ export function WorkOrderActions({
           </Field>
           {status === 'paused' && (
             <Field label="Why is it paused?" htmlFor="wo-pause">
-              <select id="wo-pause" name="pauseReason" className={styles.control} required defaultValue="">
+              <select
+                id="wo-pause"
+                name="pauseReason"
+                className={styles.control}
+                required
+                value={reason}
+                onChange={(event) => setReason(event.target.value as WorkOrderPauseReason | '')}
+              >
                 <option value="">Choose a reason</option>
                 {WORK_ORDER_PAUSE_REASONS.map((reason: WorkOrderPauseReason) => (
                   <option key={reason} value={reason}>
@@ -105,6 +115,13 @@ export function WorkOrderActions({
                   </option>
                 ))}
               </select>
+              {reason && (
+                <small className="muted">
+                  {SLA_PAUSING_REASONS.includes(reason)
+                    ? 'This stops the SLA clock. The targets move out by the business time lost.'
+                    : 'The SLA clock keeps running for this reason.'}
+                </small>
+              )}
             </Field>
           )}
           <Field label="Note (optional)" htmlFor="wo-status-note">

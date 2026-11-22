@@ -47,7 +47,8 @@ import { activeCustomFields, mergeCustom } from '../../core/config';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
-import { CLOSED, requestRelations, requestTargets } from '../helpdesk/request-records';
+import { CLOSED, requestRelations, requestTargets, slaSchedule } from '../helpdesk/request-records';
+import { requestDeadline } from '../helpdesk/request-sla';
 import { notifyLinkedRequesters, notifyRequester } from '../helpdesk/request-notifications';
 import {
   lockRequests,
@@ -100,7 +101,12 @@ export class WorkOrdersController {
     const input = parse(listWorkOrdersSchema, query);
     const scope = workOrderScope(auth);
     const open = { status: { notIn: CLOSED_STATUSES } };
-    const overdue = { status: { notIn: [...WORK_ORDER_FINISHED] }, fixDueAt: { lt: new Date() } };
+    // A job whose clock is stopped by a pause is not running late.
+    const overdue = {
+      status: { notIn: [...WORK_ORDER_FINISHED] },
+      slaPausedAt: null,
+      fixDueAt: { lt: new Date() },
+    };
     const filter: Prisma.WorkOrderWhereInput = {
       open,
       mine: { ...open, assigneeId: auth.membership!.id },
@@ -485,6 +491,22 @@ export class WorkOrdersController {
           reported?.createdAt ?? before.createdAt,
           site?.ancestor.siteCalendar,
         );
+        // Time the clock has already been stopped for still counts for the new targets.
+        if (before.slaPausedMinutes > 0) {
+          const { schedule } = await slaSchedule(
+            tx,
+            tenantId,
+            input.impact!,
+            input.urgency!,
+            site?.ancestor.siteCalendar,
+          );
+          const lost = before.slaPausedMinutes;
+          targets = {
+            ...targets,
+            attendDueAt: targets.attendDueAt && requestDeadline(targets.attendDueAt, lost, schedule),
+            fixDueAt: targets.fixDueAt && requestDeadline(targets.fixDueAt, lost, schedule),
+          };
+        }
       }
       const custom = input.custom
         ? mergeCustom(await activeCustomFields(tx, tenantId, 'work_order'), input.custom, before.custom)
@@ -532,7 +554,7 @@ export class WorkOrdersController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const to = input.status;
-      const { reopened, data } = statusChange(before, current, to, input.pauseReason, new Date());
+      const { reopened, data } = await statusChange(tx, before, current, to, input.pauseReason, new Date());
       const next = await tx.workOrder.update({
         where: { id },
         include: workOrderRelations,

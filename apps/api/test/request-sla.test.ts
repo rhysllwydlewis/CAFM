@@ -1,6 +1,6 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { DEFAULT_SITE_CALENDAR } from '@cafm/shared';
-import { requestDeadline } from '../src/modules/helpdesk/request-sla';
+import { elapsedMinutes, requestDeadline } from '../src/modules/helpdesk/request-sla';
 
 it('consumes only open minutes, skipping bank holidays and custom closures', () => {
   const result = requestDeadline(new Date('2026-12-24T16:30:00Z'), 60, {
@@ -57,4 +57,54 @@ it('does not double count overlapping real instants on the autumn clock change',
     ],
   });
   expect(result?.toISOString()).toBe('2026-10-25T01:40:00.000Z');
+});
+
+describe('elapsedMinutes', () => {
+  const at = (iso: string) => new Date(iso);
+
+  it('counts only the minutes inside opening hours, skipping weekends and bank holidays', () => {
+    // Friday 16:30 to Monday 09:30 is half an hour on each side of the weekend.
+    expect(elapsedMinutes(at('2026-11-27T16:30:00Z'), at('2026-11-30T09:30:00Z'), DEFAULT_SITE_CALENDAR)).toBe(60);
+    // Christmas Day and Boxing Day are bank holidays, and the weekend follows.
+    expect(
+      elapsedMinutes(at('2026-12-24T16:30:00Z'), at('2026-12-29T09:30:00Z'), {
+        ...DEFAULT_SITE_CALENDAR,
+        jurisdiction: 'wales',
+      }),
+    ).toBe(60);
+  });
+
+  it('is the exact inverse of the deadline calculation', () => {
+    for (const [start, minutes] of [
+      ['2026-11-23T10:00:00Z', 90],
+      ['2026-11-26T16:45:00Z', 600],
+      ['2026-12-23T12:00:00Z', 2000],
+      ['2026-11-28T09:00:00Z', 45],
+    ] as const) {
+      const deadline = requestDeadline(at(start), minutes, DEFAULT_SITE_CALENDAR)!;
+      expect(elapsedMinutes(at(start), deadline, DEFAULT_SITE_CALENDAR)).toBeCloseTo(minutes, 6);
+    }
+  });
+
+  it('counts every minute for a round-the-clock target, and none when the site has no opening hours', () => {
+    expect(elapsedMinutes(at('2026-12-25T14:00:00Z'), at('2026-12-26T14:30:00Z'), null)).toBe(1470);
+    expect(
+      elapsedMinutes(at('2026-12-25T14:00:00Z'), at('2026-12-26T14:30:00Z'), { ...DEFAULT_SITE_CALENDAR, hours: [] }),
+    ).toBe(0);
+    expect(elapsedMinutes(at('2026-12-25T14:00:00Z'), at('2026-12-25T14:00:00Z'), null)).toBe(0);
+    expect(elapsedMinutes(at('2026-12-25T15:00:00Z'), at('2026-12-25T14:00:00Z'), null)).toBe(0);
+  });
+
+  it('handles windows that end at 24:00 and the hour the clocks go back', () => {
+    const overnight = {
+      ...DEFAULT_SITE_CALENDAR,
+      hours: [
+        { day: 1, opens: '18:00', closes: '24:00' },
+        { day: 2, opens: '00:00', closes: '06:00' },
+      ],
+    };
+    expect(elapsedMinutes(at('2026-11-23T22:00:00Z'), at('2026-11-24T03:00:00Z'), overnight)).toBe(300);
+    const repeated = { ...DEFAULT_SITE_CALENDAR, hours: [{ day: 7, opens: '01:00', closes: '02:30' }] };
+    expect(elapsedMinutes(at('2026-10-25T00:00:00Z'), at('2026-10-25T01:40:00Z'), repeated)).toBe(100);
+  });
 });

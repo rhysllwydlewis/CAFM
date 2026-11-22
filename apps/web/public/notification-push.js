@@ -8,13 +8,17 @@ self.addEventListener('push', (event) => {
   }
   if (!payload || typeof payload.id !== 'string') return;
   const asset = /^\/app\/assets\/[a-f0-9-]{36}\/operations#warranties$/i.test(payload.path);
-  const path = asset || /^\/portal\/requests\/[a-f0-9-]{36}$/i.test(payload.path) ? payload.path : '/app';
+  const job = /^\/app\/work-orders\/[a-f0-9-]{36}$/i.test(payload.path);
+  const path = asset || job || /^\/portal\/requests\/[a-f0-9-]{36}$/i.test(payload.path) ? payload.path : '/app';
   event.waitUntil(
-    self.registration.showNotification(asset ? 'CAFM asset update' : 'CAFM request update', {
-      body: 'Open CAFM to see your latest update.',
-      tag: 'cafm-' + payload.id,
-      data: { path },
-    }),
+    self.registration.showNotification(
+      asset ? 'CAFM asset update' : job ? 'CAFM work order alert' : 'CAFM request update',
+      {
+        body: 'Open CAFM to see your latest update.',
+        tag: 'cafm-' + payload.id,
+        data: { path },
+      },
+    ),
   );
 });
 

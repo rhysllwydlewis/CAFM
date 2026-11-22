@@ -317,3 +317,77 @@ test('moves a card on the board, edits a job and takes a job back from a contrac
   await expect(page.getByRole('button', { name: 'Send to contractor' })).toBeVisible();
   await assertAccessible(page);
 });
+
+test('stops the SLA clock for a pause that is not the team’s fault, and links alerts to the job', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  const db = new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
+  });
+  let alertId: string | undefined;
+  try {
+    await signInAs(page, 'helpdesk');
+    const created = await page.request.post('/api/work-orders', {
+      data: {
+        submissionId: randomUUID(),
+        title: 'E2E clock ' + suffix,
+        description: 'Created by a browser test.',
+        locationId: seedId('location:demo-estates:CDF'),
+        impact: 2,
+        urgency: 2,
+        assigneeId: seedId('membership:demo-estates:technician'),
+      },
+    });
+    expect(created.ok()).toBe(true);
+    const job = (await created.json()) as { id: string; number: string };
+    await page.goto('/app/work-orders/' + job.id);
+    await updateStatus(page, 'On site');
+    await expectStatus(page, 'On site');
+
+    // The screen says which reasons stop the clock before the pause is saved.
+    await page.getByLabel('New status').selectOption({ label: 'Paused' });
+    await page.getByLabel('Why is it paused?').selectOption({ label: 'Awaiting contractor' });
+    await expect(page.getByText('The SLA clock keeps running for this reason.')).toBeVisible();
+    await page.getByLabel('Why is it paused?').selectOption({ label: 'Awaiting parts' });
+    await expect(page.getByText(/This stops the SLA clock/)).toBeVisible();
+    await page.getByRole('button', { name: 'Update status' }).click();
+    await expectStatus(page, 'Paused · Awaiting parts');
+    await expect(page.getByText(/Stopped since/)).toBeVisible();
+
+    // The list shows no countdown while the clock is stopped.
+    await page.goto('/app/work-orders?view=all&q=' + suffix);
+    await expect(page.getByRole('region', { name: 'Work order results' }).getByText('Clock stopped')).toBeVisible();
+    await assertAccessible(page);
+
+    // Resuming starts the clock again.
+    await page.goto('/app/work-orders/' + job.id);
+    await updateStatus(page, 'On site');
+    await expectStatus(page, 'On site');
+    await expect(page.getByText(/Stopped since/)).toHaveCount(0);
+
+    // An alert in the drawer opens the job.
+    const alert = await db.notification.create({
+      data: {
+        tenantId: seedId('tenant:demo-estates'),
+        recipientId: seedId('membership:demo-estates:manager'),
+        workOrderId: job.id,
+        eventKey: 'e2e-alert-' + suffix,
+        title: 'Work order ' + job.number + ' is close to its fix target',
+        body: 'E2E clock job.',
+      },
+    });
+    alertId = alert.id;
+    await signInAs(page, 'manager');
+    await page.getByRole('button', { name: 'Notifications' }).click();
+    const drawer = page.getByRole('dialog', { name: 'Notifications' });
+    // The desktop and mobile runs each raise an alert for the same person, so find this job's own.
+    const item = drawer.locator('article', { hasText: job.number });
+    await expect(item.getByText('is close to its fix target')).toBeVisible();
+    await item.getByRole('link', { name: 'Open work order' }).click();
+    await expect(page).toHaveURL('/app/work-orders/' + job.id);
+    await expect(page.getByRole('heading', { level: 1, name: 'E2E clock ' + suffix })).toBeVisible();
+  } finally {
+    if (alertId) await db.notification.delete({ where: { id: alertId } }).catch(() => undefined);
+    await db.$disconnect();
+  }
+});

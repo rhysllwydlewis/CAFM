@@ -3,6 +3,7 @@ import { scopedLocations, withTenant } from '@cafm/db';
 import { isBrowserPushEndpoint, resolveEntitlements } from '@cafm/shared';
 import { register } from '../handlers';
 import { sendEmail } from './email';
+import { slaAlerts } from './work-order-alerts';
 
 register('notification.deliver', async (raw, ctx) => {
   const { notificationId } = raw as { notificationId: string };
@@ -38,11 +39,39 @@ register('notification.deliver', async (raw, ctx) => {
       !notice ||
       notice.tenant.status !== 'active' ||
       !resolveEntitlements(notice.tenant.plan, notice.tenant.entitlements).features.includes(
-        notice.assetId ? 'assets' : 'helpdesk',
+        notice.workOrderId ? 'work_orders' : notice.assetId ? 'assets' : 'helpdesk',
       ) ||
       (notice.recipientId && notice.recipient?.status !== 'active')
     )
       return null;
+    if (notice.workOrderId) {
+      const member = notice.recipient;
+      if (!member) return null;
+      const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
+      if (!role?.permissions.includes('work_orders.read')) return null;
+      const job = await tx.workOrder.findFirst({
+        where: {
+          id: notice.workOrderId,
+          tenantId,
+          location: scopedLocations(member, role.scope),
+          ...(role.scope === 'own' ? { assigneeId: member.id } : {}),
+        },
+        select: { status: true, slaPausedAt: true, attendedAt: true, attendDueAt: true, fixDueAt: true },
+      });
+      // Send it only while it is still true: the job is unfinished, its clock is running and the target has not moved.
+      const [, , target, level, dueMs] = notice.eventKey.split(':');
+      const current =
+        !!job &&
+        slaAlerts(job, new Date()).some(
+          (alert) => alert.target === target && alert.level === level && String(alert.due.getTime()) === dueMs,
+        );
+      if (!current) {
+        await tx.notification.deleteMany({
+          where: { id: notice.id, tenantId, readAt: null, emailSentAt: null, pushDeliveries: { none: {} } },
+        });
+        return null;
+      }
+    }
     if (notice.assetId) {
       const member = notice.recipient;
       if (!member) return null;
@@ -127,11 +156,13 @@ register('notification.deliver', async (raw, ctx) => {
           },
           JSON.stringify({
             id: notice.id,
-            path: notice.assetId
-              ? '/app/assets/' + notice.assetId + '/operations#warranties'
-              : notice.requestId
-                ? '/portal/requests/' + notice.requestId
-                : '/app',
+            path: notice.workOrderId
+              ? '/app/work-orders/' + notice.workOrderId
+              : notice.assetId
+                ? '/app/assets/' + notice.assetId + '/operations#warranties'
+                : notice.requestId
+                  ? '/portal/requests/' + notice.requestId
+                  : '/app',
           }),
           {
             vapidDetails: {

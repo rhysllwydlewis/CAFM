@@ -3,6 +3,8 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { PrismaClient, withTenant } from '@cafm/db';
+import { DEFAULT_SITE_CALENDAR } from '@cafm/shared';
+import { requestDeadline } from '../src/modules/helpdesk/request-sla';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -795,6 +797,118 @@ it('completes the request when a contractor finishes the only job on it', async 
     expect((await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.status).toBe('completed');
     const entries = (await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.entries;
     expect(entries.map(({ body }: { body: string }) => body)).toContain('Completed · all work orders finished');
+  } finally {
+    await cleanup();
+  }
+});
+
+it('stops the SLA clock while a job is paused for parts, and moves the targets out when work resumes', async () => {
+  const { manager, tech, cleanup, tenant, member, job } = await fixture();
+  const owner = ownerDb();
+  try {
+    // An emergency runs round the clock, so the time lost is plain elapsed time.
+    const created = (
+      await manager
+        .post(jobs)
+        .send(job({ impact: 1, urgency: 1 }))
+        .expect(201)
+    ).body;
+    const url = jobs + '/' + created.id;
+    await manager
+      .post(url + '/assign')
+      .send({ version: 1, assigneeId: member('tech') })
+      .expect(201);
+    const read = async () => (await manager.get(url).expect(200)).body;
+    const move = async (status: string, extra: object = {}) => {
+      const { version } = await read();
+      return tech.post(url + '/status').send({ version, status, ...extra });
+    };
+    await (
+      await move('on_site')
+    ).body;
+    const overdueIds = async () =>
+      (await manager.get(jobs + '?view=overdue').expect(200)).body.items.map(({ id }: { id: string }) => id);
+    const setDue = (fixDueAt: Date) =>
+      owner.workOrder.updateMany({ where: { id: created.id, tenantId: tenant.id }, data: { fixDueAt } });
+
+    // Running late, it is overdue. Paused for parts the clock stops, so it is not; paused for another reason it still is.
+    const late = new Date(Date.now() - 60 * 60_000);
+    await setDue(late);
+    expect(await overdueIds()).toContain(created.id);
+    await move('paused', { pauseReason: 'awaiting_contractor' }).then((res) => expect(res.status).toBe(201));
+    expect(await read()).toMatchObject({ status: 'paused', slaPausedAt: null, slaPausedMinutes: 0 });
+    expect(await overdueIds()).toContain(created.id);
+    await move('on_site').then((res) => expect(res.status).toBe(201));
+    expect(Date.parse((await read()).fixDueAt)).toBe(late.getTime());
+
+    await move('paused', { pauseReason: 'awaiting_parts' }).then((res) => expect(res.status).toBe(201));
+    const paused = await read();
+    expect(paused).toMatchObject({ status: 'paused', slaPausedAt: expect.any(String) });
+    expect(await overdueIds()).not.toContain(created.id);
+    // Pretend it was paused three hours ago, then resume.
+    await owner.workOrder.updateMany({
+      where: { id: created.id, tenantId: tenant.id },
+      data: { slaPausedAt: new Date(Date.now() - 180 * 60_000) },
+    });
+    const attendBefore = (await read()).attendDueAt;
+    await move('on_site').then((res) => expect(res.status).toBe(201));
+    const resumed = await read();
+    const moved = (Date.parse(resumed.fixDueAt) - late.getTime()) / 60_000;
+    expect(moved).toBeGreaterThan(179);
+    expect(moved).toBeLessThan(181);
+    expect(resumed).toMatchObject({ slaPausedAt: null, slaPausedMinutes: expect.any(Number) });
+    expect(resumed.slaPausedMinutes).toBeGreaterThanOrEqual(180);
+    expect(resumed.slaPausedMinutes).toBeLessThanOrEqual(181);
+    // The job had already been attended, so that target stays where it was. It is no longer late.
+    expect(resumed.attendDueAt).toBe(attendBefore);
+    expect(await overdueIds()).not.toContain(created.id);
+
+    // Re-triaging works the new targets out from when the problem was reported, and keeps the time already lost.
+    const urgent = (await manager.patch(url).send({ version: resumed.version, impact: 2, urgency: 2 }).expect(200))
+      .body;
+    const base = requestDeadline(new Date(created.createdAt), 1440, DEFAULT_SITE_CALENDAR)!;
+    const expected = requestDeadline(base, resumed.slaPausedMinutes, DEFAULT_SITE_CALENDAR)!;
+    expect(urgent.priority).toBe(3);
+    expect(urgent.fixDueAt).toBe(expected.toISOString());
+  } finally {
+    await owner.$disconnect();
+    await cleanup();
+  }
+});
+
+it('shows work order alerts in the inbox of people who can see the job, and no one else', async () => {
+  const { manager, tech, reporter, other, tenant, cleanup, member, job } = await fixture();
+  try {
+    const created = (await manager.post(jobs).send(job()).expect(201)).body;
+    await manager
+      .post(jobs + '/' + created.id + '/assign')
+      .send({ version: 1, assigneeId: member('tech') })
+      .expect(201);
+    const notify = (recipient: string, key: string) =>
+      withTenant(db, tenant.id, (tx) =>
+        tx.notification.create({
+          data: {
+            tenantId: tenant.id,
+            recipientId: recipient,
+            workOrderId: created.id,
+            eventKey: key,
+            title: 'Work order ' + created.number + ' is close to its fix target',
+            body: 'Replace pump seal at Main site.',
+          },
+        }),
+      );
+    await notify(member('tech'), 'alert-tech');
+    await notify(member('reporter'), 'alert-reporter');
+    await notify(member('other'), 'alert-other');
+    const inbox = async (agent: typeof tech) => (await agent.get('/api/notifications').expect(200)).body;
+    const seen = await inbox(tech);
+    expect(seen.items).toMatchObject([{ workOrderId: created.id, requestId: null, assetId: null }]);
+    expect(seen.unread).toBe(1);
+    await tech.patch('/api/notifications/' + seen.items[0].id + '/read').expect(200);
+    expect((await inbox(tech)).unread).toBe(0);
+    // A requester has no right to see jobs, and a technician at another site cannot see this one.
+    expect((await inbox(reporter)).items).toEqual([]);
+    expect((await inbox(other)).items).toEqual([]);
   } finally {
     await cleanup();
   }

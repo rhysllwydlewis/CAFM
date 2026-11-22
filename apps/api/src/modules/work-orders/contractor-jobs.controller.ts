@@ -133,7 +133,7 @@ export class ContractorJobsController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const now = new Date();
-      const { reopened, data } = statusChange(job, current, input.status, input.pauseReason, now);
+      const { reopened, data } = await statusChange(tx, job, current, input.status, input.pauseReason, now);
       const next = await tx.workOrder.update({ where: { id: job.id }, data: { ...data, version: { increment: 1 } } });
       await tx.workOrderEntry.create({
         data: {

@@ -29,3 +29,36 @@ export function requestDeadline(start: Date, minutes: number, calendar: SiteCale
   }
   return null;
 }
+
+/**
+ * The minutes between two instants that count towards a target: all of them for a round-the-clock target,
+ * and only those inside the site's opening windows otherwise. It is the other half of `requestDeadline`.
+ */
+export function elapsedMinutes(start: Date, end: Date, calendar: SiteCalendar | null): number {
+  if (end <= start) return 0;
+  if (!calendar) return (end.getTime() - start.getTime()) / 60_000;
+  if (!calendar.hours.length) return 0;
+
+  const firstDay = Temporal.Instant.fromEpochMilliseconds(start.getTime())
+    .toZonedDateTimeISO(calendar.timeZone)
+    .toPlainDate();
+  let total = 0;
+  let cursor = start.getTime();
+  for (let offset = 0; offset <= 730; offset++) {
+    const day = firstDay.add({ days: offset });
+    for (const window of siteBusinessHoursOn(calendar, day.toString())) {
+      const opens = day.toPlainDateTime(window.opens).toZonedDateTime(calendar.timeZone).epochMilliseconds;
+      const closing =
+        window.closes === '24:00' ? day.add({ days: 1 }).toPlainDateTime('00:00') : day.toPlainDateTime(window.closes);
+      const closes = closing.toZonedDateTime(calendar.timeZone, { disambiguation: 'later' }).epochMilliseconds;
+      const from = Math.max(opens, cursor);
+      const to = Math.min(closes, end.getTime());
+      if (to > from) {
+        total += to - from;
+        cursor = to;
+      }
+      if (closes >= end.getTime()) return total / 60_000;
+    }
+  }
+  return total / 60_000;
+}
