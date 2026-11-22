@@ -63,6 +63,7 @@ model Asset {
   meters               AssetMeter[]
   warranties           AssetWarranty[]
   attachments          RecordAttachment[]
+  ppmScheduleAssets    PpmScheduleAsset[]
   notifications        Notification[]
 
   @@unique([tenantId, id])

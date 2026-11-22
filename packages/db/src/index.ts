@@ -8,6 +8,16 @@ export { hashToken, newToken } from './tokens';
 export { createTenant, listTenants, setTenantPlan, setTenantStatus } from './tenants';
 export { resetDemo, type DemoResetResult } from './demo-reset';
 export { seed, seedRoles } from './seed';
+export { nextNumber } from './numbering';
+export { eligibleTechnician, JOB_LICENCES } from './eligibility';
+export {
+  generatePpm,
+  PPM_TIME_ZONE,
+  recordPpmCancelled,
+  recordPpmDone,
+  startingPoint,
+  type PpmGenerateResult,
+} from './ppm-generator';
 
 export type Tx = Prisma.TransactionClient;
 

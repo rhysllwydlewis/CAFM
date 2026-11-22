@@ -1,6 +1,7 @@
 import { PrismaClient } from '@cafm/db';
 import { createWorker } from './index';
 import { scheduleDemoReset } from './jobs/demo-reset';
+import { schedulePpmGeneration } from './jobs/ppm-generate';
 import { scheduleWarrantyAlerts } from './jobs/warranty-alerts';
 import { scheduleWorkOrderAlerts } from './jobs/work-order-alerts';
 
@@ -21,6 +22,10 @@ scheduleWarrantyAlerts(worker.queue).catch((error: unknown) =>
 );
 scheduleWorkOrderAlerts(worker.queue).catch((error: unknown) =>
   log(`could not schedule work order alerts: ${error instanceof Error ? error.message : String(error)}`),
+);
+
+schedulePpmGeneration(worker.queue).catch((error: unknown) =>
+  log(`could not schedule PPM generation: ${error instanceof Error ? error.message : String(error)}`),
 );
 
 // Demo environments only: the nightly reset needs the owner role (doc 06).

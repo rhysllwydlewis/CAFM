@@ -569,6 +569,117 @@ it('isolates checklists, sign-offs and job photos and refuses answers the API ne
   await expect(file({ requestId: randomUUID(), phase: 'before' })).rejects.toThrow(/record_attachment_/);
 });
 
+it('isolates planned maintenance and refuses schedules the API never produces', async () => {
+  for (const count of [db.ppmTaskTemplate.count(), db.ppmSchedule.count(), db.ppmScheduleAsset.count()]) {
+    expect(await count).toBe(0);
+  }
+  // The demo estate has its maintenance library and schedules, and no other organisation sees them.
+  const seen = await withTenant(db, demo, async (tx) => ({
+    templates: await tx.ppmTaskTemplate.count({ where: { active: true } }),
+    schedules: await tx.ppmSchedule.count({
+      where: { number: { in: ['PPM-0142', 'PPM-0143', 'PPM-0144', 'PPM-0145', 'PPM-0146'] } },
+    }),
+    boilerAssets: await tx.ppmScheduleAsset.count({ where: { schedule: { number: 'PPM-0142' } } }),
+  }));
+  expect(seen.templates).toBeGreaterThanOrEqual(4);
+  expect(seen).toMatchObject({ schedules: 5, boilerAssets: 2 });
+  expect(
+    await withTenant(db, starter, async (tx) => [
+      await tx.ppmTaskTemplate.count(),
+      await tx.ppmSchedule.count(),
+      await tx.ppmScheduleAsset.count(),
+    ]),
+  ).toEqual([0, 0, 0]);
+  const boiler = seedId('ppm-schedule:demo-estates:boiler');
+  expect(
+    await withTenant(db, starter, (tx) => tx.ppmSchedule.updateMany({ where: { id: boiler }, data: { title: 'x' } })),
+  ).toEqual({ count: 0 });
+  expect(
+    await withTenant(db, starter, (tx) => tx.ppmScheduleAsset.deleteMany({ where: { scheduleId: boiler } })),
+  ).toEqual({ count: 0 });
+
+  const base = {
+    title: 'Check',
+    freqType: 'calendar',
+    calendarUnit: 'month',
+    interval: 1,
+    startsOn: new Date('2026-12-01T00:00:00Z'),
+    durationMinutes: 60,
+  };
+  const schedule = (tenantId: string, data: object = {}) =>
+    withTenant(db, tenantId, (tx) =>
+      tx.ppmSchedule.create({
+        data: { tenantId, number: 'PPM-' + randomUUID().slice(0, 8), ...base, ...data } as never,
+      }),
+    );
+  // A schedule can't point at another organisation's task, or put an asset from another organisation on it.
+  const task = seedId('ppm-template:demo-estates:boiler');
+  await expect(schedule(starter, { templateId: task })).rejects.toThrow(/Foreign key constraint/);
+  const boilerAsset = (
+    await withTenant(db, demo, (tx) => tx.ppmScheduleAsset.findFirstOrThrow({ where: { scheduleId: boiler } }))
+  ).assetId;
+  const starterSchedule = await schedule(starter);
+  await expect(
+    withTenant(db, starter, (tx) =>
+      tx.ppmScheduleAsset.create({ data: { tenantId: starter, scheduleId: starterSchedule.id, assetId: boilerAsset } }),
+    ),
+  ).rejects.toThrow(/Foreign key constraint/);
+  await withTenant(db, starter, (tx) => tx.ppmSchedule.delete({ where: { id: starterSchedule.id } }));
+  // Nor can the database hold a frequency that makes no sense, a meter schedule that is not floating, an unknown
+  // criticality or a lead time outside the limits.
+  const frequency = /ppm_schedule_frequency_valid/;
+  await expect(schedule(demo, { calendarUnit: 'fortnight' })).rejects.toThrow(frequency);
+  await expect(schedule(demo, { interval: 0 })).rejects.toThrow(frequency);
+  await expect(schedule(demo, { interval: null })).rejects.toThrow(frequency);
+  await expect(schedule(demo, { meterName: 'Run hours' })).rejects.toThrow(frequency);
+  await expect(
+    schedule(demo, {
+      freqType: 'meter',
+      calendarUnit: null,
+      interval: null,
+      meterName: 'Run hours',
+      meterInterval: '100',
+    }),
+  ).rejects.toThrow(frequency);
+  await expect(
+    schedule(demo, {
+      freqType: 'meter',
+      calendarUnit: null,
+      interval: null,
+      meterName: 'Run hours',
+      meterInterval: '0',
+      mode: 'floating',
+    }),
+  ).rejects.toThrow(frequency);
+  await expect(schedule(demo, { mode: 'sometimes' })).rejects.toThrow(/ppm_schedule_mode_valid/);
+  await expect(schedule(demo, { criticality: 'vital' })).rejects.toThrow(/ppm_schedule_criticality_valid/);
+  await expect(schedule(demo, { leadDays: 400 })).rejects.toThrow(/ppm_schedule_lead_valid/);
+  await expect(schedule(demo, { durationMinutes: 1 })).rejects.toThrow(/ppm_schedule_duration_valid/);
+  await expect(schedule(demo, { priority: 5 })).rejects.toThrow(/ppm_schedule_priority_valid/);
+  await expect(schedule(demo, { estimatedCostMinor: -1 })).rejects.toThrow(/ppm_schedule_cost_valid/);
+  await expect(schedule(demo, { currency: 'pounds' })).rejects.toThrow(/ppm_schedule_currency_valid/);
+  await expect(schedule(demo, { title: ' ' })).rejects.toThrow(/ppm_schedule_text_valid/);
+  const template = (data: object) =>
+    withTenant(db, demo, (tx) =>
+      tx.ppmTaskTemplate.create({
+        data: { tenantId: demo, name: 'T ' + randomUUID(), durationMinutes: 60, steps: [], ...data } as never,
+      }),
+    );
+  await expect(template({ criticality: 'vital' })).rejects.toThrow(/ppm_task_template_criticality_valid/);
+  await expect(template({ durationMinutes: 1 })).rejects.toThrow(/ppm_task_template_duration_valid/);
+  await expect(template({ steps: {} })).rejects.toThrow(/ppm_task_template_steps_valid/);
+  await expect(template({ name: ' ' })).rejects.toThrow(/ppm_task_template_text_valid/);
+  // A job has both its PPM row and its due day, or neither.
+  await expect(
+    withTenant(db, demo, (tx) =>
+      tx.workOrder.updateMany({
+        where: { id: seedId('work-order:demo-estates:WO-10412') },
+        data: { scheduledFor: new Date('2026-12-01T00:00:00Z') },
+      }),
+    ),
+  ).rejects.toThrow(/work_order_ppm_valid/);
+});
+
 it('isolates contractor links, hides them from other organisations and looks one up only by its exact hash', async () => {
   expect(await db.workOrderContractor.count()).toBe(0);
   const job = await withTenant(db, demo, (tx) => tx.workOrder.findFirstOrThrow());

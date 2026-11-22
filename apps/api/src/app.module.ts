@@ -10,6 +10,7 @@ import { AssetsModule } from './modules/assets/assets.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { HelpdeskModule } from './modules/helpdesk/helpdesk.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
+import { PpmModule } from './modules/ppm/ppm.module';
 import { PeopleModule } from './modules/people/people.module';
 import { RolesModule } from './modules/roles/roles.module';
 
@@ -25,6 +26,7 @@ import { RolesModule } from './modules/roles/roles.module';
     AssetsModule,
     HelpdeskModule,
     WorkOrdersModule,
+    PpmModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: CsrfGuard }],

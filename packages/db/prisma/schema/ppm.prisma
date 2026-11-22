@@ -1,0 +1,98 @@
+/// A reusable maintenance task: the steps, how long it takes, the skills it needs and the safety notes. Schedules point
+/// at one, and the steps are copied onto each job raised from the schedule, so editing the task never rewrites a job.
+model PpmTaskTemplate {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  name            String
+  description     String?
+  discipline      String?
+  /// statutory, mandatory, optimal or discretionary.
+  criticality     String        @default("optimal")
+  durationMinutes Int           @map("duration_minutes")
+  skills          String?
+  safetyNotes     String?       @map("safety_notes")
+  /// The steps: a list of { label, kind, required, unit? }, the same shape as a checklist's.
+  steps           Json
+  active          Boolean       @default(true)
+  version         Int           @default(1)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  schedules       PpmSchedule[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@map("ppm_task_template")
+}
+
+/// When a task is done, on which assets. A calendar schedule repeats every so many days, weeks, months or years; a meter
+/// schedule is due every so many hours, cycles or miles on the asset's meter.
+model PpmSchedule {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  tenantId           String             @map("tenant_id") @db.Uuid
+  number             String
+  title              String
+  templateId         String?            @map("template_id") @db.Uuid
+  discipline         String?
+  criticality        String             @default("optimal")
+  /// calendar or meter.
+  freqType           String             @map("freq_type")
+  /// For calendar: day, week, month or year.
+  calendarUnit       String?            @map("calendar_unit")
+  /// For calendar: how many of the unit between visits.
+  interval           Int?
+  /// For meter: the name of the asset meter, and how far it must advance between visits.
+  meterName          String?            @map("meter_name")
+  meterInterval      Decimal?           @map("meter_interval") @db.Decimal(18, 6)
+  /// fixed (dates keep to the anchor) or floating (due a set time after the last visit).
+  mode               String             @default("fixed")
+  /// The first visit, and the date every later fixed visit is counted from.
+  startsOn           DateTime           @map("starts_on") @db.Date
+  /// Jobs are raised this many days before they fall due.
+  leadDays           Int                @default(28) @map("lead_days")
+  durationMinutes    Int                @map("duration_minutes")
+  /// The priority the jobs are raised with, 1 (emergency) to 4 (planned).
+  priority           Int                @default(3)
+  assigneeId         String?            @map("assignee_id") @db.Uuid
+  /// What a visit is expected to cost, in minor units, for the forecast.
+  estimatedCostMinor Int?               @map("estimated_cost_minor")
+  currency           String             @default("GBP")
+  active             Boolean            @default(true)
+  version            Int                @default(1)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant             Tenant             @relation(fields: [tenantId], references: [id])
+  template           PpmTaskTemplate?   @relation(fields: [tenantId, templateId], references: [tenantId, id], onDelete: Restrict)
+  assignee           Membership?        @relation(fields: [tenantId, assigneeId], references: [tenantId, id], onDelete: Restrict)
+  rows               PpmScheduleAsset[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, number])
+  @@index([tenantId, active])
+  @@map("ppm_schedule")
+}
+
+/// One asset on one schedule, and where it has got to: the next visit due, the last one done, and the open job.
+model PpmScheduleAsset {
+  id           String      @id @default(uuid(7)) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  scheduleId   String      @map("schedule_id") @db.Uuid
+  assetId      String      @map("asset_id") @db.Uuid
+  /// The date of the next visit to raise a job for. Null while a floating visit is waiting to be done, and for a meter.
+  nextDueOn    DateTime?   @map("next_due_on") @db.Date
+  /// For a meter schedule: the meter total the next visit is due at.
+  nextDueTotal Decimal?    @map("next_due_total") @db.Decimal(30, 6)
+  lastDoneOn   DateTime?   @map("last_done_on") @db.Date
+  /// Taken off the schedule. Kept, rather than deleted, once jobs have been raised from it.
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  schedule     PpmSchedule @relation(fields: [tenantId, scheduleId], references: [tenantId, id], onDelete: Cascade)
+  asset        Asset       @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
+  workOrders   WorkOrder[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, scheduleId, assetId])
+  @@index([tenantId, nextDueOn])
+  @@map("ppm_schedule_asset")
+}

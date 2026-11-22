@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import type { FieldDefinition } from '@cafm/config-engine';
-import type { Prisma, Tx } from '@cafm/db';
+import { eligibleTechnician, type Prisma, type Tx } from '@cafm/db';
 import {
   SLA_PAUSING_REASONS,
   WORK_ORDER_PAUSE_LABELS,
@@ -19,8 +19,7 @@ import { reportAssetSelect, reportLocationSelect } from '../helpdesk/request-sco
 import { requestTargets, slaSchedule } from '../helpdesk/request-records';
 import { elapsedMinutes, requestDeadline } from '../helpdesk/request-sla';
 
-/** Licences that can be given jobs: office staff, and the field and contractor people who do them. */
-export const JOB_LICENCES = ['full', 'mobile', 'contractor'] as const;
+export { eligibleTechnician, JOB_LICENCES } from '@cafm/db';
 
 const memberLabel = { select: { account: { select: { name: true } } } } as const;
 export const workOrderRelations = {
@@ -29,6 +28,7 @@ export const workOrderRelations = {
   request: { select: { id: true, number: true } },
   assignee: memberLabel,
   createdBy: memberLabel,
+  ppmScheduleAsset: { select: { schedule: { select: { id: true, number: true } } } },
   // The contractor the job is with now: the most recent link that has not been withdrawn.
   contractors: { where: { revokedAt: null }, orderBy: [{ createdAt: 'desc' as const }], take: 1 },
 } satisfies Prisma.WorkOrderInclude;
@@ -92,6 +92,14 @@ export async function workOrderDetail(
     ...workOrderSummary(row),
     version: row.version,
     type: row.type,
+    ppm:
+      row.ppmScheduleAsset && row.scheduledFor
+        ? {
+            scheduleId: row.ppmScheduleAsset.schedule.id,
+            scheduleNumber: row.ppmScheduleAsset.schedule.number,
+            dueOn: row.scheduledFor.toISOString().slice(0, 10),
+          }
+        : null,
     slaPausedMinutes: row.slaPausedMinutes,
     description: row.description,
     impact: row.impact,
@@ -123,26 +131,6 @@ export async function workOrderDetail(
       createdAt: createdAt.toISOString(),
     })),
   };
-}
-
-/**
- * Whether this member can do jobs at the location: an active person with a full, mobile or contractor licence whose role can
- * see and work on jobs, with access to the location (everywhere, or a granted site above it).
- */
-export async function eligibleTechnician(tx: Tx, tenantId: string, id: string, locationId: string) {
-  const member = await tx.membership.findFirst({
-    where: { tenantId, id, status: 'active', licence: { in: [...JOB_LICENCES] } },
-    select: { role: true, locationScoped: true },
-  });
-  if (!member) return false;
-  const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
-  if (!role?.permissions.includes('work_orders.read')) return false;
-  if (!role.permissions.includes('work_orders.close') && !role.permissions.includes('work_orders.edit')) return false;
-  if (role.scope === 'all' && (!member.locationScoped || member.role === 'super_user')) return true;
-  return !!(await tx.membershipSite.findFirst({
-    where: { tenantId, membershipId: id, location: { descendants: { some: { descendantId: locationId } } } },
-    select: { membershipId: true },
-  }));
 }
 
 /** A stable fingerprint of what was submitted, so a retry of the same call returns the same jobs. */

@@ -10,6 +10,7 @@ import { seedId } from './ids';
 import { seedAssets } from './seed-assets';
 import { seedLocations } from './seed-locations';
 import { seedHelpdesk } from './seed-helpdesk';
+import { seedPpm } from './seed-ppm';
 import { seedWorkOrders } from './seed-workorders';
 
 /**
@@ -105,6 +106,7 @@ export async function seed(db: PrismaClient): Promise<void> {
   await seedAssets(db);
   await seedHelpdesk(db);
   await seedWorkOrders(db);
+  await seedPpm(db);
 }
 
 if (require.main === module) {

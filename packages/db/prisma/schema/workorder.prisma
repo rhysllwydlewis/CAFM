@@ -2,61 +2,66 @@
 /// Status, priority and the three SLA targets are stored on the job so later edits to the
 /// priority matrix never rewrite history.
 model WorkOrder {
-  id               String                @id @default(uuid(7)) @db.Uuid
-  tenantId         String                @map("tenant_id") @db.Uuid
-  number           String
-  type             String                @default("reactive")
-  title            String
-  description      String
-  status           String                @default("logged")
-  pauseReason      String?               @map("pause_reason")
+  id                 String                @id @default(uuid(7)) @db.Uuid
+  tenantId           String                @map("tenant_id") @db.Uuid
+  number             String
+  type               String                @default("reactive")
+  title              String
+  description        String
+  status             String                @default("logged")
+  pauseReason        String?               @map("pause_reason")
   /// Set while the job is paused for a reason that stops the SLA clock. The targets move on when work resumes.
-  slaPausedAt      DateTime?             @map("sla_paused_at") @db.Timestamptz(3)
+  slaPausedAt        DateTime?             @map("sla_paused_at") @db.Timestamptz(3)
   /// The business time the clock has been stopped for, for display. The targets already include it.
-  slaPausedMinutes Int                   @default(0) @map("sla_paused_minutes")
-  locationId       String                @map("location_id") @db.Uuid
-  assetId          String?               @map("asset_id") @db.Uuid
-  requestId        String?               @map("request_id") @db.Uuid
-  assigneeId       String?               @map("assignee_id") @db.Uuid
-  createdById      String?               @map("created_by_id") @db.Uuid
-  impact           Int
-  urgency          Int
-  priority         Int
-  responseDueAt    DateTime?             @map("response_due_at") @db.Timestamptz(3)
-  attendDueAt      DateTime?             @map("attend_due_at") @db.Timestamptz(3)
-  fixDueAt         DateTime?             @map("fix_due_at") @db.Timestamptz(3)
-  firstResponseAt  DateTime?             @map("first_response_at") @db.Timestamptz(3)
-  attendedAt       DateTime?             @map("attended_at") @db.Timestamptz(3)
-  completedAt      DateTime?             @map("completed_at") @db.Timestamptz(3)
-  verifiedAt       DateTime?             @map("verified_at") @db.Timestamptz(3)
-  closedAt         DateTime?             @map("closed_at") @db.Timestamptz(3)
-  custom           Json                  @default("{}")
+  slaPausedMinutes   Int                   @default(0) @map("sla_paused_minutes")
+  locationId         String                @map("location_id") @db.Uuid
+  assetId            String?               @map("asset_id") @db.Uuid
+  requestId          String?               @map("request_id") @db.Uuid
+  assigneeId         String?               @map("assignee_id") @db.Uuid
+  /// For a PPM job: the asset on a schedule it was raised for, and the day the visit is due.
+  ppmScheduleAssetId String?               @map("ppm_schedule_asset_id") @db.Uuid
+  scheduledFor       DateTime?             @map("scheduled_for") @db.Date
+  createdById        String?               @map("created_by_id") @db.Uuid
+  impact             Int
+  urgency            Int
+  priority           Int
+  responseDueAt      DateTime?             @map("response_due_at") @db.Timestamptz(3)
+  attendDueAt        DateTime?             @map("attend_due_at") @db.Timestamptz(3)
+  fixDueAt           DateTime?             @map("fix_due_at") @db.Timestamptz(3)
+  firstResponseAt    DateTime?             @map("first_response_at") @db.Timestamptz(3)
+  attendedAt         DateTime?             @map("attended_at") @db.Timestamptz(3)
+  completedAt        DateTime?             @map("completed_at") @db.Timestamptz(3)
+  verifiedAt         DateTime?             @map("verified_at") @db.Timestamptz(3)
+  closedAt           DateTime?             @map("closed_at") @db.Timestamptz(3)
+  custom             Json                  @default("{}")
   /// The currency every cost on the job is in. Money is whole minor units (pence) plus this code.
-  currency         String                @default("GBP")
+  currency           String                @default("GBP")
   /// A not-to-exceed limit on the job's costs, in minor units. Spend over it needs a recorded reason.
-  nteMinor         Int?                  @map("nte_minor")
-  submissionKey    String                @map("submission_key")
-  submissionHash   String                @map("submission_hash")
-  version          Int                   @default(1)
-  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
-  tenant           Tenant                @relation(fields: [tenantId], references: [id])
-  location         Location              @relation(fields: [tenantId, locationId], references: [tenantId, id], onDelete: Restrict)
-  asset            Asset?                @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
-  request          ServiceRequest?       @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Restrict)
-  assignee         Membership?           @relation("WorkOrderAssignee", fields: [tenantId, assigneeId], references: [tenantId, id], onDelete: Restrict)
-  createdBy        Membership?           @relation("WorkOrderCreator", fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
-  entries          WorkOrderEntry[]
-  contractors      WorkOrderContractor[]
-  notifications    Notification[]
-  costs            WorkOrderCost[]
-  checklists       WorkOrderChecklist[]
-  signatures       WorkOrderSignature[]
-  attachments      RecordAttachment[]
+  nteMinor           Int?                  @map("nte_minor")
+  submissionKey      String                @map("submission_key")
+  submissionHash     String                @map("submission_hash")
+  version            Int                   @default(1)
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant             Tenant                @relation(fields: [tenantId], references: [id])
+  location           Location              @relation(fields: [tenantId, locationId], references: [tenantId, id], onDelete: Restrict)
+  asset              Asset?                @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
+  request            ServiceRequest?       @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Restrict)
+  assignee           Membership?           @relation("WorkOrderAssignee", fields: [tenantId, assigneeId], references: [tenantId, id], onDelete: Restrict)
+  createdBy          Membership?           @relation("WorkOrderCreator", fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
+  ppmScheduleAsset   PpmScheduleAsset?     @relation(fields: [tenantId, ppmScheduleAssetId], references: [tenantId, id], onDelete: Restrict)
+  entries            WorkOrderEntry[]
+  contractors        WorkOrderContractor[]
+  notifications      Notification[]
+  costs              WorkOrderCost[]
+  checklists         WorkOrderChecklist[]
+  signatures         WorkOrderSignature[]
+  attachments        RecordAttachment[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, number])
   @@unique([tenantId, submissionKey])
+  @@unique([tenantId, ppmScheduleAssetId, scheduledFor])
   @@index([tenantId, status, fixDueAt])
   @@index([tenantId, assigneeId, status])
   @@index([tenantId, requestId])

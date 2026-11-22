@@ -45,6 +45,9 @@ model Tenant {
   notificationPushDeliveries NotificationPushDelivery[]
   workOrderCosts             WorkOrderCost[]
   checklistTemplates         ChecklistTemplate[]
+  ppmTaskTemplates           PpmTaskTemplate[]
+  ppmSchedules               PpmSchedule[]
+  ppmScheduleAssets          PpmScheduleAsset[]
   workOrderChecklists        WorkOrderChecklist[]
   workOrderChecklistItems    WorkOrderChecklistItem[]
   workOrderSignatures        WorkOrderSignature[]
@@ -101,6 +104,7 @@ model Membership {
   workOrderContractors WorkOrderContractor[]
   workOrderCosts       WorkOrderCost[]
   workOrderChecklists  WorkOrderChecklist[]
+  ppmSchedules         PpmSchedule[]
   checklistItemAnswers WorkOrderChecklistItem[]
   workOrderSignatures  WorkOrderSignature[]
 

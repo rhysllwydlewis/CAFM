@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Temporal } from '@js-temporal/polyfill';
-import { withTenant, type Prisma, type Tx } from '@cafm/db';
+import { PPM_TIME_ZONE, recordPpmCancelled, recordPpmDone, withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
   assignWorkOrderSchema,
   changeWorkOrderSchema,
@@ -31,6 +31,7 @@ import {
   type RequestStatus,
   type WorkOrderPage,
   type WorkOrderStatus,
+  localDate,
 } from '@cafm/shared';
 import { audit } from '../../core/audit';
 import {
@@ -474,6 +475,10 @@ export class WorkOrdersController {
       if (CLOSED_STATUSES.includes(before.status)) {
         throw new UnprocessableEntityException('A closed or cancelled work order can’t be edited.');
       }
+      // The asset is what a planned maintenance visit is for, so doing the visit on another would count for the wrong one.
+      if (before.ppmScheduleAssetId && input.assetId !== undefined && input.assetId !== before.assetId) {
+        throw new UnprocessableEntityException('The asset on a planned maintenance job can’t be changed.');
+      }
       if (input.assetId) {
         const asset = await tx.asset.findFirst({
           where: { tenantId, id: input.assetId, locationId: before.locationId, status: { not: 'decommissioned' } },
@@ -589,6 +594,15 @@ export class WorkOrdersController {
         },
         req.ip,
       );
+      // A visit raised from a PPM schedule tells the schedule it has been done, or dropped.
+      if (next.ppmScheduleAssetId && next.scheduledFor) {
+        const tenantId = auth.membership!.tenantId;
+        if (to === 'completed') {
+          await recordPpmDone(tx, tenantId, next.ppmScheduleAssetId, localDate(new Date(), PPM_TIME_ZONE));
+        } else if (to === 'cancelled') {
+          await recordPpmCancelled(tx, tenantId, next.ppmScheduleAssetId, next.scheduledFor.toISOString().slice(0, 10));
+        }
+      }
       if (next.requestId && (to === 'completed' || reopened || to === 'cancelled')) {
         await syncRequest(tx, auth.membership!.tenantId, next.requestId, { auth, ip: req.ip });
       }

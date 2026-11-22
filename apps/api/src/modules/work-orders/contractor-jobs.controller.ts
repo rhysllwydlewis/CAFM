@@ -10,7 +10,7 @@ import {
   Put,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { hashToken, withTenant, type Tx } from '@cafm/db';
+import { hashToken, PPM_TIME_ZONE, recordPpmDone, withTenant, type Tx } from '@cafm/db';
 import {
   answerChecklistItemSchema,
   contractorNoteSchema,
@@ -21,6 +21,7 @@ import {
   type ContractorJob,
   type WorkOrderPauseReason,
   type WorkOrderStatus,
+  localDate,
 } from '@cafm/shared';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
@@ -164,6 +165,9 @@ export class ContractorJobsController {
           },
         },
       });
+      if (next.ppmScheduleAssetId && input.status === 'completed') {
+        await recordPpmDone(tx, tenantId, next.ppmScheduleAssetId, localDate(now, PPM_TIME_ZONE));
+      }
       if (next.requestId && (input.status === 'completed' || reopened)) {
         await syncRequest(tx, tenantId, next.requestId, null);
       }

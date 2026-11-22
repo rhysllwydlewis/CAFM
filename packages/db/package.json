@@ -15,6 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cafm/config-engine": "workspace:*",
     "@cafm/shared": "workspace:*",
     "@prisma/client": "6.19.3",
     "argon2": "0.45.1",

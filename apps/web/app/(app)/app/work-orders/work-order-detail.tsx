@@ -113,6 +113,14 @@ export function WorkOrderDetail({
               <dd>{record.createdByName ?? '—'}</dd>
               <dt>Raised</dt>
               <dd>{requestTime(record.createdAt)}</dd>
+              {record.ppm && (
+                <>
+                  <dt>Planned maintenance</dt>
+                  <dd>
+                    {record.ppm.scheduleNumber}, due {record.ppm.dueOn}
+                  </dd>
+                </>
+              )}
               {times.map(([label, value]) =>
                 value ? (
                   <Fragment key={label}>
