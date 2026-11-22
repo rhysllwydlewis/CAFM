@@ -21,6 +21,11 @@ async function assertAccessible(page: Page) {
   expect(results.violations.map((violation) => [violation.id, violation.nodes.map((node) => node.target)])).toEqual([]);
 }
 
+/** The status badge at the top of the job, which changes only once the update has been saved. */
+async function expectStatus(page: Page, text: string) {
+  await expect(page.locator('.page-head .badge').first()).toHaveText(text);
+}
+
 async function updateStatus(page: Page, label: string, extra?: { reason?: string }) {
   await page.getByLabel('New status').selectOption({ label });
   if (extra?.reason) await page.getByLabel('Why is it paused?').selectOption({ label: extra.reason });
@@ -94,7 +99,7 @@ test('raises a job, assigns it, takes it through each step and raises work from 
   await dialog.getByLabel('Description').fill('Check the circulation pump.');
   await dialog.getByRole('button', { name: 'Create work order' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
-  await expect(page.getByText('Logged', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'Logged');
 
   // Assign it to the technician.
   const assignee = page.getByLabel('Assignee', { exact: true });
@@ -111,27 +116,27 @@ test('raises a job, assigns it, takes it through each step and raises work from 
   await expect(page.getByRole('button', { name: 'Save assignment' })).toHaveCount(0);
   await expect(page.getByText('Edit details and priority')).toHaveCount(0);
   await updateStatus(page, 'Accepted');
-  await expect(page.getByText('Accepted', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'Accepted');
   await updateStatus(page, 'On site');
-  await expect(page.getByText('On site', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'On site');
   await updateStatus(page, 'Paused', { reason: 'Awaiting parts' });
-  await expect(page.getByText('Paused · Awaiting parts').first()).toBeVisible();
+  await expectStatus(page, 'Paused · Awaiting parts');
   await updateStatus(page, 'On site');
-  await expect(page.getByText('On site', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'On site');
   await page.getByLabel('Add a note').fill('Seal replaced and pressure tested.');
   await page.getByRole('button', { name: 'Add note' }).click();
   await expect(page.getByText('Seal replaced and pressure tested.')).toBeVisible();
   await updateStatus(page, 'Completed');
-  await expect(page.getByText('Completed', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'Completed');
   // Only someone who can edit work orders can verify it.
   await expect(page.getByLabel('New status').getByRole('option', { name: 'Verified' })).toHaveCount(0);
 
   await signInAs(page, 'helpdesk');
   await page.goto(url);
   await updateStatus(page, 'Verified');
-  await expect(page.getByText('Verified', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'Verified');
   await updateStatus(page, 'Closed');
-  await expect(page.getByText('Closed', { exact: true }).first()).toBeVisible();
+  await expectStatus(page, 'Closed');
   await expect(page.getByLabel('New status')).toHaveCount(0);
   await assertAccessible(page);
 
@@ -225,14 +230,14 @@ test('sends a job to a contractor, who updates it from the emailed link without 
       await contractor.getByRole('button', { name: 'Update job' }).click();
     };
     await step('Accept the job');
-    await expect(contractor.getByText('Accepted', { exact: true }).first()).toBeVisible();
+    await expect(contractor.locator('header .badge').first()).toHaveText('Accepted');
     await step('I’m on site');
-    await expect(contractor.getByText('On site', { exact: true }).first()).toBeVisible();
+    await expect(contractor.locator('header .badge').first()).toHaveText('On site');
     await contractor.getByLabel('Add a note').fill('Driver replaced, testing now.');
     await contractor.getByRole('button', { name: 'Add note' }).click();
     await expect(contractor.getByText('Driver replaced, testing now.')).toBeVisible();
     await step('Job complete');
-    await expect(contractor.getByText('Completed', { exact: true }).first()).toBeVisible();
+    await expect(contractor.locator('header .badge').first()).toHaveText('Completed');
     await expect(contractor.getByLabel('What’s next?')).toHaveCount(0);
     await assertAccessible(contractor);
     await contractor.goto('/job/not-a-real-token');
@@ -240,7 +245,7 @@ test('sends a job to a contractor, who updates it from the emailed link without 
 
     // The team sees what the contractor did.
     await page.reload();
-    await expect(page.getByText('Completed', { exact: true }).first()).toBeVisible();
+    await expectStatus(page, 'Completed');
     await expect(page.getByText('Driver replaced, testing now.')).toBeVisible();
     await expect(page.getByText('Sparks Electrical Ltd').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Take the job back' })).toHaveCount(0);
