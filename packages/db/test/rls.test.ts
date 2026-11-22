@@ -376,6 +376,68 @@ it('isolates work orders and their timeline and refuses foreign locations, reque
   ).toEqual({ count: 0 });
 });
 
+it('isolates contractor links, hides them from other organisations and looks one up only by its exact hash', async () => {
+  expect(await db.workOrderContractor.count()).toBe(0);
+  const job = await withTenant(db, demo, (tx) => tx.workOrder.findFirstOrThrow());
+  const hash = 'test-hash-' + randomUUID();
+  const link = await withTenant(db, demo, (tx) =>
+    tx.workOrderContractor.create({
+      data: {
+        tenantId: demo,
+        workOrderId: job.id,
+        name: 'Sparks',
+        email: 'jobs@sparks.test',
+        tokenHash: hash,
+        expiresAt: new Date(Date.now() + 86_400_000),
+      },
+    }),
+  );
+  try {
+    expect(await withTenant(db, starter, (tx) => tx.workOrderContractor.count())).toBe(0);
+    expect(
+      await withTenant(db, starter, (tx) =>
+        tx.workOrderContractor.updateMany({ where: { id: link.id }, data: { name: 'x' } }),
+      ),
+    ).toEqual({ count: 0 });
+    await expect(
+      withTenant(db, starter, (tx) =>
+        tx.workOrderContractor.create({
+          data: {
+            tenantId: starter,
+            workOrderId: job.id,
+            name: 'Sparks',
+            email: 'jobs@sparks.test',
+            tokenHash: 'other-' + randomUUID(),
+            expiresAt: new Date(Date.now() + 86_400_000),
+          },
+        }),
+      ),
+    ).rejects.toThrow(/Foreign key constraint/);
+    await expect(
+      withTenant(db, demo, (tx) =>
+        tx.workOrderContractor.create({
+          data: {
+            tenantId: demo,
+            workOrderId: job.id,
+            name: 'Sparks',
+            email: 'no-at-sign',
+            tokenHash: 'bad-' + randomUUID(),
+            expiresAt: new Date(Date.now() + 86_400_000),
+          },
+        }),
+      ),
+    ).rejects.toThrow(/work_order_contractor_email_valid/);
+    // Outside any organisation the link is found only by its exact hash, and nothing can be listed.
+    expect(
+      await db.$queryRaw<{ tenant_id: string }[]>`SELECT tenant_id FROM find_work_order_contractor(${hash})`,
+    ).toEqual([{ tenant_id: demo }]);
+    expect(await db.$queryRaw<unknown[]>`SELECT * FROM find_work_order_contractor('nope')`).toEqual([]);
+    expect(await db.$queryRaw<unknown[]>`SELECT * FROM find_work_order_contractor('')`).toEqual([]);
+  } finally {
+    await withTenant(db, demo, (tx) => tx.workOrderContractor.delete({ where: { id: link.id } }));
+  }
+});
+
 it('isolates asset operational records and refuses foreign parents', async () => {
   const counts = async (tx: Tx) =>
     Promise.all([

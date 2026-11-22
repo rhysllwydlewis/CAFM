@@ -11,6 +11,7 @@ import {
 } from '@cafm/shared';
 import { activeCustomFields, nextNumber, visibleCustom } from '../../core/config';
 import type { AuthContext } from '../../core/session';
+import { missingWorkOrder, workOrderScope } from './work-order-scope';
 import { reportAssetSelect, reportLocationSelect } from '../helpdesk/request-scope';
 import { requestTargets } from '../helpdesk/request-records';
 
@@ -24,10 +25,19 @@ export const workOrderRelations = {
   request: { select: { id: true, number: true } },
   assignee: memberLabel,
   createdBy: memberLabel,
+  // The contractor the job is with now: the most recent link that has not been withdrawn.
+  contractors: { where: { revokedAt: null }, orderBy: [{ createdAt: 'desc' as const }], take: 1 },
 } satisfies Prisma.WorkOrderInclude;
 export type WorkOrderRow = Prisma.WorkOrderGetPayload<{ include: typeof workOrderRelations }>;
 
+export const PRIORITY_NAMES = ['Emergency', 'Urgent', 'Routine', 'Planned'];
 const iso = (date: Date | null) => date?.toISOString() ?? null;
+
+export async function getWorkOrder(tx: Tx, auth: AuthContext, id: string): Promise<WorkOrderRow> {
+  const row = await tx.workOrder.findFirst({ where: { ...workOrderScope(auth), id }, include: workOrderRelations });
+  if (!row) throw missingWorkOrder();
+  return row;
+}
 
 export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
   return {
@@ -41,7 +51,7 @@ export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
     asset: row.asset?.locationId === row.location.id ? row.asset : null,
     request: row.request,
     assigneeId: row.assigneeId,
-    assigneeName: row.assignee?.account.name ?? null,
+    assigneeName: row.assignee?.account.name ?? (row.contractors[0] ? row.contractors[0].name + ' (contractor)' : null),
     responseDueAt: iso(row.responseDueAt),
     attendDueAt: iso(row.attendDueAt),
     fixDueAt: iso(row.fixDueAt),
@@ -77,17 +87,25 @@ export async function workOrderDetail(
     attendedAt: iso(row.attendedAt),
     verifiedAt: iso(row.verifiedAt),
     closedAt: iso(row.closedAt),
+    contractor: row.contractors[0]
+      ? {
+          name: row.contractors[0].name,
+          email: row.contractors[0].email,
+          expiresAt: row.contractors[0].expiresAt.toISOString(),
+          lastUsedAt: iso(row.contractors[0].lastUsedAt),
+        }
+      : null,
     customFields: [...fields.values()].flatMap((definition) => {
       const value = custom[definition.key];
       return value == null ? [] : [{ definition, value }];
     }),
     nextStatuses: workOrderNextStatuses(row.status as WorkOrderStatus, auth.access!.permissions),
-    entries: entries.map(({ id, kind, body, internal, author, createdAt }) => ({
+    entries: entries.map(({ id, kind, body, internal, author, actorName, createdAt }) => ({
       id,
       kind,
       body,
       internal,
-      author: author?.account.name ?? null,
+      author: author?.account.name ?? actorName,
       createdAt: createdAt.toISOString(),
     })),
   };
@@ -191,4 +209,29 @@ export async function insertWorkOrder(tx: Tx, auth: AuthContext, input: NewWorkO
     },
   });
   return row;
+}
+
+/**
+ * The change a status step makes to the job, shared by staff and by contractors on a link: the times
+ * the targets are measured against, and whether the step reopens a finished job.
+ */
+export function statusChange(
+  before: { firstResponseAt: Date | null; attendedAt: Date | null },
+  current: WorkOrderStatus,
+  to: WorkOrderStatus,
+  pauseReason: WorkOrderPauseReason | undefined,
+  now: Date,
+) {
+  const reopened = to === 'on_site' && (current === 'completed' || current === 'verified');
+  const data = {
+    status: to,
+    pauseReason: to === 'paused' ? (pauseReason ?? null) : null,
+    firstResponseAt: before.firstResponseAt ?? now,
+    ...(to === 'on_site' && !before.attendedAt ? { attendedAt: now } : {}),
+    ...(to === 'completed' ? { completedAt: now } : {}),
+    ...(to === 'verified' ? { verifiedAt: now } : {}),
+    ...(to === 'closed' ? { closedAt: now } : {}),
+    ...(reopened ? { completedAt: null, verifiedAt: null } : {}),
+  };
+  return { reopened, data };
 }

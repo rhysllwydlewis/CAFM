@@ -2,43 +2,44 @@
 /// Status, priority and the three SLA targets are stored on the job so later edits to the
 /// priority matrix never rewrite history.
 model WorkOrder {
-  id              String           @id @default(uuid(7)) @db.Uuid
-  tenantId        String           @map("tenant_id") @db.Uuid
+  id              String                @id @default(uuid(7)) @db.Uuid
+  tenantId        String                @map("tenant_id") @db.Uuid
   number          String
-  type            String           @default("reactive")
+  type            String                @default("reactive")
   title           String
   description     String
-  status          String           @default("logged")
-  pauseReason     String?          @map("pause_reason")
-  locationId      String           @map("location_id") @db.Uuid
-  assetId         String?          @map("asset_id") @db.Uuid
-  requestId       String?          @map("request_id") @db.Uuid
-  assigneeId      String?          @map("assignee_id") @db.Uuid
-  createdById     String?          @map("created_by_id") @db.Uuid
+  status          String                @default("logged")
+  pauseReason     String?               @map("pause_reason")
+  locationId      String                @map("location_id") @db.Uuid
+  assetId         String?               @map("asset_id") @db.Uuid
+  requestId       String?               @map("request_id") @db.Uuid
+  assigneeId      String?               @map("assignee_id") @db.Uuid
+  createdById     String?               @map("created_by_id") @db.Uuid
   impact          Int
   urgency         Int
   priority        Int
-  responseDueAt   DateTime?        @map("response_due_at") @db.Timestamptz(3)
-  attendDueAt     DateTime?        @map("attend_due_at") @db.Timestamptz(3)
-  fixDueAt        DateTime?        @map("fix_due_at") @db.Timestamptz(3)
-  firstResponseAt DateTime?        @map("first_response_at") @db.Timestamptz(3)
-  attendedAt      DateTime?        @map("attended_at") @db.Timestamptz(3)
-  completedAt     DateTime?        @map("completed_at") @db.Timestamptz(3)
-  verifiedAt      DateTime?        @map("verified_at") @db.Timestamptz(3)
-  closedAt        DateTime?        @map("closed_at") @db.Timestamptz(3)
-  custom          Json             @default("{}")
-  submissionKey   String           @map("submission_key")
-  submissionHash  String           @map("submission_hash")
-  version         Int              @default(1)
-  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
-  tenant          Tenant           @relation(fields: [tenantId], references: [id])
-  location        Location         @relation(fields: [tenantId, locationId], references: [tenantId, id], onDelete: Restrict)
-  asset           Asset?           @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
-  request         ServiceRequest?  @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Restrict)
-  assignee        Membership?      @relation("WorkOrderAssignee", fields: [tenantId, assigneeId], references: [tenantId, id], onDelete: Restrict)
-  createdBy       Membership?      @relation("WorkOrderCreator", fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
+  responseDueAt   DateTime?             @map("response_due_at") @db.Timestamptz(3)
+  attendDueAt     DateTime?             @map("attend_due_at") @db.Timestamptz(3)
+  fixDueAt        DateTime?             @map("fix_due_at") @db.Timestamptz(3)
+  firstResponseAt DateTime?             @map("first_response_at") @db.Timestamptz(3)
+  attendedAt      DateTime?             @map("attended_at") @db.Timestamptz(3)
+  completedAt     DateTime?             @map("completed_at") @db.Timestamptz(3)
+  verifiedAt      DateTime?             @map("verified_at") @db.Timestamptz(3)
+  closedAt        DateTime?             @map("closed_at") @db.Timestamptz(3)
+  custom          Json                  @default("{}")
+  submissionKey   String                @map("submission_key")
+  submissionHash  String                @map("submission_hash")
+  version         Int                   @default(1)
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant          Tenant                @relation(fields: [tenantId], references: [id])
+  location        Location              @relation(fields: [tenantId, locationId], references: [tenantId, id], onDelete: Restrict)
+  asset           Asset?                @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
+  request         ServiceRequest?       @relation(fields: [tenantId, requestId], references: [tenantId, id], onDelete: Restrict)
+  assignee        Membership?           @relation("WorkOrderAssignee", fields: [tenantId, assigneeId], references: [tenantId, id], onDelete: Restrict)
+  createdBy       Membership?           @relation("WorkOrderCreator", fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
   entries         WorkOrderEntry[]
+  contractors     WorkOrderContractor[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, number])
@@ -58,6 +59,8 @@ model WorkOrderEntry {
   tenantId    String      @map("tenant_id") @db.Uuid
   workOrderId String      @map("work_order_id") @db.Uuid
   authorId    String?     @map("author_id") @db.Uuid
+  /// Who an outside party (a contractor on a link) was, when there is no member to name.
+  actorName   String?     @map("actor_name")
   kind        String
   body        String
   internal    Boolean     @default(false)
@@ -69,4 +72,27 @@ model WorkOrderEntry {
   @@unique([tenantId, id])
   @@index([tenantId, workOrderId, createdAt, id])
   @@map("work_order_entry")
+}
+
+/// An outside contractor asked to do a job. They have no account: the job is sent to them as a link whose
+/// token is stored only as a hash, and the link stops working when it expires or is withdrawn.
+model WorkOrderContractor {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  workOrderId String      @map("work_order_id") @db.Uuid
+  name        String
+  email       String
+  tokenHash   String      @unique @map("token_hash")
+  expiresAt   DateTime    @map("expires_at") @db.Timestamptz(3)
+  revokedAt   DateTime?   @map("revoked_at") @db.Timestamptz(3)
+  lastUsedAt  DateTime?   @map("last_used_at") @db.Timestamptz(3)
+  createdById String?     @map("created_by_id") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  workOrder   WorkOrder   @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  createdBy   Membership? @relation(fields: [tenantId, createdById], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId, createdAt])
+  @@map("work_order_contractor")
 }

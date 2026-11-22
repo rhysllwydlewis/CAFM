@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import request from 'supertest';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
@@ -539,6 +540,248 @@ it('turns a request into several jobs, keeps the request in step and tells the r
   async function notificationTitles(tenantId: string, requestId: string): Promise<string[]> {
     const rows = await withTenant(db, tenantId, (tx) => tx.notification.findMany({ where: { requestId } }));
     return rows.map(({ title }) => title);
+  }
+});
+
+it('sends a job to a contractor by a link that needs no account, and ends it when withdrawn, replaced or expired', async () => {
+  const { manager, tech, cleanup, member, job, tenant } = await fixture();
+  const anon = () => request(app.getHttpServer());
+  const linkTo = async (email: string) => {
+    const mail = await withTenant(db, tenant.id, (tx) =>
+      tx.outboxMessage.findMany({ where: { topic: 'email.send' }, orderBy: { createdAt: 'desc' } }),
+    );
+    const message = mail.map(({ payload }) => payload as { to: string; text: string }).find(({ to }) => to === email);
+    return /\/job\/([\w-]+)/.exec(message?.text ?? '')?.[1] ?? '';
+  };
+  try {
+    const created = (await manager.post(jobs).send(job()).expect(201)).body;
+    const url = jobs + '/' + created.id;
+    const contractor = { version: 1, name: 'Sparks Electrical Ltd', email: 'jobs@sparks.test' };
+    await tech
+      .post(url + '/contractor')
+      .send(contractor)
+      .expect(403);
+    await manager
+      .post(url + '/contractor')
+      .send({ ...contractor, email: 'not-an-email' })
+      .expect(400);
+    const sent = (
+      await manager
+        .post(url + '/contractor')
+        .send(contractor)
+        .expect(201)
+    ).body;
+    expect(sent).toMatchObject({
+      status: 'assigned',
+      assigneeId: null,
+      assigneeName: 'Sparks Electrical Ltd (contractor)',
+    });
+    let token = await linkTo('jobs@sparks.test');
+    expect(token).toHaveLength(43);
+
+    // The contractor opens the job with no account, and sees only what is meant for them.
+    await manager
+      .post(url + '/comments')
+      .send({ body: 'Gate code is 1234', internal: true })
+      .expect(201);
+    await manager
+      .post(url + '/comments')
+      .send({ body: 'Please ring reception on arrival.' })
+      .expect(201);
+    const seen = (
+      await anon()
+        .get('/api/contractor-jobs/' + token)
+        .expect(200)
+    ).body;
+    expect(seen).toMatchObject({
+      contractorName: 'Sparks Electrical Ltd',
+      title: 'Replace pump seal',
+      status: 'assigned',
+      nextStatuses: ['accepted', 'travelling', 'on_site', 'paused'],
+      notes: [{ author: 'Facilities team', body: 'Please ring reception on arrival.' }],
+    });
+    expect(JSON.stringify(seen)).not.toContain('1234');
+    await anon()
+      .get('/api/contractor-jobs/' + 'x'.repeat(43))
+      .expect(404);
+    await anon().get('/api/contractor-jobs/nope').expect(404);
+
+    // Sending it again issues a new link and ends the old one. Nothing else changes.
+    const again = (
+      await manager
+        .post(url + '/contractor')
+        .send({ ...contractor, version: 2 })
+        .expect(201)
+    ).body;
+    expect(again).toMatchObject({ status: 'assigned', assigneeName: 'Sparks Electrical Ltd (contractor)' });
+    const fresh = await linkTo('jobs@sparks.test');
+    expect(fresh).not.toBe(token);
+    await anon()
+      .get('/api/contractor-jobs/' + token)
+      .expect(410);
+    token = fresh;
+    await anon()
+      .get('/api/contractor-jobs/' + token)
+      .expect(200);
+
+    // They can take the steps of doing the job, and no others.
+    const post = (path: string, data: object) =>
+      anon()
+        .post('/api/contractor-jobs/' + token + path)
+        .send(data);
+    await post('/status', { status: 'completed' }).expect(422);
+    await post('/status', { status: 'verified' }).expect(400);
+    await post('/status', { status: 'cancelled' }).expect(400);
+    await post('/status', { status: 'paused' }).expect(400);
+    await post('/status', { status: 'accepted' }).expect(201);
+    await post('/status', { status: 'on_site' }).expect(201);
+    await post('/status', { status: 'paused', pauseReason: 'awaiting_parts', note: 'Seal ordered' }).expect(201);
+    await post('/status', { status: 'on_site' }).expect(201);
+    await post('/notes', { body: 'Seal replaced.' }).expect(201);
+    const done = (await post('/status', { status: 'completed' }).expect(201)).body;
+    expect(done).toMatchObject({ status: 'completed', nextStatuses: [] });
+    expect(done.notes.map(({ body }: { body: string }) => body)).toEqual([
+      'Please ring reception on arrival.',
+      'Seal replaced.',
+    ]);
+
+    // Staff see who did what, and the job is theirs again to verify.
+    const detail = (await manager.get(url).expect(200)).body;
+    expect(detail).toMatchObject({
+      status: 'completed',
+      attendedAt: expect.any(String),
+      contractor: { name: 'Sparks Electrical Ltd', email: 'jobs@sparks.test', lastUsedAt: expect.any(String) },
+    });
+    expect(detail.entries.filter(({ author }: { author: string }) => author === 'Sparks Electrical Ltd')).toHaveLength(
+      6,
+    );
+    await manager
+      .post(url + '/status')
+      .send({ version: detail.version, status: 'verified' })
+      .expect(201);
+
+    // Taking the job back, or giving it to a person, ends the link. Once work has started it can't be withdrawn.
+    const second = (await manager.post(jobs).send(job()).expect(201)).body;
+    const secondUrl = jobs + '/' + second.id;
+    await manager
+      .post(secondUrl + '/contractor')
+      .send({ ...contractor, version: 1, email: 'second@sparks.test' })
+      .expect(201);
+    const secondToken = await linkTo('second@sparks.test');
+    await manager
+      .post(secondUrl + '/contractor/withdraw')
+      .send({ version: 1 })
+      .expect(409);
+    const withdrawn = (
+      await manager
+        .post(secondUrl + '/contractor/withdraw')
+        .send({ version: 2 })
+        .expect(201)
+    ).body;
+    expect(withdrawn).toMatchObject({ status: 'logged', assigneeName: null });
+    await anon()
+      .get('/api/contractor-jobs/' + secondToken)
+      .expect(410);
+    await manager
+      .post(secondUrl + '/contractor/withdraw')
+      .send({ version: 3 })
+      .expect(404);
+
+    await manager
+      .post(secondUrl + '/contractor')
+      .send({ ...contractor, version: 3, email: 'third@sparks.test' })
+      .expect(201);
+    const thirdToken = await linkTo('third@sparks.test');
+    await anon()
+      .post('/api/contractor-jobs/' + thirdToken + '/status')
+      .send({ status: 'on_site' })
+      .expect(201);
+    await manager
+      .post(secondUrl + '/contractor/withdraw')
+      .send({ version: 5 })
+      .expect(422);
+    await manager
+      .post(secondUrl + '/status')
+      .send({ version: 5, status: 'paused', pauseReason: 'other' })
+      .expect(201);
+    await manager
+      .post(secondUrl + '/assign')
+      .send({ version: 6, assigneeId: member('tech') })
+      .expect(201);
+    await anon()
+      .get('/api/contractor-jobs/' + thirdToken)
+      .expect(410);
+    expect((await manager.get(secondUrl).expect(200)).body).toMatchObject({
+      assigneeId: member('tech'),
+      contractor: null,
+    });
+
+    // A link that has run out of time is refused.
+    const owner = ownerDb();
+    try {
+      await owner.workOrderContractor.updateMany({
+        where: { tenantId: tenant.id, revokedAt: null },
+        data: { createdAt: new Date(Date.now() - 60 * 86_400_000), expiresAt: new Date(Date.now() - 86_400_000) },
+      });
+    } finally {
+      await owner.$disconnect();
+    }
+    await anon()
+      .get('/api/contractor-jobs/' + token)
+      .expect(410);
+    await anon()
+      .post('/api/contractor-jobs/' + token + '/status')
+      .send({ status: 'accepted' })
+      .expect(410);
+
+    // Another organisation's staff cannot send, withdraw or read this job.
+    const stranger = await fixture();
+    try {
+      await stranger.admin
+        .post(url + '/contractor')
+        .send({ ...contractor, version: 1 })
+        .expect(404);
+      await stranger.admin
+        .post(url + '/contractor/withdraw')
+        .send({ version: 1 })
+        .expect(404);
+    } finally {
+      await stranger.cleanup();
+    }
+  } finally {
+    await cleanup();
+  }
+});
+
+it('completes the request when a contractor finishes the only job on it', async () => {
+  const { desk, tenant, cleanup, report } = await fixture();
+  try {
+    const raised = await report();
+    const [created] = (
+      await desk
+        .post(jobs + '/from-request/' + raised.id)
+        .send({ submissionId: randomUUID(), requestVersion: 1, jobs: [{}] })
+        .expect(201)
+    ).body;
+    await desk
+      .post(jobs + '/' + created.id + '/contractor')
+      .send({ version: 1, name: 'Sparks Electrical Ltd', email: 'jobs@sparks.test' })
+      .expect(201);
+    const mail = await withTenant(db, tenant.id, (tx) =>
+      tx.outboxMessage.findMany({ where: { topic: 'email.send' }, orderBy: { createdAt: 'desc' } }),
+    );
+    const token = /\/job\/([\w-]+)/.exec((mail[0]!.payload as { text: string }).text)![1];
+    for (const status of ['on_site', 'completed']) {
+      await request(app.getHttpServer())
+        .post('/api/contractor-jobs/' + token + '/status')
+        .send({ status })
+        .expect(201);
+    }
+    expect((await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.status).toBe('completed');
+    const entries = (await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.entries;
+    expect(entries.map(({ body }: { body: string }) => body)).toContain('Completed · all work orders finished');
+  } finally {
+    await cleanup();
   }
 });
 

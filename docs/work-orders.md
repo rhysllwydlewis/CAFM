@@ -1,6 +1,6 @@
 # Work orders
 
-Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. Contractor assignment, SLA clocks and escalation, costs, checklists and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
+Reactive jobs at a location, usually raised from a Helpdesk request. This page covers the screens, the model and the API. SLA clocks and escalation, costs, checklists and job sheets follow in the other P1-04 sub-items (see [PROGRESS](PROGRESS.md)).
 
 ## Screens
 
@@ -48,6 +48,18 @@ Only people who can do jobs at the location can be assigned: active, with a full
 - When every job on a request that is still wanted has been completed, the request is completed and the requester is told. Reopening a job reopens the request.
 
 Numbers use the `work_order` sequence (`WO-00001`), whose format can be changed through the numbering configuration (`/api/config/numbering`).
+
+## Contractors
+
+A job can be sent to an outside contractor who has no account. On the job page, enter the contractor's name and email and choose **Send to contractor**. They get an email with a link to a page (`/job/{token}`) where they can accept the job, say they are on their way or on site, pause it with a reason, mark it complete and add notes. They never see internal notes, and staff notes are shown as the Facilities team's.
+
+- The job moves to Assigned and has no internal assignee while it is with a contractor. Choosing a person instead takes the job back and ends the link.
+- The link works for 30 days. It is for one job and one contractor, and is stored only as a hash. **Send the link again** issues a new link and email to the same address, and the old link stops working.
+- **Take the job back** withdraws it from the contractor and returns it to the queue, until the contractor has started work. A link that is withdrawn, replaced or expired shows a plain message asking for a new one.
+- What the contractor does appears on the job's timeline under their name, completes the job's request like any other job, and is in the audit log as done through the contractor link.
+- Sending, resending and withdrawing need `work_orders.assign`. Demo email is captured rather than sent.
+
+The full contractor portal, accreditations and quotes are a Phase 2A feature.
 
 ## Changing a job
 

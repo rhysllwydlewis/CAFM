@@ -60,7 +60,9 @@ import {
 import { locationScope } from '../locations/location-tree';
 import {
   eligibleTechnician,
+  getWorkOrder,
   insertWorkOrder,
+  statusChange,
   JOB_LICENCES,
   submissionHash,
   workOrderDetail,
@@ -68,18 +70,10 @@ import {
   workOrderSummary,
   type WorkOrderRow,
 } from './work-order-records';
-import { missingWorkOrder, staleWorkOrder, withWorkOrderWrite, workOrderScope } from './work-order-scope';
+import { syncRequest } from './request-sync';
+import { staleWorkOrder, withWorkOrderWrite, workOrderScope } from './work-order-scope';
 
 const CLOSED_STATUSES = ['closed', 'cancelled'];
-async function getWorkOrder(tx: Tx, auth: AuthContext, id: string): Promise<WorkOrderRow> {
-  const row = await tx.workOrder.findFirst({
-    where: { ...workOrderScope(auth), id },
-    include: workOrderRelations,
-  });
-  if (!row) throw missingWorkOrder();
-  return row;
-}
-
 function entry(
   tx: Tx,
   row: { tenantId: string; id: string },
@@ -91,62 +85,6 @@ function entry(
   return tx.workOrderEntry.create({
     data: { tenantId: row.tenantId, workOrderId: row.id, authorId: auth.membership!.id, kind, body, internal },
   });
-}
-
-/**
- * Keeps the Helpdesk request in step with its jobs. When every job that is still wanted has been
- * completed, the request is completed and the requester told. Reopening a job reopens the request.
- */
-async function syncRequest(tx: Tx, auth: AuthContext, requestId: string, ip?: string) {
-  const tenantId = auth.membership!.tenantId;
-  await lockRequests(tx, tenantId);
-  const request = await tx.serviceRequest.findFirst({ where: { id: requestId, tenantId } });
-  // Closed, rejected and merged requests are left alone.
-  if (!request || ['closed', 'rejected', 'merged'].includes(request.status)) return;
-  const jobs = await tx.workOrder.findMany({
-    where: { tenantId, requestId, status: { not: 'cancelled' } },
-    select: { status: true },
-  });
-  const done = jobs.length > 0 && jobs.every(({ status }) => ['completed', 'verified', 'closed'].includes(status));
-  const next: string | null =
-    done && request.status !== 'completed'
-      ? 'completed'
-      : !done && request.status === 'completed'
-        ? 'in_progress'
-        : null;
-  if (!next) return;
-  const updated = await tx.serviceRequest.update({
-    where: { id: request.id },
-    data: {
-      status: next,
-      firstResponseAt: request.firstResponseAt ?? new Date(),
-      ...(next === 'in_progress' ? { rating: null, feedback: null, ratedAt: null } : {}),
-      version: { increment: 1 },
-    },
-  });
-  const label = next === 'completed' ? 'Completed' : 'In progress';
-  const note = await tx.requestEntry.create({
-    data: {
-      tenantId,
-      requestId: request.id,
-      authorId: auth.membership!.id,
-      kind: 'status',
-      body: next === 'completed' ? 'Completed · all work orders finished' : 'In progress · a work order was reopened',
-    },
-  });
-  await audit(
-    tx,
-    auth,
-    {
-      action: 'request.update',
-      entityType: 'request',
-      entityId: request.id,
-      changes: { before: { status: request.status }, after: { status: next }, via: 'work_order' },
-    },
-    ip,
-  );
-  await notifyRequester(tx, updated, next === 'completed' ? 'request.completed' : 'request.progress', note.id, label);
-  await notifyLinkedRequesters(tx, tenantId, request.id, request.status as RequestStatus, next as RequestStatus);
 }
 
 @Controller('work-orders')
@@ -587,22 +525,11 @@ export class WorkOrdersController {
         throw new UnprocessableEntityException('That status change is unavailable.');
       }
       const to = input.status;
-      const now = new Date();
-      const reopened = to === 'on_site' && (current === 'completed' || current === 'verified');
+      const { reopened, data } = statusChange(before, current, to, input.pauseReason, new Date());
       const next = await tx.workOrder.update({
         where: { id },
         include: workOrderRelations,
-        data: {
-          status: to,
-          pauseReason: to === 'paused' ? input.pauseReason : null,
-          firstResponseAt: before.firstResponseAt ?? now,
-          ...(to === 'on_site' && !before.attendedAt ? { attendedAt: now } : {}),
-          ...(to === 'completed' ? { completedAt: now } : {}),
-          ...(to === 'verified' ? { verifiedAt: now } : {}),
-          ...(to === 'closed' ? { closedAt: now } : {}),
-          ...(reopened ? { completedAt: null, verifiedAt: null } : {}),
-          version: { increment: 1 },
-        },
+        data: { ...data, version: { increment: 1 } },
       });
       await entry(
         tx,
@@ -629,7 +556,7 @@ export class WorkOrdersController {
         req.ip,
       );
       if (next.requestId && (to === 'completed' || reopened || to === 'cancelled')) {
-        await syncRequest(tx, auth, next.requestId, req.ip);
+        await syncRequest(tx, auth.membership!.tenantId, next.requestId, { auth, ip: req.ip });
       }
       return workOrderSummary(next);
     });
@@ -658,6 +585,11 @@ export class WorkOrdersController {
       const status: WorkOrderStatus =
         input.assigneeId === null ? 'logged' : current === 'paused' ? 'paused' : 'assigned';
       const now = new Date();
+      // Choosing a person takes the job back from a contractor, whose link stops working.
+      if (input.assigneeId && before.contractors[0]) {
+        await tx.workOrderContractor.update({ where: { id: before.contractors[0].id }, data: { revokedAt: now } });
+        await entry(tx, before, auth, 'assignment', before.contractors[0].name + ' no longer has this job');
+      }
       const next = await tx.workOrder.update({
         where: { id },
         include: workOrderRelations,

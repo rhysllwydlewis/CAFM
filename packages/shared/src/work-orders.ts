@@ -70,14 +70,9 @@ export function workOrderNextStatuses(
   });
 }
 
+const FIELD_STATUSES = ['accepted', 'travelling', 'on_site', 'paused', 'completed'] as const;
 /** The steps the person doing the job takes, with only the permission to close jobs. */
-export const WORK_ORDER_FIELD_STATUSES: readonly WorkOrderStatus[] = [
-  'accepted',
-  'travelling',
-  'on_site',
-  'paused',
-  'completed',
-];
+export const WORK_ORDER_FIELD_STATUSES: readonly WorkOrderStatus[] = FIELD_STATUSES;
 /** Jobs that can still change hands: before anyone is on site. */
 export const WORK_ORDER_REASSIGNABLE: readonly WorkOrderStatus[] = [
   'logged',
@@ -208,6 +203,46 @@ export const workOrderCommentSchema = z
   .object({ body: shortText(6000), internal: z.boolean().default(false) })
   .strict();
 
+/** How long a link sent to a contractor works. Sending it again starts the time afresh. */
+export const CONTRACTOR_LINK_DAYS = 30;
+
+export const assignContractorSchema = z
+  .object({ version, name: shortText(120), email: z.string().trim().email().max(254).toLowerCase() })
+  .strict();
+export const withdrawContractorSchema = z.object({ version }).strict();
+export const contractorStatusSchema = z
+  .object({
+    status: z.enum(FIELD_STATUSES),
+    pauseReason: z.enum(WORK_ORDER_PAUSE_REASONS).optional(),
+    note: shortText(1200).optional(),
+  })
+  .strict()
+  .refine((change) => (change.status === 'paused') === (change.pauseReason !== undefined), {
+    message: 'Choose why the job is paused.',
+    path: ['pauseReason'],
+  });
+export const contractorNoteSchema = z.object({ body: shortText(6000) }).strict();
+
+export type WorkOrderContractorInfo = { name: string; email: string; expiresAt: string; lastUsedAt: string | null };
+
+/** What a contractor sees on their link: the job, and only the notes meant for them. */
+export type ContractorJob = {
+  contractorName: string;
+  number: string;
+  title: string;
+  description: string;
+  status: WorkOrderStatus;
+  pauseReason: WorkOrderPauseReason | null;
+  priority: number;
+  location: { name: string; code: string; address: string | null };
+  asset: { name: string; number: string } | null;
+  attendDueAt: string | null;
+  fixDueAt: string | null;
+  expiresAt: string;
+  nextStatuses: WorkOrderStatus[];
+  notes: { id: string; author: string; body: string; createdAt: string }[];
+};
+
 export type WorkOrderSummary = {
   id: string;
   number: string;
@@ -239,6 +274,7 @@ export type WorkOrderRecord<CustomField = unknown> = WorkOrderSummary & {
   verifiedAt: string | null;
   closedAt: string | null;
   customFields: { definition: CustomField; value: unknown }[];
+  contractor: WorkOrderContractorInfo | null;
   /** The statuses this person can move the job to now, given its state and their permissions. */
   nextStatuses: WorkOrderStatus[];
   entries: { id: string; kind: string; body: string; internal: boolean; author: string | null; createdAt: string }[];

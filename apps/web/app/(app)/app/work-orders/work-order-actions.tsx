@@ -7,12 +7,14 @@ import {
   WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_PAUSE_REASONS,
   WORK_ORDER_REASSIGNABLE,
+  WORK_ORDER_UNASSIGNABLE,
   WORK_ORDER_STATUS_LABELS,
   type WorkOrderPauseReason,
   type WorkOrderRecord,
   type WorkOrderStatus,
 } from '@cafm/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
+import { requestTime } from '@/lib/helpdesk-format';
 import { RecordPicker } from '../helpdesk/record-picker';
 import styles from './work-orders.module.css';
 
@@ -134,6 +136,76 @@ export function WorkOrderActions({
             Save assignment
           </Button>
         </form>
+      )}
+
+      {canAssign && (WORK_ORDER_REASSIGNABLE.includes(record.status) || record.contractor) && (
+        <section className="stack g3" aria-labelledby="wo-contractor">
+          <h3 className="card-t" id="wo-contractor">
+            Contractor
+          </h3>
+          {record.contractor && (
+            <p className="sm">
+              With {record.contractor.name} ({record.contractor.email}). Their link works until{' '}
+              {requestTime(record.contractor.expiresAt)}
+              {record.contractor.lastUsedAt ? ' and was last used ' + requestTime(record.contractor.lastUsedAt) : ''}.
+            </p>
+          )}
+          {WORK_ORDER_REASSIGNABLE.includes(record.status) && (
+            <form
+              className="stack g3"
+              key={record.contractor?.email ?? 'none'}
+              onSubmit={(event) =>
+                void submit(event, (data) =>
+                  helpdeskWrite(base + '/contractor', {
+                    version: record.version,
+                    name: data.get('contractorName'),
+                    email: data.get('contractorEmail'),
+                  }),
+                )
+              }
+            >
+              <Field label="Contractor name" htmlFor="wo-contractor-name">
+                <TextInput
+                  id="wo-contractor-name"
+                  name="contractorName"
+                  defaultValue={record.contractor?.name}
+                  required
+                  maxLength={120}
+                />
+              </Field>
+              <Field label="Contractor email" htmlFor="wo-contractor-email">
+                <TextInput
+                  id="wo-contractor-email"
+                  name="contractorEmail"
+                  type="email"
+                  defaultValue={record.contractor?.email}
+                  required
+                  maxLength={254}
+                />
+              </Field>
+              <p className="sm muted">
+                They get an email with a link to the job. They don’t need an account. Sending to the same address again
+                issues a new link and ends the old one.
+              </p>
+              <div>
+                <Button type="submit" disabled={busy}>
+                  {record.contractor ? 'Send the link again' : 'Send to contractor'}
+                </Button>
+              </div>
+            </form>
+          )}
+          {record.contractor && (WORK_ORDER_UNASSIGNABLE.includes(record.status) || record.status === 'paused') && (
+            <form
+              onSubmit={(event) =>
+                void submit(event, () => helpdeskWrite(base + '/contractor/withdraw', { version: record.version }))
+              }
+            >
+              <Button type="submit" disabled={busy}>
+                Take the job back
+              </Button>
+            </form>
+          )}
+        </section>
       )}
 
       {canEdit && open && (
