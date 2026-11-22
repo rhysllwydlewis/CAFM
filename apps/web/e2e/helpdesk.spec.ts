@@ -140,6 +140,12 @@ test('reports a fault with a photo from a printed asset QR after signing in', as
     await expect(link).toBeVisible();
     await checkAccessibility(page);
     const id = new URL(page.url()).pathname.split('/').pop()!;
+    await page.getByRole('link', { name: 'My requests', exact: true }).first().click();
+    await page.getByRole('link', { name: 'Find an asset tag' }).click();
+    await page.getByLabel('Scan or enter tag code').fill('CDF-00003');
+    await page.getByRole('button', { name: 'Find asset' }).click();
+    await expect(page.getByRole('heading', { name: 'Report a fault' })).toBeVisible();
+    await expect(page.getByText('Boiler 2 · AST-00003', { exact: true })).toBeVisible();
     await page.context().clearCookies();
     await page.goto('/login');
     await signIn(page, 'helpdesk');

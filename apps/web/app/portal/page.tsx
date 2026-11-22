@@ -38,7 +38,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </Link>
         </div>
         <section id="my-requests" className="card card-b stack g3">
-          <h2 className="card-t">My requests</h2>
+          <div className="row wrap between g2">
+            <h2 className="card-t">My requests</h2>
+            <Link className="btn" href="/asset-qr">
+              <Icon name="qr-code" /> Find an asset tag
+            </Link>
+          </div>
           <RequestTable items={items} now={0} own />
           {cursorReset && <p className="muted">The list changed. Showing the first page.</p>}
           {((cursor && !cursorReset) || nextCursor) && (

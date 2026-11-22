@@ -10,7 +10,7 @@ export async function ScanResult({ query }: { query: { id: string } | { code?: s
     return (
       <main className="page">
         <p role="alert">Enter a valid asset tag code.</p>
-        <Link href="/app/assets">Back to Assets</Link>
+        <Link href="/asset-qr">Try another tag code</Link>
       </main>
     );
   }
@@ -36,6 +36,9 @@ export async function ScanResult({ query }: { query: { id: string } | { code?: s
         <div className="row wrap g2">
           <Link className="btn primary" href={'/select-organisation?next=' + encodeURIComponent(next)}>
             Switch organisation
+          </Link>
+          <Link className="btn" href="/asset-qr">
+            Try another tag code
           </Link>
           <Link className="btn" href="/app">
             Go to CAFM

@@ -34,7 +34,7 @@ An asset can serve places (a floor or room) and other assets: AHU-1 serves Floor
 Open **Asset records → Tags** to issue an organisation-unique tag code. In **Print labels**, select individual tags or select all shown. The register’s **Print labels** page covers multiple assets and can be filtered by asset name, reference or tag code. The address shown on the print page comes from the deployment’s public app URL when configured.
 
 - **QR.** Scan with your phone camera. The link stays the same if equipment is renamed or moved.
-- **Barcode.** Focus **Scan or enter tag code** on the labels page and scan with a keyboard-wedge Code 128 reader, or type the code.
+- **Barcode.** Focus **Scan or enter tag code** on the labels page or through **Find an asset tag** in the requester portal and scan with a keyboard-wedge Code 128 reader, or type the code.
 - **NFC.** Copy the scan link from the tag and write it to the chip as an NDEF URL with an NFC writer. The printed NFC label also includes a QR code.
 
 A scan opens a prefilled [Helpdesk report](helpdesk.md) when the signed-in member can report against that asset. People with register access can view the asset, and technicians with the meter permission can jump to readings. Retiring a lost or replaced tag ends its scan link and reserves its code so a physical tag can never be reassigned by accident.
