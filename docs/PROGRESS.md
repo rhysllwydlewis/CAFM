@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04e are done (04e is in the open PR). Next 04f: checklists on a job (templates, steps, answers), photos and signatures (customer and technician sign-off), reusing the attachment storage. Then 04g job-sheet PDFs, emailed to the requester. |
+| P1-04 | Claude | `claude/trusting-carson-1nifqf` | 22 Nov 2026 | 04a to 04e are done. Now 04f: checklists on a job (templates and ad hoc, pass/fail, number and text answers, required items that gate starting and completing). Then 04g photos and signatures (customer and technician sign-off), reusing the attachment storage, and 04h job-sheet PDFs emailed to the requester. |
 
 ## Phase checklists
 
@@ -110,8 +110,9 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-04c** Assignment to people and to contractors, with a magic link so a contractor can update the job without an account. Teams are not built yet. ([guide](work-orders.md#contractors))
   - [x] **P1-04d** SLA clocks (response, attend, fix) with pause reasons, breach alerts and escalation. Escalation chains are fixed (assignee, then supervisors) until the workflow builder. ([guide](work-orders.md#sla-targets-pauses-and-alerts))
   - [x] **P1-04e** Labour, parts and sub-contract costs, and the cost total on the job, with a not-to-exceed limit. Mark-up and charge-out follow with Finance. ([guide](work-orders.md#costs))
-  - [ ] **P1-04f** Checklists, photos and signatures.
-  - [ ] **P1-04g** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester.
+  - [ ] **P1-04f** Checklists: templates and ad hoc lists on a job, answers, and required items that gate starting and completing.
+  - [ ] **P1-04g** Photos (before, after, other) and signatures (customer and technician sign-off) on a job.
+  - [ ] **P1-04h** Job-sheet PDFs (`wo-04-job-sheet`), emailed to the requester.
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
