@@ -80,7 +80,7 @@ Every agent follows this protocol. Its own section only adds focus.
    Before building, it **claims** the item: a draft PR with `Progress: <item> in progress` and a row in the "In progress" table of `docs/PROGRESS.md`. Only items in the approved phase can be claimed; see [AGENTS.md § Progress rules](../../AGENTS.md#3-progress-rules-mandatory-checked-by-ci), which CI enforces.
 
    If its PR is open and waiting for review with nothing to change, it does a quick check that the PR still merges cleanly and still passes its checks, then stops.
-3. **Work on its own branch:** `agent/<ID>-<short-slug>` (for example `agent/A12-sla-pause-reasons`). Keep the change small: about 400 changed lines of hand-written code at most (tests, generated files and fixtures excluded). Split anything bigger into steps.
+3. **Work on its own branch:** `agent/<ID>-<short-slug>` (for example `agent/A12-sla-pause-reasons`). Follow the PR size and capability-batch guidance in [AGENTS.md](../../AGENTS.md).
 4. **Verify before pushing:** typecheck, lint, unit tests, API tests (including cross-tenant denial tests for every touched endpoint), end-to-end tests for touched journeys, and for UI changes a screenshot compared side by side with the matching mockup.
 5. **Ship:** push and open or update one **draft PR**, ticking any finished roadmap item in `docs/PROGRESS.md` in the same PR, and using the PR template: what changed and why, catalogue § references, screenshots next to the mockup, tests run and their results, risks, and follow-ups.
 6. **Write notes:** update `docs/agents/notes/<ID>.md` (its own file, so agents never conflict on it) with what it did, decisions made, gotchas, and the next three candidate items.

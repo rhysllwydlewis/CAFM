@@ -50,7 +50,7 @@ These stop two agents building the same thing and keep the tracker true. The **P
    If something is left over, note it under the item, or split the item (rule 5). Don't tick it.
 
 4. **Keep the summary true.** When you tick an item, update that phase's count in the phase table and the overall percentage. `node scripts/progress.mjs check` tells you the right numbers, and CI fails if they're wrong.
-5. **Split big items.** Phase 1 items are large: a work order item, for example, is many PRs. Split one into sub-items, indented under it with a letter: `  - [ ] **P1-04a** Work order lifecycle and statuses`. Claim and tick the sub-items. The parent is ticked once all its sub-items are, and CI checks this. Splitting an item is itself a small PR (`Progress: none - splits P1-04 into steps`).
+5. **Track large items in sub-items.** Keep acceptance criteria visible with indented entries such as `  - [ ] **P1-04a** Work order lifecycle and statuses`. For owner-approved Phase 1 batches, claim the parent item when completing its remaining sub-items together. Tick each finished sub-item and tick the parent when all are done. CI checks the parent and sub-items.
 6. **One claim, several PRs.** To cover several PRs, write the claim's branch as a pattern ending in `*` (for example `agent/A12-wo-*`), so later PRs for the same item pass the check.
 7. **Stale claims.**
    - A claim is stale if its PR has had no commits for **7 days**, or its PR was closed.
@@ -62,7 +62,8 @@ These stop two agents building the same thing and keep the tracker true. The **P
 
 - **Branch:** `claude/<slug>`, `codex/<slug>` or `agent/<ID>-<slug>`, from the latest `main`.
 - **Size:**
-  - Keep a PR to about 400 hand-written lines, and to one item or sub-item.
+  - Phase 1 uses larger PRs for complete capabilities. Keep each batch cohesive, list its roadmap items and verification in the PR, and use focused commits for review.
+  - For other work, aim for about 400 hand-written lines per PR unless the product owner approves a larger batch.
   - Refactors and drive-by fixes go in separate PRs.
 - **Design first:**
   - A screen must match its mockup in `design/mockups/` (doc 12).
