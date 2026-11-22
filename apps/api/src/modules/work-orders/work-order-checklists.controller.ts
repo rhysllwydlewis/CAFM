@@ -266,10 +266,11 @@ export class ChecklistTemplatesController {
     return withTenant(this.db, tenantId, async (tx) => {
       const row = await tx.checklistTemplate.findFirst({ where: { tenantId, id: templateId, active: true } });
       if (!row) throw new NotFoundException('Checklist template not found.');
-      // The name is released so a replacement can reuse it.
+      // The name is released so a replacement can reuse it. The suffix is unique to the template and always fits.
+      const suffix = ` (retired ${templateId.slice(-8)})`;
       await tx.checklistTemplate.update({
         where: { id: templateId },
-        data: { active: false, name: `${row.name} (retired ${new Date().toISOString()})`.slice(0, 120) },
+        data: { active: false, name: row.name.slice(0, 120 - suffix.length) + suffix },
       });
       await audit(
         tx,

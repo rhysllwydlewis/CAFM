@@ -202,7 +202,7 @@ ALTER TABLE work_order_checklist_item
 
 ALTER TABLE work_order_signature
   ADD CONSTRAINT work_order_signature_role_valid CHECK (role IN ('customer', 'technician')),
-  ADD CONSTRAINT work_order_signature_name_valid CHECK (length(btrim(signer_name)) > 0 AND length(signer_name) <= 100);
+  ADD CONSTRAINT work_order_signature_name_valid CHECK (length(btrim(signer_name)) > 0 AND length(signer_name) <= 120);
 
 -- A file belongs to exactly one record (an asset, a request or a job), and a job's photo is before, after or other.
 ALTER TABLE record_attachment DROP CONSTRAINT record_attachment_parent_check;

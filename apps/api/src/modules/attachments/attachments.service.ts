@@ -97,7 +97,13 @@ export class AttachmentsService {
     async function existing(tx: Tx, current: AuthContext) {
       await checkParent(tx, current, parent, true);
       const match = await tx.recordAttachment.findFirst({
-        where: { ...where, checksum, filename: file.filename },
+        where: {
+          ...where,
+          checksum,
+          filename: file.filename,
+          phase: extras.phase ?? null,
+          caption: extras.caption ?? null,
+        },
         select: metadata,
       });
       const limit = parent.type === 'workOrder' ? WORK_ORDER_FILE_LIMIT : ATTACHMENT_LIMIT;

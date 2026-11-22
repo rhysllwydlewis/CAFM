@@ -36,6 +36,13 @@ const EMBED_PHOTOS = 6;
 const EMBEDDABLE = ['image/jpeg', 'image/png'];
 /** An emailed sheet must stay well inside what the outbox and mail servers handle. */
 const MAX_EMAIL_PDF_BYTES = 750_000;
+const COMPLETED_PREFIX = WORK_ORDER_STATUS_LABELS.completed + ' · ';
+/** The note given when completing a job: its entry reads "Completed · note · SLA clock …", and only the note is for the sheet. */
+const completionNote = (body: string) =>
+  body
+    .slice(COMPLETED_PREFIX.length)
+    .replace(/( · )?SLA clock .*$/, '')
+    .trim();
 const EMAILED_NOTE = 'Job sheet emailed to the requester';
 /** The requester is not sent the same sheet again within this time, so a double click or a mistake can't flood them. */
 const RESEND_AFTER_MS = 60_000;
@@ -58,11 +65,17 @@ export class WorkOrderJobSheetController {
     const gathered = await withTenant(this.db, tenantId, async (tx) => {
       const job = await getWorkOrder(tx, auth, id);
       const [notes, checklists, photos, signatures, costs, site, location, request] = await Promise.all([
+        // What was written for people to read: comments, and the note given when the job was completed.
         tx.workOrderEntry.findMany({
-          where: { tenantId, workOrderId: id, kind: 'comment', internal: false },
+          where: {
+            tenantId,
+            workOrderId: id,
+            internal: false,
+            OR: [{ kind: 'comment' }, { kind: 'status', body: { startsWith: COMPLETED_PREFIX } }],
+          },
           orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
           take: 15,
-          select: { body: true, createdAt: true },
+          select: { kind: true, body: true, createdAt: true },
         }),
         readChecklists(tx, tenantId, id),
         tx.recordAttachment.findMany({
@@ -154,7 +167,10 @@ export class WorkOrderJobSheetController {
       },
       asset: job.asset?.locationId === job.locationId ? { name: job.asset.name, number: job.asset.number } : null,
       assignee: job.assignee?.account.name ?? (job.contractors[0] ? `${job.contractors[0].name} (contractor)` : null),
-      notes: gathered.notes.map((note) => ({ at: note.createdAt, body: note.body })),
+      notes: gathered.notes.flatMap((note) => {
+        const body = note.kind === 'status' ? completionNote(note.body) : note.body;
+        return body ? [{ at: note.createdAt, body }] : [];
+      }),
       checklists: gathered.checklists,
       costs: gathered.costs && {
         currency: job.currency,

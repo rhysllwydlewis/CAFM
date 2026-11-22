@@ -6,7 +6,7 @@ import request from 'supertest';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { outstandingFor, checklistAnswerProblem } from '@cafm/shared';
 import { pdfText } from '../src/modules/work-orders/job-sheet';
-import { createTestAccount, createTestTenant, startApp, signIn } from './helpers';
+import { createTestAccount, createTestTenant, ownerDb, startApp, signIn } from './helpers';
 
 let app: NestExpressApplication;
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
@@ -317,10 +317,18 @@ it('keeps checklists on a job, from a template or written out, and holds back st
     expect(count('work_order_checklist.remove')).toBe(1);
     expect(await versionOf(created.id)).toBeGreaterThan(1);
 
+    // A name at the length limit is freed too, and a replacement can take it.
+    const longName = { ...isolation, title: 'T'.repeat(120) };
+    const longTemplate = (await admin.post('/api/checklist-templates').send(longName).expect(201)).body;
+    await admin.delete('/api/checklist-templates/' + longTemplate.id).expect(200);
+    await admin.post('/api/checklist-templates').send(longName).expect(201);
+
     // Retiring a template keeps the jobs that used it and frees its name.
     await manager.delete('/api/checklist-templates/' + template.id).expect(403);
     await admin.delete('/api/checklist-templates/' + template.id).expect(200);
-    expect((await manager.get('/api/checklist-templates').expect(200)).body).toEqual([]);
+    expect(
+      (await manager.get('/api/checklist-templates').expect(200)).body.map(({ name }: { name: string }) => name),
+    ).toEqual(['T'.repeat(120)]);
     await admin.post('/api/checklist-templates').send(isolation).expect(201);
     expect((await manager.get(url).expect(200)).body).toHaveLength(1);
   } finally {
@@ -366,6 +374,14 @@ it('holds a contractor on a link to the same checklists, and lets them answer fr
     expect(blocked.status).toBe(422);
     expect(blocked.body.code).toBe('checklist_incomplete');
     const [required, optional] = seen.checklists[0].items as { id: string }[];
+    // A member's answer reaches the contractor under the team's name, never the person's.
+    await manager
+      .put(`${url}/checklists/${seen.checklists[0].id}/items/${optional!.id}`)
+      .send({ answer: '1.1' })
+      .expect(200);
+    const staffAnswered = (await anon().get(link).expect(200)).body;
+    expect(staffAnswered.checklists[0].items[1]).toMatchObject({ answer: '1.1', answeredByName: 'Facilities team' });
+    expect(JSON.stringify(staffAnswered)).not.toContain('Test Person');
     await anon()
       .put(link + '/checklist-items/' + required!.id)
       .send({ answer: 'ticked' })
@@ -394,8 +410,12 @@ it('holds a contractor on a link to the same checklists, and lets them answer fr
     const audited = await withTenant(db, tenant.id, (tx) =>
       tx.auditEvent.findMany({ where: { entityId: created.id, action: 'work_order_checklist.answer' } }),
     );
-    expect(audited).toHaveLength(2);
-    expect(audited[0]!.changes).toMatchObject({ via: 'contractor_link', contractor: 'Sparks Electrical Ltd' });
+    // One answer from staff, two from the contractor, and theirs are audited as theirs.
+    expect(audited).toHaveLength(3);
+    expect(audited.filter(({ changes }) => (changes as { via?: string }).via === 'contractor_link')).toHaveLength(2);
+    expect(audited.map(({ changes }) => changes)).toContainEqual(
+      expect.objectContaining({ via: 'contractor_link', contractor: 'Sparks Electrical Ltd' }),
+    );
     // A link for one job does not reach another organisation's checklist step.
     const stranger = await fixture();
     try {
@@ -439,6 +459,15 @@ it('keeps before and after photos on a job for the people who do it, and no one 
     const listed = (await manager.get(url).expect(200)).body;
     expect(listed.map((item: { phase: string }) => item.phase)).toEqual(['before', 'after']);
 
+    // The same file given a different phase is a different photo, not a replay that loses the phase.
+    const relabelled = (await photo('leak.png', '?phase=after&caption=Seal%20weeping').expect(200)).body;
+    expect(relabelled.id).not.toBe(first.id);
+    expect((await manager.get(url).expect(200)).body.map((item: { phase: string }) => item.phase)).toEqual([
+      'before',
+      'after',
+      'after',
+    ]);
+
     // Only photos, and a phase from the list.
     await tech.put(url).attach('file', Buffer.from('<svg/>'), 'x.svg').expect(415);
     await tech
@@ -472,7 +501,7 @@ it('keeps before and after photos on a job for the people who do it, and no one 
     await stranger.admin.delete(url + '/' + first.id).expect(404);
     await manager.delete(url + '/' + first.id).expect(200);
     await manager.get(url + '/' + first.id).expect(404);
-    expect((await manager.get(url).expect(200)).body).toHaveLength(1);
+    expect((await manager.get(url).expect(200)).body).toHaveLength(2);
 
     // Photos stop at closed and cancelled.
     await move(manager, created.id, 'cancelled').then((res) => expect(res.status).toBe(201));
@@ -484,7 +513,7 @@ it('keeps before and after photos on a job for the people who do it, and no one 
 });
 
 it('records the customer’s and the technician’s sign-off, once each, from a drawing', async () => {
-  const { manager, tech, reporter, finance, cleanup, job, move, tenant } = await fixture();
+  const { manager, tech, reporter, finance, cleanup, job, move, tenant, accounts } = await fixture();
   const stranger = await fixture();
   try {
     const created = await job();
@@ -545,6 +574,18 @@ it('records the customer’s and the technician’s sign-off, once each, from a 
       'work_order_signature.add',
       'work_order_signature.remove',
     ]);
+
+    // A technician whose account name is as long as names may be can still sign.
+    const technicianSignature = both.find((item: { role: string }) => item.role === 'technician');
+    await manager.delete(url + '/' + technicianSignature.id).expect(200);
+    const owner = ownerDb();
+    try {
+      await owner.account.update({ where: { id: accounts.tech.account.id }, data: { name: 'N'.repeat(120) } });
+    } finally {
+      await owner.$disconnect();
+    }
+    const long = (await sign({ role: 'technician', image: drawing }).expect(201)).body;
+    expect(long.find((item: { role: string }) => item.role === 'technician').signerName).toHaveLength(120);
 
     // Drawings are not photos, and who can see them follows the job.
     await reporter.get(url).expect(403);
@@ -706,7 +747,9 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
       .post(url + '/job-sheet/email')
       .send({})
       .expect(404);
-    await move(tech, created.id, 'completed').then((res) => expect(res.status).toBe(201));
+    await move(tech, created.id, 'completed', { note: 'Fitted a new seal and tested it.' }).then((res) =>
+      expect(res.status).toBe(201),
+    );
     expect(
       (
         await manager
@@ -744,6 +787,9 @@ it('makes a job sheet as a PDF, shows money only to those who can see costs, and
     // The customer copy has no money, no internal notes and no costs.
     const customerText = pdfStrings(copy);
     expect(customerText).toContain('Seal replaced and tested.');
+    // The note given when the job was completed is the work carried out, without the clock's housekeeping.
+    expect(customerText).toContain('Fitted a new seal and tested it.');
+    expect(customerText).not.toContain('SLA clock');
     expect(customerText).not.toContain('Total (excluding VAT)');
     expect(customerText).not.toContain('PRV 3 bar');
     expect(customerText).not.toContain('1234');

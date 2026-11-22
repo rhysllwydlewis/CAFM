@@ -113,7 +113,7 @@ export class ContractorJobsController {
         body,
         createdAt: createdAt.toISOString(),
       })),
-      checklists: await readChecklists(tx, tenantId, job.id),
+      checklists: await readChecklists(tx, tenantId, job.id, true),
     };
   }
 

@@ -12,7 +12,13 @@ import {
 const answeredBy = { select: { account: { select: { name: true } } } } as const;
 
 /** A job's checklists with their steps, in the order they were added. */
-export async function readChecklists(tx: Tx, tenantId: string, workOrderId: string): Promise<Checklist[]> {
+export async function readChecklists(
+  tx: Tx,
+  tenantId: string,
+  workOrderId: string,
+  /** For someone outside the organisation: a member's name is replaced by the team's, as on the notes. */
+  outside = false,
+): Promise<Checklist[]> {
   const rows = await tx.workOrderChecklist.findMany({
     where: { tenantId, workOrderId },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -27,7 +33,8 @@ export async function readChecklists(tx: Tx, tenantId: string, workOrderId: stri
       unit: item.unit,
       answer: item.answer,
       note: item.note,
-      answeredByName: item.answeredByName ?? item.answeredBy?.account.name ?? null,
+      answeredByName:
+        item.answeredByName ?? (item.answeredBy ? (outside ? 'Facilities team' : item.answeredBy.account.name) : null),
       answeredAt: item.answeredAt?.toISOString() ?? null,
     }));
     return {

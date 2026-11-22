@@ -162,7 +162,7 @@ export const addSignatureSchema = z
   .object({
     role: z.enum(SIGNATURE_ROLES),
     /** Taken from the signed-in technician; the customer's name is typed in. */
-    signerName: shortText(100).optional(),
+    signerName: shortText(120).optional(),
     image: z.string().max(Math.ceil((SIGNATURE_MAX_BYTES * 4) / 3) + 64),
   })
   .strict();
