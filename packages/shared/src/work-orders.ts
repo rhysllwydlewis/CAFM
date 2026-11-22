@@ -281,6 +281,8 @@ export type WorkOrderSummary = {
 export type WorkOrderRecord<CustomField = unknown> = WorkOrderSummary & {
   version: number;
   type: string;
+  /** For a visit raised from a PPM schedule: which, and the day it is due. */
+  ppm: { scheduleId: string; scheduleNumber: string; dueOn: string } | null;
   /** The business minutes the clock has been stopped for. The targets already include them. */
   slaPausedMinutes: number;
   description: string;

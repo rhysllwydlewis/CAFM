@@ -29,6 +29,7 @@ export const workOrderRelations = {
   request: { select: { id: true, number: true } },
   assignee: memberLabel,
   createdBy: memberLabel,
+  ppmScheduleAsset: { select: { schedule: { select: { id: true, number: true } } } },
   // The contractor the job is with now: the most recent link that has not been withdrawn.
   contractors: { where: { revokedAt: null }, orderBy: [{ createdAt: 'desc' as const }], take: 1 },
 } satisfies Prisma.WorkOrderInclude;
@@ -92,6 +93,14 @@ export async function workOrderDetail(
     ...workOrderSummary(row),
     version: row.version,
     type: row.type,
+    ppm:
+      row.ppmScheduleAsset && row.scheduledFor
+        ? {
+            scheduleId: row.ppmScheduleAsset.schedule.id,
+            scheduleNumber: row.ppmScheduleAsset.schedule.number,
+            dueOn: row.scheduledFor.toISOString().slice(0, 10),
+          }
+        : null,
     slaPausedMinutes: row.slaPausedMinutes,
     description: row.description,
     impact: row.impact,

@@ -165,10 +165,12 @@ ALTER TABLE ppm_schedule
   ADD CONSTRAINT ppm_schedule_criticality_valid CHECK (criticality IN ('statutory', 'mandatory', 'optimal', 'discretionary')),
   ADD CONSTRAINT ppm_schedule_mode_valid CHECK (mode IN ('fixed', 'floating')),
   ADD CONSTRAINT ppm_schedule_frequency_valid CHECK (
-    (freq_type = 'calendar' AND calendar_unit IN ('day', 'week', 'month', 'year') AND interval BETWEEN 1 AND 120
+    (freq_type = 'calendar' AND calendar_unit IS NOT NULL AND calendar_unit IN ('day', 'week', 'month', 'year')
+      AND interval IS NOT NULL AND interval BETWEEN 1 AND 120
       AND meter_name IS NULL AND meter_interval IS NULL)
     OR
-    (freq_type = 'meter' AND meter_name IS NOT NULL AND length(btrim(meter_name)) > 0 AND meter_interval > 0
+    (freq_type = 'meter' AND meter_name IS NOT NULL AND length(btrim(meter_name)) > 0
+      AND meter_interval IS NOT NULL AND meter_interval > 0
       AND calendar_unit IS NULL AND interval IS NULL AND mode = 'floating')
   ),
   ADD CONSTRAINT ppm_schedule_lead_valid CHECK (lead_days BETWEEN 0 AND 365),

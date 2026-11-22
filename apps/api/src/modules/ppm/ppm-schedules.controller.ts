@@ -23,7 +23,14 @@ import {
   WORK_ORDER_FINISHED,
 } from '@cafm/shared';
 import { audit } from '../../core/audit';
-import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
+import {
+  assertAccess,
+  PermissionGuard,
+  RequireFeature,
+  RequirePermission,
+  SessionGuard,
+  TenantGuard,
+} from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
@@ -49,7 +56,6 @@ type AssetInput = { assetId: string; lastDoneOn?: string };
  * of the name the schedule reads.
  */
 async function checkAssets(tx: Tx, auth: AuthContext, assets: AssetInput[], meterName: string | null) {
-  const tenantId = auth.membership!.tenantId;
   const ids = assets.map((asset) => asset.assetId);
   if (new Set(ids).size !== ids.length)
     throw new UnprocessableEntityException('An asset can only be on a schedule once.');
@@ -254,7 +260,9 @@ export class PpmSchedulesController {
         !before.meterInterval?.equals(schedule.meterInterval ?? new Prisma.Decimal(-1)) ||
         before.mode !== schedule.mode ||
         before.startsOn.getTime() !== schedule.startsOn.getTime();
-      if (timingChanged) {
+      // A schedule put back to work starts from today. Left alone it would raise every visit missed while it was archived.
+      const reactivated = !before.active && schedule.active;
+      if (timingChanged || reactivated) {
         for (const row of rows) {
           // A floating visit waiting to be done is counted on from when it is done, so it stays as it is.
           const waiting =
@@ -290,6 +298,7 @@ export class PpmSchedulesController {
             before: { title: before.title, active: before.active, mode: before.mode, leadDays: before.leadDays },
             after: { title: schedule.title, active: schedule.active, mode: schedule.mode, leadDays: schedule.leadDays },
             timingChanged,
+            reactivated,
           },
         },
         req.ip,
@@ -356,6 +365,7 @@ export class PpmSchedulesController {
     return withPpmWrite(this.db, req.auth!, 'ppm.manage', async (tx, auth) => {
       const tenantId = auth.membership!.tenantId;
       if (!(await tx.ppmSchedule.findFirst({ where: { tenantId, id }, select: { id: true } }))) throw missingSchedule();
+      assertAccess(auth.access, 'work_orders');
       const result = await generatePpm(tx, { tenantId, today: today(), scheduleId: id });
       await audit(
         tx,
@@ -385,12 +395,13 @@ export class PpmGenerateController {
   generate(@Req() req: Request) {
     return withPpmWrite(this.db, req.auth!, 'ppm.manage', async (tx, auth) => {
       const tenantId = auth.membership!.tenantId;
+      assertAccess(auth.access, 'work_orders');
       const result = await generatePpm(tx, { tenantId, today: today() });
       await audit(
         tx,
         auth,
         {
-          action: 'ppm.generate',
+          action: 'ppm.generate_all',
           entityType: 'ppm_schedule',
           entityId: tenantId,
           changes: { created: result.created, skipped: result.skipped },

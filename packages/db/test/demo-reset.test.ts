@@ -54,6 +54,9 @@ describe('demo reset', () => {
         },
       });
       await db.auditEvent.create({ data: { tenantId: tenant.id, action: 'x', entityType: 'x' } });
+      await db.ppmTaskTemplate.create({
+        data: { tenantId: tenant.id, name: 'Visitor task', durationMinutes: 60, steps: [] },
+      });
       await db.checklistTemplate.create({
         data: {
           tenantId: tenant.id,
@@ -73,6 +76,7 @@ describe('demo reset', () => {
       ).toContain('people.read');
       expect(await db.invite.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.checklistTemplate.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.ppmTaskTemplate.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.auditEvent.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.asset.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.assetClass.count({ where: { tenantId: tenant.id } })).toBe(0);

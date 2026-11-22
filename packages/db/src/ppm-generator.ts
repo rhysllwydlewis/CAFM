@@ -66,7 +66,7 @@ export async function generatePpm(
       schedule: {
         include: {
           template: true,
-          assignee: { select: { status: true, licence: true } },
+          assignee: { select: { status: true } },
         },
       },
       asset: { select: { id: true, name: true, locationId: true } },
