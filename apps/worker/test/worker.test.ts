@@ -47,7 +47,15 @@ async function dispatchUntilQueued(id: string): Promise<void> {
     await worker.dispatchOnce();
     if (await worker.queue.getJob(id)) return;
   }
-  throw new Error(`Outbox message ${id} was never queued`);
+  // Say why, so a failure on CI can be diagnosed: a failed queue.add leaves the message waiting out a backoff.
+  const row = await withTenant(db, tenantId, (tx) => tx.outboxMessage.findUnique({ where: { id } }));
+  throw new Error(
+    `Outbox message ${id} was never queued: ` +
+      (row
+        ? `attempts ${row.attempts}, processed ${row.processedAt?.toISOString() ?? 'no'}, ` +
+          `last error ${row.lastError ?? 'none'}, next try ${row.availableAt.toISOString()}`
+        : 'it is not visible in the starter-demo tenant'),
+  );
 }
 
 describe('outbox worker', () => {
