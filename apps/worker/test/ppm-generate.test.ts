@@ -77,3 +77,36 @@ it('raises the visits that are due for an organisation with planned maintenance,
     await without.cleanup();
   }
 });
+
+it('raises every visit when there are more assets than one batch holds', async () => {
+  const many = await organisation('starter');
+  try {
+    const location = await owner.location.findFirstOrThrow({ where: { tenantId: many.tenant.id } });
+    const row = await owner.ppmScheduleAsset.findFirstOrThrow({ where: { tenantId: many.tenant.id } });
+    const startsOn = row.nextDueOn!;
+    await owner.asset.createMany({
+      data: Array.from({ length: 249 }, (_, index) => ({
+        tenantId: many.tenant.id,
+        locationId: location.id,
+        number: `AST-${index + 2}`,
+        name: `Pump ${index + 2}`,
+      })),
+    });
+    const assets = await owner.asset.findMany({ where: { tenantId: many.tenant.id, id: { not: row.assetId } } });
+    await owner.ppmScheduleAsset.createMany({
+      data: assets.map((asset) => ({
+        tenantId: many.tenant.id,
+        scheduleId: row.scheduleId,
+        assetId: asset.id,
+        nextDueOn: startsOn,
+      })),
+    });
+    const now = new Date();
+    expect(await generatePpmForTenant(db, many.tenant.id, now)).toMatchObject({ created: 250 });
+    expect(await jobs(many.tenant.id)).toBe(250);
+    expect(await generatePpmForTenant(db, many.tenant.id, now)).toMatchObject({ created: 0 });
+    expect(await jobs(many.tenant.id)).toBe(250);
+  } finally {
+    await many.cleanup();
+  }
+});

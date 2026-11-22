@@ -196,7 +196,8 @@ export async function getScheduleRecord(tx: Tx, auth: AuthContext, id: string): 
     durationMinutes: schedule.durationMinutes,
     priority: schedule.priority,
     assigneeId: schedule.assigneeId,
-    estimatedCostMinor: schedule.estimatedCostMinor,
+    // Money is for people who can see costs, as everywhere else.
+    estimatedCostMinor: auth.access?.permissions.has('costs.read') ? schedule.estimatedCostMinor : null,
     currency: schedule.currency,
     safetyNotes: template?.safetyNotes ?? null,
     skills: template?.skills ?? null,

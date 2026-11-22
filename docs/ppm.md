@@ -20,10 +20,10 @@ A **schedule** says when a task is done and on which assets. It takes the next n
 | Setting | Meaning |
 | --- | --- |
 | Frequency | **Calendar** (every N days, weeks, months or years) or **meter** (every N units on a named meter on each asset, such as every 1,000 run hours). |
-| Fixed or floating | **Fixed** visits keep their dates: each is counted from the first date, so a visit on the 31st is on the last day of a shorter month and back on the 31st the month after. **Floating** visits are due a set time after the last visit was done. A meter schedule is always floating. |
+| Fixed or floating | Fixed unless you say otherwise, and floating for a meter. **Fixed** visits keep their dates: each is counted from the first date, so a visit on the 31st is on the last day of a shorter month and back on the 31st the month after. **Floating** visits are due a set time after the last visit was done. A meter schedule is always floating. |
 | Starts on | The first visit, and the date every later fixed visit is counted from. A fixed schedule that started in the past carries on from its next date and does not raise a backlog. |
 | Lead time | Jobs are raised this many days before they fall due (default 28). |
-| Priority, duration, assignee, estimated cost | What the jobs are raised with, and what the forecast will use. Money is in whole pence. |
+| Priority, duration, assignee, estimated cost | What the jobs are raised with, and what the forecast will use. Money is in whole pence, and the estimated cost is shown and changed only by people who can see costs (`costs.read`): for everyone else it is hidden, and editing the rest of a schedule leaves it as it was. |
 
 Each asset on a schedule has its own next visit, last visit and open job. An asset taken off a schedule keeps its history. Putting an asset on a meter schedule needs a meter of that name on it, and its first visit is a full interval on from where the meter stands now.
 
@@ -36,7 +36,7 @@ Changing how often, from when, or fixed against floating works each asset's next
 The generator raises a work order for each visit that falls due within its lead time, and moves the schedule on.
 
 - It runs **every hour** in the worker, for every organisation with planned maintenance, so a new schedule or a meter reading that makes a visit due is picked up within the hour. **Generate now** (`POST /api/ppm/schedules/{id}/generate`, or `POST /api/ppm/generate` for everything) does it straight away.
-- A visit is raised **once**: the asset and the due day are unique, so running it again, or two runs at once, change nothing.
+- The generator looks at each active asset on an active schedule in batches, and only at those with a visit within a year (or a meter reading to check). A visit is raised **once**: the asset and the due day are unique, so running it again, or two runs at once, change nothing.
 - At most 12 visits per asset are raised in one run, so a daily schedule with a long lead time doesn't flood the list. The rest follow on later runs.
 - Each job has type PPM, the schedule's priority and assignee (only if that person can still do jobs at the asset's place; otherwise it is left for someone to assign), a fix target of the end of the due day (in the site's time zone), and a **checklist copied from the task's steps that holds back completing the job** (see [Work orders](work-orders.md#checklists)). The description carries the task's notes, skills and safety notes. The job page says which schedule it came from.
 - When the job is **completed**, a fixed schedule keeps its dates and remembers the last visit; a floating one is now due a set time after the visit (from the meter's reading, for a meter schedule). When it is **cancelled**, a floating schedule counts on from the day the visit was due, so it doesn't wait for ever.

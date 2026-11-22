@@ -229,8 +229,8 @@ const scheduleBody = {
   discipline: shortText(60).optional(),
   criticality: criticality.default('optimal'),
   frequency,
-  /** Meter-based schedules are always due from the last visit. */
-  mode: z.enum(PPM_MODES).default('fixed'),
+  /** Fixed by default, and from the last visit for a meter, which can be nothing else. */
+  mode: z.enum(PPM_MODES).optional(),
   /** The first visit date for fixed schedules (and the anchor every later date is counted from). */
   startsOn: calendarDate,
   leadDays: z.number().int().min(0).max(365).default(28),
@@ -241,22 +241,28 @@ const scheduleBody = {
   active: z.boolean().default(true),
 };
 
+const resolveMode = <T extends { frequency: { type: string }; mode?: PpmMode }>(input: T): T & { mode: PpmMode } => ({
+  ...input,
+  mode: input.mode ?? (input.frequency.type === 'meter' ? 'floating' : 'fixed'),
+});
+const meterIsFloating = {
+  check: (input: { frequency: { type: string }; mode: PpmMode }) =>
+    input.frequency.type === 'calendar' || input.mode === 'floating',
+  options: { message: 'A schedule based on a meter is due from the last visit.', path: ['mode'] },
+};
+
 export const createPpmScheduleSchema = z
   .object({ ...scheduleBody, assets: z.array(scheduleAsset).max(MAX_SCHEDULE_ASSETS).default([]) })
   .strict()
-  .refine((input) => input.frequency.type === 'calendar' || input.mode === 'floating', {
-    message: 'A schedule based on a meter is due from the last visit.',
-    path: ['mode'],
-  });
+  .transform(resolveMode)
+  .refine(meterIsFloating.check, meterIsFloating.options);
 export type CreatePpmSchedule = z.infer<typeof createPpmScheduleSchema>;
 
 export const updatePpmScheduleSchema = z
   .object({ ...scheduleBody, version })
   .strict()
-  .refine((input) => input.frequency.type === 'calendar' || input.mode === 'floating', {
-    message: 'A schedule based on a meter is due from the last visit.',
-    path: ['mode'],
-  });
+  .transform(resolveMode)
+  .refine(meterIsFloating.check, meterIsFloating.options);
 
 export const setScheduleAssetsSchema = z
   .object({ version, assets: z.array(scheduleAsset).max(MAX_SCHEDULE_ASSETS) })

@@ -19,6 +19,7 @@ export const PPM_TIME_ZONE = 'Europe/London';
 /** A schedule with a long lead and a short interval would raise a great many jobs at once. This caps one run. */
 const MAX_PER_ROW_PER_RUN = 12;
 const TITLE_LIMIT = 160;
+const BATCH = 200;
 
 const dayOf = (value: Date) => value.toISOString().slice(0, 10);
 const asDate = (value: string) => new Date(value + 'T00:00:00Z');
@@ -41,7 +42,7 @@ async function currentTotal(tx: Tx, tenantId: string, assetId: string, meterName
 
 export interface PpmGenerateResult {
   created: number;
-  /** Visits already raised, or not yet due. */
+  /** Rows looked at that raised nothing: not due yet, or already raised. Rows months away aren't looked at. */
   skipped: number;
   jobs: string[];
 }
@@ -57,173 +58,188 @@ export async function generatePpm(
 ): Promise<PpmGenerateResult> {
   const { tenantId, today } = options;
   await lock(tx, tenantId);
-  const rows = await tx.ppmScheduleAsset.findMany({
-    where: {
-      tenantId,
-      active: true,
-      schedule: { active: true, ...(options.scheduleId ? { id: options.scheduleId } : {}) },
-      asset: { status: { not: 'decommissioned' } },
-    },
-    include: {
-      schedule: {
-        include: {
-          template: true,
-          assignee: { select: { status: true } },
-        },
-      },
-      asset: { select: { id: true, name: true, locationId: true } },
-    },
-    orderBy: [{ nextDueOn: 'asc' }, { id: 'asc' }],
-  });
-
   const result: PpmGenerateResult = { created: 0, skipped: 0, jobs: [] };
-  for (const row of rows) {
-    const { schedule } = row;
-    const due: string[] = [];
-    if (schedule.freqType === 'calendar') {
-      let next = row.nextDueOn ? dayOf(row.nextDueOn) : null;
-      const unit = schedule.calendarUnit as PpmCalendarUnit;
-      while (next && daysBetween(today, next) <= schedule.leadDays && due.length < MAX_PER_ROW_PER_RUN) {
-        due.push(next);
-        // A floating schedule waits for this visit to be done before the next is worked out.
-        next =
-          schedule.mode === 'fixed'
-            ? nextOccurrenceAfter(dayOf(schedule.startsOn), unit, schedule.interval!, next)
-            : null;
-      }
-    } else if (row.nextDueTotal && schedule.meterName) {
-      const total = await currentTotal(tx, tenantId, row.assetId, schedule.meterName);
-      if (total && total.gte(row.nextDueTotal)) due.push(today);
-    }
-    if (!due.length) {
-      result.skipped += 1;
-      continue;
-    }
-
-    const site = await tx.locationPath.findFirst({
-      where: { tenantId, descendantId: row.asset.locationId, ancestor: { kind: 'site' } },
-      select: { ancestor: { select: { siteCalendar: true } } },
+  // The farthest ahead any lead time reaches, so a row whose next visit is later than that has nothing to do yet.
+  const horizon = asDate(addDays(today, 365));
+  let after: string | undefined;
+  for (;;) {
+    const rows = await tx.ppmScheduleAsset.findMany({
+      where: {
+        tenantId,
+        active: true,
+        ...(after ? { id: { gt: after } } : {}),
+        schedule: { active: true, ...(options.scheduleId ? { id: options.scheduleId } : {}) },
+        asset: { status: { not: 'decommissioned' } },
+        // A floating visit waiting to be done has neither a date nor a reading, and has nothing to raise.
+        OR: [{ nextDueOn: { lte: horizon } }, { nextDueTotal: { not: null } }],
+      },
+      include: {
+        schedule: { include: { template: true, assignee: { select: { status: true } } } },
+        asset: { select: { id: true, name: true, locationId: true } },
+      },
+      orderBy: [{ id: 'asc' }],
+      take: BATCH,
     });
-    const zone = (site?.ancestor.siteCalendar as { timeZone?: string } | null)?.timeZone ?? PPM_TIME_ZONE;
-    // Given to the schedule's person only if they can still do jobs at this asset's place. Otherwise it is left for
-    // someone to assign, rather than being given to someone who could not open it.
-    const assigneeUsable =
-      !!schedule.assigneeId &&
-      !!schedule.assignee &&
-      schedule.assignee.status === 'active' &&
-      (await eligibleTechnician(tx, tenantId, schedule.assigneeId, row.asset.locationId));
-    const taken = (day: string) =>
-      tx.workOrder.findFirst({
-        where: { tenantId, ppmScheduleAssetId: row.id, scheduledFor: asDate(day) },
-        select: { id: true },
-      });
-    for (const visitDue of due) {
-      let dueOn = visitDue;
-      if (schedule.mode === 'fixed') {
-        // A fixed visit is its date: one already raised for it is the same visit.
-        if (await taken(dueOn)) {
-          result.skipped += 1;
-          continue;
-        }
-      } else {
-        // A floating or meter visit is whenever it falls due, and a job may already be for that day (a visit done and
-        // the next one due the same day). The new visit takes the next free day instead of being lost.
-        for (let tries = 0; tries < 366 && (await taken(dueOn)); tries += 1) dueOn = addDays(dueOn, 1);
+    for (const row of rows) await raiseFor(tx, tenantId, today, row, result);
+    if (rows.length < BATCH) break;
+    after = rows.at(-1)!.id;
+  }
+  return result;
+}
+
+type RowToRaise = Prisma.PpmScheduleAssetGetPayload<{
+  include: {
+    schedule: { include: { template: true; assignee: { select: { status: true } } } };
+    asset: { select: { id: true; name: true; locationId: true } };
+  };
+}>;
+
+/** Raises the visits due for one asset on one schedule, and moves the row on. */
+async function raiseFor(tx: Tx, tenantId: string, today: string, row: RowToRaise, result: PpmGenerateResult) {
+  const { schedule } = row;
+  const due: string[] = [];
+  if (schedule.freqType === 'calendar') {
+    let next = row.nextDueOn ? dayOf(row.nextDueOn) : null;
+    const unit = schedule.calendarUnit as PpmCalendarUnit;
+    while (next && daysBetween(today, next) <= schedule.leadDays && due.length < MAX_PER_ROW_PER_RUN) {
+      due.push(next);
+      // A floating schedule waits for this visit to be done before the next is worked out.
+      next =
+        schedule.mode === 'fixed'
+          ? nextOccurrenceAfter(dayOf(schedule.startsOn), unit, schedule.interval!, next)
+          : null;
+    }
+  } else if (row.nextDueTotal && schedule.meterName) {
+    const total = await currentTotal(tx, tenantId, row.assetId, schedule.meterName);
+    if (total && total.gte(row.nextDueTotal)) due.push(today);
+  }
+  if (!due.length) {
+    result.skipped += 1;
+    return;
+  }
+
+  const site = await tx.locationPath.findFirst({
+    where: { tenantId, descendantId: row.asset.locationId, ancestor: { kind: 'site' } },
+    select: { ancestor: { select: { siteCalendar: true } } },
+  });
+  const zone = (site?.ancestor.siteCalendar as { timeZone?: string } | null)?.timeZone ?? PPM_TIME_ZONE;
+  // Given to the schedule's person only if they can still do jobs at this asset's place. Otherwise it is left for
+  // someone to assign, rather than being given to someone who could not open it.
+  const assigneeUsable =
+    !!schedule.assigneeId &&
+    !!schedule.assignee &&
+    schedule.assignee.status === 'active' &&
+    (await eligibleTechnician(tx, tenantId, schedule.assigneeId, row.asset.locationId));
+  const taken = (day: string) =>
+    tx.workOrder.findFirst({
+      where: { tenantId, ppmScheduleAssetId: row.id, scheduledFor: asDate(day) },
+      select: { id: true },
+    });
+  for (const visitDue of due) {
+    let dueOn = visitDue;
+    if (schedule.mode === 'fixed') {
+      // A fixed visit is its date: one already raised for it is the same visit.
+      if (await taken(dueOn)) {
+        result.skipped += 1;
+        continue;
       }
-      const steps = (schedule.template?.steps ?? []) as {
-        label: string;
-        kind: string;
-        required?: boolean;
-        unit?: string;
-      }[];
-      const notes = [
-        schedule.template?.description,
-        steps.length ? 'Work through the checklist on this job.' : null,
-        schedule.template?.skills ? `Skills: ${schedule.template.skills}` : null,
-        schedule.template?.safetyNotes ? `Safety: ${schedule.template.safetyNotes}` : null,
-      ].filter(Boolean);
-      const job = await tx.workOrder.create({
-        data: {
-          tenantId,
-          number: await nextNumber(tx, tenantId, 'work_order'),
-          type: 'ppm',
-          title: `${schedule.title} · ${row.asset.name}`.slice(0, TITLE_LIMIT),
-          description: notes.length ? notes.join('\n\n') : schedule.title,
-          status: assigneeUsable ? 'assigned' : 'logged',
-          locationId: row.asset.locationId,
-          assetId: row.assetId,
-          assigneeId: assigneeUsable ? schedule.assigneeId : null,
-          impact: 3,
-          urgency: 3,
-          priority: schedule.priority,
-          fixDueAt: endOfLocalDay(dueOn, zone),
-          ppmScheduleAssetId: row.id,
-          scheduledFor: asDate(dueOn),
-          currency: schedule.currency,
-          submissionKey: `ppm:${row.id}:${dueOn}`,
-          submissionHash: hash(`ppm:${row.id}:${dueOn}`),
-        },
-      });
-      if (steps.length) {
-        const list = await tx.workOrderChecklist.create({
-          data: {
-            tenantId,
-            workOrderId: job.id,
-            title: (schedule.template?.name ?? schedule.title).slice(0, 120),
-            gate: 'completion' satisfies ChecklistGate,
-          },
-        });
-        await tx.workOrderChecklistItem.createMany({
-          data: steps.map((step, position) => ({
-            tenantId,
-            checklistId: list.id,
-            position,
-            kind: step.kind,
-            label: step.label,
-            required: step.required ?? false,
-            unit: step.unit ?? null,
-          })),
-        });
-      }
-      await tx.workOrderEntry.create({
+    } else {
+      // A floating or meter visit is whenever it falls due, and a job may already be for that day (a visit done and
+      // the next one due the same day). The new visit takes the next free day instead of being lost.
+      for (let tries = 0; tries < 366 && (await taken(dueOn)); tries += 1) dueOn = addDays(dueOn, 1);
+    }
+    const steps = (schedule.template?.steps ?? []) as {
+      label: string;
+      kind: string;
+      required?: boolean;
+      unit?: string;
+    }[];
+    const notes = [
+      schedule.template?.description,
+      steps.length ? 'Work through the checklist on this job.' : null,
+      schedule.template?.skills ? `Skills: ${schedule.template.skills}` : null,
+      schedule.template?.safetyNotes ? `Safety: ${schedule.template.safetyNotes}` : null,
+    ].filter(Boolean);
+    const job = await tx.workOrder.create({
+      data: {
+        tenantId,
+        number: await nextNumber(tx, tenantId, 'work_order'),
+        type: 'ppm',
+        title: `${schedule.title} · ${row.asset.name}`.slice(0, TITLE_LIMIT),
+        description: notes.length ? notes.join('\n\n') : schedule.title,
+        status: assigneeUsable ? 'assigned' : 'logged',
+        locationId: row.asset.locationId,
+        assetId: row.assetId,
+        assigneeId: assigneeUsable ? schedule.assigneeId : null,
+        impact: 3,
+        urgency: 3,
+        priority: schedule.priority,
+        fixDueAt: endOfLocalDay(dueOn, zone),
+        ppmScheduleAssetId: row.id,
+        scheduledFor: asDate(dueOn),
+        currency: schedule.currency,
+        submissionKey: `ppm:${row.id}:${dueOn}`,
+        submissionHash: hash(`ppm:${row.id}:${dueOn}`),
+      },
+    });
+    if (steps.length) {
+      const list = await tx.workOrderChecklist.create({
         data: {
           tenantId,
           workOrderId: job.id,
-          kind: 'system',
-          body: `Raised from ${schedule.number}, due ${dueOn}`,
+          title: (schedule.template?.name ?? schedule.title).slice(0, 120),
+          gate: 'completion' satisfies ChecklistGate,
         },
       });
-      await tx.auditEvent.create({
-        data: {
+      await tx.workOrderChecklistItem.createMany({
+        data: steps.map((step, position) => ({
           tenantId,
-          entityType: 'work_order',
-          entityId: job.id,
-          action: 'ppm.generate',
-          changes: { scheduleId: schedule.id, schedule: schedule.number, assetId: row.assetId, dueOn },
-        },
+          checklistId: list.id,
+          position,
+          kind: step.kind,
+          label: step.label,
+          required: step.required ?? false,
+          unit: step.unit ?? null,
+        })),
       });
-      result.created += 1;
-      result.jobs.push(job.id);
     }
-
-    // Move the row on: a fixed schedule to its next date, a floating one to waiting for this visit to be done.
-    const last = due[due.length - 1]!;
-    if (schedule.freqType === 'calendar') {
-      const next =
-        schedule.mode === 'fixed'
-          ? nextOccurrenceAfter(
-              dayOf(schedule.startsOn),
-              schedule.calendarUnit as PpmCalendarUnit,
-              schedule.interval!,
-              last,
-            )
-          : null;
-      await tx.ppmScheduleAsset.update({ where: { id: row.id }, data: { nextDueOn: next ? asDate(next) : null } });
-    } else {
-      await tx.ppmScheduleAsset.update({ where: { id: row.id }, data: { nextDueTotal: null } });
-    }
+    await tx.workOrderEntry.create({
+      data: {
+        tenantId,
+        workOrderId: job.id,
+        kind: 'system',
+        body: `Raised from ${schedule.number}, due ${dueOn}`,
+      },
+    });
+    await tx.auditEvent.create({
+      data: {
+        tenantId,
+        entityType: 'work_order',
+        entityId: job.id,
+        action: 'ppm.generate',
+        changes: { scheduleId: schedule.id, schedule: schedule.number, assetId: row.assetId, dueOn },
+      },
+    });
+    result.created += 1;
+    result.jobs.push(job.id);
   }
-  return result;
+
+  // Move the row on: a fixed schedule to its next date, a floating one to waiting for this visit to be done.
+  const last = due[due.length - 1]!;
+  if (schedule.freqType === 'calendar') {
+    const next =
+      schedule.mode === 'fixed'
+        ? nextOccurrenceAfter(
+            dayOf(schedule.startsOn),
+            schedule.calendarUnit as PpmCalendarUnit,
+            schedule.interval!,
+            last,
+          )
+        : null;
+    await tx.ppmScheduleAsset.update({ where: { id: row.id }, data: { nextDueOn: next ? asDate(next) : null } });
+  } else {
+    await tx.ppmScheduleAsset.update({ where: { id: row.id }, data: { nextDueTotal: null } });
+  }
 }
 
 const loadRow = (tx: Tx, tenantId: string, rowId: string) =>

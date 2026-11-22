@@ -557,8 +557,8 @@ it('raises each visit once, ahead of its due date, with the task’s checklist, 
           .post(url + '/generate')
           .send({})
           .expect(201)
-      ).body,
-    ).toEqual({ created: 0, skipped: 2 });
+      ).body.created,
+    ).toBe(0);
     expect(await ppmJobs(created.id)).toHaveLength(2);
     // The schedule has moved on to next year's visit.
     const record = (await planner.get(url).expect(200)).body as ScheduleBody;
@@ -615,12 +615,9 @@ it('raises each visit once, ahead of its due date, with the task’s checklist, 
           .post(schedules + '/' + later.id + '/generate')
           .send({})
           .expect(201)
-      ).body,
-    ).toEqual({
-      created: 0,
-      skipped: 1,
-    });
-    expect((await planner.post('/api/ppm/generate').send({}).expect(201)).body).toEqual({ created: 0, skipped: 3 });
+      ).body.created,
+    ).toBe(0);
+    expect((await planner.post('/api/ppm/generate').send({}).expect(201)).body.created).toBe(0);
     await tech.post('/api/ppm/generate').send({}).expect(403);
     await tech
       .post(url + '/generate')
@@ -933,6 +930,85 @@ it('gives planned jobs only to someone who can open them, and keeps a job’s as
     expect((await patch({ title: 'Two places · Pump main (urgent)' })).status).toBe(200);
     expect((await patch({ assetId: pumpMain.id, title: 'Two places · Pump main' })).status).toBe(200);
     expect(accounts.tech.memberships).toHaveLength(1);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('shows and changes a visit’s estimated cost only for people who can see costs, and defaults a meter schedule to floating', async () => {
+  const { admin, planner, auditor, cleanup, body, asset, member } = await fixture();
+  try {
+    // A planner can't see costs, so a cost they send is not kept, and one set by someone who can is not shown to them.
+    const withCost = {
+      assets: [],
+      ...body({ title: 'Costed', estimatedCostMinor: 24300, assigneeId: member('tech') }),
+    };
+    const bySuper = (await admin.post(schedules).send(withCost).expect(201)).body;
+    expect(bySuper.estimatedCostMinor).toBe(24300);
+    const byPlanner = (
+      await planner
+        .post(schedules)
+        .send({ ...withCost, title: 'Planner’s' })
+        .expect(201)
+    ).body;
+    expect(byPlanner.estimatedCostMinor).toBeNull();
+    const url = schedules + '/' + bySuper.id;
+    expect((await planner.get(url).expect(200)).body.estimatedCostMinor).toBeNull();
+    expect((await auditor.get(url).expect(200)).body.estimatedCostMinor).toBeNull();
+    expect((await admin.get(url).expect(200)).body.estimatedCostMinor).toBe(24300);
+    // Editing everything else leaves the cost as it was, whatever the planner's form sent.
+    await planner
+      .put(url)
+      .send({ ...body({ title: 'Costed (renamed)', assigneeId: member('tech') }), version: bySuper.version })
+      .expect(200);
+    expect((await admin.get(url).expect(200)).body).toMatchObject({
+      title: 'Costed (renamed)',
+      estimatedCostMinor: 24300,
+    });
+    await planner
+      .put(url)
+      .send({ ...body({ title: 'Costed (renamed)', estimatedCostMinor: 1, assigneeId: member('tech') }), version: 2 })
+      .expect(200);
+    expect((await admin.get(url).expect(200)).body.estimatedCostMinor).toBe(24300);
+    // Someone who can see costs changes it, and clears it.
+    const changed = (
+      await admin
+        .put(url)
+        .send({
+          ...body({ title: 'Costed (renamed)', estimatedCostMinor: 30000, assigneeId: member('tech') }),
+          version: 3,
+        })
+        .expect(200)
+    ).body;
+    expect(changed.estimatedCostMinor).toBe(30000);
+    expect(
+      (
+        await admin
+          .put(url)
+          .send({ ...body({ title: 'Costed (renamed)', assigneeId: member('tech') }), version: 4 })
+          .expect(200)
+      ).body.estimatedCostMinor,
+    ).toBeNull();
+
+    // A meter schedule is due from the last visit and needs no word to say so. Saying fixed is refused.
+    const meter = {
+      assets: [],
+      ...body({ title: 'By hours', frequency: { type: 'meter', meterName: 'Run hours', interval: '250' } }),
+    };
+    delete (meter as { mode?: string }).mode;
+    const made = (await planner.post(schedules).send(meter).expect(201)).body;
+    expect(made).toMatchObject({
+      mode: 'floating',
+      frequency: { type: 'meter', meterName: 'Run hours', interval: '250' },
+    });
+    await planner
+      .post(schedules)
+      .send({ ...meter, mode: 'fixed' })
+      .expect(400);
+    const calendar = { assets: [], ...body({ title: 'By calendar' }) };
+    delete (calendar as { mode?: string }).mode;
+    expect((await planner.post(schedules).send(calendar).expect(201)).body.mode).toBe('fixed');
+    expect(asset).toBeDefined();
   } finally {
     await cleanup();
   }

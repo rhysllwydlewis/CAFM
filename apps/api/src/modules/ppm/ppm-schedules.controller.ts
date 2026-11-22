@@ -205,7 +205,8 @@ export class PpmSchedulesController {
           durationMinutes: input.durationMinutes,
           priority: input.priority,
           assigneeId: input.assigneeId ?? null,
-          estimatedCostMinor: input.estimatedCostMinor ?? null,
+          // Only people who can see costs can set one.
+          estimatedCostMinor: auth.access?.permissions.has('costs.read') ? (input.estimatedCostMinor ?? null) : null,
           active: input.active,
         },
       });
@@ -285,7 +286,10 @@ export class PpmSchedulesController {
           durationMinutes: input.durationMinutes,
           priority: input.priority,
           assigneeId: input.assigneeId ?? null,
-          estimatedCostMinor: input.estimatedCostMinor ?? null,
+          // Someone who can't see the cost can't change it, and an edit of the rest leaves it as it was.
+          estimatedCostMinor: auth.access?.permissions.has('costs.read')
+            ? (input.estimatedCostMinor ?? null)
+            : before.estimatedCostMinor,
           active: input.active,
           version: { increment: 1 },
         },
