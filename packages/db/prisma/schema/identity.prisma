@@ -22,6 +22,7 @@ model Tenant {
   locations      Location[]
   assetClasses   AssetClass[]
   assets         Asset[]
+  assetServes    AssetServes[]
 
   @@map("tenant")
 }

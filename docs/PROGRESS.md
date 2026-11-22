@@ -2,7 +2,7 @@
 
 The one page to read first in any new session, by any agent (Claude, Codex or other) or person. It says where the build is, what's next, and what's waiting on the product owner. Tick items off here in the same PR that finishes them.
 
-**Last updated:** 22 Nov 2026, with the asset register screens (P1-02b) built.
+**Last updated:** 22 Nov 2026, with asset "serves" relationships (P1-02c) built.
 
 ## Where we are
 
@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02c: "serves" relationships (the spaces and assets an asset serves, and an impact lookup). The API and screens for assets are done; see `docs/assets.md`. |
+| P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02d: tags (QR, barcode, NFC), label printing and stable scan links, following the Locations QR labels (`apps/web/app/(app)/app/locations/labels`, `location-qr`). Then meters (e), warranties (f), attachments (g). |
 
 ## Phase checklists
 
@@ -98,7 +98,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 - [ ] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
   - [x] **P1-02a** Asset classes with attribute templates, and the tenant-scoped asset hierarchy and API (location link, parent and child, plan limit, custom fields, audit). ([guide](assets.md))
   - [x] **P1-02b** Asset register and asset detail screens in the app shell (`assets-01-register`, `assets-02-detail`). ([guide](assets.md))
-  - [ ] **P1-02c** "Serves" relationships: the spaces and assets an asset serves, and impact lookup.
+  - [x] **P1-02c** "Serves" relationships: the spaces and assets an asset serves, and impact lookup. ([guide](assets.md))
   - [ ] **P1-02d** Tags (QR, barcode, NFC), label printing and stable scan links for Helpdesk (P1-03).
   - [ ] **P1-02e** Meters and readings, with rollover handling.
   - [ ] **P1-02f** Warranties with expiry alerts.

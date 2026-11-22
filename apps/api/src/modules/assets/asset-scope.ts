@@ -1,4 +1,4 @@
-import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { withTenant, type Prisma, type PrismaClient, type Tx } from '@cafm/db';
 import type { Permission } from '@cafm/shared';
 import { loadAccess } from '../../core/access';
@@ -100,4 +100,17 @@ export async function locationPaths(
     result.set(row.descendant_id, list);
   }
   return result;
+}
+
+/** The path from the site down: the levels above a site (portfolio, region) are noise on an asset. */
+export function fromSite(levels: { name: string; kind: string }[]): string[] {
+  const site = levels.findIndex((level) => level.kind === 'site');
+  return levels.slice(site >= 0 ? site : 0).map(({ name }) => name);
+}
+
+/** An asset the member can see, or 404. */
+export async function requireVisibleAsset(tx: Tx, auth: AuthContext, id: string) {
+  const asset = await tx.asset.findFirst({ where: { ...assetScope(auth), id } });
+  if (!asset) throw new NotFoundException({ code: 'asset_not_found', message: 'Asset not found.' });
+  return asset;
 }

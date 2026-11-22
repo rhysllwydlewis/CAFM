@@ -64,6 +64,16 @@ test('lists, filters and opens the demo assets, and keeps other organisations ou
   await page.getByRole('link', { name: 'LTHW heating system' }).click();
   await expect(page.getByRole('link', { name: 'Boiler 1' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Boiler 2' })).toBeVisible();
+  // What it serves, and what is affected if it goes out of service.
+  const serves = page.getByRole('region', { name: 'Serves' });
+  await expect(serves.getByRole('link', { name: 'Cardiff HQ › Ground' })).toBeVisible();
+  await expect(serves.getByRole('link', { name: 'AHU-1' })).toBeVisible();
+  await expect(serves.getByText('If this is out of service, 1 asset and 3 places are affected.')).toBeVisible();
+  await assertAccessible(page);
+  await page.getByRole('link', { name: 'AHU-1' }).click();
+  await expect(
+    page.getByRole('region', { name: 'Serves' }).getByRole('link', { name: 'LTHW heating system' }),
+  ).toBeVisible();
 
   // Another organisation sees only its own assets, and can't open this one.
   await page.context().clearCookies();
@@ -122,6 +132,7 @@ test('adds, edits and decommissions an asset, with a component, class details an
     };
     const site = await post('/locations', { code: 'S', name: 'Test site', kind: 'site' });
     await post('/locations', { code: 'S-PR', name: 'Plant room', kind: 'space', parentId: site.id });
+    await post('/locations', { code: 'S-F1', name: 'Floor 1', kind: 'floor', parentId: site.id });
     await post('/asset-classes', {
       scheme: 'custom',
       code: 'BOILER',
@@ -207,6 +218,36 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await expect(page.getByText('AST-00002').first()).toBeVisible();
     await page.getByRole('link', { name: 'Boiler A (main)' }).click();
     await expect(page.getByRole('link', { name: 'Burner' })).toBeVisible();
+
+    // Say what it serves: a floor and its burner. Everything is saved together.
+    await page.getByRole('link', { name: 'Edit what it serves' }).click();
+    await expect(page.getByRole('heading', { name: 'What Boiler A (main) serves' })).toBeVisible();
+    await assertAccessible(page);
+    await page.getByRole('combobox', { name: 'Add a place it serves' }).fill('Floor');
+    await page.getByRole('option', { name: /Floor 1/ }).click();
+    await page.getByRole('combobox', { name: 'Add an asset it serves' }).fill('Burner');
+    await page.getByRole('option', { name: /Burner/ }).click();
+    await expect(page.getByRole('list', { name: 'Places served' })).toContainText('Floor 1');
+    await expect(page.getByRole('list', { name: 'Assets served' })).toContainText('Burner');
+    // Removing and adding back works, and a place can't be listed twice.
+    await page.getByRole('button', { name: 'Remove Floor 1' }).click();
+    await expect(page.getByRole('list', { name: 'Places served' })).toContainText('No places yet.');
+    await page.getByRole('combobox', { name: 'Add a place it serves' }).fill('Floor');
+    await page.getByRole('option', { name: /Floor 1/ }).click();
+    await page.getByRole('combobox', { name: 'Add a place it serves' }).fill('Floor');
+    await page.getByRole('option', { name: /Floor 1/ }).click();
+    await expect(page.getByRole('list', { name: 'Places served' }).getByRole('listitem')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    const card = page.getByRole('region', { name: 'Serves' });
+    await expect(card.getByRole('link', { name: 'Test site › Floor 1' })).toBeVisible();
+    await expect(card.getByRole('link', { name: 'Burner' })).toBeVisible();
+    await expect(card.getByText('If this is out of service, 1 asset and 1 place are affected.')).toBeVisible();
+    await card.getByRole('link', { name: 'Burner' }).click();
+    await expect(
+      page.getByRole('region', { name: 'Serves' }).getByRole('link', { name: 'Boiler A (main)' }),
+    ).toBeVisible();
+    await page.getByRole('link', { name: 'Boiler A (main)' }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Boiler A (main)' })).toBeVisible();
 
     // The parent can't be decommissioned while its component is in use.
     await page.getByRole('link', { name: 'Edit', exact: true }).click();

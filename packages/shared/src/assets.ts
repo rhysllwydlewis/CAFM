@@ -193,3 +193,33 @@ export interface AssetSummary {
   conditionCOrD: number;
   groups: { group: string; count: number }[];
 }
+
+/** What an asset serves: the places and the other assets that depend on it. Replaces the whole set. */
+export const setServesSchema = z.object({ locationIds: z.array(id).max(200), assetIds: z.array(id).max(200) }).strict();
+
+export interface ServedLocation {
+  id: string;
+  name: string;
+  /** From the site down, like an asset's own location. */
+  path: string[];
+}
+
+export interface ServedAsset {
+  id: string;
+  number: string;
+  name: string;
+  status: (typeof ASSET_STATUSES)[number];
+}
+
+export interface AssetServesRecord {
+  locations: ServedLocation[];
+  assets: ServedAsset[];
+  /** Assets that serve this one. */
+  servedBy: ServedAsset[];
+}
+
+/** Everything that depends on an asset, directly or through other assets it serves. */
+export interface AssetImpact {
+  assets: (ServedAsset & { depth: number })[];
+  locations: ServedLocation[];
+}

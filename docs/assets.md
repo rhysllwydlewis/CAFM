@@ -1,6 +1,6 @@
 # Assets
 
-The asset register holds the equipment and fabric in each location, which work orders, planned maintenance and requests will point at. This page covers what exists so far: the classification, the asset hierarchy, the API and the register and asset screens. "Serves" relationships, tags and labels, meters, warranties and attachments follow in the next steps of P1-02.
+The asset register holds the equipment and fabric in each location, which work orders, planned maintenance and requests will point at. This page covers what exists so far: the classification, the asset hierarchy, the API and the register and asset screens. Tags and labels, meters, warranties and attachments follow in the next steps of P1-02.
 
 ## Using the register
 
@@ -10,6 +10,7 @@ Open **Assets** from the signed-in menu.
 - **Search and filters.** Search matches name, reference, serial, make and model. Filter by site, condition, criticality and status, then choose **Apply filters**. **Next page** and **Back to the first page** move through long lists.
 - **An asset** shows its status, condition and criticality, its details and the class's own attributes, where it is, what it is part of, its components and how much of its expected life is used. **Edit** and **Add component** are for people who can manage assets. A component starts from its parent and the parent's location.
 - **Adding or editing** takes the name, location, class, status, criticality, condition and details. Choose the location and any parent by searching. The replacement cost is typed in pounds and stored in whole pence. Choosing a class shows its attributes, and required ones must be filled in.
+- **What it serves.** The **Serves** card lists the places and assets an asset supplies, and the assets that serve it. It also says what is affected if the asset goes out of service: the other assets that depend on it (following the links onwards) and the places they serve. People who can manage assets use **Edit what it serves** to search for places and assets, add or remove them, and save the whole set.
 - A missing asset, and one in another organisation, show the same "Asset not found" page.
 
 ## How assets are organised
@@ -23,6 +24,10 @@ Open **Assets** from the signed-in menu.
 - **Custom fields.** Active asset custom fields (settings) appear on the asset and are validated like any other.
 
 The demo organisation uses a classification with the scheme `custom`, because codes from the standard schemes (Uniclass 2015, NRM 3, SFG20) belong to each organisation to add. Importing them is part of P1-11.
+
+## What an asset serves
+
+An asset can serve places (a floor or room) and other assets: AHU-1 serves Floor 2, and the heating system serves AHU-1. Everything must be in the asset's own site, and an asset can't serve itself. Impact analysis follows the links from an asset to the assets that depend on it, however many steps away, and then to the places they serve. A loop of assets serving each other is allowed and won't hang it. People only see the places and assets inside their branches, and links to anything outside them are left untouched when they save.
 
 ## Plan limit
 
@@ -40,6 +45,9 @@ Use the signed-in organisation's session. Assets need the `assets` feature. Read
 | `GET /api/assets/:id` | One visible asset, with its parent, site and component count. |
 | `POST /api/assets` | Creates an asset from `name` and `locationId`, with optional `parentId`, `classId`, `status`, `make`, `model`, `serial`, `installedOn` (`YYYY-MM-DD`), `supplier`, `expectedLifeYears`, `replacementCost` (`{ "amountMinor": 1850000, "currency": "GBP" }`), `criticality`, `condition`, `attributes` and `custom`. The reference is issued by the server. |
 | `PATCH /api/assets/:id` | Changes fields, using the `version` from the latest read. Reload after a `409`. Set an optional field to `null` to clear it. Changing the class starts the attributes afresh. |
+| `GET /api/assets/:id/serves` | The places and assets this asset serves, and the assets that serve it, limited to what you can see. |
+| `PUT /api/assets/:id/serves` | Replaces what the asset serves with `{ "locationIds": [...], "assetIds": [...] }`. Everything must be visible to you and in the asset's site (`422` otherwise, with `serves_self` or `serves_other_site`). Links to things outside your branches are kept. |
+| `GET /api/assets/:id/impact` | Every asset that depends on this one, nearest first with its distance, and every place those assets serve. |
 | `GET /api/asset-classes` | The classes. Add `includeInactive=true` (managers only) to include retired ones. |
 | `POST /api/asset-classes` | Adds a class from `scheme` (`uniclass`, `nrm`, `sfg20` or `custom`), `code`, `name`, `group` and an optional `attributes` template. |
 | `PATCH /api/asset-classes/:id` | Changes a class's name, group, attributes or position, or retires it with `active: false`. Retiring stops new use but keeps assets that have it. |

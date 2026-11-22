@@ -116,11 +116,20 @@ type SeedAsset = {
   criticality?: string;
   condition?: string;
   attributes?: Record<string, unknown>;
+  /** What it serves: locations by code and other assets by key. */
+  serves?: { locations?: string[]; assets?: string[] };
 };
 
 /** Cardiff HQ's plant, from the asset register mockups. Costs are in pence. */
 const demoEstates: SeedAsset[] = [
-  { key: 'lthw', name: 'LTHW heating system', location: 'CDF-PLANT', criticality: 'high', condition: 'B' },
+  {
+    key: 'lthw',
+    name: 'LTHW heating system',
+    location: 'CDF-PLANT',
+    criticality: 'high',
+    condition: 'B',
+    serves: { locations: ['CDF-G', 'CDF-2'], assets: ['ahu-1'] },
+  },
   {
     key: 'boiler-1',
     name: 'Boiler 1',
@@ -182,6 +191,7 @@ const demoEstates: SeedAsset[] = [
     criticality: 'high',
     condition: 'C',
     attributes: { airflow: 14000, filter_grade: 'F7' },
+    serves: { locations: ['CDF-2', 'CDF-K'] },
   },
   {
     key: 'fire-panel',
@@ -329,6 +339,23 @@ export async function seedAssets(db: PrismaClient): Promise<void> {
           },
         });
       }
+      const serving = rows.flatMap((asset, index) => [
+        ...(asset.serves?.locations ?? []).map((code) => ({
+          tenantId,
+          assetId: assetSeedId(slug, asset.key, index),
+          locationId: seedId(`location:${slug}:${code}`),
+        })),
+        ...(asset.serves?.assets ?? []).map((key) => ({
+          tenantId,
+          assetId: assetSeedId(slug, asset.key, index),
+          servedAssetId: assetSeedId(
+            slug,
+            key,
+            rows.findIndex((row) => row.key === key),
+          ),
+        })),
+      ]);
+      await tx.assetServes.createMany({ data: serving, skipDuplicates: true });
       // New assets people add carry on from the seeded numbers.
       await tx.$executeRaw`
         INSERT INTO number_sequence (id, tenant_id, key, format, next_value, updated_at)

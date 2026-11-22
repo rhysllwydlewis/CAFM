@@ -1,6 +1,14 @@
 import 'server-only';
 import type { FieldDefinition } from '@cafm/config-engine';
-import type { AssetAttribute, AssetClassRecord, AssetPage, AssetRecord, AssetSummary } from '@cafm/shared';
+import type {
+  AssetAttribute,
+  AssetClassRecord,
+  AssetImpact,
+  AssetPage,
+  AssetRecord,
+  AssetServesRecord,
+  AssetSummary,
+} from '@cafm/shared';
 import { apiGet } from '@/lib/api';
 
 export type AssetDetail = AssetRecord & {
@@ -30,3 +38,8 @@ export async function assetDetail(id: string): Promise<AssetDetail | null> {
   if (!response.ok) throw new Error('Could not load this asset.');
   return response.json() as Promise<AssetDetail>;
 }
+
+export const assetServes = (id: string) =>
+  get<AssetServesRecord>(`/assets/${encodeURIComponent(id)}/serves`, 'Could not load what this asset serves.');
+export const assetImpact = (id: string) =>
+  get<AssetImpact>(`/assets/${encodeURIComponent(id)}/impact`, 'Could not load the impact of this asset.');

@@ -17,13 +17,17 @@ export interface PickerOption {
 export function Picker({
   name,
   label,
+  onSelect,
   endpoint,
   params,
   initial,
   describe,
 }: {
-  name: string;
+  /** Names the hidden field that carries the chosen ID. Not needed when `onSelect` is used. */
+  name?: string;
   label: string;
+  /** Adds to a list instead of holding one choice: called with each option chosen, then the search clears. */
+  onSelect?: (option: PickerOption) => void;
   /** A list endpoint that takes `q` and returns `{ items }`. */
   endpoint: string;
   params?: Record<string, string>;
@@ -65,6 +69,12 @@ export function Picker({
 
   function choose(option: PickerOption | undefined) {
     if (!option) return;
+    if (onSelect) {
+      onSelect(option);
+      setOpen(false);
+      setText('');
+      return;
+    }
     setChosen(option);
     setOpen(false);
     setText('');
@@ -81,7 +91,7 @@ export function Picker({
             {chosen.label}
             {chosen.hint && <span className="muted"> · {chosen.hint}</span>}
           </span>
-          <input type="hidden" name={name} value={chosen.id} />
+          {name && <input type="hidden" name={name} value={chosen.id} />}
           <Button
             type="button"
             size="sm"
@@ -101,7 +111,7 @@ export function Picker({
   return (
     <Field label={label} htmlFor={id}>
       <div className={styles.picker}>
-        <input type="hidden" name={name} value="" />
+        {name && <input type="hidden" name={name} value="" />}
         <TextInput
           id={id}
           role="combobox"

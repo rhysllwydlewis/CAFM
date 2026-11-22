@@ -33,7 +33,7 @@ import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
 import { locationScope } from '../locations/location-tree';
-import { assertNoAssetCycle, assetScope, locationPaths, siteOf, withAssetWrite } from './asset-scope';
+import { assertNoAssetCycle, assetScope, fromSite, locationPaths, siteOf, withAssetWrite } from './asset-scope';
 
 type Row = Prisma.AssetGetPayload<{ include: { class: true } }>;
 type Fields = ReadonlyMap<string, FieldDefinition>;
@@ -104,12 +104,6 @@ function auditFields(row: Row) {
     attributes,
     version,
   };
-}
-
-/** The path from the site down: the levels above a site (portfolio, region) are noise on an asset. */
-function fromSite(levels: { name: string; kind: string }[]): string[] {
-  const site = levels.findIndex((level) => level.kind === 'site');
-  return levels.slice(site >= 0 ? site : 0).map(({ name }) => name);
 }
 
 async function toRecords(tx: Tx, auth: AuthContext, rows: Row[], fields: Fields): Promise<AssetRecord[]> {

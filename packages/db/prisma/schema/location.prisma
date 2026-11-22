@@ -21,6 +21,7 @@ model Location {
   descendants      LocationPath[]   @relation("LocationAncestor")
   grants           MembershipSite[]
   assets           Asset[]
+  servedBy         AssetServes[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])

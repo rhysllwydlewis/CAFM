@@ -67,6 +67,40 @@ it('isolates assets and classes, and rejects a cross-tenant location, parent or 
   await expect(create({ classId: boilerClass })).rejects.toThrow(/Foreign key constraint/);
 });
 
+it('isolates what assets serve, and refuses links across organisations, to nothing, to two things or to itself', async () => {
+  expect(await db.assetServes.count()).toBe(0);
+  const demoLinks = await withTenant(db, demo, (tx) => tx.assetServes.findMany({ include: { asset: true } }));
+  expect(demoLinks.length).toBeGreaterThanOrEqual(5);
+  expect(demoLinks.some(({ asset }) => asset.name === 'LTHW heating system')).toBe(true);
+  expect(await withTenant(db, starter, (tx) => tx.assetServes.count())).toBe(0);
+
+  const starterAsset = await withTenant(db, starter, (tx) => tx.asset.findFirstOrThrow());
+  const demoAsset = demoLinks[0]!.assetId;
+  const demoSite = seedId('location:demo-estates:CDF');
+  const link = (data: Record<string, unknown>) =>
+    withTenant(db, starter, (tx) =>
+      tx.assetServes.create({ data: { tenantId: starter, assetId: starterAsset.id, ...data } as never }),
+    );
+  await expect(link({ locationId: demoSite })).rejects.toThrow(/Foreign key constraint/);
+  await expect(link({ servedAssetId: demoAsset })).rejects.toThrow(/Foreign key constraint/);
+  await expect(link({})).rejects.toThrow(/asset_serves_one_target/);
+  await expect(
+    link({ locationId: seedId('location:starter-demo:ST-WH'), servedAssetId: starterAsset.id }),
+  ).rejects.toThrow(/asset_serves_one_target|asset_serves_not_self/);
+  await expect(link({ servedAssetId: starterAsset.id })).rejects.toThrow(/asset_serves_not_self/);
+
+  // A place can be named once per asset.
+  const site = seedId('location:starter-demo:ST-WH');
+  await withTenant(db, starter, (tx) =>
+    tx.assetServes.create({ data: { tenantId: starter, assetId: starterAsset.id, locationId: site } }),
+  );
+  try {
+    await expect(link({ locationId: site })).rejects.toThrow(/Unique constraint/);
+  } finally {
+    await withTenant(db, starter, (tx) => tx.assetServes.deleteMany({ where: { assetId: starterAsset.id } }));
+  }
+});
+
 it('refuses assets the database rules forbid, whatever the API checks', async () => {
   const site = seedId('location:starter-demo:ST-WH');
   const make = (n: number, data: Record<string, unknown>) =>

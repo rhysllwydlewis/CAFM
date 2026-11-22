@@ -3,11 +3,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Icon } from '@cafm/ui';
-import { can, feature, type AssetClassRecord } from '@cafm/shared';
+import { can, feature, type AssetClassRecord, type AssetImpact, type AssetServesRecord } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
 import { customFieldValue } from '../../locations/location-custom-fields';
 import { AssetForm } from '../asset-form';
-import { assetClasses, assetCustomFields, assetDetail, assetPage, type AssetDetail } from '../asset-data';
+import { ServesEditor } from '../serves-editor';
+import {
+  assetClasses,
+  assetCustomFields,
+  assetDetail,
+  assetImpact,
+  assetPage,
+  assetServes,
+  type AssetDetail,
+} from '../asset-data';
 import {
   ConditionBadge,
   CriticalityBadge,
@@ -66,6 +75,74 @@ function attributeValue(attribute: AssetDetail['classAttributes'][number], value
   return attribute.unit ? `${value} ${attribute.unit}` : String(value);
 }
 
+function ServesCard({ serves, impact }: { serves: AssetServesRecord; impact: AssetImpact | null }) {
+  const none = !serves.locations.length && !serves.assets.length && !serves.servedBy.length;
+  const places = impact?.locations.length ?? 0;
+  const dependants = impact?.assets.length ?? 0;
+  return (
+    <section className="card" aria-labelledby="serves-title">
+      <header className="card-h">
+        <h2 className="card-t" id="serves-title">
+          Serves
+        </h2>
+      </header>
+      <div className="card-b stack g3">
+        {none && <p className="muted">This asset doesn’t serve anything, and nothing serves it.</p>}
+        {serves.locations.length > 0 && (
+          <div>
+            <p className="muted">Places</p>
+            <ul className={styles.componentList}>
+              {serves.locations.map((location) => (
+                <li key={location.id}>
+                  <Link className="link" href={`/app/locations?id=${location.id}`}>
+                    {locationLabel(location.path)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {serves.assets.length > 0 && (
+          <div>
+            <p className="muted">Assets</p>
+            <ul className={styles.componentList}>
+              {serves.assets.map((served) => (
+                <li key={served.id}>
+                  <Link className="link" href={`${route}/${served.id}`}>
+                    {served.name}
+                  </Link>
+                  <span className="mono muted">{served.number}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {serves.servedBy.length > 0 && (
+          <div>
+            <p className="muted">Served by</p>
+            <ul className={styles.componentList}>
+              {serves.servedBy.map((source) => (
+                <li key={source.id}>
+                  <Link className="link" href={`${route}/${source.id}`}>
+                    {source.name}
+                  </Link>
+                  <span className="mono muted">{source.number}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {impact && (places > 0 || dependants > 0) && (
+          <p className="sm">
+            If this is out of service, {dependants} {dependants === 1 ? 'asset' : 'assets'} and {places}{' '}
+            {places === 1 ? 'place' : 'places'} are affected.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default async function AssetPage({
   params,
   searchParams,
@@ -90,10 +167,13 @@ export default async function AssetPage({
   if (!asset) notFound();
   const canManage = can(user, 'assets.manage');
   const editing = mode === 'edit' && canManage;
-  const [classes, customFields, components] = await Promise.all([
+  const editingServes = mode === 'serves' && canManage;
+  const [classes, customFields, components, serves, impact] = await Promise.all([
     editing ? assetClasses() : Promise.resolve([] as AssetClassRecord[]),
     assetCustomFields(),
     editing ? Promise.resolve(null) : assetPage({ parent: asset.id, limit: '100' }),
+    editing ? Promise.resolve(null) : assetServes(asset.id),
+    editing || editingServes ? Promise.resolve(null) : assetImpact(asset.id),
   ]);
   // The asset's own class stays selectable even if it has been retired since.
   if (editing && asset.classId && !classes.some((item) => item.id === asset.classId)) {
@@ -163,8 +243,11 @@ export default async function AssetPage({
           <Link className="btn" href={route}>
             <Icon name="asset" /> All assets
           </Link>
-          {canManage && !editing && (
+          {canManage && !editing && !editingServes && (
             <>
+              <Link className="btn" href={`${route}/${asset.id}?mode=serves`}>
+                <Icon name="link" /> Edit what it serves
+              </Link>
               <Link className="btn" href={`${route}/new?parent=${asset.id}`}>
                 <Icon name="add" /> Add component
               </Link>
@@ -183,6 +266,8 @@ export default async function AssetPage({
 
       {editing ? (
         <AssetForm asset={asset} classes={classes} customFields={customFields} />
+      ) : editingServes && serves ? (
+        <ServesEditor asset={asset} siteId={asset.site?.id ?? null} initial={serves} />
       ) : (
         <div className={styles.detailLayout}>
           <div className="stack g4">
@@ -265,6 +350,7 @@ export default async function AssetPage({
               )}
             </div>
           </section>
+          {serves && <ServesCard serves={serves} impact={impact} />}
         </div>
       )}
     </div>
