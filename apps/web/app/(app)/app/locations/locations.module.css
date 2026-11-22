@@ -1,0 +1,240 @@
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.hierarchyLayout,
+.mapLayout,
+.profileGrid,
+.formGrid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.hierarchyLayout {
+  grid-template-columns: minmax(15rem, 0.8fr) minmax(0, 2fr);
+}
+.mapLayout {
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+}
+.profileGrid,
+.formGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.treeList,
+.siteRows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.treeList .treeList {
+  margin-inline-start: var(--space-3);
+}
+.treeList li {
+  min-width: 0;
+}
+.treeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-md);
+}
+.treeRow[data-selected] {
+  background: var(--primary-softer);
+}
+.treeLink {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--space-2);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  overflow-wrap: anywhere;
+}
+.treeLink:hover {
+  background: var(--bg-subtle);
+}
+.treeLink[aria-current] {
+  color: var(--primary-text);
+  font-weight: 600;
+}
+.treeLink > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-inline-start: auto;
+  font-size: var(--text-sm);
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.searchForm > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.measure {
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+.definition {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.definition > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: var(--space-3);
+}
+.definition dt {
+  color: var(--text-muted);
+}
+.definition dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.siteRows li {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-3) var(--space-4);
+  overflow-wrap: anywhere;
+}
+.siteRows li:first-child {
+  border-top: 0;
+}
+.control {
+  display: block;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text);
+  font: inherit;
+}
+.control:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.calendarGroup {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+.calendarGroup legend {
+  padding: 0 var(--space-2);
+  font-weight: 600;
+}
+.calendarRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.detailMap {
+  min-height: 15rem;
+  width: 100%;
+}
+.mapCanvas {
+  min-height: min(65vh, 40rem);
+  width: 100%;
+  border-radius: var(--radius-lg);
+}
+.labelOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  max-height: 18rem;
+  overflow: auto;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+.printSheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3);
+}
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  break-inside: avoid;
+  overflow-wrap: anywhere;
+}
+.label svg {
+  flex: none;
+}
+
+@media (max-width: 55rem) {
+  .hierarchyLayout,
+  .mapLayout {
+    grid-template-columns: 1fr;
+  }
+  .mapCanvas {
+    min-height: 24rem;
+  }
+}
+
+@media (max-width: 38rem) {
+  .profileGrid,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .calendarRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .treeList .treeList {
+    margin-inline-start: var(--space-2);
+  }
+  .treeLink > span:last-child {
+    display: none;
+  }
+}
+
+@media print {
+  .screenOnly,
+  :global(body):has(.printSheet) :global(.app) > :not(:global(.main)),
+  :global(body):has(.printSheet) :global(.main) > :not(:global(.page)) {
+    display: none !important;
+  }
+  :global(body):has(.printSheet) :global(.app),
+  :global(body):has(.printSheet) :global(.main),
+  :global(body):has(.printSheet) :global(.page) {
+    display: block;
+    padding: 0;
+    margin: 0;
+  }
+  .printSheet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .label {
+    color: var(--graphite-950);
+    background: white;
+  }
+  .label svg {
+    print-color-adjust: exact;
+  }
+}

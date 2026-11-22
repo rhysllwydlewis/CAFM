@@ -56,6 +56,22 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 
 **Done when:** a pilot customer could run day-to-day reactive and planned maintenance end to end.
 
+### Phase 1 PR batches
+
+The product owner approved larger PRs for complete capabilities. The tracker still shows the individual acceptance items.
+
+| Batch | Roadmap items |
+|---|---|
+| Finish Locations | P1-01b through P1-01e |
+| Asset register | P1-02 |
+| Helpdesk, requester portal and notifications | P1-03, P1-07 |
+| Reactive work orders | P1-04 |
+| Planned maintenance | P1-05 |
+| Offline technician app | P1-06 |
+| Admin console and MFA | P1-09, P1-12 |
+| Reporting, saved views, import/export and pilot readiness | P1-08, P1-10, P1-11, P1-13 |
+
+
 ## Phase 2A · Comply
 
 - Statutory compliance register, jurisdiction-aware UK templates, certificates, remedial actions, compliance matrix.

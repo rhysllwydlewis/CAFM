@@ -13,7 +13,13 @@ const PLAN_LABELS: Record<string, string> = {
   enterprise: 'Enterprise',
 };
 
-export function OrganisationList({ organisations }: { organisations: OrganisationOption[] }) {
+export function OrganisationList({
+  organisations,
+  next,
+}: {
+  organisations: OrganisationOption[];
+  next?: string | null;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +30,7 @@ export function OrganisationList({ organisations }: { organisations: Organisatio
     const res = await postJson('/auth/select-organisation', { membershipId });
     if (res.ok) {
       const body = (await res.json()) as LoginResponse;
-      router.push(body.status === 'signed_in' ? body.landingPage : '/login');
+      router.push(body.status === 'signed_in' ? (next ?? body.landingPage) : '/login');
       router.refresh();
       return;
     }

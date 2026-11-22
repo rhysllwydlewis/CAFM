@@ -23,6 +23,10 @@
       "outputs": ["dist/**"],
       "cache": false
     },
+    "@cafm/db#test": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
     "@cafm/web#build": {
       "dependsOn": ["^build"],
       "inputs": [

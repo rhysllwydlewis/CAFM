@@ -1,5 +1,6 @@
 export * from './auth';
 export * from './entitlements';
 export * from './locations';
+export * from './site-calendar';
 export * from './permissions';
 export * from './personas';

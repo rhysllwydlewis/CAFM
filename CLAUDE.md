@@ -34,7 +34,7 @@ If two sources disagree, flag it in your PR and on an issue labelled `type:docs`
 - **Design:** use tokens and `packages/ui` components only. No new colours or one-off styles. A new UI pattern needs a mockup in `design/mockups/screens/` first.
 - **Tests:** never skip, disable or weaken a test to get a green build. Fix the cause.
 - **Secrets and data:** no secrets in code, logs or fixtures. No real personal data in seed or tests. Demo personas only (doc 06).
-- **Git:** never push to the default branch, never force-push shared branches, never merge your own PR. Keep PRs small: about 400 hand-written lines.
+- **Git:** never push to the default branch, never force-push shared branches, never merge your own PR. Use the Phase 1 capability batches in AGENTS.md.
 - **Writing style:** UK English, sentence case, plain and specific wording (see doc 11 "Voice").
 
 ## Repository layout

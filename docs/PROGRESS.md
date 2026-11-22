@@ -2,24 +2,24 @@
 
 The one page to read first in any new session, by any agent (Claude, Codex or other) or person. It says where the build is, what's next, and what's waiting on the product owner. Tick items off here in the same PR that finishes them.
 
-**Last updated:** 21 Nov 2026, with the location hierarchy and access API.
+**Last updated:** 22 Nov 2026, with Locations complete.
 
 ## Where we are
 
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 6%** of the planned build (Phase 0 is about 4 of roughly 64 planned weeks; 15 of 83 top-level roadmap items) |
+| **Overall progress** | **About 7%** of the planned build (16 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
-| **Next up** | Phase 1, starting with the location hierarchy and the asset register (doc 08) |
+| **Next up** | Phase 1 asset register (P1-02) |
 
 <!-- approved-phase: 1 -->
 
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 0 / 13 | In progress |
+| 1 · Core CAFM MVP | 1 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -45,7 +45,7 @@ The full rules are in [AGENTS.md § Progress rules](../AGENTS.md#3-progress-rule
 - **Before you build:** claim the item. Open a draft PR with `Progress: P1-02 in progress` and add a row to "In progress" below.
 - **When it's done:** in that PR, tick it `[x]`, remove its row, update the phase table and the percentage, and write `Progress: P1-02 done`. `node scripts/progress.mjs check` gives the right numbers.
 - **Stopping part-way:** update the row's "Next step" so anyone can carry on.
-- **Big items:** split them into sub-items (`P1-04a`, `P1-04b`), indented under the item.
+- **Big items:** track acceptance in indented sub-items. Owner-approved capability batches can finish related sub-items together.
 - **Changing scope:** change doc 08 first, then mirror it here.
 
 ## In progress
@@ -88,12 +88,12 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 
 ### Phase 1 · Core CAFM MVP
 
-- [ ] **P1-01** Location hierarchy + site map; UK bank holiday calendars by nation; QR codes and label printing.
+- [x] **P1-01** Location hierarchy + site map; UK bank holiday calendars by nation; QR codes and label printing.
   - [x] **P1-01a** Tenant-scoped location hierarchy, site access rules and API. ([API guide](locations.md))
-  - [ ] **P1-01b** Searchable hierarchy and site detail, with site management in the app shell.
-  - [ ] **P1-01c** Site business hours, jurisdiction, UK bank holidays and custom closures for SLA clocks.
-  - [ ] **P1-01d** Portfolio map and accessible site list with filters.
-  - [ ] **P1-01e** Location QR labels, printing and links to fault reporting (P1-03).
+  - [x] **P1-01b** Searchable hierarchy and site detail, with site management in the app shell.
+  - [x] **P1-01c** Site business hours, jurisdiction, UK bank holidays and custom closures for SLA clocks.
+  - [x] **P1-01d** Portfolio map and accessible site list with filters.
+  - [x] **P1-01e** Location QR labels, printing and stable links for Helpdesk fault intake (P1-03).
 - [ ] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
 - [ ] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT.
 - [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
