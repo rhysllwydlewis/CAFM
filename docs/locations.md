@@ -1,6 +1,6 @@
 # Locations
 
-Open **Locations** from the signed-in menu. Expand a branch or search by name or code. Select a location to see its details, the levels underneath it and, for sites, its business calendar. Location managers can add and edit records within their scope. Tenant-wide managers can create sites and move branches.
+Open **Locations** from the signed-in menu. Expand a branch or search by name or code. Select a location to see its details, the levels underneath it and, for sites, its business calendar. Location managers can add and edit records within their scope. Tenant-wide managers can create sites and move branches. Any active location custom fields appear in the editor and in location details when a value is saved.
 
 Enter coordinates to place a site on the **Portfolio map**. The same filters apply to the map and the site list. The list also includes sites without coordinates. Status reflects the location's operational state. Compliance colouring depends on the compliance register in Phase 2A.
 
@@ -17,6 +17,7 @@ Use the signed-in organisation's session for all location requests. Locations ne
 | Request | Behaviour |
 | --- | --- |
 | `GET /api/locations` | Lists visible locations. Use `q` for a literal, case-insensitive search of names and codes, or `kind` and `status` to filter records. Use `parent=root` for visible roots or `parent=<id>` for immediate children. Pass `nextCursor` back as `after` to fetch the next page. `limit` defaults to 50 and goes up to 100. |
+| `GET /api/locations/custom-fields` | Returns the active location field definitions used by the editor. |
 | `GET /api/locations/:id` | Returns one visible location. A parent outside your assigned branch is omitted from the visible hierarchy. |
 | `POST /api/locations` | Creates a location from `name`, `code`, `kind` and optional `parentId`, `status` and `custom`. Codes are unique within the organisation. `details` holds site attributes and `siteCalendar` holds calendar settings. |
 | `PATCH /api/locations/:id` | Changes fields using the `version` from the most recent read. Reload after a `409` before retrying. A supplied `details` or `siteCalendar` object replaces its previous snapshot. |

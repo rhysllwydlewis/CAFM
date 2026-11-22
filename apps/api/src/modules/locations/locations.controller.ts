@@ -46,7 +46,10 @@ type Location = Prisma.LocationGetPayload<object>;
 type LocationFields = ReadonlyMap<string, FieldDefinition>;
 
 async function activeFields(tx: Tx, tenantId: string): Promise<LocationFields> {
-  const rows = await tx.fieldDefinition.findMany({ where: { tenantId, entityType: 'location', active: true } });
+  const rows = await tx.fieldDefinition.findMany({
+    where: { tenantId, entityType: 'location', active: true },
+    orderBy: [{ position: 'asc' }, { label: 'asc' }],
+  });
   return new Map(rows.map((row) => [row.key, toFieldDefinition(row)]));
 }
 
@@ -170,6 +173,13 @@ export class LocationsController {
         nextCursor: rows.length > limit ? page.at(-1)!.id : null,
       };
     });
+  }
+
+  @Get('custom-fields')
+  @RequirePermission('locations.read')
+  async customFields(@Req() req: Request) {
+    const tenantId = req.auth!.membership!.tenantId;
+    return withTenant(this.db, tenantId, async (tx) => [...(await activeFields(tx, tenantId)).values()]);
   }
 
   @Get(':id')

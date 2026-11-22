@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import type { FieldDefinition } from '@cafm/config-engine';
 import { bankHolidays, SITE_JURISDICTIONS, WEEKDAYS, type LocationPage, type LocationRecord } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { route } from './location-data';
 import styles from './locations.module.css';
 import { MapCanvas } from './portfolio-map';
+import { customFieldValue } from './location-custom-fields';
 
 const dateLabel = (iso: string) =>
   new Intl.DateTimeFormat('en-GB', {
@@ -16,23 +18,28 @@ export const statusLabel = (status: string) => status[0]!.toUpperCase() + status
 export function LocationProfile({
   location,
   children,
+  customFields,
   canManage,
 }: {
   location: LocationRecord;
   children: LocationPage;
+  customFields: FieldDefinition[];
   canManage: boolean;
 }) {
   const data = location.details;
   const showMap = data.latitude !== undefined && data.longitude !== undefined;
-  const details = [
-    ['Address', data.address],
-    ['Use class', data.useClass],
-    ['Listed building', data.listed === undefined ? '' : data.listed ? 'Yes' : 'No'],
-    ['Site contact', data.contact],
-    ['Parking and arrival information', data.parking],
-    ['Restricted access instructions', location.restrictedAccess],
-    ['Hazards and asbestos information', data.hazards],
-  ].filter((row) => row[1]);
+  const details = (
+    [
+      ['Address', data.address],
+      ['Use class', data.useClass],
+      ['Listed building', data.listed === undefined ? '' : data.listed ? 'Yes' : 'No'],
+      ['Site contact', data.contact],
+      ['Parking and arrival information', data.parking],
+      ['Restricted access instructions', location.restrictedAccess],
+      ['Hazards and asbestos information', data.hazards],
+      ...customFields.map((field) => [field.label, customFieldValue(field, location.custom[field.key])] as const),
+    ] as const
+  ).filter((row) => row[1]);
   const areas = [
     ['Gross internal area', data.grossArea],
     ['Net internal area', data.netArea],
@@ -65,8 +72,8 @@ export function LocationProfile({
           <div className="card-b">
             {details.length ? (
               <dl className={styles.definition}>
-                {details.map(([label, value]) => (
-                  <div key={label}>
+                {details.map(([label, value], index) => (
+                  <div key={label + index}>
                     <dt>{label}</dt>
                     <dd>{value}</dd>
                   </div>

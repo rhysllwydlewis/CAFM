@@ -4,7 +4,14 @@ import { notFound } from 'next/navigation';
 import { Icon } from '@cafm/ui';
 import { can, feature } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
-import { allLocations, locationDetail, locationPage, route, validLocationId } from './location-data';
+import {
+  allLocations,
+  locationCustomFields,
+  locationDetail,
+  locationPage,
+  route,
+  validLocationId,
+} from './location-data';
 import { LocationBrowser } from './location-browser';
 import { CalendarForm, LocationForm } from './location-forms';
 import { LocationProfile } from './location-profile';
@@ -74,9 +81,12 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
   const editing = !!selected && mode === 'edit' && canManage;
   const adding = mode === 'add' && canManage && (canMove || !!selected);
   const calendar = !!selected && selected.kind === 'site' && mode === 'calendar' && canManage;
-  const [children, parents] = await Promise.all([
+  const [children, parents, customFields] = await Promise.all([
     selected && !editing && !adding && !calendar ? locationPage({ parent: selected.id }) : Promise.resolve(null),
     (editing || adding) && canMove ? allLocations() : Promise.resolve([]),
+    editing || adding || (selected && Object.keys(selected.custom).length > 0)
+      ? locationCustomFields()
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -119,18 +129,25 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
       <div className={styles.hierarchyLayout}>
         <LocationBrowser key={mode ? 'form' : 'browse'} initial={tree} search={search} selectedId={selected?.id} />
         {editing && selected ? (
-          <LocationForm key={selected.id} location={selected} parents={parents} canMove={canMove} />
+          <LocationForm
+            key={'edit-' + selected.id}
+            location={selected}
+            parents={parents}
+            customFields={customFields}
+            canMove={canMove}
+          />
         ) : adding ? (
           <LocationForm
-            key={selected?.id ?? 'new'}
+            key={'add-' + (selected?.id ?? 'root')}
             parent={selected ?? undefined}
             parents={parents}
+            customFields={customFields}
             canMove={canMove}
           />
         ) : calendar && selected ? (
           <CalendarForm key={selected.id} location={selected} />
         ) : selected && children ? (
-          <LocationProfile location={selected} children={children} canManage={canManage} />
+          <LocationProfile location={selected} children={children} customFields={customFields} canManage={canManage} />
         ) : (
           <section className="card card-b">
             <h2>Choose a location</h2>

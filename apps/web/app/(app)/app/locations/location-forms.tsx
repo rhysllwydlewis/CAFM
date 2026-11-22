@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { FieldDefinition } from '@cafm/config-engine';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button, Checkbox, Field, TextInput } from '@cafm/ui';
@@ -14,6 +15,7 @@ import {
   type SiteCalendar,
 } from '@cafm/shared';
 import styles from './locations.module.css';
+import { LocationCustomFields, readCustomFields } from './location-custom-fields';
 
 const route = '/app/locations';
 const textFields = [
@@ -69,11 +71,13 @@ export function LocationForm({
   location,
   parent,
   parents,
+  customFields,
   canMove,
 }: {
   location?: LocationRecord;
   parent?: LocationRecord;
   parents: LocationRecord[];
+  customFields: FieldDefinition[];
   canMove: boolean;
 }) {
   const { busy, error, save } = useLocationSave();
@@ -94,6 +98,7 @@ export function LocationForm({
       code: data.get('code'),
       status: data.get('status'),
       details,
+      ...(customFields.length ? { custom: readCustomFields(customFields, data) } : {}),
       restrictedAccess: data.get('restrictedAccess') || null,
       ...(canMove ? { parentId: data.get('parentId') || null } : {}),
     };
@@ -187,6 +192,7 @@ export function LocationForm({
             </Field>
           ))}
         </div>
+        <LocationCustomFields fields={customFields} values={location?.custom} />
         <Field label="Restricted access instructions" htmlFor="restricted-access">
           <textarea
             id="restricted-access"

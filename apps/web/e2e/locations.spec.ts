@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { PrismaClient, seedId } from '@cafm/db';
+import { createTenant, PrismaClient, seedId } from '@cafm/db';
 
 const cardiffId = seedId('location:demo-estates:CDF');
 const locationRoute = '/app/locations';
@@ -62,25 +62,63 @@ test('searches and opens a site, filters the portfolio and prints matching QR la
   ).toBeVisible();
 });
 
-test('creates and edits a site and saves its business calendar', async ({ page }) => {
-  const code = 'E2E-' + randomUUID().slice(0, 8).toUpperCase();
+test('creates and edits a site with a required field and saves its calendar', async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const code = 'E2E-' + suffix.toUpperCase();
+  const email = 'locations-' + suffix + '@test.example';
+  const password = 'Pw-' + randomUUID();
   const db = new PrismaClient({
     datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
   });
+  const tenant = await createTenant(db, {
+    name: 'Location test estate',
+    slug: 'locations-' + suffix,
+    plan: 'starter',
+    adminEmail: email,
+    appUrl: 'http://localhost:3000',
+  });
+  const where = { tenantId: tenant.tenantId };
   try {
-    await page.goto('/login');
-    await signIn(page);
-    await expect(page).toHaveURL('/app');
+    const token = tenant.inviteUrl.split('/').at(-1);
+    expect(
+      (
+        await page.request.post('/api/auth/invites/' + token + '/accept', {
+          data: { name: 'Test site manager', password, acceptTerms: true },
+        })
+      ).ok(),
+    ).toBe(true);
+    await db.fieldDefinition.create({
+      data: {
+        ...where,
+        entityType: 'location',
+        key: 'estate_reference',
+        label: 'Estate reference',
+        type: 'text',
+        required: true,
+      },
+    });
     await page.goto(locationRoute + '?mode=add');
     await page.getByLabel('Name', { exact: true }).fill('Test site ' + code);
     await page.getByLabel('Code', { exact: true }).fill(code);
     await page.getByLabel('Address', { exact: true }).fill('Test address');
+    await page.getByLabel('Estate reference', { exact: true }).fill('EST-21');
     await page.getByRole('button', { name: 'Save location' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Test site ' + code })).toBeVisible();
     await page.getByRole('link', { name: 'Edit site' }).click();
+    await expect(page.getByLabel('Estate reference', { exact: true })).toHaveValue('EST-21');
     await page.getByLabel('Site contact').fill('Test reception');
     await page.getByRole('button', { name: 'Save location' }).click();
     await expect(page.getByText('Test reception', { exact: true })).toBeVisible();
+    await expect(page.getByText('EST-21', { exact: true })).toBeVisible();
+
+    const siteId = new URL(page.url()).searchParams.get('id');
+    await page.getByRole('link', { name: 'Edit site' }).click();
+    await page.getByLabel('Name', { exact: true }).fill('Unsaved name');
+    await page.getByRole('link', { name: 'Add child location' }).click();
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('Estate reference', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('Parent location')).toHaveValue(siteId!);
+    await page.getByRole('link', { name: 'Cancel' }).click();
 
     await page.getByRole('link', { name: 'Set calendar' }).click();
     await page.getByLabel('Jurisdiction').selectOption('scotland');
@@ -92,7 +130,20 @@ test('creates and edits a site and saves its business calendar', async ({ page }
     await expect(page.getByText('Scotland · Europe/London')).toBeVisible();
     await expect(page.getByText(/Test closure/)).toBeVisible();
   } finally {
-    await db.location.deleteMany({ where: { code, tenantId: seedId('tenant:demo-estates') } });
+    const account = await db.account.findUnique({ where: { email } });
+    await db.$transaction(async (tx) => {
+      await tx.session.deleteMany({ where });
+      await tx.location.deleteMany({ where });
+      await tx.fieldDefinition.deleteMany({ where });
+      await tx.auditEvent.deleteMany({ where });
+      await tx.invite.deleteMany({ where });
+      await tx.outboxMessage.deleteMany({ where });
+      await tx.membership.deleteMany({ where });
+      await tx.role.deleteMany({ where });
+      await tx.authEvent.deleteMany({ where: account ? { accountId: account.id } : where });
+      if (account) await tx.account.delete({ where: { id: account.id } });
+      await tx.tenant.delete({ where: { id: where.tenantId } });
+    });
     await db.$disconnect();
   }
 });

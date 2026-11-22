@@ -102,6 +102,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@cafm/config-engine':
+        specifier: workspace:*
+        version: link:../../packages/config-engine
       '@cafm/shared':
         specifier: workspace:*
         version: link:../../packages/shared

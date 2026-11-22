@@ -1,4 +1,5 @@
 import 'server-only';
+import type { FieldDefinition } from '@cafm/config-engine';
 import { apiGet } from '@/lib/api';
 import type { LocationPage, LocationRecord } from '@cafm/shared';
 
@@ -29,4 +30,10 @@ export async function locationDetail(id: string): Promise<LocationRecord | null>
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('Could not load this location.');
   return response.json() as Promise<LocationRecord>;
+}
+
+export async function locationCustomFields(): Promise<FieldDefinition[]> {
+  const response = await apiGet('/locations/custom-fields');
+  if (!response.ok) throw new Error('Could not load location fields.');
+  return response.json() as Promise<FieldDefinition[]>;
 }

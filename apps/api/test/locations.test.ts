@@ -213,6 +213,9 @@ it('enforces site limits under concurrent creation and validates custom fields',
       .post('/api/config/fields')
       .send({ entityType: 'location', key: 'use_class', label: 'Use class', type: 'text', required: true })
       .expect(201);
+    expect((await agent.get(locations + '/custom-fields').expect(200)).body).toMatchObject([
+      { key: 'use_class', type: 'text', required: true },
+    ]);
     await agent.post(locations).send({ code: 'X', name: 'Site without a use class', kind: 'site' }).expect(422);
     const attempts = await Promise.all(
       ['A', 'B'].map((code) =>
