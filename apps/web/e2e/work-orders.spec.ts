@@ -254,3 +254,66 @@ test('sends a job to a contractor, who updates it from the emailed link without 
     await db.$disconnect();
   }
 });
+
+test('moves a card on the board, edits a job and takes a job back from a contractor', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'helpdesk');
+  const raise = async (title: string, extra: object = {}) => {
+    const response = await page.request.post('/api/work-orders', {
+      data: {
+        submissionId: randomUUID(),
+        title,
+        description: 'Created by a browser test.',
+        locationId: seedId('location:demo-estates:CDF'),
+        impact: 2,
+        urgency: 2,
+        ...extra,
+      },
+    });
+    expect(response.ok()).toBe(true);
+    return (await response.json()) as { id: string; number: string };
+  };
+  const boardJob = await raise('E2E board ' + suffix, { assigneeId: seedId('membership:demo-estates:technician') });
+
+  // Move a card from Assigned to In progress with the card's own menu.
+  await page.goto('/app/work-orders?view=all&layout=board&q=' + suffix);
+  const board = page.getByRole('group', { name: 'Work order board' });
+  const assigned = board.getByRole('region', { name: 'Assigned' });
+  await expect(assigned.getByRole('link', { name: boardJob.number }).first()).toBeVisible();
+  await assigned.getByLabel('Move ' + boardJob.number + ' to').selectOption({ label: 'On site' });
+  await expect(
+    board.getByRole('region', { name: 'In progress' }).getByRole('link', { name: boardJob.number }).first(),
+  ).toBeVisible();
+  await expect(assigned.getByRole('link', { name: boardJob.number })).toHaveCount(0);
+  // Opening the new-job form from the board keeps the board when it is closed.
+  await page.getByRole('link', { name: 'New work order' }).click();
+  await page.getByRole('dialog', { name: 'New work order' }).getByRole('link', { name: 'Close' }).click();
+  await expect(page.getByRole('group', { name: 'Work order board' })).toBeVisible();
+
+  // Edit the details and priority of another job.
+  const editable = await raise('E2E edit ' + suffix);
+  await page.goto('/app/work-orders/' + editable.id);
+  await page.getByText('Edit details and priority').click();
+  await page.getByLabel('Title', { exact: true }).fill('E2E edited ' + suffix);
+  await page.getByLabel('Impact').selectOption({ label: 'High' });
+  await page.getByLabel('Urgency').selectOption({ label: 'High' });
+  await page.getByRole('button', { name: 'Save details' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'E2E edited ' + suffix })).toBeVisible();
+  await expect(page.locator('.page-head .badge').nth(1)).toHaveText('P1 Emergency');
+  await expect(page.getByText('Priority and targets updated')).toBeVisible();
+
+  // Send a job to a contractor and take it back before they start.
+  const returned = await raise('E2E withdraw ' + suffix);
+  await page.goto('/app/work-orders/' + returned.id);
+  await page.getByLabel('Contractor name').fill('Sparks Electrical Ltd');
+  await page.getByLabel('Contractor email').fill('e2e-' + suffix + '@sparks.test');
+  await page.getByRole('button', { name: 'Send to contractor' }).click();
+  await expect(page.getByText(/can read notes that aren’t marked internal/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Send the link again' })).toBeVisible();
+  await page.getByRole('button', { name: 'Take the job back' }).click();
+  await expect(page.getByText('Taken back from Sparks Electrical Ltd')).toBeVisible();
+  await expectStatus(page, 'Logged');
+  await expect(page.getByRole('button', { name: 'Send to contractor' })).toBeVisible();
+  await assertAccessible(page);
+});

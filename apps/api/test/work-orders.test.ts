@@ -478,6 +478,15 @@ it('turns a request into several jobs, keeps the request in step and tells the r
       .send({ ...body, jobs: [{ title: 'Something else' }, { title: 'Dry out the wall' }] })
       .expect(409);
 
+    // Re-triaging runs the clock from when the problem was reported, not from when the job was raised.
+    const urgent = (
+      await desk
+        .patch(jobs + '/' + created[1].id)
+        .send({ version: 1, impact: 1, urgency: 1 })
+        .expect(200)
+    ).body;
+    expect(Date.parse(urgent.responseDueAt) - Date.parse(request.createdAt)).toBe(15 * 60_000);
+
     const afterConvert = (await desk.get(helpdesk + '/requests/' + request.id).expect(200)).body;
     expect(afterConvert.status).toBe('in_progress');
     expect(afterConvert.entries.map(({ body: text }: { body: string }) => text)).toEqual(
@@ -781,6 +790,49 @@ it('completes the request when a contractor finishes the only job on it', async 
     const entries = (await desk.get(helpdesk + '/requests/' + raised.id).expect(200)).body.entries;
     expect(entries.map(({ body }: { body: string }) => body)).toContain('Completed · all work orders finished');
   } finally {
+    await cleanup();
+  }
+});
+
+it('keeps internal notes from contractor accounts, and shows them to the team', async () => {
+  const { manager, admin, tenant, cleanup, site, job } = await fixture();
+  const outsider = await createTestAccount(db, [tenant.id], undefined, 'contractor');
+  const finance = await createTestAccount(db, [tenant.id], undefined, 'finance');
+  try {
+    await withTenant(db, tenant.id, (tx) =>
+      tx.membership.updateMany({ where: { id: outsider.memberships[0]! }, data: { licence: 'contractor' } }),
+    );
+    await admin
+      .put('/api/locations/access/' + outsider.memberships[0])
+      .send({ locationIds: [site.id] })
+      .expect(200);
+    const contractor = (await signIn(app, outsider.email, outsider.password)).agent;
+    const reader = (await signIn(app, finance.email, finance.password)).agent;
+    const created = (await manager.post(jobs).send(job()).expect(201)).body;
+    const url = jobs + '/' + created.id;
+    await manager
+      .post(url + '/assign')
+      .send({ version: 1, assigneeId: outsider.memberships[0] })
+      .expect(201);
+    await manager
+      .post(url + '/comments')
+      .send({ body: 'Gate code is 1234', internal: true })
+      .expect(201);
+    await manager
+      .post(url + '/comments')
+      .send({ body: 'Please ring on arrival.' })
+      .expect(201);
+    const bodies = (agent: typeof manager) =>
+      agent.get(url).then(({ body }) => body.entries.map(({ body: text }: { body: string }) => text));
+    expect(await bodies(manager)).toEqual(expect.arrayContaining(['Gate code is 1234', 'Please ring on arrival.']));
+    const seen = await bodies(contractor);
+    expect(seen).toContain('Please ring on arrival.');
+    expect(seen).not.toContain('Gate code is 1234');
+    // Read-only staff are inside the organisation, so they see everything on the job.
+    expect(await bodies(reader)).toContain('Gate code is 1234');
+  } finally {
+    await outsider.cleanup().catch(() => undefined);
+    await finance.cleanup().catch(() => undefined);
     await cleanup();
   }
 });

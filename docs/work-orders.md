@@ -66,7 +66,7 @@ The full contractor portal, accreditations and quotes are a Phase 2A feature.
 - `PATCH /api/work-orders/{id}` edits the title, description, asset and custom fields, or re-triages it. Changing impact and urgency (always together) recalculates the priority and targets from the time the job was raised. Closed and cancelled jobs can't be edited.
 - `POST /api/work-orders/{id}/status`, `/assign` and `/comments`.
 - Every change sends the job's `version`, and a stale one is refused with a conflict.
-- Status changes, assignment and notes appear on the job's timeline. Notes can be marked internal. Every change is in the audit log (`work_order.create`, `.update`, `.status`, `.assign`, `.comment`).
+- Status changes, assignment and notes appear on the job's timeline. Notes can be marked internal. Internal notes are hidden from a contractor, whether they use a link or have an account, and from client viewers. A note that isn't internal can be read by the contractor the job is with, and the job page says so. Every change is in the audit log (`work_order.create`, `.update`, `.status`, `.assign`, `.comment`).
 
 Custom fields for work orders are defined under the `work_order` entity type.
 

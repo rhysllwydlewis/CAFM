@@ -56,6 +56,9 @@ export default async function WorkOrdersPage({
   const currentView = filters.view;
   const stats = data.counts;
   const canCreate = can(user, 'work_orders.edit');
+  // The layout is part of where a page returns to, so closing the new-job form keeps the board.
+  const here = new URLSearchParams(params);
+  if (board) here.set('layout', 'board');
   const layoutParams = (layout: 'list' | 'board') => {
     const next = new URLSearchParams(params);
     next.delete('cursor');
@@ -96,7 +99,7 @@ export default async function WorkOrdersPage({
           {canCreate && (
             <Link
               id="new-work-order-trigger"
-              href={'/app/work-orders?' + new URLSearchParams([...params, ['new', '1']]).toString()}
+              href={'/app/work-orders?' + new URLSearchParams([...here, ['new', '1']]).toString()}
               className="btn primary"
             >
               <Icon name="add" /> New work order
@@ -203,7 +206,7 @@ export default async function WorkOrdersPage({
         )}
       </section>
       {canCreate && input.new === '1' && (
-        <NewWorkOrder canAssign={can(user, 'work_orders.assign')} returnTo={'/app/work-orders?' + params.toString()} />
+        <NewWorkOrder canAssign={can(user, 'work_orders.assign')} returnTo={'/app/work-orders?' + here.toString()} />
       )}
     </div>
   );

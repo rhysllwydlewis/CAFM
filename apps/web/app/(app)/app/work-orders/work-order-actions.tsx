@@ -145,8 +145,10 @@ export function WorkOrderActions({
           </h3>
           {record.contractor && (
             <p className="sm">
-              With {record.contractor.name} ({record.contractor.email}). Their link works until{' '}
-              {requestTime(record.contractor.expiresAt)}
+              With {record.contractor.name} ({record.contractor.email}).{' '}
+              {new Date(record.contractor.expiresAt).getTime() <= Date.now()
+                ? 'Their link expired on ' + requestTime(record.contractor.expiresAt) + '. Send it again to renew it'
+                : 'Their link works until ' + requestTime(record.contractor.expiresAt)}
               {record.contractor.lastUsedAt ? ' and was last used ' + requestTime(record.contractor.lastUsedAt) : ''}.
             </p>
           )}
@@ -278,6 +280,9 @@ export function WorkOrderActions({
             <textarea id="wo-comment" name="comment" className={styles.textarea} required maxLength={6000} />
           </Field>
           <Checkbox label="Internal note" name="internal" />
+          {record.contractor && (
+            <p className="sm muted">{record.contractor.name} can read notes that aren’t marked internal.</p>
+          )}
           <Button icon="comment" type="submit" disabled={busy}>
             Add note
           </Button>

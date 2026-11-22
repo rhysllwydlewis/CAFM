@@ -292,7 +292,7 @@ export class WorkOrdersController {
         include: workOrderRelations,
       });
       if (old) {
-        if (old.submissionHash !== hash) throw staleSubmission();
+        if (old.submissionHash !== hash) throw submissionReused();
         return workOrderSummary(old);
       }
       if (input.assigneeId) assertAccess(auth.access, 'work_orders', 'work_orders.assign');
@@ -355,7 +355,7 @@ export class WorkOrdersController {
       });
       if (replay.length) {
         const byKey = new Map(replay.map((row) => [row.submissionKey, row]));
-        if (keys.some((key, index) => byKey.get(key)?.submissionHash !== hashes[index])) throw staleSubmission();
+        if (keys.some((key, index) => byKey.get(key)?.submissionHash !== hashes[index])) throw submissionReused();
         return keys.map((key) => workOrderSummary(byKey.get(key)!));
       }
 
@@ -470,12 +470,19 @@ export class WorkOrdersController {
           where: { tenantId, descendantId: before.locationId, ancestor: { kind: 'site' } },
           select: { ancestor: { select: { siteCalendar: true } } },
         });
+        // The clock runs from when the problem was reported, which for a job raised from a request is earlier.
+        const reported = before.requestId
+          ? await tx.serviceRequest.findFirst({
+              where: { tenantId, id: before.requestId },
+              select: { createdAt: true },
+            })
+          : null;
         targets = await requestTargets(
           tx,
           tenantId,
           input.impact!,
           input.urgency!,
-          before.createdAt,
+          reported?.createdAt ?? before.createdAt,
           site?.ancestor.siteCalendar,
         );
       }
@@ -646,6 +653,6 @@ export class WorkOrdersController {
   }
 }
 
-function staleSubmission() {
+function submissionReused() {
   return new ConflictException('This submission was already used.');
 }

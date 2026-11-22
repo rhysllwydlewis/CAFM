@@ -61,6 +61,9 @@ export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
   };
 }
 
+/** Internal notes are for the organisation's own people. A contractor or client with an account never sees them. */
+const OUTSIDE_LICENCES = ['contractor', 'client'];
+
 export async function workOrderDetail(
   tx: Tx,
   row: WorkOrderRow,
@@ -68,7 +71,11 @@ export async function workOrderDetail(
 ): Promise<WorkOrderRecord<FieldDefinition>> {
   const [entries, fields] = await Promise.all([
     tx.workOrderEntry.findMany({
-      where: { tenantId: row.tenantId, workOrderId: row.id },
+      where: {
+        tenantId: row.tenantId,
+        workOrderId: row.id,
+        ...(OUTSIDE_LICENCES.includes(auth.membership!.licence) ? { internal: false } : {}),
+      },
       include: { author: memberLabel },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     }),
