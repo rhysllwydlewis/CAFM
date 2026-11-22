@@ -239,6 +239,15 @@ export default async function AssetPage({
           <Link className="btn" href={route}>
             <Icon name="asset" /> All assets
           </Link>
+          {!editing &&
+            !editingServes &&
+            asset.status !== 'disposed' &&
+            can(user, 'requests.create') &&
+            feature(user.entitlements, 'helpdesk') && (
+              <Link className="btn" href={'/portal/new?asset=' + asset.id + '&source=register'}>
+                <Icon name="helpdesk" /> Report a fault
+              </Link>
+            )}
           {canManage && !editing && !editingServes && (
             <>
               <Link className="btn" href={`${route}/${asset.id}?mode=serves`}>

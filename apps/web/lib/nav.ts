@@ -45,6 +45,14 @@ export const NAV: NavSection[] = [
     label: '',
     items: [
       { key: 'home', label: 'Home', icon: 'dashboard', href: '/app' },
+      {
+        key: 'my-requests',
+        label: 'My requests',
+        icon: 'helpdesk',
+        href: '/portal',
+        permission: 'requests.create',
+        feature: 'helpdesk',
+      },
       m(
         'helpdesk',
         'Helpdesk',
