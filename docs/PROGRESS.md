@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-02 | Claude | `claude/trusting-carson-1nifqf` | 2026-11-22 | P1-02a: asset classes, the asset hierarchy and the API. Follow how Locations was built (`packages/db/prisma/schema/location.prisma`, `apps/api/src/modules/locations`). |
 
 ## Phase checklists
 
@@ -95,6 +96,13 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-01d** Portfolio map and accessible site list with filters.
   - [x] **P1-01e** Location QR labels, printing and stable links for Helpdesk fault intake (P1-03).
 - [ ] **P1-02** Asset register, classes and attributes, "serves" relationships, tags, meters, warranties, attachments.
+  - [ ] **P1-02a** Asset classes with attribute templates, and the tenant-scoped asset hierarchy and API (location link, parent and child, plan limit, custom fields, audit).
+  - [ ] **P1-02b** Asset register and asset detail screens in the app shell (`assets-01-register`, `assets-02-detail`).
+  - [ ] **P1-02c** "Serves" relationships: the spaces and assets an asset serves, and impact lookup.
+  - [ ] **P1-02d** Tags (QR, barcode, NFC), label printing and stable scan links for Helpdesk (P1-03).
+  - [ ] **P1-02e** Meters and readings, with rollover handling.
+  - [ ] **P1-02f** Warranties with expiry alerts.
+  - [ ] **P1-02g** Attachments (photos and documents) on assets.
 - [ ] **P1-03** Helpdesk: request catalogue, priority matrix, triage, portal, QR reporting, email-to-ticket (inbound mailboxes), queue, duplicate detection, CSAT.
 - [ ] **P1-04** Reactive work orders: lifecycle, assignment (including contractors by magic link), SLA clocks and escalation, labour/parts/costs, checklists, photos, signatures, job-sheet PDFs.
 - [ ] **P1-05** PPM: task library, schedules (calendar + meter), generator, 52-week planner, compliance KPI.
