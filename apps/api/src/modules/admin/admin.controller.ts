@@ -74,11 +74,14 @@ export class AdminController {
   @Get('users')
   @RequirePermission('people.manage')
   async users(@Req() req: Request): Promise<AdminUser[]> {
-    const tenantId = req.auth!.membership!.tenantId;
+    const auth = req.auth!;
+    const tenantId = auth.membership!.tenantId;
+    // A role with data scope "own" sees only itself, as in the people list.
+    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
     return withTenant(this.db, tenantId, async (tx) => {
       const [rows, roles, sessions] = await Promise.all([
         tx.membership.findMany({
-          where: { tenantId },
+          where: { tenantId, ...own },
           include: { account: true },
           orderBy: { account: { name: 'asc' } },
         }),
