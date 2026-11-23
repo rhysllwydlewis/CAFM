@@ -27,3 +27,11 @@ export type AdminUser = {
   status: 'active' | 'deactivated' | 'invited';
   lastSignIn: string | null;
 };
+
+/** A team and who is in it (P1-09b). */
+export type Team = {
+  id: string;
+  name: string;
+  description: string | null;
+  members: { membershipId: string; name: string; roleLabel: string }[];
+};
