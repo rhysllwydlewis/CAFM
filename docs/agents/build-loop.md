@@ -43,6 +43,7 @@ Item: P1-06 (sub-items P1-06a to P1-06f)
 Builder runs on this item: 1 of 8
 Review rounds done: 0 of 2
 Heartbeat: 2026-11-23T10:17Z
+Signed off at: (set by the Reviewer: the head commit it checked)
 Done: what works, with the commit or file
 Next: the precise next step (file, function, test), so another session can start at once
 Known gaps: anything not built or not working, stated plainly
@@ -131,10 +132,16 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 
 **The Reviewer squash-merges a PR only if all of these hold**, checked in the same run it signs the PR off:
 1. CI on the PR's current head is fully green, and the PR is mergeable with no conflicts.
-2. The latest CI run on `main` is green. While `main` is red nothing is merged, and the Builder fixes `main` first.
-3. It is a loop PR (branch `claude/build-*`), nothing marks it `blocked` or `decision-needed`, and the owner has no unanswered comment on it.
-4. It doesn't change a guard-rail file: `AGENTS.md`, `CLAUDE.md`, anything under `docs/agents/`, `docs/adr/` or `.github/`, `scripts/progress.mjs`, or the approved-phase marker. The routines never change their own rules without the owner.
-5. No must-fix finding is open, and the Reviewer ran every check itself on the final head.
+2. DeepSource's analysis of that head has finished, with no new critical or major finding left that hasn't been fixed or verified as a false positive.
+3. The latest CI run on `main` is green, and the newest Railway deployment of the CAFM service is healthy. While `main` is red nothing is merged, and the Builder fixes `main` first. If the deployment has failed, the Reviewer opens a `priority:now` issue ("Production deploy failing") so the Builder takes it first.
+4. It is a loop PR (branch `claude/build-*`), nothing marks it `blocked` or `decision-needed`, and the owner has no unanswered comment on it.
+5. It doesn't change a guard-rail file: `AGENTS.md`, `CLAUDE.md`, anything under `docs/agents/`, `docs/adr/` or `.github/`, `scripts/progress.mjs`, or the approved-phase marker. The routines never change their own rules without the owner.
+6. No must-fix finding is open, and the Reviewer ran every check itself on the final head.
+7. The head commit is still the one recorded in "Signed off at:".
+
+**Retrying.** A Reviewer can't wait for CI after it pushes a fix, so a PR is often signed off before its checks have finished. If the only reason not to merge is that something is still running or red (CI, DeepSource, a deployment, `main`), the PR stays at `ready` with a "Not merged because: [retry] …" line, and a later Reviewer run re-checks these conditions and merges, without a full re-review as long as the head commit hasn't changed. If the head changed, it goes back to `review`. Any other reason is marked `[owner]` and waits for the owner.
+
+**What the Reviewer may use.** The Railway and DeepSource connectors. Railway is read-only (deployment status, diagnosis, logs). Nothing but the merge changes production. DeepSource findings are information to verify. The Reviewer never alters DeepSource settings, ignore rules or thresholds.
 
 The merge uses the PR title, is pinned to the exact head commit the Reviewer checked, and is one PR per run. The Reviewer never merges an "Approve Phase N" PR, a Steward docs PR, or any PR it didn't review. If a condition fails, the PR stays at `ready` with a "Not merged because:" line, and the owner decides.
 
