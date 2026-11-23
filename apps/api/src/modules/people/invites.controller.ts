@@ -16,6 +16,7 @@ import type { Request } from 'express';
 import { newToken, withTenant } from '@cafm/db';
 import { inviteCreateSchema, licenceForRole } from '@cafm/shared';
 import { assertCanGrant, assertFullUserSeat } from '../../core/access-rules';
+import { assertNotDelegated } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { appUrl, queueTenantEmail } from '../../core/mail';
@@ -33,6 +34,7 @@ export class InvitesController {
   @Get()
   @RequirePermission('people.invite')
   async list(@Req() req: Request) {
+    assertNotDelegated(req.auth!);
     const tenantId = req.auth!.membership!.tenantId;
     const rows = await withTenant(this.db, tenantId, (tx) =>
       tx.invite.findMany({
@@ -48,6 +50,7 @@ export class InvitesController {
   async create(@Body() body: unknown, @Req() req: Request) {
     const input = parse(inviteCreateSchema, body);
     const auth = req.auth!;
+    assertNotDelegated(auth);
     const membership = auth.membership!;
     const tenantId = membership.tenantId;
     const { token, tokenHash } = newToken();
@@ -118,6 +121,7 @@ export class InvitesController {
   @RequirePermission('people.invite')
   async revoke(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request): Promise<void> {
     const auth = req.auth!;
+    assertNotDelegated(auth);
     const tenantId = auth.membership!.tenantId;
     await withTenant(this.db, tenantId, async (tx) => {
       const invite = await tx.invite.findFirst({ where: { id, tenantId, acceptedAt: null, revokedAt: null } });

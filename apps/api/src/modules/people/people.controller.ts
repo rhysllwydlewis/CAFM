@@ -19,6 +19,7 @@ import {
   assertNotDemoLocked,
   assertNotLastSuperUser,
 } from '../../core/access-rules';
+import { assertAdministrable } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -78,6 +79,7 @@ export class PeopleController {
         include: { account: { select: { isDemo: true } } },
       });
       if (!target) throw new NotFoundException();
+      await assertAdministrable(tx, auth, target.id);
 
       const currentRole = await tx.role.findUnique({
         where: { tenantId_key: { tenantId: actor.tenantId, key: target.role } },

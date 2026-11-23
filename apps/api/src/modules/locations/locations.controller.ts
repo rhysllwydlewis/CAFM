@@ -30,6 +30,7 @@ import {
   type LocationPage,
 } from '@cafm/shared';
 import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
+import { assertAdministrable } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { toFieldDefinition } from '../../core/config';
@@ -314,24 +315,24 @@ export class LocationsController {
     return withLocationWrite(this.db, req.auth!, 'people.manage', async (tx, auth) => {
       const actor = auth.membership!;
       const tenantId = actor.tenantId;
-      if (
-        !auth.access!.permissions.has('locations.manage') ||
-        !allLocations(auth) ||
-        membershipId.toLowerCase() === actor.id
-      )
+      if (membershipId.toLowerCase() === actor.id) throw new ForbiddenException();
+      // Delegated admins (limited to sites) may only narrow or move someone within their own sites.
+      const delegated = !allLocations(auth);
+      if (delegated ? locationIds === null : !auth.access!.permissions.has('locations.manage'))
         throw new ForbiddenException();
       const member = await tx.membership.findFirst({
         where: { tenantId, id: membershipId },
         include: { account: { select: { isDemo: true } } },
       });
       if (!member) throw new NotFoundException();
+      await assertAdministrable(tx, auth, member.id);
       if (member.role === 'super_user') throw new ForbiddenException();
       assertNotDemoLocked(member.account.isDemo);
       const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
       if (!role) throw new ForbiddenException();
       assertCanGrant(auth.access!, actor.role, role.permissions);
       const ids = [...new Set(locationIds ?? [])];
-      if ((await tx.location.count({ where: { tenantId, id: { in: ids } } })) !== ids.length)
+      if ((await tx.location.count({ where: { ...locationScope(auth), id: { in: ids } } })) !== ids.length)
         throw new NotFoundException();
       const where = { tenantId, membershipId: member.id };
       const before = await tx.membershipSite.findMany({ where, select: { locationId: true } });
