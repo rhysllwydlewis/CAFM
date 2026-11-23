@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration console, first part: an overview with licence use, recent changes and a setup checklist, and a Users and licences screen to invite people, withdraw invitations, change roles and deactivate or reactivate people. See [Administration](docs/admin.md).
+
 - Quick jobs, recent scans, time and root cause in the technician app: raise a job from a scanned asset (saved on the phone and sent when there is signal, for people allowed to create jobs), reopen the last scans, and add time on the job and an internal root cause when completing a job.
 
 - Scan and quick capture in the technician app: the new Scan tab looks up an asset label, asset number or job number from the jobs saved on the phone (with the camera where the browser supports it), opens its jobs and records a meter reading without signal. A new job can now be accepted, or declined with a reason that goes to the helpdesk as a note. See [Mobile app](docs/mobile.md#scan-accept-and-readings).

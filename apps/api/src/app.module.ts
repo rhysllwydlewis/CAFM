@@ -4,6 +4,7 @@ import { CoreModule } from './core/core.module';
 import { CsrfGuard } from './core/csrf.guard';
 import { HealthController } from './core/health.controller';
 import { AuditModule } from './modules/audit/audit.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigEngineModule } from './modules/config/config.module';
 import { AssetsModule } from './modules/assets/assets.module';
@@ -22,6 +23,7 @@ import { RolesModule } from './modules/roles/roles.module';
     PeopleModule,
     RolesModule,
     AuditModule,
+    AdminModule,
     ConfigEngineModule,
     LocationsModule,
     AssetsModule,
