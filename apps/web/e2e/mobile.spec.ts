@@ -128,3 +128,51 @@ test('changes made without signal wait on the phone, then sync', async ({ page, 
   await page.getByRole('button', { name: 'Complete and sign off' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Ask the customer to sign first.' })).toBeVisible();
 });
+
+test('a technician scans an asset and records a meter reading without signal', async ({ page, context }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email or username').fill('technician@demo.example');
+  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/m');
+  await expect(page.getByText(/^Synced/)).toBeVisible();
+  await page.locator('[data-offline-ready="true"]').waitFor();
+  await page.getByRole('link', { name: /WO-10412/ }).click();
+  const assetNumber = (
+    await page
+      .getByText(/Boiler 2 · AST-/)
+      .first()
+      .innerText()
+  )
+    .split('· ')[1]!
+    .trim();
+
+  await page.getByRole('link', { name: 'Scan', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Scan' })).toBeVisible();
+  await context.setOffline(true);
+
+  await page.getByLabel('Asset or job number').fill('AST-NOT-HERE');
+  await page.getByRole('button', { name: 'Look up' }).click();
+  await expect(page.getByText('Nothing on this phone matches')).toBeVisible();
+
+  await page.getByLabel('Asset or job number').fill(assetNumber.toLowerCase());
+  await page.getByRole('button', { name: 'Look up' }).click();
+  await expect(page.getByText(/Boiler 2 · AST-/)).toBeVisible();
+  await assertAccessible(page);
+
+  await page.getByRole('button', { name: 'Record a reading' }).click();
+  await page.getByLabel('Reading', { exact: false }).last().fill('abc');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Enter the reading as a number' })).toBeVisible();
+  await page.getByLabel('Reading', { exact: false }).last().fill('1204.5');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.getByText('Reading saved on this phone')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Sync', exact: true }).click();
+  await expect(page.getByText('Waiting to sync (1)')).toBeVisible();
+  await expect(page.getByText('Meter reading')).toBeVisible();
+  await context.setOffline(false);
+  await page.getByRole('button', { name: 'Try sync now' }).click();
+  await expect(page.getByText('Waiting to sync (0)')).toBeVisible();
+});

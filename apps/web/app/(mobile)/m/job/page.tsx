@@ -12,6 +12,29 @@ function JobDetail() {
   const id = useSearchParams().get('id') ?? '';
   const { job, queue, status, checklists, queueChange, changeStatus } = useJob(id);
   const [photoError, setPhotoError] = useState('');
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState('');
+  const [reasonError, setReasonError] = useState('');
+
+  /** There is no "declined" status: a reason is sent to the helpdesk as a note and the job stays assigned. */
+  async function decline() {
+    if (!reason.trim()) {
+      setReasonError('Say why you cannot take this job.');
+      return;
+    }
+    await queueChange({
+      type: 'mutation',
+      item: {
+        key: '',
+        kind: 'note',
+        workOrderId: id,
+        payload: { body: 'Declined by the technician: ' + reason.trim(), internal: true },
+      },
+    });
+    setDeclining(false);
+    setReason('');
+    setReasonError('');
+  }
 
   async function addPhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -195,6 +218,42 @@ function JobDetail() {
             </div>
           )}
         </div>
+        {status === 'assigned' && (
+          <div className="m-card">
+            <div className="medium sm">New job</div>
+            <button type="button" className="m-btn primary" onClick={() => void changeStatus('accepted')}>
+              Accept job
+            </button>
+            {declining ? (
+              <div className="stack g2">
+                <label className="medium sm" htmlFor="decline-reason">
+                  Why can you not take it?
+                </label>
+                <div className="input lg">
+                  <input
+                    id="decline-reason"
+                    value={reason}
+                    maxLength={500}
+                    onChange={(e) => setReason(e.target.value)}
+                    aria-invalid={reasonError ? true : undefined}
+                  />
+                </div>
+                {reasonError && (
+                  <div className="sm" role="alert" style={{ color: 'var(--danger-text)' }}>
+                    {reasonError}
+                  </div>
+                )}
+                <button type="button" className="m-btn secondary" onClick={() => void decline()}>
+                  Send to the helpdesk
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="m-btn secondary" onClick={() => setDeclining(true)}>
+                Decline job
+              </button>
+            )}
+          </div>
+        )}
         {next && (
           <button type="button" className="m-btn secondary" onClick={() => void changeStatus(next)}>
             Start work ({WORK_ORDER_STATUS_LABELS[next]})

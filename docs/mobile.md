@@ -69,3 +69,10 @@ Everything a technician does on a job is saved on the phone first, in the Indexe
 - **Signatures.** The complete screen takes the customer's name and signature, then queues the sign-off and the move to Completed, in that order. Sent with `POST /api/work-orders/:id/signatures`. If the job already has that sign-off the server answers 409 and the change stays on the Sync tab as refused, because the stored one may not be this drawing.
 - **Order and failures.** A change the server accepts leaves the queue. One it refuses (the job changed, you no longer have the job, an answer that is not valid) stays, marked as refused with the reason, on the Sync tab. **Try again** sends it again under a new key, and **Discard** removes it. Nothing is dropped quietly.
 - **Signing out** deletes the queue with the saved jobs, so the Me tab warns first and needs a second tap.
+
+## Scan, accept and readings
+
+- **Work pack meters.** Each job's `assetDetail.meters` lists the asset's meters (`id`, `name`, `unit`, `rolloverAt`), only for people with `assets.record_readings`. Meters are refreshed when the job changes.
+- **Scan** (`/m/scan`) matches a label link (`/asset-qr/<id>`), an asset number or a job number against the jobs held on the phone, so it works offline. The camera uses the browser's `BarcodeDetector` where it exists. Elsewhere the person types the number.
+- **Meter reading** queues a `meter_reading` mutation with a fresh `submission` id, so a retry never records it twice.
+- **Accept** queues a `status` change to Accepted. **Decline** queues an internal note, "Declined by the technician: <reason>", because there is no declined status. The job stays assigned until the helpdesk reassigns it.

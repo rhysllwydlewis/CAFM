@@ -6,6 +6,7 @@ import { Icon } from '@cafm/ui';
 
 const TABS = [
   { href: '/m', label: 'My jobs', icon: 'work-order' },
+  { href: '/m/scan', label: 'Scan', icon: 'scan' },
   { href: '/m/sync', label: 'Sync', icon: 'refresh' },
   { href: '/m/me', label: 'Me', icon: 'user' },
 ] as const;
@@ -63,7 +64,7 @@ export function MobileShell({ children, membershipId }: { children: ReactNode; m
           );
         })
         // Keep every screen for offline use, not only the ones visited so far.
-        .then(() => saveForOffline(['/m', '/m/job', '/m/job/complete', '/m/sync', '/m/me']))
+        .then(() => saveForOffline(['/m', '/m/job', '/m/job/complete', '/m/scan', '/m/sync', '/m/me']))
         .then(() => setOfflineReady(true))
         .catch(() => undefined);
     }
