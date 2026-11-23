@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) built, in review. Next: P1-09b roles matrix, teams, scopes and delegated admin. Branch claude/build-p1-09-admin-users |
+| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batch 2 (P1-09b roles matrix, teams, scopes, delegated admin) in progress on claude/build-p1-09-roles-teams |
 
 ## Phase checklists
 
