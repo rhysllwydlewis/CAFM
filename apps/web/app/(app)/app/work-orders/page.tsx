@@ -10,6 +10,7 @@ import {
 } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { currentUser } from '@/lib/session';
+import { ListViewBar } from '@/components/list-view-bar';
 import ModulePage from '../[module]/page';
 import { workOrderPage } from '@/lib/work-orders';
 import { NewWorkOrder } from './new-work-order';
@@ -107,6 +108,7 @@ export default async function WorkOrdersPage({
           )}
         </div>
       </div>
+      <ListViewBar entity="work_orders" route="/app/work-orders" query={input} user={user} />
       {cards.length > 0 && (
         <div className={styles.metrics}>
           {cards.map(([label, value, icon]) => (

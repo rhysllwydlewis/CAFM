@@ -11,6 +11,7 @@ import {
   type AssetSummary,
 } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
+import { ListViewBar } from '@/components/list-view-bar';
 import { locationPage } from '../locations/location-data';
 import { assetPage, assetSummary } from './asset-data';
 import {
@@ -314,6 +315,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
           )}
         </div>
       </header>
+      <ListViewBar entity="assets" route="/app/assets" query={query} user={user} />
 
       <div className={styles.kpis}>
         <Tile

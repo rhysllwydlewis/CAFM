@@ -5,6 +5,7 @@ import { Icon } from '@cafm/ui';
 import { hours } from '@/lib/ppm-format';
 import { ppmForecast, ppmOverdue, ppmPlanner, ppmSchedules, ppmSummary } from '@/lib/ppm';
 import { currentUser } from '@/lib/session';
+import { ListViewBar } from '@/components/list-view-bar';
 import ModulePage from '../[module]/page';
 import { GenerateButton } from './generate-button';
 import { PlannerGrid, PlannerLegend } from './planner-grid';
@@ -161,6 +162,7 @@ export default async function PpmPage({
         ))}
       </div>
 
+      <ListViewBar entity="ppm_schedules" route="/app/ppm" query={input} user={user} />
       <section className="card">
         <nav aria-label="Planned maintenance views" className={styles.filters}>
           {VIEWS.map(([key, label]) => (
