@@ -25,3 +25,7 @@ All calls are inside the signed-in organisation, and each checks the list's own 
 ## On the screens
 
 Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and a column chooser, bulk actions, and kanban and calendar layouts for the other lists are built in later batches of P1-08.
+
+## Sorting the work order list
+
+`GET /api/work-orders` takes `sort` (`created`, `priority`, `number` or `title`) and `dir` (`asc` or `desc`). The default is newest first. Only columns that are never empty are offered, so paging with the cursor never skips or repeats a job. The work order screen has **Sort by** and **Sort order** controls; because they live in the address, a saved view keeps them. Sorting the asset, request and planned maintenance lists comes in a later batch.

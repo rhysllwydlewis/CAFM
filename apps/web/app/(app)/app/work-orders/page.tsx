@@ -4,6 +4,7 @@ import {
   can,
   feature,
   listWorkOrdersSchema,
+  WORK_ORDER_SORTS,
   WORK_ORDER_STATUS_LABELS,
   WORK_ORDER_STATUSES,
   type WorkOrderView,
@@ -20,6 +21,7 @@ import { PRIORITY_LABELS } from './work-order-parts';
 import styles from './work-orders.module.css';
 
 export const metadata: Metadata = { title: 'Work orders' };
+const SORT_LABELS = { created: 'Date raised', priority: 'Priority', number: 'Number', title: 'Title' } as const;
 const views: [WorkOrderView, string][] = [
   ['open', 'Open'],
   ['mine', 'Mine'],
@@ -43,7 +45,7 @@ export default async function WorkOrdersPage({
   const parsed = listWorkOrdersSchema.safeParse(Object.fromEntries(Object.entries(input).filter(([, value]) => value)));
   const filters = parsed.success ? parsed.data : listWorkOrdersSchema.parse({});
   const params = new URLSearchParams();
-  for (const key of ['view', 'status', 'priority', 'q', 'cursor'] as const) {
+  for (const key of ['view', 'status', 'priority', 'q', 'sort', 'dir', 'cursor'] as const) {
     const value = filters[key];
     if (value) params.set(key, String(value));
   }
@@ -177,6 +179,24 @@ export default async function WorkOrdersPage({
                   {WORK_ORDER_STATUS_LABELS[status]}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="label">Sort by</span>
+            <select className={styles.control} name="sort" defaultValue={filters.sort}>
+              {WORK_ORDER_SORTS.map((sort) => (
+                <option key={sort} value={sort}>
+                  {SORT_LABELS[sort]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="label">Sort order</span>
+            <select className={styles.control} name="dir" defaultValue={filters.dir ?? ''}>
+              <option value="">Default</option>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
             </select>
           </label>
           <button type="submit" className="btn">

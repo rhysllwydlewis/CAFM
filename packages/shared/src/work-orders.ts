@@ -156,6 +156,9 @@ export const convertRequestSchema = z
   .strict();
 export type ConvertRequest = z.infer<typeof convertRequestSchema>;
 
+export const WORK_ORDER_SORTS = ['created', 'priority', 'number', 'title'] as const;
+export type WorkOrderSort = (typeof WORK_ORDER_SORTS)[number];
+
 export const listWorkOrdersSchema = z.object({
   view: z.enum(WORK_ORDER_VIEWS).default('open'),
   status: z.enum(WORK_ORDER_STATUSES).optional(),
@@ -164,6 +167,8 @@ export const listWorkOrdersSchema = z.object({
   assetId: uuid.optional(),
   requestId: uuid.optional(),
   priority: z.coerce.number().int().min(1).max(4).optional(),
+  sort: z.enum(WORK_ORDER_SORTS).default('created'),
+  dir: z.enum(['asc', 'desc']).optional(),
   cursor: uuid.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });
