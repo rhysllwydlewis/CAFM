@@ -150,7 +150,7 @@ export default async function WorkOrdersPage({
             Board
           </Link>
         </nav>
-        <form className={styles.filters}>
+        <form key={params.toString()} className={styles.filters}>
           <input type="hidden" name="view" value={currentView} />
           {board && <input type="hidden" name="layout" value="board" />}
           <label className="field">

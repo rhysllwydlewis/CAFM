@@ -134,7 +134,14 @@ function Filters({ filters, sites }: { filters: Filters; sites: { id: string; na
   );
   const active = filters.q || filters.site || filters.status || filters.condition || filters.criticality;
   return (
-    <form className={styles.filters} method="get" action={route} role="search" aria-label="Filter assets">
+    <form
+      key={JSON.stringify(filters)}
+      className={styles.filters}
+      method="get"
+      action={route}
+      role="search"
+      aria-label="Filter assets"
+    >
       {filters.group && <input type="hidden" name="group" value={filters.group} />}
       <div className={styles.filter}>
         <label htmlFor="filter-q">Search</label>

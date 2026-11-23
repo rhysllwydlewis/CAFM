@@ -22,7 +22,11 @@ interface Props {
 export function viewHref(route: string, view: Pick<SavedView, 'id' | 'config'>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(view.config.filters)) {
-    if (typeof value === 'string') params.set(key, value);
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      params.set(key, String(value));
+    } else if (Array.isArray(value)) {
+      for (const item of value) params.append(key, item);
+    }
   }
   if (view.config.layout === 'board') params.set('layout', 'board');
   params.set('view_id', view.id);

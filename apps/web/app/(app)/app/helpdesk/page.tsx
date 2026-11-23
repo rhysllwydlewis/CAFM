@@ -143,7 +143,7 @@ export default async function HelpdeskPage({
             </Link>
           ))}
         </nav>
-        <form className={styles.filters}>
+        <form key={params.toString()} className={styles.filters}>
           <input type="hidden" name="view" value={currentView} />
           <label className="field">
             <span className="label">Search requests</span>
