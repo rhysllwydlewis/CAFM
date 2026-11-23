@@ -55,6 +55,39 @@ The rest of the body is the normal PR template, including the `Progress:` line. 
 
 `Session` says whether a session is working on the PR right now. A routine sets `Session: active` as it starts work on a PR and `Session: ended` as the last thing it does before it stops, including when it stops part-way because it chose to. A session that's cut off by a usage limit can't do that, which is exactly what the heartbeat is for.
 
+## How each routine starts (tested 23 Nov 2026)
+
+A routine can start on a **schedule**, on a **GitHub event**, or by an **API call**, and one routine can have several. Triggers are added by the owner on the web at claude.ai/code/routines. Claude can't add them from a session. The facts below come from the [official routines documentation](https://code.claude.com/docs/en/routines) and from a test on the real repository.
+
+**Proven by test** (a throwaway PR on a `claude/build-` branch, with the Reviewer's GitHub trigger set to all pull request events, head branch starting `claude/build-`, and is draft `false`):
+
+| Action on the PR | Started the Reviewer? |
+|---|---|
+| Opened as a draft | No (blocked by the draft filter) |
+| Taken out of draft | **Yes, in under a second** |
+| A label added | **Yes, within about 2 seconds** |
+| A commit pushed | **Yes, within about 6 seconds** (so the Reviewer's own pushes start more runs) |
+
+Two sessions can run side by side. A start that finds the PR already being worked on stops in about 20 seconds, because of the `Session` check, so it costs little. Each GitHub event starts its own fresh session.
+
+**The settings**
+
+| Routine | Schedule | GitHub event trigger |
+|---|---|---|
+| Builder | Every 2 hours | Pull request **closed**, filters: is merged `true`, head branch starts with `claude/build-`. This continues the item with its next batch as soon as the Reviewer merges one. (The documentation's own example; to be confirmed on the first real merge.) |
+| Reviewer | Hourly (the most often a schedule can run). It does the retries and is the backup for any missed event. | Pull request, only the **labeled** and **ready for review** actions if the form offers them (otherwise all pull request events), filters: head branch starts with `claude/build-`, is draft `false`, labels contains `stage:review` |
+| Steward | Daily | None |
+
+**Why the label filter and the exclusive stage labels.** Only the Builder puts `stage:review` on a PR, and the Reviewer replaces it with `stage:ready` when it signs off. So once a PR is signed off, further pushes no longer match the trigger.
+
+**What the documentation says that we plan around**
+- Events beyond an hourly cap (the number isn't published) are **dropped**, which is why the schedules stay as a backup.
+- A run that can't start (usage limit reached, setup failure) isn't retried. The next schedule run picks the work up.
+- If the owner's GitHub connection lapses, scheduled runs are skipped for up to 72 hours and then the routine switches off. A missing Steward notification in the morning is the sign to check.
+- The GitHub trigger needs the Claude GitHub App installed on the repository. Routines are a research preview and the limits may change.
+
+**Also on the repository:** a Codex review bot reviews every PR that is opened for review or taken out of draft. The Reviewer reads its comments as extra information.
+
 ## Batches and decisions
 
 **Batches.** A big item is built and reviewed in batches, each its own PR of about 1,500 changed lines or fewer, ending at a natural boundary (for example the data and API first, then the screens, then offline sync). A PR that grows to thousands of lines can't be reviewed carefully, so the Builder sends each coherent batch to review as soon as it is complete. All the batches of an item share one claim: the claim row stays in `docs/PROGRESS.md` on `main` with the branch pattern `claude/build-<item>-*`, and every batch's PR says `Progress: <item> in progress`. The last batch says `Progress: <item> done`, ticks the item and removes the row. After the Reviewer merges a batch, the next Builder run finds the item still claimed on `main` with unticked sub-items and no open PR, and continues it with a new PR before taking any new item.

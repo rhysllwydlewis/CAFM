@@ -47,6 +47,7 @@ Written on 23 Nov 2026, the day the three routines (Builder, Reviewer, Steward) 
 7. **Whole files to paste, never edits inside a prompt.**
 8. **Check the clock and the saved state before stating them.**
 9. **Whatever reaches `main` gets reviewed.** A tripwire (the Steward) catches anything that skipped the Reviewer.
+10. **Test a platform feature before designing around it.** "Start the Reviewer when a PR is taken out of draft" looked doubtful, so we read the documentation and then tested it on a throwaway PR. It works, and so do labels and pushes. See "How each routine starts" in the playbook.
 
 ## 4. Still open
 
