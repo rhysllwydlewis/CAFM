@@ -173,7 +173,7 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 
 **The Reviewer squash-merges a PR only if all of these hold**, checked in the same run it signs the PR off:
 1. CI on the PR's current head is fully green, and the PR is mergeable with no conflicts.
-2. DeepSource's analysis of that head has finished, with no new critical or major finding left that hasn't been fixed or verified as a false positive.
+2. DeepSource's analysis of that head has finished, with no new critical or major finding left that hasn't been fixed or verified as a false positive. This applies only while DeepSource is switched on for the repository (`get_repository` shows `is_activated: true`). If it is not switched on, or has never analysed any PR, it is not a condition: the Reviewer notes "DeepSource is not switched on for this repository" in the Review log and carries on. Only an analysis that is switched on and still pending is a `[retry]` reason.
 3. The latest CI run on `main` is green, and the newest Railway deployment of the CAFM service is healthy. While `main` is red nothing is merged, and the Builder fixes `main` first. If the deployment has failed, the Reviewer opens a `priority:now` issue ("Production deploy failing") so the Builder takes it first.
 4. It is a loop PR (branch `claude/build-*`), nothing marks it `blocked` or `decision-needed`, and the owner has no unanswered comment on it.
 5. It doesn't change a guard-rail file: `AGENTS.md`, `CLAUDE.md`, anything under `docs/agents/`, `docs/adr/` or `.github/`, `scripts/progress.mjs`, or the approved-phase marker. The routines never change their own rules without the owner.
