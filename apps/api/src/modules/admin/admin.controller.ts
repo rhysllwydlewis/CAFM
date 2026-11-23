@@ -86,8 +86,8 @@ export class AdminController {
         tx.membership.findMany({
           where: {
             tenantId,
-            ...own,
-            ...(allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {}),
+            // Both limits apply: a delegated admin's sites and a role's own-records scope.
+            AND: [own, allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {}],
           },
           include: { account: true },
           orderBy: { account: { name: 'asc' } },

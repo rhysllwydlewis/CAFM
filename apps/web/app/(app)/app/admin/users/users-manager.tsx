@@ -35,6 +35,7 @@ export function UsersManager({
   canInvite,
   selfMembershipId,
   siteAccess,
+  canEditSiteAccess,
 }: {
   users: AdminUser[];
   roles: RoleOption[];
@@ -42,6 +43,8 @@ export function UsersManager({
   canInvite: boolean;
   selfMembershipId: string;
   siteAccess: SiteAccessOverview;
+  /** Delegated admins, or organisations-wide admins who also hold `locations.manage`. */
+  canEditSiteAccess: boolean;
 }) {
   const router = useRouter();
   const emailId = useId();
@@ -276,12 +279,19 @@ export function UsersManager({
           </table>
         </div>
       </section>
-      <SiteAccessCard
-        key={siteAccess.members.map((m) => m.membershipId + m.restricted + m.locationIds.join()).join('|')}
-        users={users}
-        overview={siteAccess}
-        selfMembershipId={selfMembershipId}
-      />
+      {canEditSiteAccess && (
+        <SiteAccessCard
+          key={
+            users
+              .filter((u) => u.status === 'active')
+              .map((u) => u.membershipId)
+              .join() + siteAccess.members.map((m) => m.membershipId + m.restricted + m.locationIds.join()).join('|')
+          }
+          users={users}
+          overview={siteAccess}
+          selfMembershipId={selfMembershipId}
+        />
+      )}
     </>
   );
 }

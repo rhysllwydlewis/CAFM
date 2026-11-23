@@ -51,7 +51,11 @@ export function SiteAccessCard({
     try {
       // Keep any access to levels this screen doesn't list (such as a single building) as it was.
       const kept = (current?.locationIds ?? []).filter((id) => !areaIds.has(id));
-      await adminWrite('/locations/access/' + personId, { locationIds: limited ? [...chosen, ...kept] : null }, 'PUT');
+      await adminWrite(
+        '/locations/access/' + personId,
+        { locationIds: limited ? [...new Set([...chosen, ...kept])] : null },
+        'PUT',
+      );
       setFeedback({ text: 'Site access saved.' });
       router.refresh();
     } catch (error) {

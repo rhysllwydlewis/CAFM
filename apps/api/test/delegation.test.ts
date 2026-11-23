@@ -124,6 +124,34 @@ it('lets a delegated admin manage people inside their sites and no one else', as
   }
 });
 
+it('keeps a role limited to its own record to that record', async () => {
+  const { tenant, cleanup, admin, siteA, member } = await estate();
+  try {
+    await withTenant(db, tenant.id, (tx) =>
+      tx.role.create({
+        data: {
+          tenantId: tenant.id,
+          key: 'own_admin',
+          name: 'Own admin',
+          permissions: ['people.manage'],
+          scope: 'own',
+        },
+      }),
+    );
+    const own = await createTestAccount(db, [tenant.id], undefined, 'own_admin');
+    await admin
+      .put(`/api/locations/access/${own.memberships[0]}`)
+      .send({ locationIds: [siteA.id] })
+      .expect(200);
+    await member('technician', [siteA.id]);
+    const agent = (await signIn(app, own.email, own.password)).agent;
+    const seen = (await agent.get('/api/admin/users').expect(200)).body as { membershipId: string }[];
+    expect(seen.map((u) => u.membershipId)).toEqual([own.memberships[0]]);
+  } finally {
+    await cleanup();
+  }
+});
+
 it('keeps invitations with organisation-wide admins', async () => {
   const { cleanup, admin, delegate } = await estate();
   try {

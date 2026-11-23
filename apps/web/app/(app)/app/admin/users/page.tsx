@@ -32,6 +32,7 @@ export default async function AdminUsersPage() {
       canInvite={canInvite}
       selfMembershipId={user.membershipId}
       siteAccess={siteAccess}
+      canEditSiteAccess={siteAccess.delegated || can(user, 'locations.manage')}
     />
   );
 }
