@@ -17,6 +17,7 @@ export const mobileMutationItemSchema = z.discriminatedUnion('kind', [
   z
     .object({ key, kind: z.literal('checklist_answer'), workOrderId: id, checklistId: id, itemId: id, payload })
     .strict(),
+  z.object({ key, kind: z.literal('time'), workOrderId: id, payload }).strict(),
   z.object({ key, kind: z.literal('meter_reading'), assetId: id, meterId: id, payload }).strict(),
 ]);
 export type MobileMutationItem = z.infer<typeof mobileMutationItemSchema>;

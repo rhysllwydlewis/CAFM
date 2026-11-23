@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c mostly built (status, note, checklist, meter via POST /api/mobile/mutations; migration 20261218000000; time entry still to decide). Next: finish P1-06c, then P1-06d. |
+| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). Next P1-06d: PWA shell. |
 
 ## Phase checklists
 
@@ -119,7 +119,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
   - [x] **P1-06a** OAuth 2.0 + PKCE access and refresh tokens for the mobile PWA, with device list and revoke.
   - [x] **P1-06b** Offline work pack and delta sync API (my jobs, assets, checklists, locations; sync tokens).
-  - [ ] **P1-06c** Mutation queue API with idempotency keys and conflict handling (status, notes, time, checklist, meter reading).
+  - [x] **P1-06c** Mutation queue API with idempotency keys and conflict handling (status, notes, time, checklist, meter reading).
   - [ ] **P1-06d** PWA shell: manifest, service worker, IndexedDB store, offline banner, and My jobs and job detail screens (`mobile-01-technician-jobs`).
   - [ ] **P1-06e** Checklists, photos and signatures captured offline, and the complete and sync screens (`mobile-02-technician-complete`).
   - [ ] **P1-06f** QR scan to open an asset or job, accept or reject, and quick job or meter reading capture.

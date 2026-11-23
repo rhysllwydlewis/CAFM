@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Time and labour rates: technicians record the time they spend on a job (on site, travel or overtime) without seeing any cost. Finance, administrators or any role given the permission set hourly rates, for everyone or per role, and the cost of the time is posted to the job automatically using the rate at the time. Who can record time, see costs and set rates is chosen per role. See [Work orders](docs/work-orders.md#time-and-labour-rates).
+
 - Mobile sync queue: changes a technician makes offline (status, notes, checklist answers and meter readings) are sent in a batch, each with a key so a retry never applies a change twice. A change that no longer fits, such as a job that has since changed, is rejected on its own. See [Mobile app](docs/mobile.md#mutation-queue).
 
 - Mobile work pack: a technician's phone can download their open jobs with locations, assets and checklists, and then ask only for what changed since the last sync. See [Mobile app](docs/mobile.md#work-pack-and-sync).

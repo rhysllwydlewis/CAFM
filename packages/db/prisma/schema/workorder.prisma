@@ -54,6 +54,7 @@ model WorkOrder {
   contractors        WorkOrderContractor[]
   notifications      Notification[]
   costs              WorkOrderCost[]
+  times              WorkOrderTime[]
   checklists         WorkOrderChecklist[]
   signatures         WorkOrderSignature[]
   attachments        RecordAttachment[]
@@ -137,10 +138,13 @@ model WorkOrderCost {
   /// Set when this entry took the job over its not-to-exceed limit, with the reason that was given.
   overNte       Boolean     @default(false) @map("over_nte")
   overNteReason String?     @map("over_nte_reason")
+  /// Set when the cost was posted from time recorded on the job.
+  timeId        String?     @map("time_id") @db.Uuid
   createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   tenant        Tenant      @relation(fields: [tenantId], references: [id])
   workOrder     WorkOrder   @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
   recordedBy    Membership? @relation(fields: [tenantId, recordedById], references: [tenantId, id], onDelete: Restrict)
+  time          WorkOrderTime? @relation(fields: [tenantId, timeId], references: [tenantId, id], onDelete: Cascade)
 
   @@unique([tenantId, id])
   @@index([tenantId, workOrderId, createdAt, id])
@@ -255,4 +259,46 @@ model MobileMutation {
 
   @@unique([tenantId, memberId, key])
   @@map("mobile_mutation")
+}
+
+/// What an organisation pays for an hour of work, by kind of labour and optionally by role. `roleKey` is empty for
+/// everyone without a rate of their own. Money is whole minor units.
+model LabourRate {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  labourType  String   @map("labour_type")
+  roleKey     String   @default("") @map("role_key")
+  rateMinor   Int      @map("rate_minor")
+  currency    String   @default("GBP")
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, labourType, roleKey])
+  @@map("labour_rate")
+}
+
+/// Time a person spent on a job. The rate is copied from the labour rate when it is recorded, and the cost it
+/// makes is posted to the job, so a later change of rate never rewrites what was recorded.
+model WorkOrderTime {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  workOrderId String          @map("work_order_id") @db.Uuid
+  memberId    String          @map("member_id") @db.Uuid
+  labourType  String          @map("labour_type")
+  minutes     Int
+  workedOn    DateTime        @map("worked_on") @db.Date
+  note        String?
+  rateMinor   Int?            @map("rate_minor")
+  submission  String          @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  workOrder   WorkOrder       @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  member      Membership      @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Restrict)
+  cost        WorkOrderCost[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, memberId, submission])
+  @@index([tenantId, workOrderId, createdAt, id])
+  @@map("work_order_time")
 }

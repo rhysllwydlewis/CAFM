@@ -6,6 +6,8 @@ import { WorkOrderContractorsController } from './work-order-contractors.control
 import { WorkOrderCostsController } from './work-order-costs.controller';
 import { WorkOrderJobSheetController } from './work-order-job-sheet.controller';
 import { WorkOrderPhotosController, WorkOrderSignaturesController } from './work-order-evidence.controller';
+import { LabourRatesController } from './labour-rates.controller';
+import { WorkOrderTimeController } from './work-order-time.controller';
 import { WorkOrdersController } from './work-orders.controller';
 
 @Module({
@@ -14,6 +16,8 @@ import { WorkOrdersController } from './work-orders.controller';
     WorkOrdersController,
     WorkOrderContractorsController,
     WorkOrderCostsController,
+    WorkOrderTimeController,
+    LabourRatesController,
     WorkOrderChecklistsController,
     ChecklistTemplatesController,
     WorkOrderPhotosController,

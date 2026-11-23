@@ -79,6 +79,22 @@ The job page has a **Costs** card for what the job has cost, and the work order 
 - **Who can do what:** seeing costs needs `costs.read`. Adding or removing a cost, or setting the limit, also needs `work_orders.edit`, so technicians and Helpdesk, who don't have `costs.read`, never see rates or totals, and Finance can read costs but not change them. Costs can't be added, removed or the limit changed once a job is closed or cancelled.
 - **Not built yet:** mark-up on parts, charge-out to a client or cost centre, and sub-contractor invoices matched to purchase orders. These follow with Finance.
 
+## Time and labour rates
+
+People record the time they spend on a job (`POST /api/work-orders/:id/time`): the kind of labour (on site, travel or overtime), the minutes (1 to 1,440), the date worked and an optional note. Each entry carries a `submission` id made by the screen or phone, so a retry records it once. Time is removed, not edited, and a person removes their own (anyone with `work_orders.edit` can remove any). A closed or cancelled job takes no more time.
+
+**Who decides what.** The organisation controls this with roles, so it can be switched on or off and shared out as it likes:
+
+| Permission | Lets a role | Built-in roles |
+| --- | --- | --- |
+| `time.record` | Record time on jobs it can see | Technician, Planner, FM Manager, Administrator, Super User |
+| `costs.read` | See rates, amounts and the labour cost | FM Manager, Finance, Executive, Administrator, Super User |
+| `costs.manage_rates` | Set and remove labour rates | Finance, Administrator, Super User |
+
+A role without `time.record` can't record time, which switches time capture off for it. A technician records time and never sees a rate or an amount: the time list leaves them out unless the person has `costs.read`.
+
+**Rates.** `PUT /api/labour-rates` sets the hourly rate, in whole pence, for a kind of labour, either for everyone (`roleKey` empty) or for one role. A role's rate wins over the rate for everyone. When time is recorded the rate is copied onto the entry and a labour cost (minutes at the hourly rate, rounded to the penny) is posted to the job's costs, so a later change of rate never rewrites what was recorded. With no rate set, the time is recorded and no cost is posted. Time that takes a job over its not-to-exceed limit is still recorded, and its cost is flagged "Time recorded on the job" for finance. Every rate change and every recorded or removed entry is in the audit log. Removing time removes the cost it made.
+
 ## Checklists
 
 A job can carry checklists: the steps to follow and the answers, from a template or written out for that job. The job page has a **Checklists** card, and the contractor's page shows them too.

@@ -7,6 +7,7 @@ import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { AssetOperationsController } from '../assets/asset-operations.controller';
 import { WorkOrderChecklistsController } from '../work-orders/work-order-checklists.controller';
+import { WorkOrderTimeController } from '../work-orders/work-order-time.controller';
 import { WorkOrdersController } from '../work-orders/work-orders.controller';
 
 export type MobileMutationResult = {
@@ -50,6 +51,7 @@ export class MobileMutations {
     private readonly jobs: WorkOrdersController,
     private readonly checklists: WorkOrderChecklistsController,
     private readonly assets: AssetOperationsController,
+    private readonly time: WorkOrderTimeController,
   ) {}
 
   async apply(auth: AuthContext, ip: string | undefined, items: MobileMutationItem[]): Promise<MobileMutationResult[]> {
@@ -134,6 +136,8 @@ export class MobileMutations {
         return this.jobs.status(req, item.workOrderId, item.payload);
       case 'note':
         return this.jobs.comment(req, item.workOrderId, item.payload);
+      case 'time':
+        return this.time.record(req, item.workOrderId, item.payload);
       case 'checklist_answer':
         return this.checklists.answer(req, item.workOrderId, item.checklistId, item.itemId, item.payload);
       case 'meter_reading':

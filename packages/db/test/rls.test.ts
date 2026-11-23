@@ -808,3 +808,53 @@ it('isolates the phone change log and refuses outcomes the API never produces', 
   ).rejects.toThrow(/mobile_mutation_kind_valid/);
   await withTenant(db, demo, (tx) => tx.mobileMutation.deleteMany({ where: { id: made.id } }));
 });
+
+it('isolates labour rates and recorded time and refuses what the API never produces', async () => {
+  const boilerJob = seedId('work-order:demo-estates:WO-10412');
+  const technician = seedId('membership:demo-estates:technician');
+  // The demo organisation has its three rates and the technician's time on the boiler job. Another sees none.
+  const seen = await withTenant(db, demo, async (tx) => ({
+    rates: await tx.labourRate.count(),
+    time: await tx.workOrderTime.count({ where: { workOrderId: boilerJob } }),
+    posted: await tx.workOrderCost.count({ where: { time: { workOrderId: boilerJob } } }),
+  }));
+  expect(seen).toEqual({ rates: 3, time: 1, posted: 1 });
+  expect(
+    await withTenant(db, starter, async (tx) => [await tx.labourRate.count(), await tx.workOrderTime.count()]),
+  ).toEqual([0, 0]);
+  expect(await withTenant(db, starter, (tx) => tx.labourRate.updateMany({ data: { rateMinor: 1 } }))).toEqual({
+    count: 0,
+  });
+  expect(await withTenant(db, starter, (tx) => tx.workOrderTime.deleteMany({}))).toEqual({ count: 0 });
+
+  const rate = (tenantId: string, extra: object = {}) =>
+    withTenant(db, tenantId, (tx) =>
+      tx.labourRate.create({ data: { tenantId, labourType: 'travel', roleKey: 'x', rateMinor: 100, ...extra } }),
+    );
+  await expect(rate(demo, { labourType: 'holiday' })).rejects.toThrow(/labour_rate_type_valid/);
+  await expect(rate(demo, { rateMinor: -1 })).rejects.toThrow(/labour_rate_amount_valid/);
+  await expect(rate(demo, { currency: 'pounds' })).rejects.toThrow(/labour_rate_currency_valid/);
+  await expect(rate(demo, { labourType: 'on_site', roleKey: '' })).rejects.toThrow(/Unique constraint/);
+
+  const time = (tenantId: string, extra: object = {}) =>
+    withTenant(db, tenantId, (tx) =>
+      tx.workOrderTime.create({
+        data: {
+          tenantId,
+          workOrderId: boilerJob,
+          memberId: technician,
+          labourType: 'on_site',
+          minutes: 30,
+          workedOn: new Date('2026-01-02T00:00:00Z'),
+          submission: randomUUID(),
+          ...extra,
+        },
+      }),
+    );
+  // Time cannot be put on another organisation's job.
+  await expect(time(starter)).rejects.toThrow(/Foreign key constraint/);
+  await expect(time(demo, { minutes: 0 })).rejects.toThrow(/work_order_time_minutes_valid/);
+  await expect(time(demo, { minutes: 1441 })).rejects.toThrow(/work_order_time_minutes_valid/);
+  await expect(time(demo, { labourType: 'holiday' })).rejects.toThrow(/work_order_time_type_valid/);
+  await expect(time(demo, { rateMinor: -5 })).rejects.toThrow(/work_order_time_rate_valid/);
+});

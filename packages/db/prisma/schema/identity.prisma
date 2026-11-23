@@ -52,6 +52,8 @@ model Tenant {
   workOrderChecklistItems    WorkOrderChecklistItem[]
   workOrderSignatures        WorkOrderSignature[]
   mobileMutations            MobileMutation[]
+  labourRates                LabourRate[]
+  workOrderTimes             WorkOrderTime[]
 
   @@map("tenant")
 }
@@ -113,6 +115,7 @@ model Membership {
   checklistItemAnswers WorkOrderChecklistItem[]
   workOrderSignatures  WorkOrderSignature[]
   mobileMutations      MobileMutation[]
+  workOrderTimes       WorkOrderTime[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, accountId])

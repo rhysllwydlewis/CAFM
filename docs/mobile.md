@@ -42,8 +42,9 @@ The token is the server's clock when the data was read. A bad or future token ge
 | `status` | `workOrderId` | `POST /api/work-orders/:id/status` (with the job's `version`) |
 | `note` | `workOrderId` | `POST /api/work-orders/:id/comments` |
 | `checklist_answer` | `workOrderId`, `checklistId`, `itemId` | `PUT /api/work-orders/:id/checklists/:checklistId/items/:itemId` |
+| `time` | `workOrderId` | `POST /api/work-orders/:id/time` (with a `submission` id) |
 | `meter_reading` | `assetId`, `meterId` | `POST /api/assets/:assetId/operations/meters/:meterId/readings` |
 
 Each change runs through the same code as the website, so permissions, data scope, versions, checklist gates and audit events are the same. The response is `{ results: [{ key, status, code?, message?, replayed? }] }`, in the same order. `status` is `applied` or `rejected`. A rejection (`conflict` when the job changed and needs refreshing, `invalid`, `forbidden`, `not_found`, `key_reused`) affects only that change, and the rest carry on. The outcome is kept against the key (table `mobile_mutation`), so a retry after a dropped connection returns the first outcome with `replayed: true` and nothing is applied twice. The same key with different content is rejected as `key_reused`.
 
-Not yet queued: time on the job (labour is a cost, and technicians can't add costs today).
+Time is recorded without the technician seeing any rate or cost. See [Work orders](work-orders.md#time-and-labour-rates).
