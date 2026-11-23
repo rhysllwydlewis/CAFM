@@ -46,7 +46,14 @@ test('a manager sorts the work orders by title and keeps the order in a saved vi
     .locator('tbody tr')
     .evaluateAll((rows) => rows.map((row) => row.querySelector('a.medium')?.textContent?.trim() ?? ''));
   expect(titles.length).toBeGreaterThan(1);
-  expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));
+  // The database decides how text sorts, so compare with the opposite order rather than with a guess at its rules.
+  await page.getByLabel('Sort order').selectOption('desc');
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page).toHaveURL(/dir=desc/);
+  const reversed = await page
+    .locator('tbody tr')
+    .evaluateAll((rows) => rows.map((row) => row.querySelector('a.medium')?.textContent?.trim() ?? ''));
+  expect(reversed).toEqual([...titles].reverse());
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
