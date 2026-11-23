@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). P1-06d done (PWA shell, offline jobs, My jobs and job detail, in review). P1-06e done (offline outbox, checklist steps, photos, signatures, complete and sync screens; time, parts and root cause on the complete screen are a known gap). P1-06f batch 2 (PR on `claude/build-p1-06-scan-capture`): scan, accept or decline and offline meter readings built. Left: raising a quick job from the scan card (needs an owner decision on technician permission), and scan History. |
+| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). P1-06d done (PWA shell, offline jobs, My jobs and job detail, in review). P1-06e done (offline outbox, checklist steps, photos, signatures, complete and sync screens; time, parts and root cause on the complete screen are a known gap). P1-06f batch 2 (PR on `claude/build-p1-06-scan-capture`): scan, accept or decline and offline meter readings built. Batch 3 (PR on `claude/build-p1-06-finish`): quick job from the scan card (conservative permission default), scan history, and time, parts and root cause on the complete screen. |
 
 ## Phase checklists
 
