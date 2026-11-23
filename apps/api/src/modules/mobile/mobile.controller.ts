@@ -57,6 +57,24 @@ async function packJobs(tx: Tx, auth: AuthContext, changedSince: Date | null) {
     orderBy: [{ priority: 'asc' }, { scheduledFor: 'asc' }, { id: 'asc' }],
     take: WORK_PACK_LIMIT,
   });
+  // Meters let a technician record a reading offline. Only people who may record readings are sent them.
+  const assetIds = [...new Set(rows.flatMap((row) => (row.asset ? [row.asset.id] : [])))];
+  const meters =
+    assetIds.length && auth.access?.permissions.has('assets.record_readings')
+      ? await tx.assetMeter.findMany({
+          where: { tenantId, assetId: { in: assetIds } },
+          select: { id: true, assetId: true, name: true, unit: true, rolloverAt: true },
+          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        })
+      : [];
+  // Printed labels carry the tag's id (QR) or code (barcode), which differ from the asset's own id and number.
+  const tags = assetIds.length
+    ? await tx.assetTag.findMany({
+        where: { tenantId, assetId: { in: assetIds }, active: true },
+        select: { id: true, assetId: true, code: true },
+        orderBy: { id: 'asc' },
+      })
+    : [];
   return Promise.all(
     rows.map(async (row) => ({
       ...workOrderSummary(row as never),
@@ -64,7 +82,22 @@ async function packJobs(tx: Tx, auth: AuthContext, changedSince: Date | null) {
       description: row.description,
       scheduledFor: row.scheduledFor?.toISOString().slice(0, 10) ?? null,
       accessNotes: row.location.restrictedAccess,
-      assetDetail: row.asset ? { make: row.asset.make, model: row.asset.model, serial: row.asset.serial } : null,
+      assetDetail: row.asset
+        ? {
+            make: row.asset.make,
+            model: row.asset.model,
+            serial: row.asset.serial,
+            tags: tags.filter((tag) => tag.assetId === row.asset!.id).map((tag) => ({ id: tag.id, code: tag.code })),
+            meters: meters
+              .filter((meter) => meter.assetId === row.asset!.id)
+              .map((meter) => ({
+                id: meter.id,
+                name: meter.name,
+                unit: meter.unit,
+                rolloverAt: meter.rolloverAt?.toString() ?? null,
+              })),
+          }
+        : null,
       checklists: await readChecklists(tx, tenantId, row.id),
     })),
   );

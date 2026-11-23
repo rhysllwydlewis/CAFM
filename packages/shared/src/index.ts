@@ -11,6 +11,7 @@ export * from './asset-operations';
 export * from './work-orders';
 export * from './mobile';
 export * from './mobile-outbox';
+export * from './mobile-scan';
 export * from './mobile-sync';
 export * from './work-order-time';
 export * from './work-order-costs';
