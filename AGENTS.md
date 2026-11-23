@@ -93,7 +93,7 @@ These stop two agents building the same thing and keep the tracker true. The **P
 
 ## 6. Never
 
-- **Your own branch only:** never push to `main`, merge your own PR, force-push a shared branch or rewrite its history.
+- **Your own branch only:** never push to `main`, force-push a shared branch or rewrite its history. Never merge a PR you wrote. The one exception is the Reviewer routine, which may squash-merge a loop PR it has reviewed, under the conditions in [docs/agents/build-loop.md § Merging](docs/agents/build-loop.md#merging). Merging deploys the live demo, so the owner has authorised that for reviewed loop PRs only.
 - **Production and paid services are the owner's:** never change production or paid services without the product owner's explicit go-ahead in the session. That covers Railway variables, services, deploys, databases, DNS and billing.
 - **Secrets and personal data:** never add secrets, tokens or real personal data to code, logs, fixtures, PRs or issues. Demo personas only (doc 06).
 - **Other people's work:** never delete or rewrite another agent's work, tick or claim. Never close their PR or issue.
@@ -132,10 +132,10 @@ pnpm dev                               # http://localhost:3000, demo accounts on
 
 Three scheduled routines (Builder, Reviewer, Steward) work through the approved phase so nobody has to type "continue". The full protocol is [docs/agents/build-loop.md](docs/agents/build-loop.md). The parts that change the rules above:
 
-- **Stages.** A loop PR carries a `## Status` block with `Stage: build`, `review`, `ready` or `blocked`. The Builder owns `build`, the Reviewer owns `review`, and the product owner owns `ready` (the merge).
+- **Stages.** A loop PR carries a `## Status` block with `Stage: build`, `review`, `ready` or `blocked`. The Builder owns `build`, the Reviewer owns `review` and merges a signed-off PR when it is safe to, and the product owner owns any PR left at `ready` (the Reviewer writes "Not merged because:" on those).
 - **Shared branch.** The Builder and the Reviewer work on the same `claude/build-<item>-<slug>` branch. Fixing on it is not rewriting another agent's work.
 - **Resuming.** Sessions push after every slice. A PR marked `Session: active` whose branch has had no commit or body edit for 90 minutes is treated as abandoned, and the next run takes it over from its Status block. A PR marked `Session: ended` is free at once. This is the stale-claim rule in § 3.7, shortened for loop PRs, because a usage limit ends a session without warning.
 - **Limits.** 8 Builder runs per item, 2 review rounds, one item being built, and at most 2 PRs waiting (in review, ready or blocked). At a limit, split, ship or escalate. Don't carry on indefinitely.
 - **Phase gate.** The approved-phase marker is still the owner's. The Steward opens an "Approve Phase N" PR when a phase is complete, and the owner's merge of it is the approval.
 - **No notebooks.** The routines don't keep `docs/agents/notes/` files. The PR Status block is their handoff.
-- **Never** changes: no merging, no force-push, no production or paid services.
+- **Never** changes: only the Reviewer merges, and only within build-loop.md § Merging; no force-push; no production or paid services beyond that merge.
