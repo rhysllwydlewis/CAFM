@@ -32,6 +32,7 @@ export const PERMISSIONS = {
   'costs.manage_rates': { module: 'finance', label: 'Set labour rates', admin: true },
   'time.record': { module: 'work_orders', label: 'Record time on work orders' },
   'reports.read': { module: 'reports', label: 'See reports and dashboards' },
+  'views.share': { module: 'views', label: 'Share saved list views with everyone' },
 } as const satisfies Record<string, { module: string; label: string; admin?: boolean }>;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -103,6 +104,7 @@ export const BUILTIN_ROLES: BuiltinRole[] = [
       'time.record',
       'ppm.manage',
       'costs.read',
+      'views.share',
       ...OPERATIONS,
     ],
     scope: 'all',

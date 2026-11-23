@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Saved list views (API): keep your own filters, sort, grouping and columns for work orders, assets, requests and planned maintenance, and share a view with the whole organisation if you are allowed to. The screens follow. See [Saved list views](docs/views.md).
 - Administration console, first part: an overview with licence use, recent changes and a setup checklist, and a Users and licences screen to invite people, withdraw invitations, change roles and deactivate or reactivate people. See [Administration](docs/admin.md).
 
 - Quick jobs, recent scans, time and root cause in the technician app: raise a job from a scanned asset (saved on the phone and sent when there is signal, for people allowed to create jobs), reopen the last scans, and add time on the job and an internal root cause when completing a job.

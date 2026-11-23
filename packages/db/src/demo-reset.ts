@@ -45,6 +45,7 @@ export async function resetDemo(
     db.labourRate.deleteMany({ where }),
     db.workOrder.deleteMany({ where }),
     db.checklistTemplate.deleteMany({ where }),
+    db.savedView.deleteMany({ where }),
     db.ppmSchedule.deleteMany({ where }),
     db.ppmTaskTemplate.deleteMany({ where }),
     db.serviceRequest.deleteMany({ where }),
