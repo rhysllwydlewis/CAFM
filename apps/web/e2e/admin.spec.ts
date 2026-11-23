@@ -84,3 +84,12 @@ test('a technician cannot open the roles or teams screens', async ({ page }) => 
   await page.goto('/app/admin/teams');
   await expect(page).not.toHaveURL(/\/app\/admin/);
 });
+
+test('a helpdesk operator can read teams but not change them', async ({ page }) => {
+  await signInAs(page, 'helpdesk');
+  await page.goto('/app/admin/teams');
+  await expect(page).toHaveURL(/\/app\/admin\/teams/);
+  await expect(page.getByRole('heading', { name: 'Field engineers' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create team' })).toHaveCount(0);
+  await assertAccessible(page);
+});

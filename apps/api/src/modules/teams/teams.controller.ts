@@ -18,6 +18,7 @@ import type { Request } from 'express';
 import { withTenant, type Tx } from '@cafm/db';
 import { createTeamSchema, updateTeamSchema, type Team } from '@cafm/shared';
 import { audit } from '../../core/audit';
+import type { AuthContext } from '../../core/session';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
@@ -28,11 +29,22 @@ import { parse } from '../../core/validation';
 export class TeamsController {
   constructor(private readonly db: PrismaService) {}
 
-  private async load(tx: Tx, tenantId: string, id?: string): Promise<Team[]> {
+  /**
+   * Teams with their members. A role whose data scope is "own" sees only itself among the members,
+   * as in the people list, so teams are not a way round people visibility.
+   */
+  private async load(tx: Tx, auth: AuthContext, id?: string, scoped = true): Promise<Team[]> {
+    const tenantId = auth.membership!.tenantId;
+    const ownOnly = scoped && auth.access!.scope === 'own' ? auth.membership!.id : undefined;
     const [teams, roles] = await Promise.all([
       tx.team.findMany({
         where: { tenantId, ...(id ? { id } : {}) },
-        include: { members: { include: { membership: { include: { account: true } } } } },
+        include: {
+          members: {
+            where: ownOnly ? { membershipId: ownOnly } : {},
+            include: { membership: { include: { account: true } } },
+          },
+        },
         orderBy: { name: 'asc' },
       }),
       tx.role.findMany({ where: { tenantId }, select: { key: true, name: true } }),
@@ -52,9 +64,12 @@ export class TeamsController {
     }));
   }
 
-  private async assertMembers(tx: Tx, tenantId: string, ids: string[]): Promise<string[]> {
+  /** Members must be active people here. Someone already in the team (`keep`) may stay after being deactivated. */
+  private async assertMembers(tx: Tx, tenantId: string, ids: string[], keep: string[] = []): Promise<string[]> {
     const unique = [...new Set(ids)];
-    const found = await tx.membership.count({ where: { tenantId, id: { in: unique }, status: 'active' } });
+    const found = await tx.membership.count({
+      where: { tenantId, id: { in: unique }, OR: [{ status: 'active' }, { id: { in: keep } }] },
+    });
     if (found !== unique.length) {
       throw new UnprocessableEntityException({
         code: 'unknown_member',
@@ -67,8 +82,8 @@ export class TeamsController {
   @Get()
   @RequirePermission('people.read')
   async list(@Req() req: Request): Promise<Team[]> {
-    const tenantId = req.auth!.membership!.tenantId;
-    return withTenant(this.db, tenantId, (tx) => this.load(tx, tenantId));
+    const auth = req.auth!;
+    return withTenant(this.db, auth.membership!.tenantId, (tx) => this.load(tx, auth));
   }
 
   @Post()
@@ -98,7 +113,7 @@ export class TeamsController {
         { action: 'team.created', entityType: 'team', entityId: team.id, changes: { after: { ...input, memberIds } } },
         req.ip,
       );
-      return (await this.load(tx, tenantId, team.id))[0]!;
+      return (await this.load(tx, auth, team.id))[0]!;
     });
   }
 
@@ -109,7 +124,7 @@ export class TeamsController {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
-      const [before] = await this.load(tx, tenantId, id);
+      const [before] = await this.load(tx, auth, id, false);
       if (!before) throw new NotFoundException();
       if (input.name && input.name !== before.name) {
         if (await tx.team.findUnique({ where: { tenantId_name: { tenantId, name: input.name } } })) {
@@ -125,7 +140,12 @@ export class TeamsController {
       });
       let memberIds: string[] | undefined;
       if (input.memberIds) {
-        memberIds = await this.assertMembers(tx, tenantId, input.memberIds);
+        memberIds = await this.assertMembers(
+          tx,
+          tenantId,
+          input.memberIds,
+          before.members.map((m) => m.membershipId),
+        );
         await tx.teamMember.deleteMany({ where: { tenantId, teamId: id } });
         await tx.teamMember.createMany({
           data: memberIds.map((membershipId) => ({ tenantId, teamId: id, membershipId })),
@@ -145,7 +165,7 @@ export class TeamsController {
         },
         req.ip,
       );
-      return (await this.load(tx, tenantId, id))[0]!;
+      return (await this.load(tx, auth, id))[0]!;
     });
   }
 

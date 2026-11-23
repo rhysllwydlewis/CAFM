@@ -113,3 +113,62 @@ describe('teams across organisations', () => {
     }
   });
 });
+
+describe('teams and data scope', () => {
+  it('a role with scope "own" sees only itself among team members, and a deactivated member can be removed', async () => {
+    const t = await createTestTenant(db);
+    const tenantId = t.tenant.id;
+    try {
+      await withTenant(db, tenantId, (tx) =>
+        tx.role.create({
+          data: {
+            tenantId,
+            key: 'custom_team_own',
+            name: 'Own teams',
+            permissions: ['people.read', 'people.manage'],
+            scope: 'own',
+          },
+        }),
+      );
+      const password = testPassword();
+      const scoped = await createTestAccount(db, [tenantId], password, 'custom_team_own');
+      const other = await createTestAccount(db, [tenantId], password, 'helpdesk');
+      try {
+        const scopedId = scoped.memberships[0]!;
+        const otherId = other.memberships[0]!;
+        const team = await withTenant(db, tenantId, async (tx) => {
+          const created = await tx.team.create({ data: { tenantId, name: 'Mixed' } });
+          await tx.teamMember.createMany({
+            data: [scopedId, otherId].map((membershipId) => ({ tenantId, teamId: created.id, membershipId })),
+          });
+          return created;
+        });
+        const { agent } = await signIn(app, scoped.email, password);
+        const listed = (await agent.get('/api/teams').expect(200)).body as { members: { membershipId: string }[] }[];
+        expect(listed[0]!.members.map((m) => m.membershipId)).toEqual([scopedId]);
+
+        // A member deactivated after joining can stay or be removed, never blocking edits to the team.
+        await withTenant(db, tenantId, (tx) =>
+          tx.membership.update({ where: { id: otherId }, data: { status: 'deactivated' } }),
+        );
+        await agent
+          .patch(`/api/teams/${team.id}`)
+          .send({ memberIds: [scopedId, otherId] })
+          .expect(200);
+        await agent
+          .patch(`/api/teams/${team.id}`)
+          .send({ memberIds: [scopedId] })
+          .expect(200);
+        await agent
+          .patch(`/api/teams/${team.id}`)
+          .send({ memberIds: [otherId] })
+          .expect(422);
+      } finally {
+        await other.cleanup();
+        await scoped.cleanup();
+      }
+    } finally {
+      await t.cleanup();
+    }
+  });
+});

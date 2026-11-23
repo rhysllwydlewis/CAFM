@@ -7,7 +7,7 @@ import styles from './admin.module.css';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
-  if (!can(user, 'roles.read') && !can(user, 'people.manage')) redirect('/app');
+  if (!can(user, 'roles.read') && !can(user, 'people.manage') && !can(user, 'people.read')) redirect('/app');
   return (
     <div className="page stack g4">
       <div className="page-head">

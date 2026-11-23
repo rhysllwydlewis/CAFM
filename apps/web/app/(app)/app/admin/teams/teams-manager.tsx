@@ -60,6 +60,13 @@ function TeamCard({
 }) {
   const [members, setMembers] = useState(() => new Set(team.members.map((m) => m.membershipId)));
   const titleId = useId();
+  // Someone deactivated since joining stays listed, so they can be removed.
+  const choices = [
+    ...people,
+    ...team.members
+      .filter((m) => !people.some((p) => p.id === m.membershipId))
+      .map((m) => ({ id: m.membershipId, name: m.name })),
+  ];
   const changed = members.size !== team.members.length || team.members.some((m) => !members.has(m.membershipId));
   return (
     <section className="card" aria-labelledby={titleId}>
@@ -77,7 +84,7 @@ function TeamCard({
           <>
             <MemberPicker
               legend={`Members of ${team.name}`}
-              people={people}
+              people={choices}
               value={members}
               onChange={setMembers}
               disabled={busy}
