@@ -1,0 +1,31 @@
+// Teams and groups (doc 03): named sets of people used for assignment and scoping.
+
+/// A team inside one tenant, for example "North Region Electricians". Tenant-owned (RLS).
+model Team {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  tenantId    String       @map("tenant_id") @db.Uuid
+  name        String
+  description String?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  members     TeamMember[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@map("team")
+}
+
+/// A person's place in a team. Tenant-owned (RLS); team and person must be in the same tenant.
+model TeamMember {
+  tenantId     String     @map("tenant_id") @db.Uuid
+  teamId       String     @map("team_id") @db.Uuid
+  membershipId String     @map("membership_id") @db.Uuid
+  addedAt      DateTime   @default(now()) @map("added_at") @db.Timestamptz(3)
+  team         Team       @relation(fields: [tenantId, teamId], references: [tenantId, id], onDelete: Cascade)
+  membership   Membership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Cascade)
+
+  @@id([tenantId, teamId, membershipId])
+  @@index([tenantId, membershipId])
+  @@map("team_member")
+}

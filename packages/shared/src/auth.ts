@@ -162,3 +162,10 @@ export interface MobileDeviceSummary {
   lastSeenAt: string;
   current: boolean;
 }
+
+export const createTeamSchema = z.object({
+  name: z.string().trim().min(1, 'Enter a team name').max(80),
+  description: z.string().trim().max(300).optional(),
+  memberIds: z.array(z.string().uuid()).max(500).default([]),
+});
+export const updateTeamSchema = createTeamSchema.partial();

@@ -7,7 +7,7 @@ import styles from './admin.module.css';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
-  if (!can(user, 'roles.read') && !can(user, 'people.manage')) redirect('/app');
+  if (!can(user, 'roles.read') && !can(user, 'people.manage') && !can(user, 'people.read')) redirect('/app');
   return (
     <div className="page stack g4">
       <div className="page-head">
@@ -17,7 +17,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
       </div>
       <div className={styles.shell}>
-        <AdminMenu canManageSettings={can(user, 'settings.manage')} canManagePeople={can(user, 'people.manage')} />
+        <AdminMenu
+          canManageSettings={can(user, 'settings.manage')}
+          canManagePeople={can(user, 'people.manage')}
+          canReadRoles={can(user, 'roles.read')}
+          canReadPeople={can(user, 'people.read')}
+        />
         <div className="stack g4">{children}</div>
       </div>
     </div>
