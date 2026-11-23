@@ -320,6 +320,62 @@ describe('mobile mutation queue', () => {
     }
   });
 
+  it('refuses every kind of change to a role that may only read jobs (wrong role)', async () => {
+    const { cleanup, accounts, tech, manager, job, site, tenant } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const asset = (await manager.post('/api/assets').send({ locationId: site.id, name: 'Pump' }).expect(201)).body;
+      const meter = (
+        await manager
+          .post(`/api/assets/${asset.id}/operations/meters`)
+          .send({ name: 'Run hours', unit: 'h', rolloverAt: '1000' })
+          .expect(201)
+      ).body;
+      // The queue calls the website's handlers directly, so each must check the role itself.
+      await withTenant(db, tenant.id, (tx) =>
+        tx.role.updateMany({ where: { key: 'technician' }, data: { permissions: ['work_orders.read'] } }),
+      );
+      const current = (await tech.get(`/api/work-orders/${mine.id}`).expect(200)).body;
+      const changes = [
+        { kind: 'status', workOrderId: mine.id, payload: { version: current.version, status: 'on_site' } },
+        { kind: 'note', workOrderId: mine.id, payload: { body: 'Not allowed.' } },
+        {
+          kind: 'time',
+          workOrderId: mine.id,
+          payload: {
+            labourType: 'on_site',
+            minutes: 30,
+            workedOn: new Date().toISOString().slice(0, 10),
+            submission: randomUUID(),
+          },
+        },
+        {
+          kind: 'checklist_answer',
+          workOrderId: mine.id,
+          checklistId: randomUUID(),
+          itemId: randomUUID(),
+          payload: { answer: 'pass' },
+        },
+        {
+          kind: 'meter_reading',
+          assetId: asset.id,
+          meterId: meter.id,
+          payload: { value: '5', rolledOver: false, submission: randomUUID() },
+        },
+      ].map((change) => ({ key: randomUUID(), ...change }));
+      const { body } = await post(tech, ...changes);
+      expect(body.results.map((r) => [r.status, r.code])).toEqual(changes.map(() => ['rejected', 'forbidden']));
+      const counts = await withTenant(db, tenant.id, async (tx) => ({
+        notes: await tx.workOrderEntry.count({ where: { workOrderId: mine.id, kind: 'comment' } }),
+        time: await tx.workOrderTime.count({ where: { workOrderId: mine.id } }),
+        readings: await tx.assetMeterReading.count({ where: { meterId: meter.id } }),
+      }));
+      expect(counts).toEqual({ notes: 0, time: 0, readings: 0 });
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('needs a signed-in person', async () => {
     const { default: request } = await import('supertest');
     await request(app.getHttpServer()).post('/api/mobile/mutations').send({ mutations: [] }).expect(401);
