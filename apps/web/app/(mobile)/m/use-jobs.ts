@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MobilePackJob } from '@cafm/shared';
 import { clearIfNotOwner, clearStore, readJobs, readSync } from '@/lib/mobile-store';
 import { useMembershipId } from './mobile-shell';
-import { syncJobs, type SyncResult } from '@/lib/mobile-sync-client';
+import { flushOutbox, syncJobs, type SyncResult } from '@/lib/mobile-sync-client';
 
 /** The jobs held on the phone, shown at once, then refreshed from the server when there is signal. */
 export function useJobs() {
@@ -23,7 +23,9 @@ export function useJobs() {
 
   const sync = useCallback(async () => {
     setBusy(true);
-    const outcome = await syncJobs(owner);
+    // What was done offline goes first, so the jobs fetched afterwards already include it.
+    const flushed = await flushOutbox();
+    const outcome = flushed.stopped === 'signed_out' ? 'signed_out' : await syncJobs(owner);
     setResult(outcome);
     if (outcome === 'signed_out') {
       // The session has ended: don't leave this person's jobs on the phone for whoever signs in next.
@@ -39,7 +41,14 @@ export function useJobs() {
     void load().then(sync);
   }, [load, sync]);
 
-  return { jobs, syncedAt, result, busy, sync };
+  // Signal came back: send what is waiting without the person having to ask.
+  useEffect(() => {
+    const onOnline = () => void sync();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [sync]);
+
+  return { jobs, syncedAt, result, busy, sync, reload: load };
 }
 
 export function syncedText(syncedAt: string | null, result: SyncResult | null): string {
