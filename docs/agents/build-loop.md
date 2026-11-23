@@ -75,10 +75,10 @@ Two sessions can run side by side. A start that finds the PR already being worke
 | Routine | Schedule | GitHub event trigger |
 |---|---|---|
 | Builder | Every 2 hours | Pull request **closed**, filters: is merged `true`, head branch starts with `claude/build-`. This continues the item with its next batch as soon as the Reviewer merges one. (The documentation's own example; to be confirmed on the first real merge.) |
-| Reviewer | Hourly (the most often a schedule can run). It does the retries and is the backup for any missed event. | Pull request, only the **labeled** and **ready for review** actions if the form offers them (otherwise all pull request events), filters: head branch starts with `claude/build-`, is draft `false`, labels contains `stage:review` |
+| Reviewer | Hourly (the most often a schedule can run). It does the retries and is the backup for any missed event. | Pull request, the single event **ready for review** (one trigger listens to one event), filters: head branch starts with `claude/build-`, is draft `false`, labels contains `stage:review` |
 | Steward | Daily | None |
 
-**Why the label filter and the exclusive stage labels.** Only the Builder puts `stage:review` on a PR, and the Reviewer replaces it with `stage:ready` when it signs off. So once a PR is signed off, further pushes no longer match the trigger.
+**Why the label filter, the order, and the exclusive stage labels.** Only the Builder puts `stage:review` on a PR, so the filter means "a Builder PR that is ready for review". The filter is checked when the PR is taken out of draft, so the Builder must put the label on **first** and take the PR out of draft **last**. The Reviewer replaces `stage:review` with `stage:ready` when it signs off, so a PR it has signed off, and its own later un-drafting or pushes, no longer match the trigger. A push or a label on its own starts nothing, which keeps the run list short.
 
 **What the documentation says that we plan around**
 - Events beyond an hourly cap (the number isn't published) are **dropped**, which is why the schedules stay as a backup.
