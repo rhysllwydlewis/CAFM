@@ -34,7 +34,7 @@ If two sources disagree, flag it in your PR and on an issue labelled `type:docs`
 - **Design:** use tokens and `packages/ui` components only. No new colours or one-off styles. A new UI pattern needs a mockup in `design/mockups/screens/` first.
 - **Tests:** never skip, disable or weaken a test to get a green build. Fix the cause.
 - **Secrets and data:** no secrets in code, logs or fixtures. No real personal data in seed or tests. Demo personas only (doc 06).
-- **Git:** never push to the default branch, never force-push shared branches, never merge your own PR. Use the Phase 1 capability batches in AGENTS.md.
+- **Git:** never push to the default branch, never force-push shared branches, never merge your own PR (only the Reviewer routine may merge a loop PR it has reviewed, under docs/agents/build-loop.md § Merging). Use the Phase 1 capability batches in AGENTS.md.
 - **Writing style:** UK English, sentence case, plain and specific wording (see doc 11 "Voice").
 
 ## Repository layout
@@ -59,7 +59,7 @@ Node 22 and pnpm 10 (`corepack enable`). From the repository root:
 pnpm install
 pnpm db:migrate        # apply migrations (owner role, DATABASE_URL)
 pnpm db:seed           # demo tenants and the 16 demo personas
-pnpm lint && pnpm typecheck
+pnpm format:check && pnpm lint && pnpm typecheck
 pnpm test              # unit and API tests (needs a migrated, seeded database)
 pnpm build
 pnpm e2e               # Playwright against the built apps
