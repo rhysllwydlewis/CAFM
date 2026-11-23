@@ -95,16 +95,30 @@ it('lets a delegated admin manage people inside their sites and no one else', as
     await delegate.patch(`/api/people/${superUser.memberships[0]}`).send({ status: 'deactivated' }).expect(404);
 
     // Site access: within their own sites only, never lifting the limit.
-    await delegate.put(`/api/locations/access/${inside}`).send({ locationIds: [siteA.id] }).expect(200);
-    await delegate.put(`/api/locations/access/${inside}`).send({ locationIds: [siteA.id, siteB.id] }).expect(404);
+    await delegate
+      .put(`/api/locations/access/${inside}`)
+      .send({ locationIds: [siteA.id] })
+      .expect(200);
+    await delegate
+      .put(`/api/locations/access/${inside}`)
+      .send({ locationIds: [siteA.id, siteB.id] })
+      .expect(404);
     await delegate.put(`/api/locations/access/${inside}`).send({ locationIds: null }).expect(403);
-    await delegate.put(`/api/locations/access/${outside}`).send({ locationIds: [siteA.id] }).expect(404);
-    await delegate.put(`/api/locations/access/${unrestricted}`).send({ locationIds: [siteA.id] }).expect(404);
+    await delegate
+      .put(`/api/locations/access/${outside}`)
+      .send({ locationIds: [siteA.id] })
+      .expect(404);
+    await delegate
+      .put(`/api/locations/access/${unrestricted}`)
+      .send({ locationIds: [siteA.id] })
+      .expect(404);
 
     const events = await withTenant(db, tenant.id, (tx) =>
       tx.auditEvent.findMany({ where: { tenantId: tenant.id, entityId: inside } }),
     );
-    expect(events.map((e) => e.action)).toEqual(expect.arrayContaining(['membership.updated', 'location.access_updated']));
+    expect(events.map((e) => e.action)).toEqual(
+      expect.arrayContaining(['membership.updated', 'location.access_updated']),
+    );
   } finally {
     await cleanup();
   }
@@ -130,8 +144,14 @@ it('keeps another organisation out of the site access list and out of reach', as
     const own = (await first.admin.get('/api/admin/site-access').expect(200)).body;
     expect(JSON.stringify(own)).not.toContain(foreign);
     expect(JSON.stringify(own)).not.toContain(second.siteA.id);
-    await first.admin.put(`/api/locations/access/${foreign}`).send({ locationIds: [first.siteA.id] }).expect(404);
-    await first.delegate.put(`/api/locations/access/${foreign}`).send({ locationIds: [first.siteA.id] }).expect(404);
+    await first.admin
+      .put(`/api/locations/access/${foreign}`)
+      .send({ locationIds: [first.siteA.id] })
+      .expect(404);
+    await first.delegate
+      .put(`/api/locations/access/${foreign}`)
+      .send({ locationIds: [first.siteA.id] })
+      .expect(404);
     await first.delegate.patch(`/api/people/${foreign}`).send({ status: 'deactivated' }).expect(404);
   } finally {
     await first.cleanup();

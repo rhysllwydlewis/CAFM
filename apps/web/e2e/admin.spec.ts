@@ -93,3 +93,16 @@ test('a helpdesk operator can read teams but not change them', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Create team' })).toHaveCount(0);
   await assertAccessible(page);
 });
+
+test('a Super User sees the site access card and the demo people stay locked', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/users');
+  const card = page.getByRole('region', { name: 'Site access' });
+  await expect(card).toBeVisible();
+  await card.getByLabel('Person').selectOption({ label: 'Tom Price' });
+  await card.getByLabel('Only the sites I choose').check();
+  await expect(card.getByRole('group', { name: 'Sites and regions' })).toBeVisible();
+  await assertAccessible(page);
+  await card.getByRole('button', { name: 'Save site access' }).click();
+  await expect(card.getByRole('alert')).toContainText('part of the demo');
+});

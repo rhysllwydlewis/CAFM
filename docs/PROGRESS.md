@@ -134,7 +134,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-09a** Admin console shell, overview (licences, seats, changes, setup checklist) and Users and licences (invite, withdraw, change role, deactivate). ([guide](admin.md))
   - [ ] **P1-09b** Roles matrix screen, teams, scopes and delegated admin.
     - [x] Roles matrix screen and teams (table, API, screen). ([guide](admin.md#roles-and-permissions))
-    - [ ] Scopes by site or team, and delegated admin (not built yet).
+    - [x] Scopes by site, and delegated admin: site access card on the users screen; people limited to sites manage only people inside them. ([guide](admin.md#site-access-and-delegated-admin))
+    - [ ] Scope by team (not built yet).
   - [ ] **P1-09c** Impersonation ("view as user"), modules on and off, terminology.
   - [ ] **P1-09d** Branding, custom fields, statuses, SLA and calendars, categories screens.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.

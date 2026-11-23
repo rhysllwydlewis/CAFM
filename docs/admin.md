@@ -24,3 +24,16 @@ The screen uses the existing `/api/roles` endpoints, so the guard rails stay: yo
 ## Teams
 
 `/app/admin/teams` lists teams and who is in them. `GET /api/teams` needs `people.read`; `POST /api/teams`, `PATCH /api/teams/:id` (rename, or replace the member list) and `DELETE /api/teams/:id` need `people.manage`. Only active people in the same organisation can be members, a team name is unique within an organisation, and all changes are audited (`team.created`, `team.updated`, `team.deleted`). Teams live in the `team` and `team_member` tables, both under row-level security. Assigning work to a team and scoping by team come later with the workflow and dispatch items.
+
+## Site access and delegated admin
+
+The users screen has a **Site access** card. Pick a person, then choose "Every site in the organisation" or "Only the sites I choose" and tick the regions and sites. It uses `PUT /api/locations/access/:membershipId` (needs `people.manage`) and each change is audited as `location.access_updated`. `GET /api/admin/site-access` (`people.manage`) lists the regions and sites you can hand out and each person's current limit.
+
+**Delegated admin.** A person who has people permissions but is limited to certain sites is a delegated admin, for example a regional admin. Create a role with `people.manage` (and `people.read`), then limit that person to their sites. They then:
+
+- see, and manage, only people who are limited to sites inside their own. Anyone else, including Super Users and people with organisation-wide access, is hidden and answers `404`;
+- can change role, deactivate and set site access, but only choose sites they hold themselves, and can't remove a limit (`null`);
+- can't invite people or see invitations (`403`), because an invitation has no site. An organisation-wide admin sends those;
+- are still held by the no-privilege-escalation rule: they can't grant or manage a role with permissions they don't hold.
+
+Scoping by team is not built yet.
