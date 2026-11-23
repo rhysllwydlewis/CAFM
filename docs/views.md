@@ -22,4 +22,6 @@ All calls are inside the signed-in organisation, and each checks the list's own 
 
 `config` is `{ layout, filters, sort, group, columns }`. Filter, sort, group and column keys are field keys such as `status` or `custom.zone`, never free text. At most 20 filters and 30 columns. Every create, edit and delete is in the audit log (`saved_view.*`).
 
-The screens that use views (the view bar, column chooser and bulk actions) are built in later batches of P1-08.
+## On the screens
+
+Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and a column chooser, bulk actions, and kanban and calendar layouts for the other lists are built in later batches of P1-08.

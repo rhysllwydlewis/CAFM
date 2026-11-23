@@ -11,6 +11,7 @@ import {
   type AssetSummary,
 } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
+import { ListViewBar } from '@/components/list-view-bar';
 import { locationPage } from '../locations/location-data';
 import { assetPage, assetSummary } from './asset-data';
 import {
@@ -133,7 +134,14 @@ function Filters({ filters, sites }: { filters: Filters; sites: { id: string; na
   );
   const active = filters.q || filters.site || filters.status || filters.condition || filters.criticality;
   return (
-    <form className={styles.filters} method="get" action={route} role="search" aria-label="Filter assets">
+    <form
+      key={JSON.stringify(filters)}
+      className={styles.filters}
+      method="get"
+      action={route}
+      role="search"
+      aria-label="Filter assets"
+    >
       {filters.group && <input type="hidden" name="group" value={filters.group} />}
       <div className={styles.filter}>
         <label htmlFor="filter-q">Search</label>
@@ -314,6 +322,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
           )}
         </div>
       </header>
+      <ListViewBar entity="assets" route="/app/assets" query={query} user={user} />
 
       <div className={styles.kpis}>
         <Tile
