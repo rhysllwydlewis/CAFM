@@ -134,7 +134,8 @@ Three scheduled routines (Builder, Reviewer, Steward) work through the approved 
 
 - **Stages.** A loop PR carries a `## Status` block with `Stage: build`, `review`, `ready` or `blocked`. The Builder owns `build`, the Reviewer owns `review`, and the product owner owns `ready` (the merge).
 - **Shared branch.** The Builder and the Reviewer work on the same `claude/build-<item>-<slug>` branch. Fixing on it is not rewriting another agent's work.
-- **Resuming.** Sessions push after every slice. A PR whose branch has had no commit or body edit for 90 minutes is treated as abandoned, and the next run takes it over from its Status block. This is the stale-claim rule in § 3.7, shortened for loop PRs, because a usage limit ends a session without warning.
-- **Limits.** 8 Builder runs per item, 2 review rounds, one item in flight, and at most 2 ready PRs waiting for the owner. At a limit, split, ship or escalate. Don't carry on indefinitely.
+- **Resuming.** Sessions push after every slice. A PR marked `Session: active` whose branch has had no commit or body edit for 90 minutes is treated as abandoned, and the next run takes it over from its Status block. A PR marked `Session: ended` is free at once. This is the stale-claim rule in § 3.7, shortened for loop PRs, because a usage limit ends a session without warning.
+- **Limits.** 8 Builder runs per item, 2 review rounds, one item being built, and at most 2 PRs waiting (in review, ready or blocked). At a limit, split, ship or escalate. Don't carry on indefinitely.
 - **Phase gate.** The approved-phase marker is still the owner's. The Steward opens an "Approve Phase N" PR when a phase is complete, and the owner's merge of it is the approval.
+- **No notebooks.** The routines don't keep `docs/agents/notes/` files. The PR Status block is their handoff.
 - **Never** changes: no merging, no force-push, no production or paid services.
