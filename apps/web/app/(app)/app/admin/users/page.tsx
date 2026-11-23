@@ -11,13 +11,12 @@ export default async function AdminUsersPage() {
   const user = await currentUser();
   if (!can(user, 'people.manage')) redirect(can(user, 'settings.manage') ? '/app/admin' : '/app');
   const canInvite = can(user, 'people.invite');
-  const allUsers = await readAdmin<AdminUser[]>('/admin/users');
-  const users = allUsers;
+  const users = await readAdmin<AdminUser[]>('/admin/users');
   const [roles, invites] = await Promise.all([
     can(user, 'roles.read')
       ? readAdmin<RoleOption[]>('/roles')
       : Promise.resolve([
-          ...new Map(allUsers.map((u) => [u.role, { key: u.role, name: u.roleLabel }])).values(),
+          ...new Map(users.map((u) => [u.role, { key: u.role, name: u.roleLabel }])).values(),
         ] as RoleOption[]),
     canInvite ? readAdmin<PendingInvite[]>('/people/invites') : Promise.resolve([] as PendingInvite[]),
   ]);
