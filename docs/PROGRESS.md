@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1: P1-09a admin overview and users API and screens (users, invites, deactivate, roles). Branch claude/build-p1-09-admin-users |
 
 ## Phase checklists
 
