@@ -391,6 +391,39 @@ it('authenticates inbound mail, deduplicates provider deliveries and threads a v
   }
 });
 
+it('sorts the request queue by title in either direction without skipping or repeating a request', async () => {
+  const { operator, requester, bystander, cleanup, input } = await fixture();
+  try {
+    for (const [agent, title] of [
+      [requester, 'Leaking tap'],
+      [bystander, 'Broken door'],
+      [requester, 'Flickering light'],
+    ] as const) {
+      await agent
+        .post(helpdesk + '/requests')
+        .send(input({ title }))
+        .expect(201);
+    }
+    const byTitle = async (dir: string) => {
+      const seen: string[] = [];
+      let cursor = '';
+      do {
+        const body = (
+          await operator.get(helpdesk + '/requests?sort=title&dir=' + dir + '&limit=2' + cursor).expect(200)
+        ).body;
+        seen.push(...body.items.map(({ title }: { title: string }) => title));
+        cursor = body.nextCursor ? '&cursor=' + body.nextCursor : '';
+      } while (cursor);
+      return seen;
+    };
+    expect(await byTitle('asc')).toEqual(['Broken door', 'Flickering light', 'Leaking tap']);
+    expect(await byTitle('desc')).toEqual(['Leaking tap', 'Flickering light', 'Broken door']);
+    await operator.get(helpdesk + '/requests?sort=password').expect(400);
+  } finally {
+    await cleanup();
+  }
+});
+
 it('continues from a changed queue anchor and recovers a cursor outside the caller’s scope', async () => {
   const { operator, requester, bystander, tenant, cleanup, input } = await fixture();
   try {

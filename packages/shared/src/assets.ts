@@ -128,8 +128,13 @@ export const updateAssetSchema = z
   .strict()
   .refine(({ version: _version, ...changes }) => Object.keys(changes).length > 0, { message: 'Nothing to change' });
 
+export const ASSET_SORTS = ['number', 'name', 'created'] as const;
+export type AssetSort = (typeof ASSET_SORTS)[number];
+
 export const listAssetsSchema = z.object({
   after: id.optional(),
+  sort: z.enum(ASSET_SORTS).default('created'),
+  dir: z.enum(['asc', 'desc']).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   q: z.string().trim().max(120).optional(),
   /** Assets in this location and everything below it. */

@@ -18,6 +18,7 @@ import { eligibleTechnician, generatePpm, nextNumber, Prisma, startingPoint, wit
 import {
   createPpmScheduleSchema,
   PPM_CRITICALITIES,
+  PPM_SORTS,
   setScheduleAssetsSchema,
   updatePpmScheduleSchema,
   WORK_ORDER_FINISHED,
@@ -44,6 +45,8 @@ const listQuery = z
     criticality: z.enum(PPM_CRITICALITIES).optional(),
     discipline: z.string().trim().max(60).optional(),
     status: z.enum(['active', 'archived', 'all']).default('active'),
+    sort: z.enum(PPM_SORTS).default('number'),
+    dir: z.enum(['asc', 'desc']).default('asc'),
     limit: z.coerce.number().int().min(1).max(100).default(50),
     offset: z.coerce.number().int().min(0).default(0),
   })
@@ -160,6 +163,7 @@ export class PpmSchedulesController {
         },
         input.limit,
         input.offset,
+        { sort: input.sort, dir: input.dir },
       ),
     );
   }

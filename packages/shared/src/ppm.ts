@@ -8,6 +8,9 @@ const version = z.number().int().positive();
 /* Words ----------------------------------------------------------------------------------------------------- */
 
 /** How much the law or the insurer cares that the task is done (doc 02 §4). */
+export const PPM_SORTS = ['number', 'title', 'priority'] as const;
+export type PpmSort = (typeof PPM_SORTS)[number];
+
 export const PPM_CRITICALITIES = ['statutory', 'mandatory', 'optimal', 'discretionary'] as const;
 export type PpmCriticality = (typeof PPM_CRITICALITIES)[number];
 export const PPM_CRITICALITY_LABELS: Record<PpmCriticality, string> = {

@@ -364,6 +364,13 @@ it('plans schedules for calendar and meter visits, works each asset’s first vi
       overdue: 0,
       assigneeName: 'Test Person',
     });
+    // Sorting by title, either way, and unknown columns are refused.
+    const titles = async (query: string) =>
+      (await list(query)).items.map(({ title }: { title: string }) => title) as string[];
+    const ascending = await titles('?sort=title&dir=asc');
+    expect(ascending).toHaveLength(3);
+    expect(await titles('?sort=title&dir=desc')).toEqual([...ascending].reverse());
+    await planner.get(schedules + '?sort=password').expect(400);
     await planner.get(schedules + '?limit=0').expect(400);
     await planner.get(schedules + '?colour=red').expect(400);
     await auditor.get(schedules).expect(200);
