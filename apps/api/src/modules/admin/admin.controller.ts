@@ -29,9 +29,10 @@ export class AdminController {
           tx.invite.count({
             where: { tenantId, licence: 'full', acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
           }),
-          tx.auditEvent.findMany({
+          tx.auditEvent.groupBy({
+            by: ['actorMembershipId'],
             where: { tenantId, createdAt: { gte: since }, NOT: { action: { startsWith: 'auth.' } } },
-            select: { actorMembershipId: true },
+            _count: { _all: true },
           }),
           tx.location.count({ where: { tenantId } }),
           tx.asset.count({ where: { tenantId } }),
@@ -47,7 +48,7 @@ export class AdminController {
         licences: Object.fromEntries(licences.map((l) => [l.licence, l._count._all])),
         fullSeats: { used: count('full') + pendingFullInvites, limit: auth.access!.entitlements.limits.full_users },
         pendingInvites,
-        changesLast7Days: { count: changes.length, people: new Set(changes.map((c) => c.actorMembershipId)).size },
+        changesLast7Days: { count: changes.reduce((sum, c) => sum + c._count._all, 0), people: changes.length },
         checklist: [
           {
             key: 'people',

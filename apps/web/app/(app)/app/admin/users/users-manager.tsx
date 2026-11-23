@@ -48,15 +48,17 @@ export function UsersManager({
   const [filter, setFilter] = useState('');
   const [showAll, setShowAll] = useState(false);
 
-  async function run(action: () => Promise<unknown>, done: string) {
+  async function run(action: () => Promise<unknown>, done: string): Promise<boolean> {
     setBusy(true);
     setFeedback(undefined);
     try {
       await action();
       setFeedback({ text: done });
       router.refresh();
+      return true;
     } catch (error) {
       setFeedback({ text: error instanceof Error ? error.message : 'Could not save your changes.', error: true });
+      return false;
     } finally {
       setBusy(false);
     }
@@ -66,11 +68,11 @@ export function UsersManager({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    await run(
+    const sent = await run(
       () => adminWrite('/people/invites', { email: data.get('email'), role: data.get('role') }),
       'Invitation sent.',
     );
-    form.reset();
+    if (sent) form.reset();
   }
 
   const shown = users.filter((u) => {
