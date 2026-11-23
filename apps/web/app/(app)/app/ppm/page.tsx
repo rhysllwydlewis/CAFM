@@ -178,7 +178,7 @@ export default async function PpmPage({
         </nav>
 
         {(view === 'planner' || view === 'list') && (
-          <form className={styles.filters} aria-label="Filter schedules">
+          <form key={JSON.stringify(filters)} className={styles.filters} aria-label="Filter schedules">
             {view !== 'planner' && <input type="hidden" name="view" value={view} />}
             <label className="field">
               <span className="label">Search schedules</span>
