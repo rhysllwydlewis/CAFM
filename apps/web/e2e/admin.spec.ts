@@ -39,3 +39,48 @@ test('a requester is kept out of the admin console', async ({ page }) => {
   await page.goto('/app/admin');
   await expect(page).not.toHaveURL(/\/app\/admin/);
 });
+
+test('a Super User edits a custom role in the roles matrix', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/roles');
+  await expect(page.getByRole('heading', { name: /^Role: / })).toBeVisible();
+  await assertAccessible(page);
+
+  const name = 'E2E role ' + Date.now();
+  await page.getByLabel('New role').fill(name);
+  await page.getByRole('button', { name: 'Create role' }).click();
+  await expect(page.getByRole('heading', { name: 'Role: ' + name })).toBeVisible();
+  await page.getByLabel('See assets', { exact: true }).check();
+  await page.getByRole('button', { name: 'Save role' }).click();
+  await expect(page.getByText('Role saved.')).toBeVisible();
+  await expect(page.getByLabel('See assets', { exact: true })).toBeChecked();
+  await assertAccessible(page);
+
+  await page.getByRole('button', { name: 'Delete role' }).click();
+  await expect(page.getByText('Role deleted.')).toBeVisible();
+});
+
+test('a Super User creates and deletes a team', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/teams');
+  await expect(page.getByRole('heading', { name: 'Field engineers' })).toBeVisible();
+  const name = 'E2E team ' + Date.now();
+  await page.getByLabel('Team name').fill(name);
+  await page.getByRole('group', { name: 'Members', exact: true }).getByLabel('Tom Price').check();
+  await page.getByRole('button', { name: 'Create team' }).click();
+  await expect(page.getByRole('heading', { name })).toBeVisible();
+  await assertAccessible(page);
+  await page
+    .locator('section', { has: page.getByRole('heading', { name }) })
+    .getByRole('button', { name: 'Delete team' })
+    .click();
+  await expect(page.getByRole('heading', { name })).toHaveCount(0);
+});
+
+test('a technician cannot open the roles or teams screens', async ({ page }) => {
+  await signInAs(page, 'technician');
+  await page.goto('/app/admin/roles');
+  await expect(page).not.toHaveURL(/\/app\/admin/);
+  await page.goto('/app/admin/teams');
+  await expect(page).not.toHaveURL(/\/app\/admin/);
+});

@@ -75,3 +75,26 @@
     flex-wrap: wrap;
   }
 }
+
+.rolesGrid {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .rolesGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.members {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}

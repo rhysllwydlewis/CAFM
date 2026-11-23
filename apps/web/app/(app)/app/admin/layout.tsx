@@ -17,7 +17,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
       </div>
       <div className={styles.shell}>
-        <AdminMenu canManageSettings={can(user, 'settings.manage')} canManagePeople={can(user, 'people.manage')} />
+        <AdminMenu
+          canManageSettings={can(user, 'settings.manage')}
+          canManagePeople={can(user, 'people.manage')}
+          canReadRoles={can(user, 'roles.read')}
+          canReadPeople={can(user, 'people.read')}
+        />
         <div className="stack g4">{children}</div>
       </div>
     </div>
