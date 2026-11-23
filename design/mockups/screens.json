@@ -859,7 +859,7 @@
     "id": "marketing-02-homepage",
     "group": "Marketing site (Phase 5 draft)",
     "title": "CAFM homepage",
-    "desc": "Public home: a scroll-directed film of the demo estate with minimal words, ending on the demo and sign-in links.",
+    "desc": "Public home: one day at Cardiff HQ, with scroll as the clock, ending on the demo and sign-in links.",
     "viewport": "desktop",
     "theme": "light",
     "file": "13-marketing.js"

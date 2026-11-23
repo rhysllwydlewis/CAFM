@@ -20,7 +20,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
-- A new homepage: a short film of the demo estate that plays as you scroll, from Cardiff HQ at dusk through its floors, plant room and a job closed on site, ending on the links to try the demo or sign in. Words are kept to one line per scene. With reduced motion the film steps between still frames, and without WebGL the stills cross-fade.
+- A new homepage: one day at Cardiff HQ, with scroll as the clock. The day plays on the building from 05:00, with what CAFM did at each time (a request logged by QR code, planned visits raised, a boiler fault at 17:45), then at 18:00 the floors slide apart and the evening follows the fix through the plant room to midnight, ending on the links to try the demo or sign in. With reduced motion the film steps between still frames, and without WebGL the stills cross-fade.
 
 - Fix a site whose opening hours end at 24:00 (the way overnight opening is entered) being unable to receive Helpdesk requests, because the response deadline couldn't be worked out.
 
