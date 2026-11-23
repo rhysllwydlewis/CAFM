@@ -111,3 +111,54 @@ export interface InviteDetails {
   accountExists: boolean;
   status: 'pending' | 'accepted' | 'expired' | 'revoked';
 }
+
+/** The mobile PWA's OAuth 2.0 client (P1-06a). There is one first-party public client; PKCE protects it. */
+export const MOBILE_CLIENT_ID = 'cafm-pwa';
+/** Access tokens are short; the refresh token rotates on every use. */
+export const MOBILE_ACCESS_TOKEN_SECONDS = 15 * 60;
+export const MOBILE_AUTH_CODE_SECONDS = 60;
+
+const pkceChallenge = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'The code challenge must be a base64url SHA-256 hash');
+const pkceVerifier = z
+  .string()
+  .regex(/^[A-Za-z0-9._~-]{43,128}$/, 'The code verifier must be 43 to 128 URL-safe characters');
+
+export const oauthAuthorizeSchema = z.object({
+  client_id: z.literal(MOBILE_CLIENT_ID),
+  code_challenge: pkceChallenge,
+  code_challenge_method: z.literal('S256'),
+  device_name: z.string().trim().min(1, 'Name this device').max(80),
+});
+export type OauthAuthorizeRequest = z.infer<typeof oauthAuthorizeSchema>;
+
+export const oauthTokenSchema = z.discriminatedUnion('grant_type', [
+  z.object({
+    grant_type: z.literal('authorization_code'),
+    client_id: z.literal(MOBILE_CLIENT_ID),
+    code: z.string().min(1).max(200),
+    code_verifier: pkceVerifier,
+  }),
+  z.object({
+    grant_type: z.literal('refresh_token'),
+    client_id: z.literal(MOBILE_CLIENT_ID),
+    refresh_token: z.string().min(1).max(200),
+  }),
+]);
+export type OauthTokenRequest = z.infer<typeof oauthTokenSchema>;
+
+export const oauthRevokeSchema = z.object({ token: z.string().min(1).max(200) });
+
+export interface OauthTokenResponse {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token: string;
+}
+
+export interface MobileDeviceSummary {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastSeenAt: string;
+  current: boolean;
+}

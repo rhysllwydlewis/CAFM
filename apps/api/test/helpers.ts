@@ -76,6 +76,7 @@ export async function createTestTenant(db: PrismaClient, plan = 'starter') {
       await owner.notification.deleteMany({ where });
       await owner.notificationTemplate.deleteMany({ where });
       await owner.pushSubscription.deleteMany({ where });
+      await owner.labourRate.deleteMany({ where });
       await owner.workOrder.deleteMany({ where });
       await owner.checklistTemplate.deleteMany({ where });
       await owner.ppmSchedule.deleteMany({ where });
