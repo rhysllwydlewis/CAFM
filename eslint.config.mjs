@@ -44,4 +44,11 @@ export default tseslint.config(
       globals: { process: 'readonly', console: 'readonly', URL: 'readonly', setTimeout: 'readonly', fetch: 'readonly' },
     },
   },
+  {
+    // The service worker runs in a worker scope, not a page.
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      globals: { self: 'readonly', caches: 'readonly', fetch: 'readonly', URL: 'readonly' },
+    },
+  },
 );

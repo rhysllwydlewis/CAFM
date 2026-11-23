@@ -1,0 +1,12 @@
+{
+  "name": "CAFM technician app",
+  "short_name": "CAFM",
+  "description": "Your jobs, with or without signal.",
+  "start_url": "/m",
+  "scope": "/m",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F8FA",
+  "theme_color": "#136B7A",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
