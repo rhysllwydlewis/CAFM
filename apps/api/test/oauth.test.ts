@@ -56,33 +56,27 @@ describe('mobile OAuth with PKCE', () => {
     expect(wrong.res.status).toBe(200);
     const { agent } = await signIn(app, 'technician@demo.example');
     const { verifier, challenge } = pkce();
-    const a = await agent
-      .post('/api/oauth/authorize')
-      .send({
-        client_id: MOBILE_CLIENT_ID,
-        code_challenge: challenge,
-        code_challenge_method: 'S256',
-        device_name: 'X',
-      });
-    const bad = await http()
-      .post('/api/oauth/token')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: MOBILE_CLIENT_ID,
-        code: a.body.code,
-        code_verifier: pkce().verifier,
-      });
+    const a = await agent.post('/api/oauth/authorize').send({
+      client_id: MOBILE_CLIENT_ID,
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      device_name: 'X',
+    });
+    const bad = await http().post('/api/oauth/token').send({
+      grant_type: 'authorization_code',
+      client_id: MOBILE_CLIENT_ID,
+      code: a.body.code,
+      code_verifier: pkce().verifier,
+    });
     expect(bad.status).toBe(400);
     expect(bad.body).toEqual({ error: 'invalid_grant' });
     // The failed attempt burned the code, so even the right verifier now fails.
-    const again = await http()
-      .post('/api/oauth/token')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: MOBILE_CLIENT_ID,
-        code: a.body.code,
-        code_verifier: verifier,
-      });
+    const again = await http().post('/api/oauth/token').send({
+      grant_type: 'authorization_code',
+      client_id: MOBILE_CLIENT_ID,
+      code: a.body.code,
+      code_verifier: verifier,
+    });
     expect(again.status).toBe(400);
   });
 
