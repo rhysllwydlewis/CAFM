@@ -15,6 +15,8 @@ The aim: any agent can pick the work up cold, knows what to do next, never repea
    - Scheduled agents also read their notebook, `docs/agents/notes/<ID>.md` (doc 13).
 5. **Other agents' work:** list the open PRs, drafts included, before you choose anything. Their `Progress:` lines say which items they hold.
 
+> **Scheduled routines:** the Builder, Reviewer and Steward routines run this handbook automatically. Their playbook is [docs/agents/build-loop.md](docs/agents/build-loop.md). If you are one of them, read that file too.
+
 ## 2. Choosing work, in this order
 
 1. **`main` is broken** (CI red on the default branch) in an area you're working in: fix the root cause first.
@@ -125,3 +127,14 @@ pnpm dev                               # http://localhost:3000, demo accounts on
 - **PR titles and commit messages:** [docs/contributing/commits.md](docs/contributing/commits.md).
 - **The plan:** [docs/plan/README.md](docs/plan/README.md).
 - **Scheduled agents:** [doc 13](docs/plan/13-agent-schedules.md).
+
+## 9. The automatic build loop
+
+Three scheduled routines (Builder, Reviewer, Steward) work through the approved phase so nobody has to type "continue". The full protocol is [docs/agents/build-loop.md](docs/agents/build-loop.md). The parts that change the rules above:
+
+- **Stages.** A loop PR carries a `## Status` block with `Stage: build`, `review`, `ready` or `blocked`. The Builder owns `build`, the Reviewer owns `review`, and the product owner owns `ready` (the merge).
+- **Shared branch.** The Builder and the Reviewer work on the same `claude/build-<item>-<slug>` branch. Fixing on it is not rewriting another agent's work.
+- **Resuming.** Sessions push after every slice. A PR whose branch has had no commit or body edit for 90 minutes is treated as abandoned, and the next run takes it over from its Status block. This is the stale-claim rule in § 3.7, shortened for loop PRs, because a usage limit ends a session without warning.
+- **Limits.** 8 Builder runs per item, 2 review rounds, one item in flight, and at most 2 ready PRs waiting for the owner. At a limit, split, ship or escalate. Don't carry on indefinitely.
+- **Phase gate.** The approved-phase marker is still the owner's. The Steward opens an "Approve Phase N" PR when a phase is complete, and the owner's merge of it is the approval.
+- **Never** changes: no merging, no force-push, no production or paid services.
