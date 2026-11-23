@@ -335,23 +335,31 @@ export class RequestsController {
       const cursor = input.cursor
         ? await tx.serviceRequest.findFirst({
             where: { AND: [scope, { id: input.cursor }] },
-            select: { id: true, createdAt: true },
+            select: { id: true, createdAt: true, priority: true, number: true, title: true },
           })
         : null;
+      // Sort on a column that is never empty, with the id to break ties, so every page follows on from the last.
+      const dir = input.dir ?? (input.sort === 'created' ? 'desc' : 'asc');
+      const column = { created: 'createdAt', priority: 'priority', number: 'number', title: 'title' }[input.sort] as
+        'createdAt' | 'priority' | 'number' | 'title';
+      const past = dir === 'desc' ? 'lt' : 'gt';
       const rows = await tx.serviceRequest.findMany({
         where: cursor
           ? {
               AND: [
                 where,
                 {
-                  OR: [{ createdAt: { lt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { lt: cursor.id } }],
+                  OR: [
+                    { [column]: { [past]: cursor[column] } },
+                    { [column]: cursor[column], id: { [past]: cursor.id } },
+                  ],
                 },
               ],
             }
           : where,
         include: requestRelations,
         take: input.limit + 1,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: [{ [column]: dir }, { id: dir }],
       });
       const items = rows.slice(0, input.limit).map(requestSummary);
       const page = {

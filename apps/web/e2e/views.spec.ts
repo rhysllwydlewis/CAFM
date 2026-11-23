@@ -57,3 +57,30 @@ test('a manager sorts the work orders by title and keeps the order in a saved vi
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+const sortable = [
+  { name: 'assets', path: '/app/assets', by: 'Name', link: 'tbody tr a[href^="/app/assets/"]' },
+  { name: 'requests', path: '/app/helpdesk?view=all', by: 'Number', link: 'tbody tr a.ref' },
+  { name: 'planned maintenance schedules', path: '/app/ppm?view=list', by: 'Reference', link: 'tbody tr a' },
+] as const;
+
+for (const list of sortable) {
+  test(`a manager sorts the ${list.name} list in either direction`, async ({ page }) => {
+    await signInAs(page, 'manager');
+    const firstRow = async (order: 'asc' | 'desc') => {
+      await page.goto(list.path);
+      await page.getByLabel('Sort by').selectOption({ label: list.by });
+      await page.getByLabel('Sort order').selectOption(order);
+      await page.getByRole('button', { name: 'Apply filters' }).click();
+      await expect(page).toHaveURL(new RegExp('dir=' + order));
+      return (await page.locator(list.link).first().textContent())?.trim();
+    };
+    const lowest = await firstRow('asc');
+    const highest = await firstRow('desc');
+    expect(lowest).toBeTruthy();
+    expect(highest).toBeTruthy();
+    expect(highest).not.toBe(lowest);
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+}

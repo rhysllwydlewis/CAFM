@@ -9,6 +9,7 @@ import {
   type PpmMode,
   type PpmScheduleAssetRow,
   type PpmScheduleRecord,
+  type PpmSort,
   type PpmScheduleSummary,
   type PpmTaskTemplate,
   type PpmVisitState,
@@ -114,6 +115,7 @@ export async function listSchedules(
   filters: ScheduleFilters,
   limit: number,
   offset: number,
+  order: { sort: PpmSort; dir: 'asc' | 'desc' } = { sort: 'number', dir: 'asc' },
 ) {
   const tenantId = auth.membership!.tenantId;
   const scope = assetScope(auth);
@@ -143,7 +145,7 @@ export async function listSchedules(
     tx.ppmSchedule.findMany({
       where,
       include: scheduleInclude,
-      orderBy: [{ number: 'asc' }],
+      orderBy: [{ [order.sort]: order.dir }, { id: order.dir }],
       take: limit,
       skip: offset,
     }),

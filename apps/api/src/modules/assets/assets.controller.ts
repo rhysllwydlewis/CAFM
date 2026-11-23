@@ -202,10 +202,20 @@ export class AssetsController {
   @Get()
   @RequirePermission('assets.read')
   async list(@Query() query: unknown, @Req() req: Request): Promise<AssetPage> {
-    const { after, q, limit, locationId, classId, group, status, criticality, condition, parent } = parse(
-      listAssetsSchema,
-      query,
-    );
+    const {
+      after,
+      sort,
+      dir: requested,
+      q,
+      limit,
+      locationId,
+      classId,
+      group,
+      status,
+      criticality,
+      condition,
+      parent,
+    } = parse(listAssetsSchema, query);
     // Prisma's contains uses a PostgreSQL LIKE pattern. Search for the text literally.
     const search = q?.replace(/[\\%_]/g, '\\$&');
     const auth = req.auth!;
@@ -228,6 +238,12 @@ export class AssetsController {
           ],
         });
       }
+      // Sort on a column that is never empty, with the id to break ties, so every page follows on from the last.
+      const dir = requested ?? 'asc';
+      const past = dir === 'desc' ? 'lt' : 'gt';
+      // Ids are time-ordered, so "created" pages on the id alone. Other sorts page from the row the last page ended on.
+      const column = sort === 'created' ? 'id' : sort;
+      const anchor = after && sort !== 'created' ? await tx.asset.findFirst({ where: { ...scope, id: after } }) : null;
       const rows = await tx.asset.findMany({
         where: {
           ...scope,
@@ -237,10 +253,20 @@ export class AssetsController {
           condition,
           class: group ? { is: { group } } : undefined,
           parentId: parent && parent !== 'root' ? parent : undefined,
-          id: after ? { gt: after } : undefined,
-          AND: and,
+          id: after && sort === 'created' ? { [past]: after } : undefined,
+          AND: anchor
+            ? [
+                ...and,
+                {
+                  OR: [
+                    { [column]: { [past]: anchor[column] } },
+                    { [column]: anchor[column], id: { [past]: anchor.id } },
+                  ],
+                },
+              ]
+            : and,
         },
-        orderBy: { id: 'asc' },
+        orderBy: [{ [column]: dir }, { id: dir }],
         include: { class: true, _count: { select: { children: { where: { location: scope.location } } } } },
         take: limit + 1,
       });

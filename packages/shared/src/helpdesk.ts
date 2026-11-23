@@ -132,12 +132,17 @@ export const createRequestSchema = z
   .strict();
 export type CreateRequest = z.infer<typeof createRequestSchema>;
 
+export const REQUEST_SORTS = ['created', 'priority', 'number', 'title'] as const;
+export type RequestSort = (typeof REQUEST_SORTS)[number];
+
 export const listRequestsSchema = z.object({
   view: z.enum(REQUEST_VIEWS).default('open'),
   q: z.string().trim().max(160).optional(),
   locationId: uuid.optional(),
   category: z.string().trim().max(60).optional(),
   channel: z.enum(REQUEST_CHANNELS).optional(),
+  sort: z.enum(REQUEST_SORTS).default('created'),
+  dir: z.enum(['asc', 'desc']).optional(),
   cursor: uuid.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });

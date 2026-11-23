@@ -4,6 +4,7 @@ import { Icon } from '@cafm/ui';
 import {
   ASSET_CONDITIONS,
   ASSET_CRITICALITIES,
+  ASSET_SORTS,
   ASSET_STATUSES,
   can,
   feature,
@@ -27,6 +28,7 @@ import {
 import styles from './assets.module.css';
 
 export const metadata: Metadata = { title: 'Assets' };
+const SORT_LABELS = { created: 'Date added', number: 'Reference', name: 'Name' } as const;
 
 type Query = Record<string, string | string[] | undefined>;
 const one = (value: string | string[] | undefined) => (typeof value === 'string' ? value : undefined);
@@ -45,6 +47,8 @@ function filtersFrom(query: Query) {
     status: pick(one(query.status), ASSET_STATUSES),
     condition: pick(one(query.condition), ASSET_CONDITIONS),
     criticality: pick(one(query.criticality), ASSET_CRITICALITIES),
+    sort: pick(one(query.sort), ASSET_SORTS) ?? 'created',
+    dir: pick(one(query.dir), ['asc', 'desc'] as const),
     after: validAssetId(after) ? after : undefined,
   };
 }
@@ -184,6 +188,23 @@ function Filters({ filters, sites }: { filters: Filters; sites: { id: string; na
         ASSET_STATUSES.map((value) => ({ value, label: STATUS_LABELS[value] })),
         'Any',
       )}
+      {select(
+        'sort',
+        'Sort by',
+        filters.sort,
+        ASSET_SORTS.map((value) => ({ value, label: SORT_LABELS[value] })),
+        'Default',
+      )}
+      {select(
+        'dir',
+        'Sort order',
+        filters.dir,
+        [
+          { value: 'asc', label: 'Ascending' },
+          { value: 'desc', label: 'Descending' },
+        ],
+        'Default',
+      )}
       <button type="submit" className="btn">
         Apply filters
       </button>
@@ -283,6 +304,8 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
       ...(filters.status && { status: filters.status }),
       ...(filters.condition && { condition: filters.condition }),
       ...(filters.criticality && { criticality: filters.criticality }),
+      sort: filters.sort,
+      ...(filters.dir && { dir: filters.dir }),
       ...(filters.after && { after: filters.after }),
     }),
     // The site filter is a convenience: without access to locations the register still works.

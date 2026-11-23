@@ -466,6 +466,22 @@ it('searches, filters and pages the register, and summarises it', async () => {
     expect(next.nextCursor).toBeNull();
     expect(new Set([...first.items, ...next.items].map((a: { id: string }) => a.id)).size).toBe(4);
 
+    // Sorting by name pages through every asset once, in either direction, and rejects unknown columns.
+    const byName = async (dir: string) => {
+      const seen: string[] = [];
+      let after = '';
+      do {
+        const body = (await agent.get(`${assets}?sort=name&dir=${dir}&limit=1${after}`).expect(200)).body;
+        seen.push(...body.items.map(({ name }: { name: string }) => name));
+        after = body.nextCursor ? `&after=${body.nextCursor}` : '';
+      } while (after);
+      return seen;
+    };
+    const named = await byName('asc');
+    expect(named).toHaveLength(4);
+    expect(await byName('desc')).toEqual([...named].reverse());
+    await agent.get(`${assets}?sort=password`).expect(400);
+
     // Decommissioned assets are left out of the tiles; unclassified ones are grouped together.
     expect((await agent.get(`${assets}/summary`).expect(200)).body).toEqual({
       total: 3,
