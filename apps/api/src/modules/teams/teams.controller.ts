@@ -17,6 +17,7 @@ import {
 import type { Request } from 'express';
 import { withTenant, type Tx } from '@cafm/db';
 import { createTeamSchema, updateTeamSchema, type Team } from '@cafm/shared';
+import { assertNotSiteLimited } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
@@ -91,6 +92,7 @@ export class TeamsController {
   async create(@Body() body: unknown, @Req() req: Request): Promise<Team> {
     const input = parse(createTeamSchema, body);
     const auth = req.auth!;
+    assertNotSiteLimited(auth);
     const tenantId = auth.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
       if (await tx.team.findUnique({ where: { tenantId_name: { tenantId, name: input.name } } })) {
@@ -122,6 +124,7 @@ export class TeamsController {
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown, @Req() req: Request): Promise<Team> {
     const input = parse(updateTeamSchema, body);
     const auth = req.auth!;
+    assertNotSiteLimited(auth);
     const tenantId = auth.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
       const [before] = await this.load(tx, auth, id, false);
@@ -174,6 +177,7 @@ export class TeamsController {
   @RequirePermission('people.manage')
   async remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request): Promise<void> {
     const auth = req.auth!;
+    assertNotSiteLimited(auth);
     const tenantId = auth.membership!.tenantId;
     await withTenant(this.db, tenantId, async (tx) => {
       const team = await tx.team.findFirst({ where: { id, tenantId } });

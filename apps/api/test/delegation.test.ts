@@ -136,6 +136,28 @@ it('keeps invitations with organisation-wide admins', async () => {
   }
 });
 
+it('keeps team changes with organisation-wide admins', async () => {
+  const { cleanup, admin, delegate, member } = await estate();
+  try {
+    const id = await member('technician', null);
+    await delegate
+      .post('/api/teams')
+      .send({ name: 'Night crew', memberIds: [id] })
+      .expect(403);
+    const team = (
+      await admin
+        .post('/api/teams')
+        .send({ name: 'Day crew', memberIds: [id] })
+        .expect(201)
+    ).body;
+    await delegate.patch(`/api/teams/${team.id}`).send({ memberIds: [] }).expect(403);
+    await delegate.delete(`/api/teams/${team.id}`).expect(403);
+    await delegate.get('/api/teams').expect(200);
+  } finally {
+    await cleanup();
+  }
+});
+
 it('keeps another organisation out of the site access list and out of reach', async () => {
   const first = await estate();
   const second = await estate();

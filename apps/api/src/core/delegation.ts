@@ -47,10 +47,14 @@ export async function assertAdministrable(tx: Tx, auth: AuthContext, membershipI
 
 /** Invitations carry no site, so only organisation-wide admins send them. */
 export function assertNotDelegated(auth: AuthContext): void {
-  if (isDelegated(auth)) {
-    throw new ForbiddenException({
-      code: 'delegated_admin_limit',
-      message: 'Invitations are managed by an organisation-wide administrator.',
-    });
-  }
+  if (isDelegated(auth)) throw orgWide('Invitations are managed by an organisation-wide administrator.');
+}
+
+/** Teams carry no site, so someone limited to sites cannot change them (reading is allowed). */
+export function assertNotSiteLimited(auth: AuthContext): void {
+  if (auth.membership!.locationScoped) throw orgWide('Teams are managed by an organisation-wide administrator.');
+}
+
+function orgWide(message: string): ForbiddenException {
+  return new ForbiddenException({ code: 'delegated_admin_limit', message });
 }
