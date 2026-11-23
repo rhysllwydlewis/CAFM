@@ -36,6 +36,11 @@ Written on 23 Nov 2026, the day the three routines (Builder, Reviewer, Steward) 
 | An intermittent CI failure (the database package generating its client twice at once) | A race in the CI setup, not in the change | Passed on one re-run. If it recurs, open an issue. |
 | Setup script failure on the first Steward run | Ubuntu's package mirror timed out | Not yet fixed: needs the script, so apt retries |
 | I told the owner a prompt was old when it had already been updated, and misjudged times more than once | I answered from memory instead of checking | Check the saved state and the clock before stating either |
+| A clean PR (#46) was stuck on "waiting for DeepSource" for hours | DeepSource was never switched on for this repository, so the merge condition could never be met | A merge condition now applies only while its tool is switched on, and the Reviewer says so once in the Review log |
+| Two PRs (#56, #57) signed off and green waited one to two hours each | The Reviewer did not wait for CI after sign-off, merged one PR per run, runs are hourly, and it stopped when the first PR on its list was busy | The Reviewer waits up to 20 minutes for CI and merges in the same run, moves on when a PR is busy, and may merge several clean PRs per run |
+| PR #57 went from merge-ready to conflicting after PR #56 merged first, and would have used up its retries | Every PR edits `docs/PROGRESS.md` and `CHANGELOG.md`, so any two PRs ready together conflict | The Reviewer resolves a tracker-only conflict itself and carries on to the merge. A conflict in a code file goes back to the Builder, which resolves it by reading both sides and returns the PR to review |
+| A red CI run on a ready PR (#51) had no owner | The Builder stopped before its "fix a failing PR" rule because two PRs were waiting, and the Reviewer cannot re-run CI | A ready PR with red checks is waiting on the Builder, not the owner. A setup failure is re-run once, then fixed at the cause |
+| An intermittent typecheck failure ("PrismaClient has no exported member") on two PRs | One CI step regenerated the Prisma client while others were reading it | Fixed at the cause in PR 55 (issue 53). Typecheck waits for the one build that generates the client |
 
 ## 3. Rules these lessons give us
 
@@ -49,13 +54,37 @@ Written on 23 Nov 2026, the day the three routines (Builder, Reviewer, Steward) 
 8. **Check the clock and the saved state before stating them.**
 9. **Whatever reaches `main` gets reviewed.** A tripwire (the Steward) catches anything that skipped the Reviewer.
 10. **Test a platform feature before designing around it.** "Start the Reviewer when a PR is taken out of draft" looked doubtful, so we read the documentation and then tested it on a throwaway PR. It works, and so do labels and pushes. See "How each routine starts" in the playbook.
+11. **Every condition in a loop must be satisfiable.** Check each merge condition against the real world, not the design. DeepSource looked like a safety check and was a dead end, because it was never switched on.
+12. **Measure idle time, not just work.** The loop was built to be safe, and was slow in the gaps: waiting for the next hourly run, one merge per run, a busy PR blocking a ready one. Time from "done" to "merged" is the number to watch.
+13. **Give every conflict an owner.** Files every PR touches (the tracker and changelog) will conflict. Say who resolves it, and keep mechanical conflicts away from full re-reviews.
+14. **Keep two independent reviewers.** The Codex bot found real problems the first Reviewer pass missed (a teams list that ignored a role's data scope, a double-tap that queued a sign-off twice), and the Reviewer's job of verifying each finding kept it honest. Neither alone is enough.
+15. **A cancelled run is not a red one.** When two merges land minutes apart, GitHub cancels the first CI run on `main`. "Main is green" means the newest run that finished.
 
-## 4. Still open
+## 4. What the first evening of running showed (23 Nov 2026)
+
+Measured from the repository after about eleven hours of the loop running, five of them with the final prompts.
+
+| Measure | Result |
+|---|---|
+| Loop PRs merged | 11 (mobile app complete, saved views API and view bar, admin console users, roles and teams) |
+| Time from PR opened to merged | About 3 hours for the first PRs, 26 to 57 minutes for the last six. The one outlier (3 hours) was a conflict |
+| Real defects found by review before merge | A previous person's jobs staying on a shared phone, a teams list ignoring a role's data scope, a sign-off queued twice by a double tap, a deactivated team member who could not be removed, an admin layout that blocked read-only roles |
+| Builder runs that found nothing to do | Exit in about 20 seconds, so the two-hour schedule costs little when work is waiting on review |
+| CI failures that were not the change | 2 (the Prisma race), fixed at the cause |
+| Main CI runs cancelled by back-to-back merges | 2 (the later run covers them) |
+
+What this says: the loop works and the independent review is catching real problems. The remaining waste was in the gaps between steps, which is what rules 12 and 13 are about.
+
+## 5. Still open
 
 - **Branch protection on `main`** requiring the main checks to pass. The one control that can't be talked around. Owner setting.
 - **The environment setup script** needs a retry for `apt`, so a mirror outage can't stop every routine.
 - **Tool-level limits on the Reviewer's Railway and DeepSource connectors** (read-only). Owner setting, if the connector settings allow it.
-- **The first real Reviewer review and merge** (PR #46), then the first real usage-limit cut-off and takeover.
+- **The first real usage-limit cut-off and takeover.** Not seen yet: every run so far has finished.
+- **Stale Phase 0 issues.** Issues 9 to 21 are left from the abandoned 45-agent plan, and four of them carry `priority:now`. The Builder takes any open `priority:now` issue first, so one of them could pull it back to finished Phase 0 work. They should be closed by the owner.
+- **Branch protection is more urgent now.** About a dozen merges have gone to `main` and the live demo without a person in the loop. Every merge shows the owner as the merger, because the routines run as the owner, so GitHub cannot tell an agent's merge from the owner's. Required status checks are the one control that does not depend on any prompt.
+- **Seeding the live demo.** New permissions (share views) and demo teams need `pnpm db:seed` once on an existing database.
+- **A second Steward run.** One digest a day is thin when about ten PRs merge in five hours. An evening run costs little.
 - **The Steward's first morning push** on 24 Nov at 07:45.
 - **Cadence and usage.** A Builder run costs about $1.2 to $1.4 of usage at list price. At every 2 hours that is a lot of the owner's allowance. Decide whether to slow it down.
 - **Owner-only items** are skipped by the Builder: P1-13, P2A-12, the penetration test in P4-14, P5-12 and the live Stripe switch-over in P5-01. They are listed under "Waiting on the product owner" in `docs/PROGRESS.md`.
