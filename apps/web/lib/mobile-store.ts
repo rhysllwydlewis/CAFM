@@ -111,10 +111,10 @@ export async function enqueue(
   if (extra.image) record.image = extra.image;
   await run(['outbox'], 'readwrite', (tx) => {
     const store = tx.objectStore('outbox');
-    const last = store.openCursor(null, 'prev');
-    last.onsuccess = () => {
-      record.seq = (last.result?.value as OutboxRecord | undefined)?.seq ?? 0;
-      record.seq += 1;
+    // The key is a random id, so the highest sequence number is found by reading them, not by key order.
+    const all = store.getAll();
+    all.onsuccess = () => {
+      record.seq = Math.max(0, ...(all.result as OutboxRecord[]).map((row) => row.seq)) + 1;
       store.put(record);
     };
   });

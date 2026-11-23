@@ -26,6 +26,13 @@ export function useJob(id: string) {
     void reload();
   }, [reload]);
 
+  // Signal came back while this screen is open: send what is waiting, then show what is left.
+  useEffect(() => {
+    const onOnline = () => void flushOutbox().then(reload);
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [reload]);
+
   const status = useMemo(() => (job ? localStatus(job, queue) : null), [job, queue]);
   const checklists = useMemo(() => (job ? localChecklists(job, queue) : []), [job, queue]);
 
