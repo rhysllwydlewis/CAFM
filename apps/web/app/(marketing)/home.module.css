@@ -132,7 +132,20 @@
 .canvas[data-ready='true'] {
   opacity: 1;
 }
-.film[data-gl='off'] .canvas {
+.film[data-gl='off'] :is(.canvas, .predawn) {
+  display: none;
+}
+/* 05:00 before the film draws: the dawn frame, darkened as the film shows it */
+.predawn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 42% 56%;
+  filter: brightness(0.32);
+}
+.daylight {
   display: none;
 }
 .shade {
@@ -141,6 +154,7 @@
   pointer-events: none;
   background:
     radial-gradient(75% 65% at 0% 100%, rgb(12 16 22 / 0.62), rgb(12 16 22 / 0) 70%),
+    radial-gradient(55% 60% at 100% 100%, rgb(12 16 22 / 0.55), rgb(12 16 22 / 0) 72%),
     linear-gradient(
       180deg,
       rgb(12 16 22 / 0.55) 0%,
@@ -212,8 +226,7 @@
     transform 1.2s var(--ease) 0.45s;
 }
 /* Without the film running (no JavaScript), only the opening words show. */
-.film:not([data-film='on']) .caption:not([data-caption='0']),
-.film:not([data-film='on']) .pin {
+.film:not([data-film='on']) :is(.caption, .pin, .log, .corner, .ruler) {
   display: none;
 }
 .film[data-film='on'] .caption:not([data-state='on']) .line > span {
@@ -270,64 +283,181 @@
   opacity: 1;
 }
 
-.counter {
+/* The day: the opening words, the clock, and what happened when */
+.intro {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter-end);
+  top: clamp(110px, 17vh, 180px);
+  pointer-events: none;
+  transition:
+    opacity 0.8s var(--ease),
+    transform 1s var(--ease);
+}
+.intro h1 {
+  margin: 0;
+  font-size: clamp(42px, 6.2vw, 112px);
+  font-weight: 250;
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+}
+.intro em {
+  display: block;
+  font-style: italic;
+  font-weight: 200;
+}
+.lede {
+  max-width: 44ch;
+  margin: 22px 0 0;
+  color: var(--ink-muted);
+  font-size: clamp(16px, 1.2vw, 18px);
+  line-height: 1.55;
+}
+.intro[data-state='gone'] {
+  opacity: 0;
+  transform: translateY(-16px);
+}
+.clock {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(40px, 9vh, 96px);
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease);
+}
+.time {
+  margin: 0;
+  font: 300 clamp(52px, 8.6vw, 152px) / 0.85 var(--font-mono);
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+}
+.where {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 18px 0 0;
+  color: var(--ink-muted);
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.where::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--petrol-300);
+}
+.log {
   position: absolute;
   right: var(--gutter-end);
   bottom: clamp(40px, 9vh, 96px);
-  display: flex;
-  align-items: center;
+  display: grid;
+  width: min(380px, 40vw);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease);
+}
+.event {
+  display: grid;
+  grid-template-columns: 52px 1fr;
   gap: 14px;
-  color: var(--ink-faint);
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.14em;
+  align-items: baseline;
+  padding: 11px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 14px;
+  line-height: 1.35;
 }
-.counter b {
-  color: var(--ink);
-  font-weight: 500;
-}
-.counter i {
-  position: relative;
-  width: 64px;
-  height: 1px;
-  background: var(--rule);
-  overflow: hidden;
-}
-.counter i::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--ink);
-  transform-origin: left;
-  transform: scaleX(var(--progress, 0));
-}
-.film:not([data-film='on']) .counter,
-.film:not([data-film='on']) .cue {
+.film[data-film='on'] .event[data-state='off'] {
   display: none;
 }
-.cue {
+.film[data-film='on'] .event[data-state='on'] {
+  animation: arrive 0.7s var(--ease);
+}
+.event[data-state='past'] {
+  opacity: 0.38;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.event time {
+  color: var(--petrol-300);
+  font: 500 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.event small {
+  display: block;
+  color: var(--ink-faint);
+  font: 500 10px/1.6 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.event small.risk {
+  color: var(--amber-500);
+}
+.corner {
   position: absolute;
-  left: 50%;
-  bottom: 28px;
-  width: 1px;
-  height: 46px;
-  overflow: hidden;
-  background: var(--rule);
+  right: var(--gutter-end);
+  bottom: clamp(48px, 10vh, 104px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font: 500 14px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease);
+}
+.corner::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--petrol-300);
+  box-shadow: 0 0 12px rgb(120 188 198 / 0.9);
+}
+.ruler {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter-end);
+  bottom: 22px;
+  height: 14px;
+  pointer-events: none;
   transition: opacity 0.6s;
 }
-.cue::after {
-  content: '';
+.ruler i {
   position: absolute;
-  left: 0;
-  top: -40%;
+  bottom: 0;
   width: 1px;
-  height: 40%;
-  background: var(--ink);
-  animation: cue 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  height: 5px;
+  background: var(--rule);
 }
-@keyframes cue {
-  to {
-    top: 100%;
-  }
+.ruler i.hour {
+  height: 9px;
+  background: var(--ink-faint);
+}
+.ruler b {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 14px;
+  background: var(--ink);
+}
+.ruler span {
+  position: absolute;
+  bottom: 16px;
+  color: var(--ink-faint);
+  font: 500 9px var(--font-mono);
+  letter-spacing: 0.1em;
+  transform: translateX(-50%);
+}
+.pin.fixed b {
+  color: var(--green-500);
 }
 
 /* Where the window's light lands */
@@ -386,21 +516,38 @@
   .final h2 {
     font-size: clamp(40px, 13vw, 70px);
   }
-  .counter {
-    top: calc(env(safe-area-inset-top, 0px) + 76px);
-    bottom: auto;
+  .intro {
+    top: calc(env(safe-area-inset-top, 0px) + 88px);
   }
-  .cue {
+  .lede {
+    font-size: 15px;
+  }
+  .log {
+    left: var(--gutter);
+    right: var(--gutter-end);
+    top: calc(env(safe-area-inset-top, 0px) + 84px);
+    bottom: auto;
+    width: auto;
+  }
+  .event[data-state='past'] {
     display: none;
+  }
+  .clock {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 52px);
+  }
+  .corner {
+    top: calc(env(safe-area-inset-top, 0px) + 80px);
+    bottom: auto;
   }
   .actions :global(.btn) {
     flex: 1 1 auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cue::after {
+  .film[data-film='on'] .event[data-state='on'] {
     animation: none;
   }
+  .intro,
   .line > span,
   .meta,
   .actions,
