@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). P1-06d done (PWA shell, offline jobs, My jobs and job detail, in review). Next P1-06e: checklists, photos and signatures captured offline, using the mutation queue, and the complete and sync screens. |
+| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). P1-06d done (PWA shell, offline jobs, My jobs and job detail, in review). P1-06e batch in progress on `claude/build-p1-06-offline-capture`: checklists, photos and signatures captured offline, using the mutation queue, and the complete and sync screens. |
 
 ## Phase checklists
 
