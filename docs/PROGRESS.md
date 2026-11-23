@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1: P1-09a admin overview and users API and screens (users, invites, deactivate, roles). Branch claude/build-p1-09-admin-users |
+| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) built, in review. Next: P1-09b roles matrix, teams, scopes and delegated admin. Branch claude/build-p1-09-admin-users |
 
 ## Phase checklists
 
@@ -126,6 +126,12 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
+  - [x] **P1-09a** Admin console shell, overview (licences, seats, changes, setup checklist) and Users and licences (invite, withdraw, change role, deactivate). ([guide](admin.md))
+  - [ ] **P1-09b** Roles matrix screen, teams, scopes and delegated admin.
+  - [ ] **P1-09c** Impersonation ("view as user"), modules on and off, terminology.
+  - [ ] **P1-09d** Branding, custom fields, statuses, SLA and calendars, categories screens.
+  - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
+  - [ ] **P1-09f** Username-only accounts.
 - [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
 - [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.
 - [ ] **P1-12** MFA (TOTP).
