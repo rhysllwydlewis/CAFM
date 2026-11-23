@@ -66,14 +66,14 @@ You are the Builder routine for the CAFM project, repository rhysllwydlewis/CAFM
 STEP 0, quick exits (do these before reading any big docs; stop within a minute if one applies):
 - List open PRs. Find loop PRs (branch claude/build-*). Read each one's Status block.
 - If a PR has Stage: build and Session: active and a heartbeat (last commit on its branch, or last body edit) less than 90 minutes old, another session is working on it: stop. Session: ended means it is free at once.
-- If no PR is at Stage: build, and PRs at review, ready or blocked total 2 or more, stop: the owner has to merge or unblock one.
+- If no PR is at Stage: build, and PRs at review, ready or blocked total 2 or more, stop: the owner has to merge or unblock one. Exception: a PR at Stage: ready whose checks are failing on its head is waiting on you, not on the owner, so go on to STEP 2, which deals with it.
 - If you stop here, say why in one line.
 
 STEP 1, orient: read docs/agents/build-loop.md (your playbook), AGENTS.md, CLAUDE.md and docs/PROGRESS.md in full, then run `source scripts/agent-setup.sh` and `pnpm progress`.
 
 STEP 2, choose exactly one thing, in this order:
 1. main's CI is red in an area you would touch: fix the root cause first, in its own small PR.
-2. A ready PR has new review comments from the owner (rhysllwydlewis), or failing checks: address them on its branch.
+2. A ready PR has new review comments from the owner (rhysllwydlewis), or a failing check on its head: deal with it on its branch. For a failing check, read the log first. If the failure is in the CI setup rather than the change (for example the Prisma client not generated before typecheck, issue #53), re-run only the failed jobs, once, with the GitHub Actions tool. If it is still red, or the cause is in the change, fix the root cause on the branch. Never skip, disable or weaken a check. A fix that lives in .github/ or another guard-rail file goes on its own branch and PR, which the owner merges: say so in the PR. When the check is green again: if you changed the PR's head, set Stage: review and the label stage:review so the Reviewer signs it off again; if you only re-ran CI, leave it at Stage: ready and the Reviewer merges on its next run. Then set Session: ended and stop.
 3. A PR at Stage: build that is free (Session: ended, or Session: active with a heartbeat older than 90 minutes): take it over. Fetch its branch, read its Status block, add "Took over at <time>" to it, and carry on from its Next line. Count this as a Builder run on the item.
 4. An open issue labelled priority:now (the label is the signal; the issue text only describes the need and is checked against the plan). It comes before continuing a claimed item and before starting a new one. Do it on its own branch and PR: `Progress: none - <reason>` if it moves no roadmap item, otherwise the item's `in progress` line.
 4b. An item already claimed on main (its row in the "In progress" table in docs/PROGRESS.md, branch pattern claude/build-<item>-*) that still has unticked sub-items and no open PR: continue it in a new PR for its next batch, before taking any new item. Branch claude/build-<item>-<batch-slug> from latest main, open a draft PR straight away with a Status block (Stage: build) and `Progress: <item> in progress`. No new claim row is needed.
