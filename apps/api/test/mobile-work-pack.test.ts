@@ -85,6 +85,48 @@ describe('mobile work pack', () => {
     }
   });
 
+  it('sends the meters of the job’s asset, and none to a technician in another organisation (cross-tenant)', async () => {
+    const one = await fixture();
+    const two = await fixture();
+    try {
+      const asset = (await one.manager.post('/api/assets').send({ locationId: one.site.id, name: 'Pump' }).expect(201))
+        .body;
+      const meter = (
+        await one.manager
+          .post(`/api/assets/${asset.id}/operations/meters`)
+          .send({ name: 'Run hours', unit: 'h', rolloverAt: '1000' })
+          .expect(201)
+      ).body;
+      const created = (
+        await one.manager
+          .post('/api/work-orders')
+          .send({
+            submissionId: randomUUID(),
+            title: 'Read the pump',
+            description: 'Record the run hours.',
+            locationId: one.site.id,
+            assetId: asset.id,
+            impact: 2,
+            urgency: 2,
+          })
+          .expect(201)
+      ).body;
+      await one.manager
+        .post(`/api/work-orders/${created.id}/assign`)
+        .send({ version: 1, assigneeId: one.accounts.tech.memberships[0] })
+        .expect(201);
+      const pack = (await one.tech.get('/api/mobile/work-pack').expect(200)).body;
+      expect(pack.jobs[0].assetDetail.meters).toEqual([
+        { id: meter.id, name: 'Run hours', unit: 'h', rolloverAt: '1000' },
+      ]);
+      const other = (await two.tech.get('/api/mobile/work-pack').expect(200)).body;
+      expect(JSON.stringify(other)).not.toContain(meter.id);
+    } finally {
+      await one.cleanup();
+      await two.cleanup();
+    }
+  });
+
   it('sends only what changed since the token, and the ids still held', async () => {
     const { cleanup, accounts, tech, manager, job } = await fixture();
     try {
