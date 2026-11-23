@@ -176,3 +176,54 @@ test('a technician scans an asset and records a meter reading without signal', a
   await page.getByRole('button', { name: 'Try sync now' }).click();
   await expect(page.getByText('Waiting to sync (0)')).toBeVisible();
 });
+
+test('a technician raises a quick job from a scan, and sees recent scans, without signal', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/login');
+  await page.getByLabel('Email or username').fill('technician@demo.example');
+  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/m');
+  await expect(page.getByText(/^Synced/)).toBeVisible();
+  await page.locator('[data-offline-ready="true"]').waitFor();
+  await page.goto('/m/scan');
+  await context.setOffline(true);
+
+  await page.getByLabel('Asset or job number').fill('WO-10412');
+  await page.getByRole('button', { name: 'Look up' }).click();
+  await expect(page.getByRole('heading', { level: 2, name: 'Recent scans' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /WO-10412/ })).toBeVisible();
+  await assertAccessible(page);
+
+  // A scanned job has no asset card, so look up its asset through the recent list's other entry: scan the asset.
+  await page
+    .getByRole('link', { name: /Open job|WO-10412/ })
+    .first()
+    .click();
+  const assetNumber = (
+    await page
+      .getByText(/Boiler 2 · AST-/)
+      .first()
+      .innerText()
+  )
+    .split('· ')[1]!
+    .trim();
+  await page.goto('/m/scan');
+  await page.getByLabel('Asset or job number').fill(assetNumber);
+  await page.getByRole('button', { name: 'Look up' }).click();
+  await page.getByRole('button', { name: 'Raise a job' }).click();
+  await page.getByRole('button', { name: 'Raise job' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Enter a title' })).toBeVisible();
+  await page.getByLabel('What needs doing').fill('Loose guard on the burner');
+  await page.getByLabel('What you found').fill('The guard rattles when the burner starts.');
+  await assertAccessible(page);
+  await page.getByRole('button', { name: 'Raise job' }).click();
+  await expect(page.getByText('Job saved on this phone')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Sync', exact: true }).click();
+  await expect(page.getByText('Waiting to sync (1)')).toBeVisible();
+  await expect(page.getByText('New job: Loose guard on the burner')).toBeVisible();
+});
