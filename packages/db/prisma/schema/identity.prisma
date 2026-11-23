@@ -72,6 +72,8 @@ model Account {
   memberships     Membership[]
   sessions        Session[]
   passwordResets  PasswordReset[]
+  mobileDevices   MobileDevice[]
+  oauthCodes      OauthCode[]
 
   @@map("account")
 }
@@ -91,6 +93,8 @@ model Membership {
   tenant               Tenant                   @relation(fields: [tenantId], references: [id])
   account              Account                  @relation(fields: [accountId], references: [id])
   sessions             Session[]
+  mobileDevices        MobileDevice[]
+  oauthCodes           OauthCode[]
   sites                MembershipSite[]
   requestTypes         RequestType[]            @relation("RequestTypeAssignee")
   ownRequests          ServiceRequest[]         @relation("RequestOwner")
@@ -116,20 +120,65 @@ model Membership {
 
 /// A signed-in browser session. Only the SHA-256 of the token is stored.
 model Session {
-  id           String      @id @default(uuid(7)) @db.Uuid
-  tokenHash    String      @unique @map("token_hash")
-  accountId    String      @map("account_id") @db.Uuid
-  membershipId String?     @map("membership_id") @db.Uuid
-  tenantId     String?     @map("tenant_id") @db.Uuid
-  expiresAt    DateTime    @map("expires_at") @db.Timestamptz(3)
+  id           String        @id @default(uuid(7)) @db.Uuid
+  tokenHash    String        @unique @map("token_hash")
+  accountId    String        @map("account_id") @db.Uuid
+  membershipId String?       @map("membership_id") @db.Uuid
+  tenantId     String?       @map("tenant_id") @db.Uuid
+  /// Set for a mobile access token (P1-06a): the signed-in device it belongs to.
+  deviceId     String?       @map("device_id") @db.Uuid
+  expiresAt    DateTime      @map("expires_at") @db.Timestamptz(3)
   ip           String?
-  userAgent    String?     @map("user_agent")
-  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  account      Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  membership   Membership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  userAgent    String?       @map("user_agent")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  membership   Membership?   @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  device       MobileDevice? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@index([accountId])
+  @@index([deviceId])
   @@map("session")
+}
+
+/// A phone or tablet signed in to the mobile PWA by OAuth 2.0 + PKCE (P1-06a).
+/// Global like sessions (ADR 0004): it names the membership, not a tenant.
+/// The refresh token rotates on every use; the previous hash is kept so a
+/// replayed (stolen) token revokes the device.
+model MobileDevice {
+  id               String     @id @default(uuid(7)) @db.Uuid
+  accountId        String     @map("account_id") @db.Uuid
+  membershipId     String     @map("membership_id") @db.Uuid
+  name             String
+  refreshHash      String     @unique @map("refresh_hash")
+  previousHash     String?    @map("previous_hash")
+  refreshExpiresAt DateTime   @map("refresh_expires_at") @db.Timestamptz(3)
+  lastSeenAt       DateTime   @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  lastIp           String?    @map("last_ip")
+  revokedAt        DateTime?  @map("revoked_at") @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  account          Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  membership       Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  sessions         Session[]
+
+  @@index([accountId])
+  @@index([previousHash])
+  @@map("mobile_device")
+}
+
+/// A one-use PKCE authorisation code, valid for 60 seconds.
+model OauthCode {
+  id            String     @id @default(uuid(7)) @db.Uuid
+  codeHash      String     @unique @map("code_hash")
+  codeChallenge String     @map("code_challenge")
+  accountId     String     @map("account_id") @db.Uuid
+  membershipId  String     @map("membership_id") @db.Uuid
+  deviceName    String     @map("device_name")
+  expiresAt     DateTime   @map("expires_at") @db.Timestamptz(3)
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  account       Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  membership    Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@map("oauth_code")
 }
 
 /// Sign-in audit trail (success, failure, lockout, sign-out). No passwords, ever.

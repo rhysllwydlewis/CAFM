@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | Start with P1-06a: OAuth 2.0 + PKCE access and refresh tokens for mobile clients (ADR 0004, doc 04). |
+| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a done (OAuth + PKCE, docs/mobile.md). Next P1-06b: offline work pack and delta sync API. |
 
 ## Phase checklists
 
@@ -117,7 +117,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-05b** PPM schedules (calendar and meter-based, fixed or floating) on assets, and the generator that raises PPM work orders ahead of the due date, each with the task's checklist. ([guide](ppm.md#schedules))
   - [x] **P1-05c** 52-week planner, forecast and overdue screens, the schedule and task library screens, and the compliance KPI (`ppm-01-planner`, `ppm-02-schedule`). ([guide](ppm.md#screens))
 - [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
-  - [ ] **P1-06a** OAuth 2.0 + PKCE access and refresh tokens for the mobile PWA, with device list and revoke.
+  - [x] **P1-06a** OAuth 2.0 + PKCE access and refresh tokens for the mobile PWA, with device list and revoke.
   - [ ] **P1-06b** Offline work pack and delta sync API (my jobs, assets, checklists, locations; sync tokens).
   - [ ] **P1-06c** Mutation queue API with idempotency keys and conflict handling (status, notes, time, checklist, meter reading).
   - [ ] **P1-06d** PWA shell: manifest, service worker, IndexedDB store, offline banner, and My jobs and job detail screens (`mobile-01-technician-jobs`).
