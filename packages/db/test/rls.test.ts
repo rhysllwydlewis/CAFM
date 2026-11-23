@@ -883,3 +883,37 @@ it('isolates teams and their members, and rejects a cross-tenant member', async 
     }),
   ).rejects.toThrow(/Foreign key constraint/);
 });
+
+it('isolates saved list views and refuses a view owned by another organisation’s member', async () => {
+  expect(await db.savedView.count()).toBe(0);
+  const config = { layout: 'list', filters: {}, sort: null, group: null, columns: [] };
+  const demoMember = await withTenant(db, demo, (tx) => tx.membership.findFirstOrThrow({ select: { id: true } }));
+  const name = `rls-${randomUUID()}`;
+  const view = (tenantId: string, ownerId: string, entity = 'assets', visibility = 'private') =>
+    withTenant(db, tenantId, (tx) =>
+      tx.savedView.create({ data: { tenantId, ownerId, entity, name, visibility, config } }),
+    );
+  const created = await view(demo, demoMember.id);
+  try {
+    // Another organisation sees nothing, can't change it, and can't write one into the demo organisation.
+    expect(await withTenant(db, starter, (tx) => tx.savedView.count({ where: { name } }))).toBe(0);
+    expect(
+      await withTenant(db, starter, (tx) =>
+        tx.savedView.updateMany({ where: { id: created.id }, data: { name: 'x' } }),
+      ),
+    ).toEqual({ count: 0 });
+    expect(await withTenant(db, starter, (tx) => tx.savedView.deleteMany({ where: { id: created.id } }))).toEqual({
+      count: 0,
+    });
+    await expect(view(starter, demoMember.id)).rejects.toThrow(/Foreign key constraint/);
+    await expect(
+      withTenant(db, starter, (tx) =>
+        tx.savedView.create({ data: { tenantId: demo, ownerId: demoMember.id, entity: 'assets', name: 'z', config } }),
+      ),
+    ).rejects.toThrow(/row-level security/);
+    // One name per owner and list.
+    await expect(view(demo, demoMember.id)).rejects.toThrow(/Unique constraint/);
+  } finally {
+    await withTenant(db, demo, (tx) => tx.savedView.deleteMany({ where: { id: created.id } }));
+  }
+});

@@ -54,6 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
+| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). Next batch: P1-08b, the view bar and column chooser on the work order, asset, request and PPM lists, then bulk actions (P1-08c), then kanban and calendar (P1-08d). |
 | P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batch 2 (roles matrix screen and teams) built, in review. Next: scopes by site or team and delegated admin (rest of P1-09b), then P1-09c |
 
 ## Phase checklists
@@ -125,6 +126,10 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-06f** QR scan to open an asset or job, accept or reject, and quick job or meter reading capture.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
+  - [x] **P1-08a** Saved views: data model with RLS, shared or private, and the API with audit. ([guide](views.md))
+  - [ ] **P1-08b** View bar on the work order, asset, request and PPM lists: filters, sort, group, column chooser, saved and shared views.
+  - [ ] **P1-08c** Bulk selection and bulk actions (assign, status, priority) with per-row results.
+  - [ ] **P1-08d** Kanban and calendar layouts.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
   - [x] **P1-09a** Admin console shell, overview (licences, seats, changes, setup checklist) and Users and licences (invite, withdraw, change role, deactivate). ([guide](admin.md))
   - [ ] **P1-09b** Roles matrix screen, teams, scopes and delegated admin.

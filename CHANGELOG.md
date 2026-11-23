@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Saved list views (API): keep your own filters, sort, grouping and columns for work orders, assets, requests and planned maintenance, and share a view with the whole organisation if you are allowed to. The screens follow. See [Saved list views](docs/views.md).
 - Administration console, first part: an overview with licence use, recent changes and a setup checklist, and a Users and licences screen to invite people, withdraw invitations, change roles and deactivate or reactivate people. See [Administration](docs/admin.md).
 
 - Administration console, second part: a Roles and permissions screen with a permission checkbox matrix (create, duplicate, edit and delete roles), and a Teams screen to create teams and choose who is in them. See [Administration](docs/admin.md).
