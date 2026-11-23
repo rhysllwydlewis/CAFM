@@ -343,6 +343,48 @@ describe('mobile mutation queue', () => {
     }
   });
 
+  it('raises a quick job once, only for someone who may create jobs, and only at their own organisation’s locations (cross-tenant)', async () => {
+    const one = await fixture();
+    const two = await fixture();
+    try {
+      const make = (locationId: string) => ({
+        key: randomUUID(),
+        kind: 'quick_job',
+        payload: {
+          submissionId: randomUUID(),
+          title: 'Loose handrail',
+          description: 'Found while scanning the asset.',
+          locationId,
+          impact: 1,
+          urgency: 1,
+        },
+      });
+      const job = make(one.site.id);
+      const first = await post(one.manager, job);
+      expect(first.body.results[0]!.status).toBe('applied');
+      expect((await post(one.manager, job)).body.results[0]).toMatchObject({ status: 'applied', replayed: true });
+      const count = (tenantId: string, locationId: string) =>
+        withTenant(db, tenantId, (tx) => tx.workOrder.count({ where: { locationId, title: 'Loose handrail' } }));
+      expect(await count(one.tenant.id, one.site.id)).toBe(1);
+
+      // A technician has no create right by default, so the change is refused and nothing is made.
+      const refused = make(one.site.id);
+      expect((await post(one.tech, refused)).body.results[0]).toMatchObject({ status: 'rejected', code: 'forbidden' });
+      expect(await count(one.tenant.id, one.site.id)).toBe(1);
+
+      // Another organisation's location is not found, and nothing is made there.
+      const foreign = make(two.site.id);
+      expect((await post(one.manager, foreign)).body.results[0]).toMatchObject({
+        status: 'rejected',
+        code: 'not_found',
+      });
+      expect(await count(two.tenant.id, two.site.id)).toBe(0);
+    } finally {
+      await one.cleanup();
+      await two.cleanup();
+    }
+  });
+
   it('cannot change another organisation’s job or another technician’s, and checks the batch (cross-tenant)', async () => {
     const one = await fixture();
     const two = await fixture();

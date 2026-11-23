@@ -142,6 +142,9 @@ export class MobileMutations {
         return this.checklists.answer(req, item.workOrderId, item.checklistId, item.itemId, item.payload);
       case 'meter_reading':
         return this.assets.recordReading(req, item.assetId, item.meterId, item.payload);
+      case 'quick_job':
+        // Same endpoint, permission (`work_orders.edit`), location scope and audit as the website's New job.
+        return this.jobs.create(req, item.payload);
     }
   }
 }
