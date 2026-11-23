@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Saved list views (API): keep your own filters, sort, grouping and columns for work orders, assets, requests and planned maintenance, and share a view with the whole organisation if you are allowed to. The screens follow. See [Saved list views](docs/views.md).
+
 - Offline checklists, photos and signatures in the technician app: answer checklist steps, add photos, start and complete a job and take the customer's signature with no signal. Everything is saved on the phone and sent in order when signal returns, and the new Sync tab shows what is waiting and anything the server refused. See [Mobile app](docs/mobile.md#working-offline).
 
 - Technician app shell: open `/m` on a phone and add it to the home screen. It lists your jobs with priority, location and how long is left to fix, shows a job's location, access notes, asset and description, and keeps working without signal. The jobs are saved on the phone, refreshed when there is signal, and removed when you sign out. See [Mobile app](docs/mobile.md#the-app-shell).

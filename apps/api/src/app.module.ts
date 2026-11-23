@@ -12,6 +12,7 @@ import { HelpdeskModule } from './modules/helpdesk/helpdesk.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { MobileModule } from './modules/mobile/mobile.module';
 import { PpmModule } from './modules/ppm/ppm.module';
+import { ViewsModule } from './modules/views/views.module';
 import { PeopleModule } from './modules/people/people.module';
 import { RolesModule } from './modules/roles/roles.module';
 
@@ -29,6 +30,7 @@ import { RolesModule } from './modules/roles/roles.module';
     WorkOrdersModule,
     MobileModule,
     PpmModule,
+    ViewsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: CsrfGuard }],

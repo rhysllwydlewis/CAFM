@@ -1,0 +1,24 @@
+/// A saved list view: the filters, sort, grouping and columns someone chose on a list screen. Private to its owner, or
+/// shared with the whole organisation by someone allowed to share views.
+model SavedView {
+  id         String     @id @default(uuid(7)) @db.Uuid
+  tenantId   String     @map("tenant_id") @db.Uuid
+  ownerId    String     @map("owner_id") @db.Uuid
+  /// Which list: work_orders, assets, requests or ppm_schedules.
+  entity     String
+  name       String
+  /// private or shared.
+  visibility String     @default("private")
+  /// { layout, filters, sort, group, columns }. Validated by the API with the shared Zod schema.
+  config     Json
+  version    Int        @default(1)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  owner      Membership @relation(fields: [tenantId, ownerId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, ownerId, entity, name])
+  @@index([tenantId, entity, visibility])
+  @@map("saved_view")
+}

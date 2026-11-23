@@ -55,7 +55,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
 | P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). P1-06d done (PWA shell, offline jobs, My jobs and job detail, in review). P1-06e done (offline outbox, checklist steps, photos, signatures, complete and sync screens; time, parts and root cause on the complete screen are a known gap). Next P1-06f: QR scan to open an asset or job, accept or reject, and quick job or meter reading capture. |
-| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | Batch 1: read doc 02 list-view features, the existing list screens (work orders, assets, helpdesk) and the shared list components; design the saved view model, API and RLS. |
+| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). Next batch: P1-08b, the view bar and column chooser on the work order, asset, request and PPM lists, then bulk actions (P1-08c), then kanban and calendar (P1-08d). |
 
 ## Phase checklists
 
@@ -126,6 +126,10 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [ ] **P1-06f** QR scan to open an asset or job, accept or reject, and quick job or meter reading capture.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
+  - [x] **P1-08a** Saved views: data model with RLS, shared or private, and the API with audit. ([guide](views.md))
+  - [ ] **P1-08b** View bar on the work order, asset, request and PPM lists: filters, sort, group, column chooser, saved and shared views.
+  - [ ] **P1-08c** Bulk selection and bulk actions (assign, status, priority) with per-row results.
+  - [ ] **P1-08d** Kanban and calendar layouts.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
 - [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
 - [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.
