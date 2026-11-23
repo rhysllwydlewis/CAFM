@@ -148,8 +148,8 @@ export async function flushOutbox(): Promise<FlushResult> {
       const response = await sendOne(record);
       if (response.status === 401) return { ...result, stopped: 'signed_out' };
       if (response.status >= 500 || response.status === 429) return { ...result, stopped: 'unavailable' };
-      // A signature already on the job is the same signature arriving twice.
-      if (response.ok || (record.change.type === 'signature' && response.status === 409)) {
+      // A 409 for a signature is kept as a refusal: the job holds a sign-off, but not necessarily this one.
+      if (response.ok) {
         await removeFromOutbox(record.id);
         result.sent += 1;
       } else {
