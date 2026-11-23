@@ -26,3 +26,13 @@ export function applyMobileChanges(held: MobilePackJob[], changes: MobileChanges
     return job ? [job] : [];
   });
 }
+
+/**
+ * Job ids the server says the person holds that the phone has no job for after a merge. This happens when a
+ * capped list moves an unchanged job into it. The phone then fetches the whole work pack instead of
+ * saving a sync token that would hide the job.
+ */
+export function missingMobileJobIds(held: MobilePackJob[], changes: MobileChanges): string[] {
+  const known = new Set([...held.map((job) => job.id), ...changes.jobs.map((job) => job.id)]);
+  return changes.jobIds.filter((id) => !known.has(id));
+}

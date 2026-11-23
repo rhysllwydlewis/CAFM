@@ -22,15 +22,9 @@ test('a technician sees their jobs, and they stay on the phone without signal', 
   await expect(page.getByText(/^Synced/)).toBeVisible();
   await assertAccessible(page);
 
-  // The service worker must be in control before the shell can be served offline.
-  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.reload();
-  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-
-  await job.click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Boiler 2 losing pressure overnight' })).toBeVisible();
-  await assertAccessible(page);
-  await page.getByRole('link', { name: 'My jobs' }).first().click();
+  // The screens and their scripts are saved in the background. The job screen is not opened online first, so
+  // this proves a screen not visited yet still works offline.
+  await page.locator('[data-offline-ready="true"]').waitFor();
 
   await context.setOffline(true);
   await page.goto('/m');
@@ -38,6 +32,7 @@ test('a technician sees their jobs, and they stay on the phone without signal', 
   await expect(page.getByRole('link', { name: /WO-10412/ })).toBeVisible();
   await page.getByRole('link', { name: /WO-10412/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Boiler 2 losing pressure overnight' })).toBeVisible();
+  await assertAccessible(page);
   await context.setOffline(false);
 });
 
@@ -65,4 +60,25 @@ test('signing out clears the jobs from the phone', async ({ page }) => {
       }),
   );
   expect(held).toBe(0);
+});
+
+test('jobs saved for one person are not shown to the next person on the same browser', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email or username').fill('technician@demo.example');
+  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/m');
+  await expect(page.getByRole('link', { name: /WO-10412/ })).toBeVisible();
+
+  // Someone else signs in on the same browser, without the technician app's own sign out.
+  await page.context().clearCookies();
+  await page.goto('/login');
+  await page.getByLabel('Email or username').fill('requester@demo.example');
+  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/m');
+  await expect(page.getByRole('heading', { level: 1, name: 'My jobs' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /WO-10412/ })).toHaveCount(0);
 });

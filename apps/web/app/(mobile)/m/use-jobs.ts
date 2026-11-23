@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { MobilePackJob } from '@cafm/shared';
-import { clearStore, readJobs, readSync } from '@/lib/mobile-store';
+import { clearIfNotOwner, clearStore, readJobs, readSync } from '@/lib/mobile-store';
+import { useMembershipId } from './mobile-shell';
 import { syncJobs, type SyncResult } from '@/lib/mobile-sync-client';
 
 /** The jobs held on the phone, shown at once, then refreshed from the server when there is signal. */
@@ -11,15 +12,18 @@ export function useJobs() {
   const [syncedAt, setSyncedAt] = useState<string | null>(null);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const owner = useMembershipId();
 
   const load = useCallback(async () => {
+    // Jobs saved for someone else on this browser are removed before anything is shown.
+    await clearIfNotOwner(owner);
     setJobs(await readJobs());
     setSyncedAt((await readSync())?.syncedAt ?? null);
-  }, []);
+  }, [owner]);
 
   const sync = useCallback(async () => {
     setBusy(true);
-    const outcome = await syncJobs();
+    const outcome = await syncJobs(owner);
     setResult(outcome);
     if (outcome === 'signed_out') {
       // The session has ended: don't leave this person's jobs on the phone for whoever signs in next.
@@ -29,7 +33,7 @@ export function useJobs() {
     }
     await load();
     setBusy(false);
-  }, [load]);
+  }, [load, owner]);
 
   useEffect(() => {
     void load().then(sync);

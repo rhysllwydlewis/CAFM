@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyMobileChanges, type MobileChanges, type MobilePackJob } from '@cafm/shared';
+import { applyMobileChanges, missingMobileJobIds, type MobileChanges, type MobilePackJob } from '@cafm/shared';
 
 const job = (id: string, title: string): MobilePackJob => ({ id, title }) as MobilePackJob;
 const changes = (jobs: MobilePackJob[], jobIds: string[]): MobileChanges => ({
@@ -23,5 +23,15 @@ describe('applyMobileChanges', () => {
   it('follows the server order and ignores ids it has no job for', () => {
     const result = applyMobileChanges([job('a', 'a'), job('b', 'b')], changes([], ['b', 'x', 'a']));
     expect(result.map((j) => j.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('missingMobileJobIds', () => {
+  it('lists ids the server holds that neither the phone nor the changes have', () => {
+    expect(missingMobileJobIds([job('a', 'a')], changes([job('b', 'b')], ['a', 'b', 'c']))).toEqual(['c']);
+  });
+
+  it('is empty when every id has a job', () => {
+    expect(missingMobileJobIds([job('a', 'a')], changes([], ['a']))).toEqual([]);
   });
 });

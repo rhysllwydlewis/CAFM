@@ -4,7 +4,8 @@ import type { MobilePackJob } from '@cafm/shared';
 const DB_NAME = 'cafm-mobile';
 const VERSION = 1;
 
-type Meta = { key: 'sync'; syncToken: string; syncedAt: string };
+/** `owner` is the membership the jobs were saved for. Another person never sees them. */
+type Meta = { key: 'sync'; syncToken: string; syncedAt: string; owner: string };
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -40,6 +41,12 @@ function run<T>(
   );
 }
 
+/** Deletes whatever is saved if it belongs to someone else (another person or organisation on this browser). */
+export async function clearIfNotOwner(owner: string): Promise<void> {
+  const held = await readSync();
+  if (held && held.owner !== owner) await clearStore();
+}
+
 export async function readJobs(): Promise<MobilePackJob[]> {
   return ((await run<MobilePackJob[]>(['jobs'], 'readonly', (tx) => tx.objectStore('jobs').getAll())) ?? []).sort(
     (a, b) => a.priority - b.priority || (a.scheduledFor ?? '9').localeCompare(b.scheduledFor ?? '9'),
@@ -55,12 +62,12 @@ export async function readSync(): Promise<Meta | null> {
 }
 
 /** Replaces everything held with these jobs and the new token, in one transaction. */
-export async function writePack(jobs: MobilePackJob[], syncToken: string): Promise<void> {
+export async function writePack(jobs: MobilePackJob[], syncToken: string, owner: string): Promise<void> {
   await run(['jobs', 'meta'], 'readwrite', (tx) => {
     const store = tx.objectStore('jobs');
     store.clear();
     for (const job of jobs) store.put(job);
-    tx.objectStore('meta').put({ key: 'sync', syncToken, syncedAt: new Date().toISOString() } satisfies Meta);
+    tx.objectStore('meta').put({ key: 'sync', syncToken, syncedAt: new Date().toISOString(), owner } satisfies Meta);
   });
 }
 

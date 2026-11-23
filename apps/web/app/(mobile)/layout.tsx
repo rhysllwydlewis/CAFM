@@ -13,6 +13,6 @@ export const viewport: Viewport = { themeColor: '#136B7A', width: 'device-width'
 
 /** Signed-in people only. The page itself holds no job data: that is read from the phone's own store. */
 export default async function MobileLayout({ children }: { children: ReactNode }) {
-  await currentUser('/m');
-  return <MobileShell>{children}</MobileShell>;
+  const user = await currentUser('/m');
+  return <MobileShell membershipId={user.membershipId}>{children}</MobileShell>;
 }
