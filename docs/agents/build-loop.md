@@ -18,7 +18,7 @@ The **Reviewer merges** a PR it has signed off, when the safety conditions in "M
 
 ```
 claimed ──► build ──► review ──► ready ──► merged
-  (draft PR)  (Builder)  (Reviewer, max 2 rounds)  (Reviewer merges)
+  (draft PR)  (Builder: own check, then un-drafts)  (Reviewer: fixes and improves, usually one pass, at most 2)  (Reviewer merges)
                  ▲            │
                  └── back to build only for a must-fix the Reviewer can't do
 ```
@@ -27,8 +27,8 @@ The **stage** is recorded in the PR's `## Status` block (the `Stage: ...` line) 
 
 | Stage | Who works it | Leaves the stage when |
 |---|---|---|
-| `build` | Builder | Every acceptance point and sub-item of the item is built, `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` pass locally, `pnpm build && pnpm e2e` pass for UI work, and the Builder sets `Stage: review`. Or the build cap is hit (see "Nothing runs forever"). |
-| `review` | Reviewer | A round finds nothing left to fix, or round 2 is done. The Reviewer sets `Stage: ready`, takes the PR out of draft, and merges it in the same run if every condition in "Merging" holds. |
+| `build` | Builder | Every acceptance point and sub-item of the item is built, `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` pass locally, `pnpm build && pnpm e2e` pass for UI work, the Builder has done its own check of the batch, takes the PR out of draft (the signal that it is ready for the Reviewer) and sets `Stage: review`. Or the build cap is hit (see "Nothing runs forever"). |
+| `review` | Reviewer | Nothing must-fix is left and the Reviewer's fixes were small, or round 2 is done. The Reviewer sets `Stage: ready` and merges it in the same run if every condition in "Merging" holds. |
 | `ready` | Product owner | Only a PR the Reviewer did not merge ("Not merged because:" in its body) stays here. The owner decides. Builder, Reviewer and Steward leave it alone except to keep it mergeable (Steward) or answer owner comments (Builder). |
 
 ### The PR Status block
@@ -107,7 +107,7 @@ The Reviewer is a different session from the Builder, so it has no attachment to
 
 For each finding, the Reviewer **fixes it in the PR** (a focused commit per theme) or, if it's genuinely out of scope, opens a follow-up issue and lists it. It records each round in the PR body under `## Review log`: round number, what it found, what it fixed, what it deferred and why.
 
-A round that finds **no must-fix** ends the review. Otherwise it fixes and the next round (a later firing, so with fresh eyes) re-checks. After round 2 the PR is `ready` either way. `Review rounds done` counts finished rounds, so the round a session is running is that number plus one.
+**One pass is usually enough.** The Reviewer reviews, fixes and improves, re-runs every check, and signs off in the same pass when nothing must-fix is left and its fixes were small (no change to security, permissions, database migrations or money, and under about 200 changed lines). If its fixes were large or touched those areas, a second round (a later firing, so with fresh eyes) re-checks them. After round 2 the PR is `ready` either way. `Review rounds done` counts finished rounds, so the round a session is running is that number plus one.
 
 If the item turns out not to meet the Definition of Done and the gap can't be fixed in the PR, the Reviewer says so honestly: it un-ticks the item (or ticks only the finished sub-items), corrects the counts with `node scripts/progress.mjs check`, changes the `Progress:` line to match, and lists the gap under "Known gaps" with a follow-up issue. A tick must always be true.
 
@@ -152,6 +152,8 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 **What the Reviewer may use.** The Railway and DeepSource connectors. Railway is read-only (deployment status, diagnosis, logs). Nothing but the merge changes production. DeepSource findings are information to verify. The Reviewer never alters DeepSource settings, ignore rules or thresholds.
 
 The merge uses the PR title, is pinned to the exact head commit the Reviewer checked, and is one PR per run. The Reviewer never merges an "Approve Phase N" PR, a Steward docs PR, or any PR it didn't review. If a condition fails, the PR stays at `ready` with a "Not merged because:" line, and the owner decides.
+
+**Unreviewed merges.** If a PR reaches `main` without a Reviewer pass (the owner merged it, or a check was missed), the Steward notices at its next run and opens a `priority:now` issue ("Review merged PR #N and fix what it finds"), so the Builder reviews the merged code first. Nothing stays unreviewed for long, whoever merged it.
 
 **Undoing a bad merge.** Squash merges are one commit, so a revert PR undoes them. If `main` goes red after a merge, the Builder fixes or reverts it first (its first priority), and the Steward reports it.
 
