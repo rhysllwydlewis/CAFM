@@ -23,6 +23,9 @@
       "outputs": ["dist/**"],
       "cache": false
     },
+    "@cafm/db#typecheck": {
+      "dependsOn": ["^build", "build"]
+    },
     "@cafm/db#test": {
       "dependsOn": ["build"],
       "cache": false
