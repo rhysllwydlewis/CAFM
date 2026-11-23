@@ -395,6 +395,21 @@ it('lists the jobs a person may see, filtered and in pages, with counts for the 
     expect(rest.items.map(({ id }: { id: string }) => id)).toEqual([first.id]);
     expect(rest.nextCursor).toBeNull();
     expect(rest.counts).toBeUndefined();
+    // Sorting by title pages through every job once, in either direction, and rejects unknown columns.
+    const byTitle = async (dir: string) => {
+      const seen: string[] = [];
+      let cursor = '';
+      do {
+        const body = (await manager.get(jobs + '?view=all&sort=title&dir=' + dir + '&limit=2' + cursor).expect(200))
+          .body;
+        seen.push(...body.items.map(({ title }: { title: string }) => title));
+        cursor = body.nextCursor ? '&cursor=' + body.nextCursor : '';
+      } while (cursor);
+      return seen;
+    };
+    expect(await byTitle('asc')).toEqual(['Annex door', 'Boiler fault', 'Lift fault']);
+    expect(await byTitle('desc')).toEqual(['Lift fault', 'Boiler fault', 'Annex door']);
+    await manager.get(jobs + '?sort=password').expect(400);
     // An unknown cursor starts again rather than failing.
     expect((await manager.get(jobs + '?cursor=' + randomUUID()).expect(200)).body.cursorReset).toBe(true);
 

@@ -33,3 +33,27 @@ test('a manager saves the work order filters as a view, reopens it and deletes i
   await expect(page).not.toHaveURL(/view_id=/);
   await expect(page.getByRole('combobox', { name: 'Saved view' })).not.toContainText(name);
 });
+
+test('a manager sorts the work orders by title and keeps the order in a saved view', async ({ page }) => {
+  await signInAs(page, 'manager');
+  await page.goto('/app/work-orders?view=all');
+  await page.getByLabel('Sort by').selectOption('title');
+  await page.getByLabel('Sort order').selectOption('asc');
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page).toHaveURL(/sort=title/);
+  await expect(page).toHaveURL(/dir=asc/);
+  const titles = await page
+    .locator('tbody tr')
+    .evaluateAll((rows) => rows.map((row) => row.querySelector('a.medium')?.textContent?.trim() ?? ''));
+  expect(titles.length).toBeGreaterThan(1);
+  // The database decides how text sorts, so compare with the opposite order rather than with a guess at its rules.
+  await page.getByLabel('Sort order').selectOption('desc');
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page).toHaveURL(/dir=desc/);
+  const reversed = await page
+    .locator('tbody tr')
+    .evaluateAll((rows) => rows.map((row) => row.querySelector('a.medium')?.textContent?.trim() ?? ''));
+  expect(reversed).toEqual([...titles].reverse());
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
