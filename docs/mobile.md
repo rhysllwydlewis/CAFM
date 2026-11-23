@@ -23,3 +23,12 @@ Errors follow RFC 6749: `400 { "error": "invalid_grant" }`. A failed code or ref
 - Sign-ins, sign-outs and replays are recorded as sign-in events (`mobile_sign_in`, `mobile_device_signed_out`, `mobile_device_revoked`, `mobile_refresh_reuse`).
 
 The tables (`mobile_device`, `oauth_code`) are global like sessions (ADR 0004). They name a membership and hold only hashes of tokens.
+
+## Work pack and sync
+
+A signed-in device (a bearer token, or a browser session) keeps its jobs for offline work with two calls. Both need the `mobile` feature and `work_orders.read`, and show only the jobs the person's data scope allows: a technician sees the jobs assigned to them, at sites they can access.
+
+- `GET /api/mobile/work-pack` returns the open jobs (not closed or cancelled, at most 200), each with its location and access notes, asset details, checklists with their answers, and a `syncToken`.
+- `GET /api/mobile/changes?since=<syncToken>` returns the jobs that changed since the token (the job itself, a checklist added or an answer given), a new `syncToken`, and `jobIds`, every open job the person still holds. The phone removes any job missing from `jobIds` (closed, cancelled or reassigned).
+
+The token is the server's clock when the data was read. A bad or future token gets a 400 `invalid_sync_token`, and the phone fetches the whole pack again. Known limit: clearing a checklist answer does not by itself mark the job as changed, so the next full pack picks it up.
