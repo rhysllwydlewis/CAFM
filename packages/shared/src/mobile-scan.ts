@@ -35,7 +35,11 @@ export function matchScan(raw: string, jobs: readonly MobilePackJob[]): ScanMatc
   const byJob = jobs.find((job) => job.number.toUpperCase() === code);
   if (byJob) return { kind: 'job', job: byJob };
   const onAsset = jobs.filter(
-    (job) => job.asset && (job.asset.id.toUpperCase() === code || job.asset.number.toUpperCase() === code),
+    (job) =>
+      job.asset &&
+      (job.asset.id.toUpperCase() === code ||
+        job.asset.number.toUpperCase() === code ||
+        (job.assetDetail?.tags ?? []).some((tag) => tag.id.toUpperCase() === code || tag.code.toUpperCase() === code)),
   );
   const first = onAsset[0];
   if (!first?.asset) return { kind: 'none' };

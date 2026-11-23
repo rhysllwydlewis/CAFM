@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { matchScan, readScannedCode, type MobilePackJob } from '@cafm/shared';
 
+const TAG = '66666666-6666-4666-8666-666666666666';
 const ASSET = '55555555-5555-4555-8555-555555555555';
 const job = (number: string, assetId: string | null = ASSET) =>
   ({
@@ -9,7 +10,13 @@ const job = (number: string, assetId: string | null = ASSET) =>
     location: { name: 'Plant room' },
     asset: assetId ? { id: assetId, name: 'Boiler 2', number: 'AST-0002', locationId: 'l' } : null,
     assetDetail: assetId
-      ? { make: null, model: null, serial: null, meters: [{ id: 'm', name: 'Run hours', unit: 'h', rolloverAt: null }] }
+      ? {
+          make: null,
+          model: null,
+          serial: null,
+          tags: [{ id: TAG, code: 'TAG-0002' }],
+          meters: [{ id: 'm', name: 'Run hours', unit: 'h', rolloverAt: null }],
+        }
       : null,
   }) as unknown as MobilePackJob;
 
@@ -22,7 +29,7 @@ describe('mobile scan', () => {
 
   it('finds an asset by link or number, with its open jobs and meters', () => {
     const jobs = [job('WO-1'), job('WO-2'), job('WO-3', null)];
-    for (const code of ['https://x.test/asset-qr/' + ASSET, 'ast-0002']) {
+    for (const code of ['https://x.test/asset-qr/' + TAG, 'tag-0002', 'ast-0002']) {
       const match = matchScan(code, jobs);
       expect(match.kind).toBe('asset');
       if (match.kind === 'asset') {

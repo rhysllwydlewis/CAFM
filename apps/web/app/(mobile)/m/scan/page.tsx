@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Icon } from '@cafm/ui';
 import { matchScan, type MobilePackJob, type ScanMatch } from '@cafm/shared';
-import { enqueue, readJobs } from '@/lib/mobile-store';
+import { clearIfNotOwner, enqueue, readJobs } from '@/lib/mobile-store';
+import { useMembershipId } from '../mobile-shell';
 import { flushOutbox } from '@/lib/mobile-sync-client';
 
 type Detector = { detect(source: HTMLVideoElement): Promise<{ rawValue: string }[]> };
@@ -138,8 +139,17 @@ export default function ScanPage() {
   const [reading, setReading] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const owner = useMembershipId();
   useEffect(() => {
-    void readJobs().then(setJobs);
+    // Jobs saved for another organisation or person on this browser are removed before anything is looked up.
+    void clearIfNotOwner(owner).then(readJobs).then(setJobs);
+  }, [owner]);
+
+  // Readings saved offline are sent when signal returns, even if this screen stays open.
+  useEffect(() => {
+    const onOnline = () => void flushOutbox();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
   }, []);
 
   const onCode = useCallback((raw: string) => {

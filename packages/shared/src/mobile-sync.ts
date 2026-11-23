@@ -10,6 +10,8 @@ export type MobilePackJob = WorkOrderSummary & {
     make: string | null;
     model: string | null;
     serial: string | null;
+    /** The asset's active label tags: a printed QR holds the tag id, a barcode its code. */
+    tags?: { id: string; code: string }[];
     /** Empty when the person may not record readings. `rolloverAt` is the value the meter wraps at. */
     meters?: { id: string; name: string; unit: string; rolloverAt: string | null }[];
   } | null;

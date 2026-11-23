@@ -115,12 +115,20 @@ describe('mobile work pack', () => {
         .post(`/api/work-orders/${created.id}/assign`)
         .send({ version: 1, assigneeId: one.accounts.tech.memberships[0] })
         .expect(201);
+      const tag = (
+        await one.manager
+          .post(`/api/assets/${asset.id}/operations/tags`)
+          .send({ kind: 'qr', code: 'TAG-' + randomUUID().slice(0, 8).toUpperCase() })
+          .expect(201)
+      ).body;
       const pack = (await one.tech.get('/api/mobile/work-pack').expect(200)).body;
+      expect(pack.jobs[0].assetDetail.tags).toEqual([{ id: tag.id, code: tag.code }]);
       expect(pack.jobs[0].assetDetail.meters).toEqual([
         { id: meter.id, name: 'Run hours', unit: 'h', rolloverAt: '1000' },
       ]);
       const other = (await two.tech.get('/api/mobile/work-pack').expect(200)).body;
       expect(JSON.stringify(other)).not.toContain(meter.id);
+      expect(JSON.stringify(other)).not.toContain(tag.id);
     } finally {
       await one.cleanup();
       await two.cleanup();

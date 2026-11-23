@@ -67,6 +67,14 @@ async function packJobs(tx: Tx, auth: AuthContext, changedSince: Date | null) {
           orderBy: [{ name: 'asc' }, { id: 'asc' }],
         })
       : [];
+  // Printed labels carry the tag's id (QR) or code (barcode), which differ from the asset's own id and number.
+  const tags = assetIds.length
+    ? await tx.assetTag.findMany({
+        where: { tenantId, assetId: { in: assetIds }, active: true },
+        select: { id: true, assetId: true, code: true },
+        orderBy: { id: 'asc' },
+      })
+    : [];
   return Promise.all(
     rows.map(async (row) => ({
       ...workOrderSummary(row as never),
@@ -79,6 +87,7 @@ async function packJobs(tx: Tx, auth: AuthContext, changedSince: Date | null) {
             make: row.asset.make,
             model: row.asset.model,
             serial: row.asset.serial,
+            tags: tags.filter((tag) => tag.assetId === row.asset!.id).map((tag) => ({ id: tag.id, code: tag.code })),
             meters: meters
               .filter((meter) => meter.assetId === row.asset!.id)
               .map((meter) => ({
