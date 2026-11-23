@@ -75,7 +75,7 @@ These stop two agents building the same thing and keep the tracker true. The **P
   - If `main` gains a migration while your PR is open, regenerate yours with a later timestamp. Never edit a migration that's already on `main`.
   - Every new tenant-owned table gets RLS and a test in `packages/db/test/rls.test.ts`.
 - **Shared registries** (`permissions.ts`, `entitlements.ts`, `seed.ts`, the CHANGELOG, docs/PROGRESS.md): add to them, and don't reorder or rename other people's entries.
-- **Test locally before you push:** `pnpm lint && pnpm typecheck && pnpm test`. For UI changes, also run `pnpm build && pnpm e2e`. Never skip, disable or weaken a test.
+- **Test locally before you push:** `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`. For UI changes, also run `pnpm build && pnpm e2e`. Never skip, disable or weaken a test.
 - **If the plan seems wrong or two docs disagree:** don't guess. Say so in the PR and open an issue labelled `type:docs` (CLAUDE.md § Sources of truth).
 
 ## 5. End of every session, finished or not
@@ -119,7 +119,7 @@ These stop two agents building the same thing and keep the tracker true. The **P
 source scripts/agent-setup.sh          # environment, migrations, demo data
 pnpm progress                          # where the build is, what's next
 node scripts/progress.mjs check        # is docs/PROGRESS.md consistent?
-pnpm lint && pnpm typecheck && pnpm test
+pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
 pnpm build && pnpm e2e                 # UI changes
 pnpm dev                               # http://localhost:3000, demo accounts on the login page
 ```

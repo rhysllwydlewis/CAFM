@@ -27,7 +27,7 @@ The **stage** is recorded in the PR's `## Status` block (the `Stage: ...` line) 
 
 | Stage | Who works it | Leaves the stage when |
 |---|---|---|
-| `build` | Builder | Every acceptance point and sub-item of the item is built, `pnpm lint && pnpm typecheck && pnpm test` pass locally, `pnpm build && pnpm e2e` pass for UI work, and the Builder sets `Stage: review`. Or the build cap is hit (see "Nothing runs forever"). |
+| `build` | Builder | Every acceptance point and sub-item of the item is built, `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` pass locally, `pnpm build && pnpm e2e` pass for UI work, and the Builder sets `Stage: review`. Or the build cap is hit (see "Nothing runs forever"). |
 | `review` | Reviewer | A round finds nothing left to fix, or round 2 is done. The Reviewer sets `Stage: ready` and takes the PR out of draft. |
 | `ready` | Product owner | The owner merges. Builder, Reviewer and Steward leave it alone except to keep it mergeable (Steward) or answer owner comments (Builder). |
 
@@ -94,7 +94,7 @@ The Reviewer is a different session from the Builder, so it has no attachment to
 5. **Security:** no secrets or real personal data, no SQL built from strings, no user enumeration, uploads checked, nothing that bypasses `withTenant`.
 6. **Design and accessibility:** compare screenshots with the mockup at desktop and phone width, light and dark. Tokens and `packages/ui` components only, no one-off styles, keyboard use and visible focus, axe clean, UK English and sentence case.
 7. **Quality:** duplicated logic, unclear names, over-long functions, needless dependencies, weak tests (tests that can't fail), flaky waits. Simplify where it makes the code clearly better. Don't refactor for taste.
-8. **Everything green at the end:** `pnpm lint && pnpm typecheck && pnpm test`, `pnpm build && pnpm e2e` for UI work, and `node scripts/progress.mjs check`. CI on the PR head is green.
+8. **Everything green at the end:** `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`, `pnpm build && pnpm e2e` for UI work, and `node scripts/progress.mjs check`. CI on the PR head is green.
 
 For each finding, the Reviewer **fixes it in the PR** (a focused commit per theme) or, if it's genuinely out of scope, opens a follow-up issue and lists it. It records each round in the PR body under `## Review log`: round number, what it found, what it fixed, what it deferred and why.
 

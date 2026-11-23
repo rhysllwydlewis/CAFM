@@ -59,7 +59,7 @@ Node 22 and pnpm 10 (`corepack enable`). From the repository root:
 pnpm install
 pnpm db:migrate        # apply migrations (owner role, DATABASE_URL)
 pnpm db:seed           # demo tenants and the 16 demo personas
-pnpm lint && pnpm typecheck
+pnpm format:check && pnpm lint && pnpm typecheck
 pnpm test              # unit and API tests (needs a migrated, seeded database)
 pnpm build
 pnpm e2e               # Playwright against the built apps
