@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { MobilePackJob } from '@cafm/shared';
-import { readJobs, readSync } from '@/lib/mobile-store';
+import { clearStore, readJobs, readSync } from '@/lib/mobile-store';
 import { syncJobs, type SyncResult } from '@/lib/mobile-sync-client';
 
 /** The jobs held on the phone, shown at once, then refreshed from the server when there is signal. */
@@ -21,7 +21,12 @@ export function useJobs() {
     setBusy(true);
     const outcome = await syncJobs();
     setResult(outcome);
-    if (outcome === 'signed_out') window.location.replace('/login?next=%2Fm');
+    if (outcome === 'signed_out') {
+      // The session has ended: don't leave this person's jobs on the phone for whoever signs in next.
+      await clearStore().catch(() => undefined);
+      window.location.replace('/login?next=%2Fm');
+      return;
+    }
     await load();
     setBusy(false);
   }, [load]);
