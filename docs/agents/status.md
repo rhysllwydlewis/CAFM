@@ -1,5 +1,5 @@
-# Agent status board
+# Build loop status
 
-The live status board is the pinned GitHub issue **"Agent status board"**, updated every morning by A00 Conductor. Keeping it in an issue means the conductor doesn't open a pull request every day.
+The live status board is the GitHub issue **"Build loop status"**, edited every morning by the Steward routine. It shows every open loop PR, its stage, how long since it last moved, and what needs the product owner. Keeping it in an issue means the Steward doesn't open a pull request every day.
 
-Stage 0 is ready to switch on: create the routines from [routines.md](routines.md), then see the schedule table in [docs/plan/13-agent-schedules.md](../plan/13-agent-schedules.md) §7.
+To switch the routines on, create them from [routines.md](routines.md). How they work is in [build-loop.md](build-loop.md).

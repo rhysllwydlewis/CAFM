@@ -1,6 +1,6 @@
 # 13 · Agent Schedule Strategy
 
-> Status: **Stage 0 ready to switch on.** Decisions D13–D15 accepted ([doc 10](10-risks-and-decisions.md)) and the "CAFM" cloud environment created. The Stage 0 routines are created from [docs/agents/routines.md](../agents/routines.md) (see §7); later stages are added as their roadmap phase starts.
+> Status: **Superseded for now by the lean build loop.** The 45-agent roster below was never switched on, and Phase 0 was finished by hand. The build now runs on three routines (Builder, Reviewer, Steward) described in [docs/agents/build-loop.md](../agents/build-loop.md), with prompts in [docs/agents/routines.md](../agents/routines.md). This document is kept as the design for splitting the work across many area agents later, if one builder becomes the bottleneck. The standard run protocol, code ownership and guard rails below still describe good practice, but where this document and `docs/agents/build-loop.md` differ, the build loop wins.
 
 ## 1. The idea
 
