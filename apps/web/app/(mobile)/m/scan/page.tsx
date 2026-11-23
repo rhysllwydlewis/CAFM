@@ -136,13 +136,17 @@ function QuickJobForm({ match, onSaved }: { match: Extract<ScanMatch, { kind: 'a
   const [description, setDescription] = useState('');
   const [urgency, setUrgency] = useState(2);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (saving) return;
     if (!title.trim() || !description.trim()) {
       setError('Enter a title and say what you found.');
       return;
     }
+    // A second tap while the write is pending would queue a duplicate job.
+    setSaving(true);
     const id = crypto.randomUUID();
     // Kept on the phone first. It rides on one of the asset's jobs so it syncs in order with that job's changes.
     await enqueue(
@@ -205,7 +209,7 @@ function QuickJobForm({ match, onSaved }: { match: Extract<ScanMatch, { kind: 'a
           {error}
         </div>
       )}
-      <button type="submit" className="m-btn primary">
+      <button type="submit" className="m-btn primary" disabled={saving}>
         Raise job
       </button>
     </form>
@@ -226,8 +230,11 @@ export default function ScanPage() {
   const owner = useMembershipId();
   useEffect(() => {
     // Jobs saved for another organisation or person on this browser are removed before anything is looked up.
-    void clearIfNotOwner(owner).then(readJobs).then(setJobs);
-    void readScans().then(setHistory);
+    // History is read only after the owner check, so another person's scans are never shown.
+    void clearIfNotOwner(owner).then(async () => {
+      setJobs(await readJobs());
+      setHistory(await readScans());
+    });
   }, [owner]);
 
   // Readings saved offline are sent when signal returns, even if this screen stays open.
