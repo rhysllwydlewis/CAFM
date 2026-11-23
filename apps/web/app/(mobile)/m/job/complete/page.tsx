@@ -3,6 +3,7 @@
 import { Suspense, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@cafm/ui';
+import { LABOUR_TYPES, LABOUR_TYPE_LABELS, MAX_TIME_MINUTES, type LabourType } from '@cafm/shared';
 import { SignaturePad } from '../../signature-pad';
 import { useJob } from '../../use-job';
 
@@ -13,6 +14,9 @@ function Complete() {
   const [drawn, setDrawn] = useState(false);
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
+  const [minutes, setMinutes] = useState('');
+  const [labourType, setLabourType] = useState<LabourType>('on_site');
+  const [rootCause, setRootCause] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -70,10 +74,44 @@ function Complete() {
       setError('Enter the customer’s name.');
       return;
     }
+    const spent = minutes.trim() ? Number(minutes) : 0;
+    if (!Number.isInteger(spent) || spent < 0 || spent > MAX_TIME_MINUTES) {
+      setError('Enter the time on the job as whole minutes, for example 45.');
+      return;
+    }
     setError('');
     // A second tap while saving would queue the sign-off and the status change twice.
     setSaving(true);
     try {
+      // Time and the root cause are saved first. Costs from the time are worked out on the server.
+      if (spent > 0) {
+        await queueChange({
+          type: 'mutation',
+          item: {
+            key: '',
+            kind: 'time',
+            workOrderId: job!.id,
+            payload: {
+              labourType,
+              minutes: spent,
+              workedOn: new Date().toISOString().slice(0, 10),
+              submission: crypto.randomUUID(),
+            },
+          },
+        });
+      }
+      if (rootCause.trim()) {
+        // Kept as an internal note on the job, so the customer and contractors never see it.
+        await queueChange({
+          type: 'mutation',
+          item: {
+            key: '',
+            kind: 'note',
+            workOrderId: job!.id,
+            payload: { body: 'Root cause: ' + rootCause.trim(), internal: true },
+          },
+        });
+      }
       // Order matters: the sign-off is sent while the job is still on site, then the job is completed.
       await queueChange(
         { type: 'signature', role: 'customer', signerName: name.trim() },
@@ -135,6 +173,48 @@ function Complete() {
           </label>
           <div className="input">
             <input id="complete-note" value={note} maxLength={1200} onChange={(e) => setNote(e.target.value)} />
+          </div>
+        </div>
+        <div className="m-card">
+          <label className="medium sm" htmlFor="complete-minutes">
+            Time on the job, in minutes (optional)
+          </label>
+          <div className="input lg">
+            <input
+              id="complete-minutes"
+              inputMode="numeric"
+              value={minutes}
+              maxLength={4}
+              autoComplete="off"
+              onChange={(e) => setMinutes(e.target.value)}
+            />
+          </div>
+          <label className="medium sm" htmlFor="complete-labour">
+            Kind of time
+          </label>
+          <div className="input lg">
+            <select
+              id="complete-labour"
+              value={labourType}
+              onChange={(e) => setLabourType(e.target.value as LabourType)}
+            >
+              {LABOUR_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {LABOUR_TYPE_LABELS[type]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <label className="medium sm" htmlFor="complete-root">
+            Root cause (optional, internal)
+          </label>
+          <div className="input">
+            <input
+              id="complete-root"
+              value={rootCause}
+              maxLength={500}
+              onChange={(e) => setRootCause(e.target.value)}
+            />
           </div>
         </div>
         <div className="m-card">

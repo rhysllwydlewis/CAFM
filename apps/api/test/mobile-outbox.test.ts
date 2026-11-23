@@ -94,6 +94,14 @@ describe('describing and settling entries', () => {
     expect(describeOutboxEntry(entry(JOB, { type: 'signature', role: 'customer', signerName: 'A' }))).toBe(
       'Customer signature',
     );
+    expect(
+      describeOutboxEntry(
+        entry(JOB, {
+          type: 'mutation',
+          item: { key: '22222222-2222-4222-8222-222222222222', kind: 'quick_job', payload: { title: 'Loose guard' } },
+        }),
+      ),
+    ).toBe('New job: Loose guard');
   });
 
   it('removes an applied change and keeps a refused one for a person', () => {

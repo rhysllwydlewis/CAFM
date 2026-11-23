@@ -49,6 +49,8 @@ export function describeOutboxEntry(entry: OutboxEntry): string {
       return 'Time entry';
     case 'meter_reading':
       return 'Meter reading';
+    case 'quick_job':
+      return 'New job: ' + String(item.payload.title ?? '').slice(0, 60);
   }
 }
 

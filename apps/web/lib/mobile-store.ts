@@ -74,6 +74,30 @@ export async function writePack(jobs: MobilePackJob[], syncToken: string, owner:
   });
 }
 
+export type ScanRecord = { code: string; label: string; scannedAt: string };
+const MAX_SCANS = 20;
+
+/** The last things scanned on this phone, newest first. Kept with the saved jobs, so it goes when they do. */
+export async function readScans(): Promise<ScanRecord[]> {
+  const row = await run<{ key: string; scans: ScanRecord[] } | undefined>(['meta'], 'readonly', (tx) =>
+    tx.objectStore('meta').get('scans'),
+  );
+  return row?.scans ?? [];
+}
+
+export async function addScan(record: ScanRecord): Promise<void> {
+  await run(['meta'], 'readwrite', (tx) => {
+    const store = tx.objectStore('meta');
+    const read = store.get('scans');
+    read.onsuccess = () => {
+      const held = ((read.result as { scans?: ScanRecord[] } | undefined)?.scans ?? []).filter(
+        (scan) => scan.code !== record.code,
+      );
+      store.put({ key: 'scans', scans: [record, ...held].slice(0, MAX_SCANS) });
+    };
+  });
+}
+
 export async function clearStore(): Promise<void> {
   await run(['jobs', 'meta', 'outbox'], 'readwrite', (tx) => {
     tx.objectStore('jobs').clear();

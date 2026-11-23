@@ -57,7 +57,7 @@ The technician app lives at `/m` (My jobs), `/m/job?id=<job id>` (a job) and `/m
 - **Offline.** A service worker (`/sw.js`) keeps the app's pages and static files, so the app opens without signal. Pages come from the network first and fall back to the saved copy. It never keeps API responses.
 - **Jobs on the phone.** Jobs are in the browser's IndexedDB store `cafm-mobile` (`jobs` and `meta`). Opening the app shows the saved jobs at once, then asks the server for what changed since the last sync token (or the whole work pack the first time, or when the token is rejected). `applyMobileChanges` in `packages/shared` merges the changes.
 - **Sign out.** The Me tab signs out and deletes the saved jobs. Sign out needs signal. If it fails the jobs stay, because the person is still signed in.
-- **Not yet built:** the Scan and Raise tabs (P1-06f), and time on site, parts and root cause on the complete screen.
+- **Not yet built:** parts used on the complete screen (recording costs needs `costs.read`, which technicians do not hold, so it waits for an owner decision).
 
 ## Working offline
 
@@ -69,3 +69,17 @@ Everything a technician does on a job is saved on the phone first, in the Indexe
 - **Signatures.** The complete screen takes the customer's name and signature, then queues the sign-off and the move to Completed, in that order. Sent with `POST /api/work-orders/:id/signatures`. If the job already has that sign-off the server answers 409 and the change stays on the Sync tab as refused, because the stored one may not be this drawing.
 - **Order and failures.** A change the server accepts leaves the queue. One it refuses (the job changed, you no longer have the job, an answer that is not valid) stays, marked as refused with the reason, on the Sync tab. **Try again** sends it again under a new key, and **Discard** removes it. Nothing is dropped quietly.
 - **Signing out** deletes the queue with the saved jobs, so the Me tab warns first and needs a second tap.
+
+## Scan, accept and readings
+
+- **Work pack meters.** Each job's `assetDetail.meters` lists the asset's meters (`id`, `name`, `unit`, `rolloverAt`), only for people with `assets.record_readings`. Meters are refreshed when the job changes.
+- **Scan** (`/m/scan`) matches a label link (`/asset-qr/<id>`), an asset number or a job number against the jobs held on the phone, so it works offline. The camera uses the browser's `BarcodeDetector` where it exists. Elsewhere the person types the number.
+- **Meter reading** queues a `meter_reading` mutation with a fresh `submission` id, so a retry never records it twice.
+- **Accept** queues a `status` change to Accepted. **Decline** queues an internal note, "Declined by the technician: <reason>", because there is no declined status. The job stays assigned until the helpdesk reassigns it.
+
+## Quick jobs, recent scans, time and root cause
+
+- **Raise a job from a scan.** After scanning an asset, **Raise a job** takes a title, what was found and how urgent it is, and saves it on the phone as a `quick_job` change. It is sent through the mutation queue to the same endpoint as the website's New job (`POST /api/work-orders`), so it needs `work_orders.edit`, respects the person's location scope and is audited. Technicians do not hold `work_orders.edit` by default, so for them the change is refused and stays on the Sync tab with the reason. The job is raised unassigned, at the asset's location, with the asset attached.
+- **Recent scans.** The last 20 things scanned that found a match are kept in the `meta` store, so they go when the jobs go (sign out or another person signing in). Tap one to open it again.
+- **Time and root cause.** The complete screen takes minutes and the kind of time (on site, travel or overtime), queued as a `time` change before the sign-off. A root cause is queued as an internal note beginning "Root cause:".
+

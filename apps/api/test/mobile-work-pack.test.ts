@@ -85,6 +85,56 @@ describe('mobile work pack', () => {
     }
   });
 
+  it('sends the meters of the job’s asset, and none to a technician in another organisation (cross-tenant)', async () => {
+    const one = await fixture();
+    const two = await fixture();
+    try {
+      const asset = (await one.manager.post('/api/assets').send({ locationId: one.site.id, name: 'Pump' }).expect(201))
+        .body;
+      const meter = (
+        await one.manager
+          .post(`/api/assets/${asset.id}/operations/meters`)
+          .send({ name: 'Run hours', unit: 'h', rolloverAt: '1000' })
+          .expect(201)
+      ).body;
+      const created = (
+        await one.manager
+          .post('/api/work-orders')
+          .send({
+            submissionId: randomUUID(),
+            title: 'Read the pump',
+            description: 'Record the run hours.',
+            locationId: one.site.id,
+            assetId: asset.id,
+            impact: 2,
+            urgency: 2,
+          })
+          .expect(201)
+      ).body;
+      await one.manager
+        .post(`/api/work-orders/${created.id}/assign`)
+        .send({ version: 1, assigneeId: one.accounts.tech.memberships[0] })
+        .expect(201);
+      const tag = (
+        await one.manager
+          .post(`/api/assets/${asset.id}/operations/tags`)
+          .send({ kind: 'qr', code: 'TAG-' + randomUUID().slice(0, 8).toUpperCase() })
+          .expect(201)
+      ).body;
+      const pack = (await one.tech.get('/api/mobile/work-pack').expect(200)).body;
+      expect(pack.jobs[0].assetDetail.tags).toEqual([{ id: tag.id, code: tag.code }]);
+      expect(pack.jobs[0].assetDetail.meters).toEqual([
+        { id: meter.id, name: 'Run hours', unit: 'h', rolloverAt: '1000' },
+      ]);
+      const other = (await two.tech.get('/api/mobile/work-pack').expect(200)).body;
+      expect(JSON.stringify(other)).not.toContain(meter.id);
+      expect(JSON.stringify(other)).not.toContain(tag.id);
+    } finally {
+      await one.cleanup();
+      await two.cleanup();
+    }
+  });
+
   it('sends only what changed since the token, and the ids still held', async () => {
     const { cleanup, accounts, tech, manager, job } = await fixture();
     try {
@@ -290,6 +340,48 @@ describe('mobile mutation queue', () => {
       expect(rows).toBe(1);
     } finally {
       await cleanup();
+    }
+  });
+
+  it('raises a quick job once, only for someone who may create jobs, and only at their own organisation’s locations (cross-tenant)', async () => {
+    const one = await fixture();
+    const two = await fixture();
+    try {
+      const make = (locationId: string) => ({
+        key: randomUUID(),
+        kind: 'quick_job',
+        payload: {
+          submissionId: randomUUID(),
+          title: 'Loose handrail',
+          description: 'Found while scanning the asset.',
+          locationId,
+          impact: 1,
+          urgency: 1,
+        },
+      });
+      const job = make(one.site.id);
+      const first = await post(one.manager, job);
+      expect(first.body.results[0]!.status).toBe('applied');
+      expect((await post(one.manager, job)).body.results[0]).toMatchObject({ status: 'applied', replayed: true });
+      const count = (tenantId: string, locationId: string) =>
+        withTenant(db, tenantId, (tx) => tx.workOrder.count({ where: { locationId, title: 'Loose handrail' } }));
+      expect(await count(one.tenant.id, one.site.id)).toBe(1);
+
+      // A technician has no create right by default, so the change is refused and nothing is made.
+      const refused = make(one.site.id);
+      expect((await post(one.tech, refused)).body.results[0]).toMatchObject({ status: 'rejected', code: 'forbidden' });
+      expect(await count(one.tenant.id, one.site.id)).toBe(1);
+
+      // Another organisation's location is not found, and nothing is made there.
+      const foreign = make(two.site.id);
+      expect((await post(one.manager, foreign)).body.results[0]).toMatchObject({
+        status: 'rejected',
+        code: 'not_found',
+      });
+      expect(await count(two.tenant.id, two.site.id)).toBe(0);
+    } finally {
+      await one.cleanup();
+      await two.cleanup();
     }
   });
 
