@@ -1,6 +1,6 @@
 # Mobile app (technician PWA)
 
-The technician, contractor and requester app is an offline-first PWA (ADR 0005). This page grows with each part of P1-06. Built so far: sign-in.
+The technician, contractor and requester app is an offline-first PWA (ADR 0005). This page grows with each part of P1-06. Built so far: sign-in, the work pack and sync, the mutation queue and the app shell.
 
 ## Signing in a device
 
@@ -48,3 +48,13 @@ The token is the server's clock when the data was read. A bad or future token ge
 Each change runs through the same code as the website, so permissions, data scope, versions, checklist gates and audit events are the same. The response is `{ results: [{ key, status, code?, message?, replayed? }] }`, in the same order. `status` is `applied` or `rejected`. A rejection (`conflict` when the job changed and needs refreshing, `invalid`, `forbidden`, `not_found`, `key_reused`) affects only that change, and the rest carry on. The outcome is kept against the key (table `mobile_mutation`), so a retry after a dropped connection returns the first outcome with `replayed: true` and nothing is applied twice. The same key with different content is rejected as `key_reused`.
 
 Time is recorded without the technician seeing any rate or cost. See [Work orders](work-orders.md#time-and-labour-rates).
+
+## The app shell
+
+The technician app lives at `/m` (My jobs), `/m/job?id=<job id>` (a job) and `/m/me` (sign out). It matches `mobile-01-technician-jobs`. It is a web app you can add to the home screen (`manifest.webmanifest`, scope `/m`).
+
+- **Signed in with the browser session.** The app uses the same cookie session as the website, in the same site, so nothing extra is stored on the phone. The bearer-token sign-in above is for native and third-party clients. Someone who is not signed in is sent to the sign-in page.
+- **Offline.** A service worker (`/sw.js`) keeps the app's pages and static files, so the app opens without signal. Pages come from the network first and fall back to the saved copy. It never keeps API responses.
+- **Jobs on the phone.** Jobs are in the browser's IndexedDB store `cafm-mobile` (`jobs` and `meta`). Opening the app shows the saved jobs at once, then asks the server for what changed since the last sync token (or the whole work pack the first time, or when the token is rejected). `applyMobileChanges` in `packages/shared` merges the changes.
+- **Sign out.** The Me tab signs out and deletes the saved jobs. Sign out needs signal. If it fails the jobs stay, because the person is still signed in.
+- **Not yet built:** the Scan and Raise tabs, checklists, photos, signatures and queued changes made on the phone (P1-06e and P1-06f).

@@ -14,6 +14,8 @@ export function SignOutButton() {
     setFailed(false);
     const response = await postJson('/auth/logout').catch(() => null);
     if (response?.ok) {
+      // Jobs saved for the technician app are not left on this browser for the next person.
+      indexedDB.deleteDatabase('cafm-mobile');
       window.location.replace('/login');
       return;
     }
