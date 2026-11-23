@@ -35,3 +35,12 @@ export type Team = {
   description: string | null;
   members: { membershipId: string; name: string; roleLabel: string }[];
 };
+
+/** Who is limited to which sites (P1-09b). Super Users and unrestricted people have `restricted: false`. */
+export type SiteAccessOverview = {
+  /** True when the signed-in admin is limited to certain sites and so manages only people inside them. */
+  delegated: boolean;
+  /** The regions and sites the admin may hand out. */
+  areas: { id: string; name: string; code: string; kind: 'region' | 'site' }[];
+  members: { membershipId: string; restricted: boolean; locationIds: string[] }[];
+};

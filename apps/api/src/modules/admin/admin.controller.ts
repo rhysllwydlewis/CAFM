@@ -1,7 +1,8 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant } from '@cafm/db';
-import type { AdminOverview, AdminUser } from '@cafm/shared';
+import { scopedLocations, withTenant } from '@cafm/db';
+import type { AdminOverview, AdminUser, SiteAccessOverview } from '@cafm/shared';
+import { administrableMembers, isDelegated } from '../../core/delegation';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 
@@ -79,9 +80,15 @@ export class AdminController {
     // A role with data scope "own" sees only itself, as in the people list.
     const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
     return withTenant(this.db, tenantId, async (tx) => {
+      // A delegated admin sees themself and the people inside their own sites.
+      const allowed = await administrableMembers(tx, auth);
       const [rows, roles, sessions] = await Promise.all([
         tx.membership.findMany({
-          where: { tenantId, ...own },
+          where: {
+            tenantId,
+            // Both limits apply: a delegated admin's sites and a role's own-records scope.
+            AND: [own, allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {}],
+          },
           include: { account: true },
           orderBy: { account: { name: 'asc' } },
         }),
@@ -102,6 +109,45 @@ export class AdminController {
         status: m.status as AdminUser['status'],
         lastSignIn: lastSeen.get(m.id)?.toISOString() ?? null,
       }));
+    });
+  }
+
+  /** Site limits for the people this admin manages, and the areas they can hand out. */
+  @Get('site-access')
+  @RequirePermission('people.manage')
+  async siteAccess(@Req() req: Request): Promise<SiteAccessOverview> {
+    const auth = req.auth!;
+    const tenantId = auth.membership!.tenantId;
+    return withTenant(this.db, tenantId, async (tx) => {
+      const allowed = await administrableMembers(tx, auth);
+      const [areas, members, grants] = await Promise.all([
+        tx.location.findMany({
+          where: {
+            ...scopedLocations(auth.membership!, auth.access?.scope),
+            kind: { in: ['region', 'site'] },
+            status: { not: 'closed' },
+          },
+          select: { id: true, name: true, code: true, kind: true },
+          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+          take: 500,
+        }),
+        tx.membership.findMany({
+          where: { tenantId, ...(allowed ? { id: { in: [...allowed] } } : {}) },
+          select: { id: true, role: true, locationScoped: true },
+        }),
+        tx.membershipSite.findMany({ where: { tenantId }, select: { membershipId: true, locationId: true } }),
+      ]);
+      const byMember = new Map<string, string[]>();
+      for (const g of grants) byMember.set(g.membershipId, [...(byMember.get(g.membershipId) ?? []), g.locationId]);
+      return {
+        delegated: isDelegated(auth),
+        areas: areas.map((a) => ({ ...a, kind: a.kind as 'region' | 'site' })),
+        members: members.map((m) => ({
+          membershipId: m.id,
+          restricted: m.locationScoped && m.role !== 'super_user',
+          locationIds: m.locationScoped ? (byMember.get(m.id) ?? []) : [],
+        })),
+      };
     });
   }
 }

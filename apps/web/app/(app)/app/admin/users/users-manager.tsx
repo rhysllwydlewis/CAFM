@@ -3,9 +3,10 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, TextInput } from '@cafm/ui';
-import type { AdminUser } from '@cafm/shared';
+import type { AdminUser, SiteAccessOverview } from '@cafm/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
+import { SiteAccessCard } from './site-access';
 
 export type RoleOption = { key: string; name: string };
 export type PendingInvite = { id: string; email: string; role: string; expiresAt: string };
@@ -33,12 +34,17 @@ export function UsersManager({
   invites,
   canInvite,
   selfMembershipId,
+  siteAccess,
+  canEditSiteAccess,
 }: {
   users: AdminUser[];
   roles: RoleOption[];
   invites: PendingInvite[];
   canInvite: boolean;
   selfMembershipId: string;
+  siteAccess: SiteAccessOverview;
+  /** Delegated admins, or organisations-wide admins who also hold `locations.manage`. */
+  canEditSiteAccess: boolean;
 }) {
   const router = useRouter();
   const emailId = useId();
@@ -273,6 +279,19 @@ export function UsersManager({
           </table>
         </div>
       </section>
+      {canEditSiteAccess && (
+        <SiteAccessCard
+          key={
+            users
+              .filter((u) => u.status === 'active')
+              .map((u) => u.membershipId)
+              .join() + siteAccess.members.map((m) => m.membershipId + m.restricted + m.locationIds.join()).join('|')
+          }
+          users={users}
+          overview={siteAccess}
+          selfMembershipId={selfMembershipId}
+        />
+      )}
     </>
   );
 }
