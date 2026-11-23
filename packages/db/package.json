@@ -8,7 +8,7 @@
     "postinstall": "prisma generate",
     "generate": "prisma generate",
     "build": "prisma generate && tsc -p tsconfig.json",
-    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:diff": "prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel prisma/schema --script",
     "seed": "tsx src/seed.ts",
