@@ -101,7 +101,7 @@ export function SiteAccessCard({
                 <label className="row g2">
                   <input
                     type="radio"
-                    className="cb"
+
                     name="site-access-mode"
                     checked={!limited}
                     onChange={() => setLimited(false)}
@@ -112,7 +112,7 @@ export function SiteAccessCard({
               <label className="row g2">
                 <input
                   type="radio"
-                  className="cb"
+
                   name="site-access-mode"
                   checked={limited || overview.delegated}
                   onChange={() => setLimited(true)}
@@ -121,25 +121,27 @@ export function SiteAccessCard({
               </label>
             </fieldset>
             {(limited || overview.delegated) && (
-              <fieldset className={styles.members} disabled={busy}>
+              <fieldset className={styles.plain + ' stack g2'} disabled={busy}>
                 <legend className="sm medium">Sites and regions</legend>
-                {overview.areas.map((a) => (
-                  <label key={a.id} className="row g2">
-                    <input
-                      type="checkbox"
-                      className="cb"
-                      checked={chosen.has(a.id)}
-                      onChange={(e) => {
-                        const next = new Set(chosen);
-                        if (e.target.checked) next.add(a.id);
-                        else next.delete(a.id);
-                        setChosen(next);
-                      }}
-                    />
-                    {a.name} <span className="faint sm">· {a.kind === 'region' ? 'Region' : 'Site'}</span>
-                  </label>
-                ))}
-                {!overview.areas.length && <span className="muted">No sites yet.</span>}
+                <div className={styles.members}>
+                  {overview.areas.map((a) => (
+                    <label key={a.id} className="row g2">
+                      <input
+                        type="checkbox"
+                        className="cb"
+                        checked={chosen.has(a.id)}
+                        onChange={(e) => {
+                          const next = new Set(chosen);
+                          if (e.target.checked) next.add(a.id);
+                          else next.delete(a.id);
+                          setChosen(next);
+                        }}
+                      />
+                      {a.name} <span className="faint sm">· {a.kind === 'region' ? 'Region' : 'Site'}</span>
+                    </label>
+                  ))}
+                  {!overview.areas.length && <span className="muted">No sites yet.</span>}
+                </div>
               </fieldset>
             )}
             <div>

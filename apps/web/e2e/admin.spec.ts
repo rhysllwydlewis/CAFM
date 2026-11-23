@@ -100,9 +100,12 @@ test('a Super User sees the site access card and the demo people stay locked', a
   const card = page.getByRole('region', { name: 'Site access' });
   await expect(card).toBeVisible();
   await card.getByLabel('Person').selectOption({ label: 'Tom Price' });
-  await card.getByLabel('Only the sites I choose').check();
+  // By keyboard, which also proves the choice is reachable without a pointer.
+  await card.getByLabel('Only the sites I choose').focus();
+  await page.keyboard.press('Space');
   await expect(card.getByRole('group', { name: 'Sites and regions' })).toBeVisible();
-  await assertAccessible(page);
-  await card.getByRole('button', { name: 'Save site access' }).click();
+  await card.getByRole('button', { name: 'Save site access' }).focus();
+  await page.keyboard.press('Enter');
   await expect(card.getByRole('alert')).toContainText('part of the demo');
+  await assertAccessible(page);
 });
