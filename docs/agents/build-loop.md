@@ -18,7 +18,7 @@ The **Reviewer merges** a PR it has signed off, when the safety conditions in "M
 
 ```
 claimed ──► build ──► review ──► ready ──► merged
-  (draft PR)  (Builder)  (Reviewer, max 2 rounds)  (Reviewer merges)
+  (draft PR)  (Builder: own check, then un-drafts)  (Reviewer: fixes and improves, usually one pass, at most 2)  (Reviewer merges)
                  ▲            │
                  └── back to build only for a must-fix the Reviewer can't do
 ```
@@ -27,8 +27,8 @@ The **stage** is recorded in the PR's `## Status` block (the `Stage: ...` line) 
 
 | Stage | Who works it | Leaves the stage when |
 |---|---|---|
-| `build` | Builder | Every acceptance point and sub-item of the item is built, `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` pass locally, `pnpm build && pnpm e2e` pass for UI work, and the Builder sets `Stage: review`. Or the build cap is hit (see "Nothing runs forever"). |
-| `review` | Reviewer | A round finds nothing left to fix, or round 2 is done. The Reviewer sets `Stage: ready`, takes the PR out of draft, and merges it in the same run if every condition in "Merging" holds. |
+| `build` | Builder | Every acceptance point and sub-item of the item is built, `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` pass locally, `pnpm build && pnpm e2e` pass for UI work, the Builder has done its own check of the batch, takes the PR out of draft (the signal that it is ready for the Reviewer) and sets `Stage: review`. Or the build cap is hit (see "Nothing runs forever"). |
+| `review` | Reviewer | Nothing must-fix is left and the Reviewer's fixes were small, or round 2 is done. The Reviewer sets `Stage: ready` and merges it in the same run if every condition in "Merging" holds. |
 | `ready` | Product owner | Only a PR the Reviewer did not merge ("Not merged because:" in its body) stays here. The owner decides. Builder, Reviewer and Steward leave it alone except to keep it mergeable (Steward) or answer owner comments (Builder). |
 
 ### The PR Status block
@@ -54,6 +54,39 @@ Follow-ups raised: issue links
 The rest of the body is the normal PR template, including the `Progress:` line. (Don't start any other line with `Progress:`, because CI reads every line that does.)
 
 `Session` says whether a session is working on the PR right now. A routine sets `Session: active` as it starts work on a PR and `Session: ended` as the last thing it does before it stops, including when it stops part-way because it chose to. A session that's cut off by a usage limit can't do that, which is exactly what the heartbeat is for.
+
+## How each routine starts (tested 23 Nov 2026)
+
+A routine can start on a **schedule**, on a **GitHub event**, or by an **API call**, and one routine can have several. Triggers are added by the owner on the web at claude.ai/code/routines. Claude can't add them from a session. The facts below come from the [official routines documentation](https://code.claude.com/docs/en/routines) and from a test on the real repository.
+
+**Proven by test** (a throwaway PR on a `claude/build-` branch, with the Reviewer's GitHub trigger set to all pull request events, head branch starting `claude/build-`, and is draft `false`):
+
+| Action on the PR | Started the Reviewer? |
+|---|---|
+| Opened as a draft | No (blocked by the draft filter) |
+| Taken out of draft | **Yes, in under a second** |
+| A label added | **Yes, within about 2 seconds** |
+| A commit pushed | **Yes, within about 6 seconds** (so the Reviewer's own pushes start more runs) |
+
+Two sessions can run side by side. A start that finds the PR already being worked on stops in about 20 seconds, because of the `Session` check, so it costs little. Each GitHub event starts its own fresh session.
+
+**The settings**
+
+| Routine | Schedule | GitHub event trigger |
+|---|---|---|
+| Builder | Every 2 hours | Pull request **closed**, filters: is merged `true`, head branch starts with `claude/build-`. This continues the item with its next batch as soon as the Reviewer merges one. (The documentation's own example; to be confirmed on the first real merge.) |
+| Reviewer | Hourly (the most often a schedule can run). It does the retries and is the backup for any missed event. | Pull request, the single event **ready for review** (one trigger listens to one event), filters: head branch starts with `claude/build-`, is draft `false`, labels contains `stage:review` |
+| Steward | Daily | None |
+
+**Why the label filter, the order, and the exclusive stage labels.** Only the Builder puts `stage:review` on a PR, so the filter means "a Builder PR that is ready for review". The filter is checked when the PR is taken out of draft, so the Builder must put the label on **first** and take the PR out of draft **last**. The Reviewer replaces `stage:review` with `stage:ready` when it signs off, so a PR it has signed off, and its own later un-drafting or pushes, no longer match the trigger. A push or a label on its own starts nothing, which keeps the run list short.
+
+**What the documentation says that we plan around**
+- Events beyond an hourly cap (the number isn't published) are **dropped**, which is why the schedules stay as a backup.
+- A run that can't start (usage limit reached, setup failure) isn't retried. The next schedule run picks the work up.
+- If the owner's GitHub connection lapses, scheduled runs are skipped for up to 72 hours and then the routine switches off. A missing Steward notification in the morning is the sign to check.
+- The GitHub trigger needs the Claude GitHub App installed on the repository. Routines are a research preview and the limits may change.
+
+**Also on the repository:** a Codex review bot reviews every PR that is opened for review or taken out of draft. The Reviewer reads its comments as extra information.
 
 ## Batches and decisions
 
@@ -87,7 +120,7 @@ Every loop has a limit, so an item always reaches `ready`, or reaches the owner 
 | Builder runs on one batch (one PR) | **8 runs** (about two working days) | Split the item. Tick the sub-items that are really done, open an issue for the remainder (`phase:N`, `type:feature`, `priority:next`), and move what's built to `review`. Never leave an item half-built with no PR stage. |
 | Review rounds | **2** | After round 2 the PR goes to `ready` regardless. Anything still open becomes a labelled follow-up issue and is listed in the PR body under "Known gaps". |
 | Items being built | **1** (`Stage: build`) | The Builder finishes it before claiming another. |
-| PRs waiting (`review`, `ready` or `blocked`, all together) | **2** | The Builder stops claiming new work until the owner merges or unblocks one. The Steward says so in the digest. The Builder can build the next item while an earlier one is in review. |
+| PRs waiting (`review`, `ready` or `blocked`, all together) | **2** | The Builder stops claiming new work until the owner merges or unblocks one. The Steward says so in the digest. The Builder can build the next item while an earlier one is in review. A ready PR whose checks are failing is not counted as waiting on the owner: the Builder fixes it first (re-running a setup failure once). |
 | A PR in `build` or `review` with no heartbeat for 24 hours | | The Steward flags it on the status issue and, if usage is the cause, says so. After 48 hours it raises a `blocked` issue and pushes to the owner. |
 | A PR in `ready` for more than 2 days | | The Steward lists it first in the daily digest. |
 | Blocked, or needs a decision | | Open or update an issue labelled `blocked` or `decision-needed`, put it in the Status block, set `Stage: blocked`, and stop. The Steward reports it. Never press on past a decision. |
@@ -107,7 +140,7 @@ The Reviewer is a different session from the Builder, so it has no attachment to
 
 For each finding, the Reviewer **fixes it in the PR** (a focused commit per theme) or, if it's genuinely out of scope, opens a follow-up issue and lists it. It records each round in the PR body under `## Review log`: round number, what it found, what it fixed, what it deferred and why.
 
-A round that finds **no must-fix** ends the review. Otherwise it fixes and the next round (a later firing, so with fresh eyes) re-checks. After round 2 the PR is `ready` either way. `Review rounds done` counts finished rounds, so the round a session is running is that number plus one.
+**One pass is usually enough.** The Reviewer reviews, fixes and improves, re-runs every check, and signs off in the same pass when nothing must-fix is left and its fixes were small (no change to security, permissions, database migrations or money, and under about 200 changed lines). If its fixes were large or touched those areas, a second round (a later firing, so with fresh eyes) re-checks them. After round 2 the PR is `ready` either way. `Review rounds done` counts finished rounds, so the round a session is running is that number plus one.
 
 If the item turns out not to meet the Definition of Done and the gap can't be fixed in the PR, the Reviewer says so honestly: it un-ticks the item (or ticks only the finished sub-items), corrects the counts with `node scripts/progress.mjs check`, changes the `Progress:` line to match, and lists the gap under "Known gaps" with a follow-up issue. A tick must always be true.
 
@@ -140,7 +173,7 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 
 **The Reviewer squash-merges a PR only if all of these hold**, checked in the same run it signs the PR off:
 1. CI on the PR's current head is fully green, and the PR is mergeable with no conflicts.
-2. DeepSource's analysis of that head has finished, with no new critical or major finding left that hasn't been fixed or verified as a false positive.
+2. DeepSource's analysis of that head has finished, with no new critical or major finding left that hasn't been fixed or verified as a false positive. This applies only while DeepSource is switched on for the repository (`get_repository` shows `is_activated: true`). If it is not switched on, or has never analysed any PR, it is not a condition: the Reviewer notes "DeepSource is not switched on for this repository" in the Review log and carries on. Only an analysis that is switched on and still pending is a `[retry]` reason.
 3. The latest CI run on `main` is green, and the newest Railway deployment of the CAFM service is healthy. While `main` is red nothing is merged, and the Builder fixes `main` first. If the deployment has failed, the Reviewer opens a `priority:now` issue ("Production deploy failing") so the Builder takes it first.
 4. It is a loop PR (branch `claude/build-*`), nothing marks it `blocked` or `decision-needed`, and the owner has no unanswered comment on it.
 5. It doesn't change a guard-rail file: `AGENTS.md`, `CLAUDE.md`, anything under `docs/agents/`, `docs/adr/` or `.github/`, `scripts/progress.mjs`, or the approved-phase marker. The routines never change their own rules without the owner.
@@ -152,6 +185,8 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 **What the Reviewer may use.** The Railway and DeepSource connectors. Railway is read-only (deployment status, diagnosis, logs). Nothing but the merge changes production. DeepSource findings are information to verify. The Reviewer never alters DeepSource settings, ignore rules or thresholds.
 
 The merge uses the PR title, is pinned to the exact head commit the Reviewer checked, and is one PR per run. The Reviewer never merges an "Approve Phase N" PR, a Steward docs PR, or any PR it didn't review. If a condition fails, the PR stays at `ready` with a "Not merged because:" line, and the owner decides.
+
+**Unreviewed merges.** If a PR reaches `main` without a Reviewer pass (the owner merged it, or a check was missed), the Steward notices at its next run and opens a `priority:now` issue ("Review merged PR #N and fix what it finds"), so the Builder reviews the merged code first. Nothing stays unreviewed for long, whoever merged it.
 
 **Undoing a bad merge.** Squash merges are one commit, so a revert PR undoes them. If `main` goes red after a merge, the Builder fixes or reverts it first (its first priority), and the Steward reports it.
 
