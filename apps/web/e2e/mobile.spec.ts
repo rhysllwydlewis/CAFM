@@ -82,3 +82,49 @@ test('jobs saved for one person are not shown to the next person on the same bro
   await expect(page.getByRole('heading', { level: 1, name: 'My jobs' })).toBeVisible();
   await expect(page.getByRole('link', { name: /WO-10412/ })).toHaveCount(0);
 });
+
+test('changes made without signal wait on the phone, then sync', async ({ page, context }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email or username').fill('technician@demo.example');
+  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/m');
+  const job = page.getByRole('link', { name: /WO-10412/ });
+  await expect(job).toBeVisible();
+  await expect(page.getByText(/^Synced/)).toBeVisible();
+  await page.locator('[data-offline-ready="true"]').waitFor();
+  await job.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Boiler 2 losing pressure overnight' })).toBeVisible();
+  const jobUrl = page.url();
+
+  await context.setOffline(true);
+  // A tick step is cleared and ticked again, so the demo job ends as it began once both changes have synced.
+  const step = page.getByRole('checkbox').first();
+  await expect(step).toBeChecked();
+  await step.click();
+  await expect(page.getByText('1 change waiting to sync')).toBeVisible();
+  await expect(page.getByRole('checkbox').first()).not.toBeChecked();
+  await page.getByRole('checkbox').first().click();
+  await expect(page.getByRole('checkbox').first()).toBeChecked();
+  await expect(page.getByText('2 changes waiting to sync')).toBeVisible();
+  await assertAccessible(page);
+
+  await page.getByRole('link', { name: /2 changes waiting to sync/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sync' })).toBeVisible();
+  await expect(page.getByText('Waiting to sync (2)')).toBeVisible();
+  await expect(page.getByText('Checklist answer')).toHaveCount(2);
+  await assertAccessible(page);
+
+  await context.setOffline(false);
+  await page.getByRole('button', { name: 'Try sync now' }).click();
+  await expect(page.getByText('Waiting to sync (0)')).toBeVisible();
+
+  // The complete screen, for a job that is on site.
+  await page.goto(jobUrl.replace('/m/job?', '/m/job/complete?'));
+  await expect(page.getByRole('heading', { level: 1, name: 'Complete job' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Complete and sign off' })).toBeVisible();
+  await assertAccessible(page);
+  await page.getByRole('button', { name: 'Complete and sign off' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Ask the customer to sign first.' })).toBeVisible();
+});

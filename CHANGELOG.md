@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Offline checklists, photos and signatures in the technician app: answer checklist steps, add photos, start and complete a job and take the customer's signature with no signal. Everything is saved on the phone and sent in order when signal returns, and the new Sync tab shows what is waiting and anything the server refused. See [Mobile app](docs/mobile.md#working-offline).
+
 - Technician app shell: open `/m` on a phone and add it to the home screen. It lists your jobs with priority, location and how long is left to fix, shows a job's location, access notes, asset and description, and keeps working without signal. The jobs are saved on the phone, refreshed when there is signal, and removed when you sign out. See [Mobile app](docs/mobile.md#the-app-shell).
 
 - Time and labour rates: technicians record the time they spend on a job (on site, travel or overtime) without seeing any cost. Finance, administrators or any role given the permission set hourly rates, for everyone or per role, and the cost of the time is posted to the job automatically using the rate at the time. Who can record time, see costs and set rates is chosen per role. See [Work orders](docs/work-orders.md#time-and-labour-rates).

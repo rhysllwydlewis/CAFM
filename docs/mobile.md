@@ -57,4 +57,15 @@ The technician app lives at `/m` (My jobs), `/m/job?id=<job id>` (a job) and `/m
 - **Offline.** A service worker (`/sw.js`) keeps the app's pages and static files, so the app opens without signal. Pages come from the network first and fall back to the saved copy. It never keeps API responses.
 - **Jobs on the phone.** Jobs are in the browser's IndexedDB store `cafm-mobile` (`jobs` and `meta`). Opening the app shows the saved jobs at once, then asks the server for what changed since the last sync token (or the whole work pack the first time, or when the token is rejected). `applyMobileChanges` in `packages/shared` merges the changes.
 - **Sign out.** The Me tab signs out and deletes the saved jobs. Sign out needs signal. If it fails the jobs stay, because the person is still signed in.
-- **Not yet built:** the Scan and Raise tabs, checklists, photos, signatures and queued changes made on the phone (P1-06e and P1-06f).
+- **Not yet built:** the Scan and Raise tabs (P1-06f), and time on site, parts and root cause on the complete screen.
+
+## Working offline
+
+Everything a technician does on a job is saved on the phone first, in the IndexedDB store `outbox`, in the order it was done. It is sent when there is signal (when the app opens, when the phone comes back online, or from **Try sync now** on the Sync tab).
+
+- **Checklists.** Each step is answered on the job screen (tick, pass or fail with a note, a reading, or a comment). The answer shows at once and goes through the mutation queue as `checklist_answer`.
+- **Status.** Start work and Complete job queue a `status` change. Each queued status change expects the job's version one higher than the last, so a chain (on site, then completed) is applied in order.
+- **Photos.** Taken with the phone's camera or chosen from the gallery (JPEG, PNG or WebP, up to 8 MB). Each is sent with `PUT /api/work-orders/:id/photos`. The server recognises a photo it already has, so sending twice stores one.
+- **Signatures.** The complete screen takes the customer's name and signature, then queues the sign-off and the move to Completed, in that order. Sent with `POST /api/work-orders/:id/signatures`. A sign-off the job already has counts as sent.
+- **Order and failures.** A change the server accepts leaves the queue. One it refuses (the job changed, you no longer have the job, an answer that is not valid) stays, marked as refused with the reason, on the Sync tab. **Try again** sends it again under a new key, and **Discard** removes it. Nothing is dropped quietly.
+- **Signing out** deletes the queue with the saved jobs, so the Me tab warns first and needs a second tap.
