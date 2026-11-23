@@ -61,6 +61,8 @@ The rest of the body is the normal PR template, including the `Progress:` line. 
 
 **Decisions.** The owner can't be asked every time, and a question left in a chat message is never seen. So when the Builder meets a product or design question it picks the safest sensible default, builds it, and records it in the PR body under "## Decisions made" (what it chose and why). The Reviewer reads that section and challenges any choice that looks wrong, and the owner can read it too. The Builder stops only for a decision with no safe default (money, security or permissions that can't be set conservatively, or anything irreversible). It then opens an issue labelled `decision-needed`, which the Steward reports.
 
+**The Builder's own check.** Before it sends a batch to review, the Builder goes through the Definition of Done for that batch, runs and looks at every new screen against its mockup (phone and desktop width, light and dark, keyboard and axe), fixes the gaps, and lists what is still missing under "Known gaps". It's a quick check of its own work and doesn't replace the Reviewer, who checks again with fresh eyes. The first batches skipped it, and the Reviewer should not have to find missing basics.
+
 ## Resuming after a usage limit (the key mechanism)
 
 A session can't wait for its usage to reset. It can't sleep or poll, and a session that hits the limit is simply cut off. So the loop doesn't wait. **The schedule is the wait.**
@@ -145,7 +147,7 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 6. No must-fix finding is open, and the Reviewer ran every check itself on the final head.
 7. The head commit is still the one recorded in "Signed off at:".
 
-**Retrying.** A Reviewer can't wait for CI after it pushes a fix, so a PR is often signed off before its checks have finished. If the only reason not to merge is that something is still running or red (CI, DeepSource, a deployment, `main`), the PR stays at `ready` with a "Not merged because: [retry] …" line, and a later Reviewer run re-checks these conditions and merges, without a full re-review as long as the head commit hasn't changed. If the head changed, it goes back to `review`. Any other reason is marked `[owner]` and waits for the owner.
+**Retrying.** A Reviewer can't wait for CI after it pushes a fix, so a PR is often signed off before its checks have finished. If the only reason not to merge is that something is still running or red (CI, DeepSource, a deployment, `main`), the PR stays at `ready` with a "Not merged because: [retry 1 of 3] …" line, and a later Reviewer run re-checks these conditions and merges, without a full re-review as long as the head commit hasn't changed. If the head changed, it goes back to `review`. Each retry raises the count in the line (`[retry 1 of 3]`), and at 3 of 3 it becomes `[owner]`, so a PR can't wait unseen forever on a check that never turns green. Any other reason is marked `[owner]` and waits for the owner.
 
 **What the Reviewer may use.** The Railway and DeepSource connectors. Railway is read-only (deployment status, diagnosis, logs). Nothing but the merge changes production. DeepSource findings are information to verify. The Reviewer never alters DeepSource settings, ignore rules or thresholds.
 
