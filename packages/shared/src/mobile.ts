@@ -19,6 +19,8 @@ export const mobileMutationItemSchema = z.discriminatedUnion('kind', [
     .strict(),
   z.object({ key, kind: z.literal('time'), workOrderId: id, payload }).strict(),
   z.object({ key, kind: z.literal('meter_reading'), assetId: id, meterId: id, payload }).strict(),
+  /** A job raised on site from a scanned asset. `payload` is what `POST /api/work-orders` takes. */
+  z.object({ key, kind: z.literal('quick_job'), payload }).strict(),
 ]);
 export type MobileMutationItem = z.infer<typeof mobileMutationItemSchema>;
 

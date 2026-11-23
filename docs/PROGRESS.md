@@ -9,17 +9,17 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 13%** of the planned build (21 of 83 top-level roadmap items) |
+| **Overall progress** | **About 14%** of the planned build (22 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
-| **Next up** | Phase 1 mobile app for technicians (P1-06) |
+| **Next up** | Phase 1 list views (P1-08) |
 
 <!-- approved-phase: 1 -->
 
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 6 / 13 | In progress |
+| 1 · Core CAFM MVP | 7 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -54,7 +54,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c done (mutation queue, time and labour rates). P1-06d done (PWA shell, offline jobs, My jobs and job detail, in review). P1-06e done (offline outbox, checklist steps, photos, signatures, complete and sync screens; time, parts and root cause on the complete screen are a known gap). P1-06f batch 2 (PR on `claude/build-p1-06-scan-capture`): scan, accept or decline and offline meter readings built. Left: raising a quick job from the scan card (needs an owner decision on technician permission), and scan History. |
 
 ## Phase checklists
 
@@ -116,13 +115,13 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-05a** Task library: maintenance task templates with steps, duration, skills, criticality and safety notes. ([guide](ppm.md#the-task-library))
   - [x] **P1-05b** PPM schedules (calendar and meter-based, fixed or floating) on assets, and the generator that raises PPM work orders ahead of the due date, each with the task's checklist. ([guide](ppm.md#schedules))
   - [x] **P1-05c** 52-week planner, forecast and overdue screens, the schedule and task library screens, and the compliance KPI (`ppm-01-planner`, `ppm-02-schedule`). ([guide](ppm.md#screens))
-- [ ] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
+- [x] **P1-06** Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
   - [x] **P1-06a** OAuth 2.0 + PKCE access and refresh tokens for the mobile PWA, with device list and revoke.
   - [x] **P1-06b** Offline work pack and delta sync API (my jobs, assets, checklists, locations; sync tokens).
   - [x] **P1-06c** Mutation queue API with idempotency keys and conflict handling (status, notes, time, checklist, meter reading).
   - [x] **P1-06d** PWA shell: manifest, service worker, IndexedDB store, offline banner, and My jobs and job detail screens (`mobile-01-technician-jobs`).
   - [x] **P1-06e** Checklists, photos and signatures captured offline, and the complete and sync screens (`mobile-02-technician-complete`).
-  - [ ] **P1-06f** QR scan to open an asset or job, accept or reject, and quick job or meter reading capture.
+  - [x] **P1-06f** QR scan to open an asset or job, accept or reject, and quick job or meter reading capture.
 - [x] **P1-07** Notifications (in-app, email, push) with templates. ([guide](helpdesk.md))
 - [ ] **P1-08** List views: filters, saved views, bulk actions, kanban and calendar views.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.

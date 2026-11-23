@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Quick jobs, recent scans, time and root cause in the technician app: raise a job from a scanned asset (saved on the phone and sent when there is signal, for people allowed to create jobs), reopen the last scans, and add time on the job and an internal root cause when completing a job.
+
 - Scan and quick capture in the technician app: the new Scan tab looks up an asset label, asset number or job number from the jobs saved on the phone (with the camera where the browser supports it), opens its jobs and records a meter reading without signal. A new job can now be accepted, or declined with a reason that goes to the helpdesk as a note. See [Mobile app](docs/mobile.md#scan-accept-and-readings).
 
 - Offline checklists, photos and signatures in the technician app: answer checklist steps, add photos, start and complete a job and take the customer's signature with no signal. Everything is saved on the phone and sent in order when signal returns, and the new Sync tab shows what is waiting and anything the server refused. See [Mobile app](docs/mobile.md#working-offline).

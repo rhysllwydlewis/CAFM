@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Icon } from '@cafm/ui';
 import { matchScan, type MobilePackJob, type ScanMatch } from '@cafm/shared';
-import { clearIfNotOwner, enqueue, readJobs } from '@/lib/mobile-store';
+import { addScan, clearIfNotOwner, enqueue, readJobs, readScans, type ScanRecord } from '@/lib/mobile-store';
 import { useMembershipId } from '../mobile-shell';
 import { flushOutbox } from '@/lib/mobile-sync-client';
 
@@ -131,6 +131,91 @@ function ReadingForm({ match, onSaved }: { match: Extract<ScanMatch, { kind: 'as
   );
 }
 
+function QuickJobForm({ match, onSaved }: { match: Extract<ScanMatch, { kind: 'asset' }>; onSaved: () => void }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [urgency, setUrgency] = useState(2);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    if (saving) return;
+    if (!title.trim() || !description.trim()) {
+      setError('Enter a title and say what you found.');
+      return;
+    }
+    // A second tap while the write is pending would queue a duplicate job.
+    setSaving(true);
+    const id = crypto.randomUUID();
+    // Kept on the phone first. It rides on one of the asset's jobs so it syncs in order with that job's changes.
+    await enqueue(
+      match.jobs[0]!.id,
+      {
+        type: 'mutation',
+        item: {
+          key: id,
+          kind: 'quick_job',
+          payload: {
+            submissionId: crypto.randomUUID(),
+            title: title.trim().slice(0, 160),
+            description: description.trim().slice(0, 6000),
+            locationId: match.jobs[0]!.location.id,
+            assetId: match.asset.id,
+            impact: urgency,
+            urgency,
+          },
+        },
+      },
+      {},
+      id,
+    );
+    if (navigator.onLine) void flushOutbox();
+    onSaved();
+  }
+
+  return (
+    <form onSubmit={save} className="stack g2" noValidate>
+      <label className="medium sm" htmlFor="quick-title">
+        What needs doing
+      </label>
+      <div className="input lg">
+        <input id="quick-title" value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} />
+      </div>
+      <label className="medium sm" htmlFor="quick-description">
+        What you found
+      </label>
+      <div className="input">
+        <textarea
+          id="quick-description"
+          value={description}
+          rows={3}
+          maxLength={6000}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      <label className="medium sm" htmlFor="quick-urgency">
+        How urgent
+      </label>
+      <div className="input lg">
+        <select id="quick-urgency" value={urgency} onChange={(e) => setUrgency(Number(e.target.value))}>
+          <option value={1}>Low</option>
+          <option value={2}>Medium</option>
+          <option value={3}>High</option>
+        </select>
+      </div>
+      {error && (
+        <div className="sm" role="alert" style={{ color: 'var(--danger-text)' }}>
+          {error}
+        </div>
+      )}
+      <button type="submit" className="m-btn primary" disabled={saving}>
+        Raise job
+      </button>
+    </form>
+  );
+}
+
 export default function ScanPage() {
   const [jobs, setJobs] = useState<MobilePackJob[]>([]);
   const [code, setCode] = useState('');
@@ -138,11 +223,18 @@ export default function ScanPage() {
   const [camera, setCamera] = useState(false);
   const [reading, setReading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [raising, setRaising] = useState(false);
+  const [raised, setRaised] = useState(false);
+  const [history, setHistory] = useState<ScanRecord[]>([]);
 
   const owner = useMembershipId();
   useEffect(() => {
     // Jobs saved for another organisation or person on this browser are removed before anything is looked up.
-    void clearIfNotOwner(owner).then(readJobs).then(setJobs);
+    // History is read only after the owner check, so another person's scans are never shown.
+    void clearIfNotOwner(owner).then(async () => {
+      setJobs(await readJobs());
+      setHistory(await readScans());
+    });
   }, [owner]);
 
   // Readings saved offline are sent when signal returns, even if this screen stays open.
@@ -157,9 +249,21 @@ export default function ScanPage() {
     setCamera(false);
     setReading(false);
     setSaved(false);
+    setRaising(false);
+    setRaised(false);
   }, []);
   const { video, state } = useCamera(camera, onCode);
   const match = useMemo(() => (scanned === null ? null : matchScan(scanned, jobs)), [scanned, jobs]);
+
+  // Every scan that found something is kept on the phone, so the last few can be opened again without scanning.
+  useEffect(() => {
+    if (scanned === null || !match || match.kind === 'none') return;
+    const label =
+      match.kind === 'job' ? match.job.number + ' · ' + match.job.title : match.asset.number + ' · ' + match.asset.name;
+    void addScan({ code: scanned.trim(), label, scannedAt: new Date().toISOString() }).then(() =>
+      readScans().then(setHistory),
+    );
+  }, [scanned, match]);
 
   return (
     <>
@@ -251,6 +355,24 @@ export default function ScanPage() {
                 Open {job.number}
               </a>
             ))}
+            {raised ? (
+              <div className="sm" role="status">
+                Job saved on this phone. It is raised when you have signal, if you are allowed to raise jobs.
+              </div>
+            ) : raising ? (
+              <QuickJobForm
+                match={match}
+                onSaved={() => {
+                  setRaised(true);
+                  setRaising(false);
+                }}
+              />
+            ) : (
+              <button type="button" className="m-btn secondary" onClick={() => setRaising(true)}>
+                <Icon name="plus" size={18} />
+                Raise a job
+              </button>
+            )}
             {saved ? (
               <div className="sm" role="status">
                 Reading saved on this phone. It sends when you have signal.
@@ -269,6 +391,29 @@ export default function ScanPage() {
                 Record a reading
               </button>
             )}
+          </div>
+        )}
+        {history.length > 0 && (
+          <div className="m-card">
+            <h2 className="medium sm" style={{ margin: 0 }}>
+              Recent scans
+            </h2>
+            <ul className="stack g2" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {history.map((scan) => (
+                <li key={scan.code}>
+                  <button
+                    type="button"
+                    className="m-btn secondary"
+                    onClick={() => {
+                      setCode(scan.code);
+                      onCode(scan.code);
+                    }}
+                  >
+                    {scan.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
