@@ -23,8 +23,19 @@ export default function MyJobsPage() {
       <div className="m-body" style={{ overflow: 'visible' }}>
         {jobs && jobs.length === 0 && (
           <div className="m-card">
-            <div className="medium">No jobs for you right now</div>
-            <div className="sm faint">New jobs appear here when you have signal.</div>
+            {!syncedAt && result && result !== 'synced' ? (
+              <>
+                <div className="medium">Your jobs have not loaded yet</div>
+                <div className="sm faint">
+                  {result === 'offline' ? 'Connect to the internet once to save them on this phone.' : 'Try Sync now.'}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="medium">No jobs for you right now</div>
+                <div className="sm faint">New jobs appear here when you have signal.</div>
+              </>
+            )}
           </div>
         )}
         {jobs?.map((job) => (

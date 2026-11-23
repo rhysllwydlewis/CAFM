@@ -52,7 +52,11 @@ export function MobileShell({ children }: { children: ReactNode }) {
         </div>
       )}
       <main style={{ flex: 1, paddingBottom: 16 }}>{children}</main>
-      <nav className="m-tabs" aria-label="App sections" style={{ position: 'sticky', bottom: 0 }}>
+      <nav
+        className="m-tabs"
+        aria-label="App sections"
+        style={{ position: 'sticky', bottom: 0, gridTemplateColumns: 'repeat(' + TABS.length + ', 1fr)' }}
+      >
         {TABS.map((tab) => {
           const on = tab.href === '/m' ? pathname === '/m' || pathname.startsWith('/m/job') : pathname === tab.href;
           return (
