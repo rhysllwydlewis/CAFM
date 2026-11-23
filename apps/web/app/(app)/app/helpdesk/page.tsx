@@ -10,6 +10,7 @@ import {
 } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { currentUser } from '@/lib/session';
+import { ListViewBar } from '@/components/list-view-bar';
 import { catalogue, readHelpdesk, requestPage } from '@/lib/helpdesk';
 import { QueueLocationFilter } from './queue-location-filter';
 import { RequestForm } from './request-form';
@@ -115,6 +116,7 @@ export default async function HelpdeskPage({
           )}
         </div>
       </div>
+      <ListViewBar entity="requests" route="/app/helpdesk" query={input} user={user} />
       {cards.length > 0 && (
         <div className={styles.metrics}>
           {cards.map(([label, value, icon]) => (
@@ -141,7 +143,7 @@ export default async function HelpdeskPage({
             </Link>
           ))}
         </nav>
-        <form className={styles.filters}>
+        <form key={params.toString()} className={styles.filters}>
           <input type="hidden" name="view" value={currentView} />
           <label className="field">
             <span className="label">Search requests</span>

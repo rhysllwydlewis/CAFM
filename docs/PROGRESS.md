@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). Next batch: P1-08b, the view bar and column chooser on the work order, asset, request and PPM lists, then bulk actions (P1-08c), then kanban and calendar (P1-08d). |
+| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). P1-08b in progress on PR #62: the saved-views bar (open, save, share, delete) is on all four lists. Still to do for P1-08b: sort, group and the column chooser. Then bulk actions (P1-08c), then kanban and calendar (P1-08d). |
 | P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batch 2 (roles matrix screen and teams) built, in review. Next: scopes by site or team and delegated admin (rest of P1-09b), then P1-09c |
 
 ## Phase checklists
