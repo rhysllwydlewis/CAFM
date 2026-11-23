@@ -6,6 +6,14 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Time and labour rates: technicians record the time they spend on a job (on site, travel or overtime) without seeing any cost. Finance, administrators or any role given the permission set hourly rates, for everyone or per role, and the cost of the time is posted to the job automatically using the rate at the time. Who can record time, see costs and set rates is chosen per role. See [Work orders](docs/work-orders.md#time-and-labour-rates).
+
+- Mobile sync queue: changes a technician makes offline (status, notes, checklist answers and meter readings) are sent in a batch, each with a key so a retry never applies a change twice. A change that no longer fits, such as a job that has since changed, is rejected on its own. See [Mobile app](docs/mobile.md#mutation-queue).
+
+- Mobile work pack: a technician's phone can download their open jobs with locations, assets and checklists, and then ask only for what changed since the last sync. See [Mobile app](docs/mobile.md#work-pack-and-sync).
+
+- Mobile sign-in: the technician app signs in with OAuth 2.0 and PKCE. A person signed in at a browser approves a device, which gets a 15-minute access token and a refresh token that changes on every use. A copied refresh token signs the device out. People can list and sign out their own devices. See [Mobile app](docs/mobile.md#signing-in-a-device).
+
 - Planned maintenance screens: a 52-week planner of every schedule, a list of schedules, a forecast of visits, labour and estimated cost by month, the overdue visits, and how many were done on time in the last 12 months. Planners can add tasks to the library, plan schedules, put assets on them and raise the jobs now. See [Planned maintenance](docs/ppm.md#screens).
 
 - Planned maintenance: a library of maintenance tasks (steps, duration, skills, safety notes), and schedules that repeat on a calendar or by a meter reading, with fixed dates or counted on from the last visit. Work orders are raised automatically ahead of each due date, once, with the task's steps as a checklist that must be completed, and the schedule moves on when the job is done. See [Planned maintenance](docs/ppm.md).

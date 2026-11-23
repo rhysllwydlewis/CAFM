@@ -21,7 +21,9 @@ export class SessionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
-    const token: unknown = req.cookies?.[SESSION_COOKIE];
+    // The mobile PWA sends an OAuth access token (P1-06a); browsers send the session cookie.
+    const bearer = /^Bearer (\S+)$/.exec(req.get('authorization') ?? '')?.[1];
+    const token: unknown = bearer ?? req.cookies?.[SESSION_COOKIE];
     if (typeof token !== 'string' || !token) throw new UnauthorizedException();
     const session = await this.db.session.findUnique({
       where: { tokenHash: hashToken(token) },

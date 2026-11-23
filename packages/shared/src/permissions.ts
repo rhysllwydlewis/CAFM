@@ -29,6 +29,8 @@ export const PERMISSIONS = {
   'ppm.read': { module: 'ppm', label: 'See planned maintenance' },
   'ppm.manage': { module: 'ppm', label: 'Plan and schedule maintenance' },
   'costs.read': { module: 'finance', label: 'See costs and rates' },
+  'costs.manage_rates': { module: 'finance', label: 'Set labour rates', admin: true },
+  'time.record': { module: 'work_orders', label: 'Record time on work orders' },
   'reports.read': { module: 'reports', label: 'See reports and dashboards' },
 } as const satisfies Record<string, { module: string; label: string; admin?: boolean }>;
 
@@ -98,6 +100,7 @@ export const BUILTIN_ROLES: BuiltinRole[] = [
       'work_orders.edit',
       'work_orders.assign',
       'work_orders.close',
+      'time.record',
       'ppm.manage',
       'costs.read',
       ...OPERATIONS,
@@ -115,7 +118,7 @@ export const BUILTIN_ROLES: BuiltinRole[] = [
     key: 'planner',
     name: 'Supervisor / Planner',
     description: 'Schedules and dispatches work, plans maintenance',
-    permissions: ['people.read', 'work_orders.edit', 'work_orders.assign', 'ppm.manage', ...OPERATIONS],
+    permissions: ['people.read', 'work_orders.edit', 'work_orders.assign', 'time.record', 'ppm.manage', ...OPERATIONS],
     scope: 'all',
   },
   {
@@ -126,6 +129,7 @@ export const BUILTIN_ROLES: BuiltinRole[] = [
       'requests.create',
       'work_orders.read',
       'work_orders.close',
+      'time.record',
       'assets.read',
       'locations.read',
       'assets.record_readings',
@@ -157,7 +161,7 @@ export const BUILTIN_ROLES: BuiltinRole[] = [
     key: 'finance',
     name: 'Finance',
     description: 'Budgets, purchase orders, invoices and cost views',
-    permissions: ['people.read', 'costs.read', 'reports.read', 'work_orders.read'],
+    permissions: ['people.read', 'costs.read', 'costs.manage_rates', 'reports.read', 'work_orders.read'],
     scope: 'all',
   },
   {

@@ -150,6 +150,35 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
   // Costs on the boiler job: 2.5 hours at £46, a pressure relief valve and a sealing kit, £186.40 in all.
   const boilerJob = seedId('work-order:demo-estates:WO-10412');
   const manager = seedId('membership:demo-estates:manager');
+  // The organisation's labour rates, and the technician's time on the boiler job that made its labour cost.
+  for (const [labourType, rateMinor] of [
+    ['on_site', 4600],
+    ['travel', 3200],
+    ['overtime', 6900],
+  ] as const) {
+    await db.labourRate.upsert({
+      where: { tenantId_labourType_roleKey: { tenantId, labourType, roleKey: '' } },
+      update: {},
+      create: { id: seedId(`labour-rate:demo-estates:${labourType}`), tenantId, labourType, roleKey: '', rateMinor },
+    });
+  }
+  const boilerTime = seedId('work-order-time:demo-estates:boiler');
+  await db.workOrderTime.upsert({
+    where: { id: boilerTime },
+    update: {},
+    create: {
+      id: boilerTime,
+      tenantId,
+      workOrderId: boilerJob,
+      memberId: technician,
+      labourType: 'on_site',
+      minutes: 150,
+      workedOn: new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z'),
+      note: 'Engineer, pressure fault',
+      rateMinor: 4600,
+      submission: seedId('work-order-time-submission:demo-estates:boiler'),
+    },
+  });
   const costs = [
     {
       key: 'labour',
@@ -181,7 +210,7 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
     const id = seedId('work-order-cost:demo-estates:' + cost.key);
     await db.workOrderCost.upsert({
       where: { id },
-      update: {},
+      update: cost.key === 'labour' ? { timeId: boilerTime, recordedById: technician } : {},
       create: {
         id,
         tenantId,
@@ -194,7 +223,8 @@ export async function seedWorkOrders(db: PrismaClient): Promise<void> {
         unitCostMinor: cost.unitCostMinor,
         amountMinor: Math.floor((cost.quantityMilli * cost.unitCostMinor + 500) / 1000),
         incurredOn: new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z'),
-        recordedById: manager,
+        recordedById: cost.key === 'labour' ? technician : manager,
+        timeId: cost.key === 'labour' ? boilerTime : null,
       },
     });
   }
