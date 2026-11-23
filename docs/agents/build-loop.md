@@ -98,7 +98,7 @@ Two sessions can run side by side. A start that finds the PR already being worke
 
 ## Resuming after a usage limit (the key mechanism)
 
-A session can't wait for its usage to reset. It can't sleep or poll, and a session that hits the limit is simply cut off. So the loop doesn't wait. **The schedule is the wait.**
+A session can't wait for its usage to reset. It can't sleep or poll, and a session that hits the limit is simply cut off. So the loop doesn't wait for usage to reset. **The schedule is the wait.** (The Reviewer's short wait for CI inside one run, described under "Waiting for CI", is a different thing.)
 
 1. **Push early and often.** After every coherent slice of work (a sub-item, or about 30 to 45 minutes), a session runs the relevant checks, commits, pushes and refreshes the Status block. Anything not pushed is lost when the session ends.
 2. **The state is in the repository and the PR**, never in a session's head: the branch, the Status block, the `docs/PROGRESS.md` claim row and the PR checklist.
@@ -180,11 +180,13 @@ The owner doesn't read code, so a human click adds nothing a careful reviewer an
 6. No must-fix finding is open, and the Reviewer ran every check itself on the final head.
 7. The head commit is still the one recorded in "Signed off at:".
 
-**Retrying.** A Reviewer can't wait for CI after it pushes a fix, so a PR is often signed off before its checks have finished. If the only reason not to merge is that something is still running or red (CI, DeepSource, a deployment, `main`), the PR stays at `ready` with a "Not merged because: [retry 1 of 3] …" line, and a later Reviewer run re-checks these conditions and merges, without a full re-review as long as the head commit hasn't changed. If the head changed, it goes back to `review`. Each retry raises the count in the line (`[retry 1 of 3]`), and at 3 of 3 it becomes `[owner]`, so a PR can't wait unseen forever on a check that never turns green. Any other reason is marked `[owner]` and waits for the owner.
+**Waiting for CI.** A Reviewer usually signs a PR off just after its last push, while CI is still running. It waits for that CI, checking about once a minute for at most 20 minutes, and merges in the same run when it goes green. If CI goes red it reads the log: a setup failure is re-run once, a small real failure is fixed on the branch (and the sign-off moves to the new head), anything else sends the PR back to `build`. The wait is allowed here and nowhere else.
+
+**Retrying.** If the only reason not to merge is that something is still running or red after that wait (CI, a deployment, `main`, DeepSource while it is switched on), the PR stays at `ready` with a "Not merged because: [retry 1 of 3] …" line, and a later Reviewer run re-checks these conditions and merges, without a full re-review as long as the head commit hasn't changed. If the head changed, it goes back to `review`. Each retry raises the count in the line (`[retry 1 of 3]`), and at 3 of 3 it becomes `[owner]`, so a PR can't wait unseen forever on a check that never turns green. Any other reason is marked `[owner]` and waits for the owner.
 
 **What the Reviewer may use.** The Railway and DeepSource connectors. Railway is read-only (deployment status, diagnosis, logs). Nothing but the merge changes production. DeepSource findings are information to verify. The Reviewer never alters DeepSource settings, ignore rules or thresholds.
 
-The merge uses the PR title, is pinned to the exact head commit the Reviewer checked, and is one PR per run. The Reviewer never merges an "Approve Phase N" PR, a Steward docs PR, or any PR it didn't review. If a condition fails, the PR stays at `ready` with a "Not merged because:" line, and the owner decides.
+The merge uses the PR title, is pinned to the exact head commit the Reviewer checked, and the Reviewer reviews one PR per run. It may merge several merge-ready PRs in one run, one after another, if each is clean and none touches a file changed by a PR it already merged in that run, so ready PRs don't wait an hour each. When the PR it would review first is busy with another session, it moves on to the next one on its list instead of stopping. The Reviewer never merges an "Approve Phase N" PR, a Steward docs PR, or any PR it didn't review. If a condition fails, the PR stays at `ready` with a "Not merged because:" line, and the owner decides.
 
 **Unreviewed merges.** If a PR reaches `main` without a Reviewer pass (the owner merged it, or a check was missed), the Steward notices at its next run and opens a `priority:now` issue ("Review merged PR #N and fix what it finds"), so the Builder reviews the merged code first. Nothing stays unreviewed for long, whoever merged it.
 
