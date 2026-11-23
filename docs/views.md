@@ -28,4 +28,15 @@ Each of the four lists has a **Saved view** bar above its filters. Pick a view t
 
 ## Sorting the work order list
 
-`GET /api/work-orders` takes `sort` (`created`, `priority`, `number` or `title`) and `dir` (`asc` or `desc`). The default is newest first. Only columns that are never empty are offered, so paging with the cursor never skips or repeats a job. The work order screen has **Sort by** and **Sort order** controls; because they live in the address, a saved view keeps them. Sorting the asset, request and planned maintenance lists comes in a later batch.
+`GET /api/work-orders` takes `sort` (`created`, `priority`, `number` or `title`) and `dir` (`asc` or `desc`). The default is newest first. Only columns that are never empty are offered, so paging with the cursor never skips or repeats a job. The work order screen has **Sort by** and **Sort order** controls; because they live in the address, a saved view keeps them. 
+## Sorting the other lists
+
+The same **Sort by** and **Sort order** controls are on the other three lists, and a saved view keeps them.
+
+| List | Endpoint | `sort` values | Default |
+|---|---|---|---|
+| Requests | `GET /api/helpdesk/requests` | `created`, `priority`, `number`, `title` | newest first |
+| Assets | `GET /api/assets` | `created`, `number`, `name` | oldest first, as before |
+| Planned maintenance schedules | `GET /api/ppm/schedules` | `number`, `title`, `priority` | by reference |
+
+Requests and assets page with a cursor on a column that is never empty, with the id to break ties. Schedules page with `offset`. An unknown `sort` is refused with 400. Grouping and the column chooser come in a later batch.

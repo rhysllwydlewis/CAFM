@@ -7,6 +7,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 ### Added
 
 - Admin console: a Site access card on the users screen sets which sites each person can see, and people with people permissions who are limited to certain sites can now manage only the people inside their own sites (delegated admin). Invitations stay with organisation-wide admins.
+- Sort the request, asset and planned maintenance schedule lists, ascending or descending, with the same Sort by and Sort order controls as work orders. The order is kept when you save the filters as a view.
 - Sort the work order list by date raised, priority, number or title, ascending or descending. The order carries across pages and is kept when you save the filters as a view.
 - A saved views bar on the work order, asset, request and planned maintenance lists: save the filters you are looking at as a view (private, or shared if you may share), open it from the list, and delete it.
 - Saved list views (API): keep your own filters, sort, grouping and columns for work orders, assets, requests and planned maintenance, and share a view with the whole organisation if you are allowed to. The screens follow. See [Saved list views](docs/views.md).

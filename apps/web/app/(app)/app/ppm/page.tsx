@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature, formatMinor, PPM_CRITICALITIES, PPM_CRITICALITY_LABELS } from '@cafm/shared';
+import { can, feature, formatMinor, PPM_CRITICALITIES, PPM_CRITICALITY_LABELS, PPM_SORTS } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { hours } from '@/lib/ppm-format';
 import { ppmForecast, ppmOverdue, ppmPlanner, ppmSchedules, ppmSummary } from '@/lib/ppm';
@@ -24,6 +24,7 @@ const VIEWS = [
 type View = (typeof VIEWS)[number][0];
 
 const PAGE_SIZE = 50;
+const SORT_LABELS = { number: 'Reference', title: 'Title', priority: 'Priority' } as const;
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) || undefined;
 
 export default async function PpmPage({
@@ -43,6 +44,8 @@ export default async function PpmPage({
     criticality: PPM_CRITICALITIES.some((key) => key === one(input.criticality)) ? one(input.criticality) : undefined,
     discipline: one(input.discipline),
     status: one(input.status),
+    sort: PPM_SORTS.find((key) => key === one(input.sort)),
+    dir: ['asc', 'desc'].find((key) => key === one(input.dir)),
   };
   const offset = Math.max(0, Math.floor(Number(one(input.offset))) || 0);
   const canManage = can(user, 'ppm.manage');
@@ -117,7 +120,7 @@ export default async function PpmPage({
 
   const pageHref = (target: number) => {
     const next = new URLSearchParams({ view: 'list' });
-    for (const key of ['q', 'criticality', 'discipline', 'status'] as const)
+    for (const key of ['q', 'criticality', 'discipline', 'status', 'sort', 'dir'] as const)
       if (filters[key]) next.set(key, filters[key]!);
     if (target) next.set('offset', String(target));
     return '/app/ppm?' + next.toString();
@@ -215,6 +218,27 @@ export default async function PpmPage({
                   <option value="all">All</option>
                 </select>
               </label>
+            )}
+            {view === 'list' && (
+              <>
+                <label className="field">
+                  <span className="label">Sort by</span>
+                  <select className={styles.control} name="sort" defaultValue={filters.sort ?? 'number'}>
+                    {PPM_SORTS.map((sort) => (
+                      <option key={sort} value={sort}>
+                        {SORT_LABELS[sort]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span className="label">Sort order</span>
+                  <select className={styles.control} name="dir" defaultValue={filters.dir ?? 'asc'}>
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </label>
+              </>
             )}
             <button type="submit" className="btn">
               Apply filters

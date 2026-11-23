@@ -5,6 +5,7 @@ import {
   feature,
   listRequestsSchema,
   REQUEST_CHANNEL_LABELS,
+  REQUEST_SORTS,
   type ReportLocation,
   type RequestView,
 } from '@cafm/shared';
@@ -18,6 +19,7 @@ import { RequestTable } from './request-table';
 import styles from './helpdesk.module.css';
 
 export const metadata: Metadata = { title: 'Helpdesk' };
+const SORT_LABELS = { created: 'Date logged', priority: 'Priority', number: 'Number', title: 'Title' } as const;
 const views: [RequestView, string][] = [
   ['open', 'Open'],
   ['mine', 'Mine'],
@@ -56,7 +58,7 @@ export default async function HelpdeskPage({
   const parsed = listRequestsSchema.safeParse(Object.fromEntries(Object.entries(input).filter(([, value]) => value)));
   const filters = parsed.success ? parsed.data : listRequestsSchema.parse({});
   const params = new URLSearchParams();
-  for (const key of ['view', 'q', 'locationId', 'category', 'channel', 'cursor'] as const) {
+  for (const key of ['view', 'q', 'locationId', 'category', 'channel', 'sort', 'dir', 'cursor'] as const) {
     if (filters[key]) params.set(key, filters[key]);
   }
   const operator = can(user, 'requests.create') && can(user, 'requests.manage');
@@ -170,6 +172,24 @@ export default async function HelpdeskPage({
                   {label}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="label">Sort by</span>
+            <select className={styles.control} name="sort" defaultValue={filters.sort}>
+              {REQUEST_SORTS.map((sort) => (
+                <option key={sort} value={sort}>
+                  {SORT_LABELS[sort]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="label">Sort order</span>
+            <select className={styles.control} name="dir" defaultValue={filters.dir ?? ''}>
+              <option value="">Default</option>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
             </select>
           </label>
           <button type="submit" className="btn">
