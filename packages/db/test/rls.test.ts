@@ -859,6 +859,31 @@ it('isolates labour rates and recorded time and refuses what the API never produ
   await expect(time(demo, { rateMinor: -5 })).rejects.toThrow(/work_order_time_rate_valid/);
 });
 
+it('isolates teams and their members, and rejects a cross-tenant member', async () => {
+  expect(await db.team.count()).toBe(0);
+  expect(await db.teamMember.count()).toBe(0);
+  const demoTeams = await withTenant(db, demo, (tx) => tx.team.findMany({ include: { members: true } }));
+  expect(demoTeams.length).toBeGreaterThan(0);
+  const starterRows = await withTenant(db, starter, async (tx) => ({
+    teams: await tx.team.findMany(),
+    members: await tx.teamMember.findMany(),
+    demoTeam: await tx.team.findUnique({ where: { id: demoTeams[0]!.id } }),
+  }));
+  expect(starterRows).toEqual({ teams: [], members: [], demoTeam: null });
+  await expect(
+    withTenant(db, starter, async (tx) => {
+      const team = await tx.team.create({ data: { tenantId: starter, name: 'Starter team' } });
+      await tx.teamMember.create({
+        data: {
+          tenantId: starter,
+          teamId: team.id,
+          membershipId: seedId('membership:demo-estates:technician'),
+        },
+      });
+    }),
+  ).rejects.toThrow(/Foreign key constraint/);
+});
+
 it('isolates saved list views and refuses a view owned by another organisation’s member', async () => {
   expect(await db.savedView.count()).toBe(0);
   const config = { layout: 'list', filters: {}, sort: null, group: null, columns: [] };

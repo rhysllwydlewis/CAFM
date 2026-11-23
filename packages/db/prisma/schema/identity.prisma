@@ -11,6 +11,7 @@ model Tenant {
   demo                       Boolean                    @default(false)
   createdAt                  DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
   memberships                Membership[]
+  teams                      Team[]
   invites                    Invite[]
   fields                     FieldDefinition[]
   sequences                  NumberSequence[]
@@ -118,6 +119,7 @@ model Membership {
   workOrderSignatures  WorkOrderSignature[]
   mobileMutations      MobileMutation[]
   workOrderTimes       WorkOrderTime[]
+  teamMemberships      TeamMember[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, accountId])

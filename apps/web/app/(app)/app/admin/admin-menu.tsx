@@ -7,14 +7,20 @@ import styles from './admin.module.css';
 export function AdminMenu({
   canManageSettings,
   canManagePeople,
+  canReadRoles,
+  canReadPeople,
 }: {
   canManageSettings: boolean;
   canManagePeople: boolean;
+  canReadRoles: boolean;
+  canReadPeople: boolean;
 }) {
   const path = usePathname();
   const items = [
     canManageSettings && { href: '/app/admin', label: 'Overview' },
     canManagePeople && { href: '/app/admin/users', label: 'Users and licences' },
+    canReadRoles && { href: '/app/admin/roles', label: 'Roles and permissions' },
+    canReadPeople && { href: '/app/admin/teams', label: 'Teams' },
   ].filter((item): item is { href: string; label: string } => !!item);
   return (
     <nav className="card" aria-label="Administration" style={{ alignSelf: 'start' }}>

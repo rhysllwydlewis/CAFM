@@ -5,6 +5,7 @@ import { CsrfGuard } from './core/csrf.guard';
 import { HealthController } from './core/health.controller';
 import { AuditModule } from './modules/audit/audit.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { TeamsModule } from './modules/teams/teams.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigEngineModule } from './modules/config/config.module';
 import { AssetsModule } from './modules/assets/assets.module';
@@ -25,6 +26,7 @@ import { RolesModule } from './modules/roles/roles.module';
     RolesModule,
     AuditModule,
     AdminModule,
+    TeamsModule,
     ConfigEngineModule,
     LocationsModule,
     AssetsModule,
