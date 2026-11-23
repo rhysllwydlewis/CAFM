@@ -1,11 +1,13 @@
-import { BadRequestException, Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant, type Tx } from '@cafm/db';
+import { mobileMutationsSchema } from '@cafm/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../../core/session';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { MobileMutations } from './mobile-mutations';
 import { readChecklists } from '../work-orders/work-order-checklists';
 import { workOrderScope } from '../work-orders/work-order-scope';
 import { workOrderRelations, workOrderSummary } from '../work-orders/work-order-records';
@@ -73,7 +75,10 @@ async function packJobs(tx: Tx, auth: AuthContext, changedSince: Date | null) {
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
 @RequireFeature('mobile')
 export class MobileController {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly mutations: MobileMutations,
+  ) {}
 
   /** The whole pack: the jobs the person may see that are still open, and a token to ask for changes since. */
   @Get('work-pack')
@@ -110,5 +115,17 @@ export class MobileController {
       });
       return { syncToken: tokenFor(at), generatedAt: at.toISOString(), jobs, jobIds: current.map((job) => job.id) };
     });
+  }
+
+  /**
+   * Applies a batch of changes made offline, in order. Each has a key made on the phone: a retry with the
+   * same key is answered from the first outcome and never repeated. A change that can't be applied (the job
+   * changed, the checklist gate holds it back, no permission) is rejected on its own and the rest carry on.
+   */
+  @Post('mutations')
+  @RequirePermission('work_orders.read')
+  async mutate(@Req() req: Request, @Body() body: unknown) {
+    const { mutations } = parse(mobileMutationsSchema, body);
+    return { results: await this.mutations.apply(req.auth!, req.ip, mutations) };
   }
 }

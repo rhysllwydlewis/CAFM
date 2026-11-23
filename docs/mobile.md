@@ -32,3 +32,18 @@ A signed-in device (a bearer token, or a browser session) keeps its jobs for off
 - `GET /api/mobile/changes?since=<syncToken>` returns the jobs that changed since the token (the job itself, a checklist added or an answer given), a new `syncToken`, and `jobIds`, every open job the person still holds. The phone removes any job missing from `jobIds` (closed, cancelled or reassigned).
 
 The token is the server's clock when the data was read. A bad or future token gets a 400 `invalid_sync_token`, and the phone fetches the whole pack again. Known limit: clearing a checklist answer does not by itself mark the job as changed, so the next full pack picks it up.
+
+## Mutation queue
+
+`POST /api/mobile/mutations` takes up to 50 changes made offline, `{ "mutations": [{ "key", "kind", ... , "payload" }] }`, and applies them in order. Each change has a `key` (a UUID made on the phone, the same on every retry) and a `kind`:
+
+| kind | Also needs | `payload` is what this takes |
+| --- | --- | --- |
+| `status` | `workOrderId` | `POST /api/work-orders/:id/status` (with the job's `version`) |
+| `note` | `workOrderId` | `POST /api/work-orders/:id/comments` |
+| `checklist_answer` | `workOrderId`, `checklistId`, `itemId` | `PUT /api/work-orders/:id/checklists/:checklistId/items/:itemId` |
+| `meter_reading` | `assetId`, `meterId` | `POST /api/assets/:assetId/operations/meters/:meterId/readings` |
+
+Each change runs through the same code as the website, so permissions, data scope, versions, checklist gates and audit events are the same. The response is `{ results: [{ key, status, code?, message?, replayed? }] }`, in the same order. `status` is `applied` or `rejected`. A rejection (`conflict` when the job changed and needs refreshing, `invalid`, `forbidden`, `not_found`, `key_reused`) affects only that change, and the rest carry on. The outcome is kept against the key (table `mobile_mutation`), so a retry after a dropped connection returns the first outcome with `replayed: true` and nothing is applied twice. The same key with different content is rejected as `key_reused`.
+
+Not yet queued: time on the job (labour is a cost, and technicians can't add costs today).

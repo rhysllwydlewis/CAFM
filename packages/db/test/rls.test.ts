@@ -779,3 +779,32 @@ it('isolates asset operational records and refuses foreign parents', async () =>
     ),
   ).rejects.toThrow(/Foreign key constraint|Unique constraint/);
 });
+
+it('isolates the phone change log and refuses outcomes the API never produces', async () => {
+  const member = await withTenant(db, demo, (tx) => tx.membership.findFirstOrThrow({ where: { role: 'technician' } }));
+  const row = (tenantId: string, extra: object = {}) => ({
+    tenantId,
+    memberId: member.id,
+    key: randomUUID(),
+    kind: 'note',
+    requestHash: 'h',
+    outcome: 'applied',
+    ...extra,
+  });
+  const made = await withTenant(db, demo, (tx) => tx.mobileMutation.create({ data: row(demo) }));
+  expect(await withTenant(db, starter, (tx) => tx.mobileMutation.count())).toBe(0);
+  expect(await withTenant(db, starter, (tx) => tx.mobileMutation.deleteMany({ where: { id: made.id } }))).toEqual({
+    count: 0,
+  });
+  // A change cannot be logged against another organisation's member.
+  await expect(withTenant(db, starter, (tx) => tx.mobileMutation.create({ data: row(starter) }))).rejects.toThrow(
+    /Foreign key constraint/,
+  );
+  await expect(
+    withTenant(db, demo, (tx) => tx.mobileMutation.create({ data: row(demo, { outcome: 'maybe' }) })),
+  ).rejects.toThrow(/mobile_mutation_outcome_valid/);
+  await expect(
+    withTenant(db, demo, (tx) => tx.mobileMutation.create({ data: row(demo, { kind: 'delete' }) })),
+  ).rejects.toThrow(/mobile_mutation_kind_valid/);
+  await withTenant(db, demo, (tx) => tx.mobileMutation.deleteMany({ where: { id: made.id } }));
+});

@@ -160,3 +160,168 @@ describe('mobile work pack', () => {
       .expect(401);
   });
 });
+
+describe('mobile mutation queue', () => {
+  const post = (
+    agent: {
+      post: (url: string) => {
+        send: (body: object) => Promise<{
+          status: number;
+          body: { results: { key: string; status: string; code?: string; replayed?: boolean }[] };
+        }>;
+      };
+    },
+    ...m: object[]
+  ) => agent.post('/api/mobile/mutations').send({ mutations: m });
+
+  it('applies a change once, and answers a retry with the first outcome', async () => {
+    const { cleanup, accounts, tech, job, tenant } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const key = randomUUID();
+      const note = { key, kind: 'note', workOrderId: mine.id, payload: { body: 'Isolated and drained.' } };
+      const first = await post(tech, note);
+      expect(first.status).toBe(201);
+      expect(first.body.results).toEqual([{ key, status: 'applied' }]);
+      const retry = await post(tech, note);
+      expect(retry.body.results).toEqual([{ key, status: 'applied', replayed: true }]);
+      const notes = await withTenant(db, tenant.id, (tx) =>
+        tx.workOrderEntry.count({ where: { workOrderId: mine.id, kind: 'comment' } }),
+      );
+      expect(notes).toBe(1);
+      // The same key for a different change is refused, not applied.
+      const reused = await post(tech, { ...note, payload: { body: 'Something else.' } });
+      expect(reused.body.results[0]).toMatchObject({ status: 'rejected', code: 'key_reused' });
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('rejects a stale or invalid change on its own and carries on with the rest', async () => {
+    const { cleanup, accounts, tech, job } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const stale = {
+        key: randomUUID(),
+        kind: 'status',
+        workOrderId: mine.id,
+        payload: { version: 99, status: 'on_site' },
+      };
+      const bad = { key: randomUUID(), kind: 'note', workOrderId: mine.id, payload: { body: '' } };
+      const good = { key: randomUUID(), kind: 'note', workOrderId: mine.id, payload: { body: 'Arrived.' } };
+      const { body } = await post(tech, stale, bad, good);
+      expect(body.results.map((r: { status: string; code?: string }) => [r.status, r.code])).toEqual([
+        ['rejected', 'conflict'],
+        ['rejected', 'invalid'],
+        ['applied', undefined],
+      ]);
+      // A rejection is kept too, so a retry gives the same answer.
+      const again = await post(tech, stale);
+      expect(again.body.results[0]).toMatchObject({ status: 'rejected', code: 'conflict', replayed: true });
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('moves a job on and answers a checklist step', async () => {
+    const { cleanup, accounts, tech, manager, job } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const list = (
+        await manager
+          .post(`/api/work-orders/${mine.id}/checklists`)
+          .send({
+            title: 'Pre-start',
+            gate: 'start',
+            items: [{ kind: 'pass_fail', label: 'Isolated', required: true }],
+          })
+          .expect(201)
+      ).body[0];
+      const answer = {
+        key: randomUUID(),
+        kind: 'checklist_answer',
+        workOrderId: mine.id,
+        checklistId: list.id,
+        itemId: list.items[0].id,
+        payload: { answer: 'pass' },
+      };
+      const current = (await tech.get(`/api/work-orders/${mine.id}`).expect(200)).body;
+      const status = {
+        key: randomUUID(),
+        kind: 'status',
+        workOrderId: mine.id,
+        payload: { version: current.version, status: 'on_site' },
+      };
+      // Going on site is held back until the required step is answered.
+      const held = await post(tech, status);
+      expect(held.body.results[0]).toMatchObject({ status: 'rejected', code: 'invalid' });
+      expect((await post(tech, answer)).body.results[0]!.status).toBe('applied');
+      const go = { ...status, key: randomUUID() };
+      expect((await post(tech, go)).body.results[0]!.status).toBe('applied');
+      expect((await tech.get(`/api/work-orders/${mine.id}`).expect(200)).body.status).toBe('on_site');
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('records a meter reading once', async () => {
+    const { cleanup, accounts, tech, manager, site, tenant } = await fixture();
+    try {
+      void accounts;
+      const asset = (await manager.post('/api/assets').send({ locationId: site.id, name: 'Pump' }).expect(201)).body;
+      const meter = (
+        await manager
+          .post(`/api/assets/${asset.id}/operations/meters`)
+          .send({ name: 'Run hours', unit: 'h', rolloverAt: '1000' })
+          .expect(201)
+      ).body;
+      const reading = {
+        key: randomUUID(),
+        kind: 'meter_reading',
+        assetId: asset.id,
+        meterId: meter.id,
+        payload: { value: '120', rolledOver: false, submission: randomUUID() },
+      };
+      expect((await post(tech, reading)).body.results[0]!.status).toBe('applied');
+      expect((await post(tech, reading)).body.results[0]).toMatchObject({ status: 'applied', replayed: true });
+      const rows = await withTenant(db, tenant.id, (tx) =>
+        tx.assetMeterReading.count({ where: { meterId: meter.id } }),
+      );
+      expect(rows).toBe(1);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('cannot change another organisation’s job or another technician’s, and checks the batch (cross-tenant)', async () => {
+    const one = await fixture();
+    const two = await fixture();
+    try {
+      const theirs = await two.job(two.accounts.tech.memberships[0]!);
+      const sneaky = { key: randomUUID(), kind: 'note', workOrderId: theirs.id, payload: { body: 'Not mine.' } };
+      expect((await post(one.tech, sneaky)).body.results[0]).toMatchObject({ status: 'rejected', code: 'not_found' });
+      const others = await one.job(one.accounts.other.memberships[0]!);
+      const notMine = {
+        key: randomUUID(),
+        kind: 'note',
+        workOrderId: others.id,
+        payload: { body: 'Not mine either.' },
+      };
+      expect((await post(one.tech, notMine)).body.results[0]).toMatchObject({ status: 'rejected', code: 'not_found' });
+      // The log is per organisation: another organisation's technician can't replay the key.
+      const replay = await post(two.tech, { ...sneaky, workOrderId: theirs.id });
+      expect(replay.body.results[0]).toEqual({ key: sneaky.key, status: 'applied' });
+      expect((await post(one.tech)).status).toBe(400);
+      expect((await post(one.tech, { key: 'x', kind: 'note' })).status).toBe(400);
+      expect((await post(one.reporter, sneaky)).status).toBe(403);
+    } finally {
+      await one.cleanup();
+      await two.cleanup();
+    }
+  });
+
+  it('needs a signed-in person', async () => {
+    const { default: request } = await import('supertest');
+    await request(app.getHttpServer()).post('/api/mobile/mutations').send({ mutations: [] }).expect(401);
+  });
+});

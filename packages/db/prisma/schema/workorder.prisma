@@ -235,3 +235,24 @@ model WorkOrderSignature {
   @@unique([tenantId, attachmentId])
   @@map("work_order_signature")
 }
+
+/// A change made on a phone, kept by its idempotency key so a retry after a dropped connection is answered, not repeated.
+model MobileMutation {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  memberId    String     @map("member_id") @db.Uuid
+  /// Made on the phone before the change is sent.
+  key         String     @db.Uuid
+  kind        String
+  /// A hash of what was sent, so the same key with different content is refused.
+  requestHash String     @map("request_hash")
+  /// applied, or rejected with a reason the phone shows.
+  outcome     String
+  result      Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  member      Membership @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, memberId, key])
+  @@map("mobile_mutation")
+}

@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Mobile sync queue: changes a technician makes offline (status, notes, checklist answers and meter readings) are sent in a batch, each with a key so a retry never applies a change twice. A change that no longer fits, such as a job that has since changed, is rejected on its own. See [Mobile app](docs/mobile.md#mutation-queue).
+
 - Mobile work pack: a technician's phone can download their open jobs with locations, assets and checklists, and then ask only for what changed since the last sync. See [Mobile app](docs/mobile.md#work-pack-and-sync).
 
 - Mobile sign-in: the technician app signs in with OAuth 2.0 and PKCE. A person signed in at a browser approves a device, which gets a 15-minute access token and a refresh token that changes on every use. A copied refresh token signs the device out. People can list and sign out their own devices. See [Mobile app](docs/mobile.md#signing-in-a-device).

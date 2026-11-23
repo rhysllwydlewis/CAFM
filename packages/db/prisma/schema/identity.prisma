@@ -51,6 +51,7 @@ model Tenant {
   workOrderChecklists        WorkOrderChecklist[]
   workOrderChecklistItems    WorkOrderChecklistItem[]
   workOrderSignatures        WorkOrderSignature[]
+  mobileMutations            MobileMutation[]
 
   @@map("tenant")
 }
@@ -111,6 +112,7 @@ model Membership {
   ppmSchedules         PpmSchedule[]
   checklistItemAnswers WorkOrderChecklistItem[]
   workOrderSignatures  WorkOrderSignature[]
+  mobileMutations      MobileMutation[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, accountId])

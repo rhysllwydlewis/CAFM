@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). Next P1-06c: mutation queue API with idempotency keys. |
+| P1-06 | Claude (Builder routine) | `claude/build-p1-06-*` | 23 Nov 2026 | P1-06a and P1-06b done (work pack and changes API, docs/mobile.md). P1-06c mostly built (status, note, checklist, meter via POST /api/mobile/mutations; migration 20261218000000; time entry still to decide). Next: finish P1-06c, then P1-06d. |
 
 ## Phase checklists
 
