@@ -25,6 +25,7 @@ Written on 23 Nov 2026, the day the three routines (Builder, Reviewer, Steward) 
 | A half-built PR grew to about 2,400 lines | One PR per item | Batches of about 1,500 lines, one claim shared across the item's PRs |
 | The Builder stopped to ask a product question that nobody saw | The question was left in a chat message | It picks the safest default, records it under "Decisions made", and keeps going. Only questions with no safe default become a `decision-needed` issue. |
 | The owner merged a big PR before any review | The owner's instruction, reasonable given they can't read code | A `priority:now` issue (#45) for a post-merge review. Rule: if the owner overrides the loop, open that issue. |
+| A PR could reach `main` with no review at all (an owner merge, or a missed run) | Nothing noticed | The Steward opens a `priority:now` review issue for any merged PR with no Review log. The Builder un-drafts a PR when it is ready, and the Reviewer reviews, fixes, improves and merges, usually in one pass. |
 | The Builder skipped the owner's `priority:now` issue | The prompt ranked "continue a claimed item" above it | The owner's label now outranks everything except a red `main`, owner comments and in-flight PRs |
 | A signed-off PR could sit unmerged for ever | The Reviewer can't wait for CI after it pushes a fix | `[retry]` lines, retried by a later run, capped at 3, then `[owner]` |
 | The Builder skipped the mockup comparison and some Definition of Done basics | Nothing made it check its own work before review | A short own-check before every review, listing gaps honestly |
@@ -45,6 +46,8 @@ Written on 23 Nov 2026, the day the three routines (Builder, Reviewer, Steward) 
 6. **Never leave a state that can't finish.** Every wait needs a cap and an owner.
 7. **Whole files to paste, never edits inside a prompt.**
 8. **Check the clock and the saved state before stating them.**
+9. **Whatever reaches `main` gets reviewed.** A tripwire (the Steward) catches anything that skipped the Reviewer.
+10. **Test a platform feature before designing around it.** "Start the Reviewer when a PR is taken out of draft" looked doubtful, so we read the documentation and then tested it on a throwaway PR. It works, and so do labels and pushes. See "How each routine starts" in the playbook.
 
 ## 4. Still open
 

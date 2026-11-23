@@ -15,6 +15,7 @@ function Complete() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const back = (
     <a
@@ -55,6 +56,7 @@ function Complete() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (saving) return;
     if (outstanding > 0) {
       setError('Answer ' + outstanding + ' required checklist ' + (outstanding === 1 ? 'step' : 'steps') + ' first.');
       return;
@@ -69,13 +71,19 @@ function Complete() {
       return;
     }
     setError('');
-    // Order matters: the sign-off is sent while the job is still on site, then the job is completed.
-    await queueChange(
-      { type: 'signature', role: 'customer', signerName: name.trim() },
-      { image: canvas.toDataURL('image/png') },
-    );
-    await changeStatus('completed', note.trim() || undefined);
-    setDone(true);
+    // A second tap while saving would queue the sign-off and the status change twice.
+    setSaving(true);
+    try {
+      // Order matters: the sign-off is sent while the job is still on site, then the job is completed.
+      await queueChange(
+        { type: 'signature', role: 'customer', signerName: name.trim() },
+        { image: canvas.toDataURL('image/png') },
+      );
+      await changeStatus('completed', note.trim() || undefined);
+      setDone(true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (done || status === 'completed') {
@@ -161,7 +169,7 @@ function Complete() {
             {error}
           </div>
         )}
-        <button type="submit" className="m-btn primary">
+        <button type="submit" className="m-btn primary" disabled={saving}>
           <Icon name="send" size={18} />
           Complete and sign off
         </button>
