@@ -40,7 +40,7 @@ A section near the top of every loop PR body, under the `Progress:` line. It's t
 Stage: build
 Session: active
 Item: P1-06 (sub-items P1-06a to P1-06f)
-Builder runs on this item: 1 of 8
+Builder runs on this batch: 1 of 8
 Review rounds done: 0 of 2
 Heartbeat: 2026-11-23T10:17Z
 Signed off at: (set by the Reviewer: the head commit it checked)
@@ -54,6 +54,12 @@ Follow-ups raised: issue links
 The rest of the body is the normal PR template, including the `Progress:` line. (Don't start any other line with `Progress:`, because CI reads every line that does.)
 
 `Session` says whether a session is working on the PR right now. A routine sets `Session: active` as it starts work on a PR and `Session: ended` as the last thing it does before it stops, including when it stops part-way because it chose to. A session that's cut off by a usage limit can't do that, which is exactly what the heartbeat is for.
+
+## Batches and decisions
+
+**Batches.** A big item is built and reviewed in batches, each its own PR of about 1,500 changed lines or fewer, ending at a natural boundary (for example the data and API first, then the screens, then offline sync). A PR that grows to thousands of lines can't be reviewed carefully, so the Builder sends each coherent batch to review as soon as it is complete. All the batches of an item share one claim: the claim row stays in `docs/PROGRESS.md` on `main` with the branch pattern `claude/build-<item>-*`, and every batch's PR says `Progress: <item> in progress`. The last batch says `Progress: <item> done`, ticks the item and removes the row. After the Reviewer merges a batch, the next Builder run finds the item still claimed on `main` with unticked sub-items and no open PR, and continues it with a new PR before taking any new item.
+
+**Decisions.** The owner can't be asked every time, and a question left in a chat message is never seen. So when the Builder meets a product or design question it picks the safest sensible default, builds it, and records it in the PR body under "## Decisions made" (what it chose and why). The Reviewer reads that section and challenges any choice that looks wrong, and the owner can read it too. The Builder stops only for a decision with no safe default (money, security or permissions that can't be set conservatively, or anything irreversible). It then opens an issue labelled `decision-needed`, which the Steward reports.
 
 ## Resuming after a usage limit (the key mechanism)
 
@@ -76,7 +82,7 @@ Every loop has a limit, so an item always reaches `ready`, or reaches the owner 
 
 | Loop | Limit | At the limit |
 |---|---|---|
-| Builder runs on one item | **8 runs** (about two working days) | Split the item. Tick the sub-items that are really done, open an issue for the remainder (`phase:N`, `type:feature`, `priority:next`), and move what's built to `review`. Never leave an item half-built with no PR stage. |
+| Builder runs on one batch (one PR) | **8 runs** (about two working days) | Split the item. Tick the sub-items that are really done, open an issue for the remainder (`phase:N`, `type:feature`, `priority:next`), and move what's built to `review`. Never leave an item half-built with no PR stage. |
 | Review rounds | **2** | After round 2 the PR goes to `ready` regardless. Anything still open becomes a labelled follow-up issue and is listed in the PR body under "Known gaps". |
 | Items being built | **1** (`Stage: build`) | The Builder finishes it before claiming another. |
 | PRs waiting (`review`, `ready` or `blocked`, all together) | **2** | The Builder stops claiming new work until the owner merges or unblocks one. The Steward says so in the digest. The Builder can build the next item while an earlier one is in review. |
@@ -88,7 +94,7 @@ Every loop has a limit, so an item always reaches `ready`, or reaches the owner 
 
 The Reviewer is a different session from the Builder, so it has no attachment to the code. It works on the PR's branch and **fixes what it finds**. It doesn't just comment. In round order:
 
-1. **Read the item's sources of truth:** the feature catalogue section, the screens in `docs/plan/12-screen-catalogue.md` and `design/mockups/`, doc 03 permissions, doc 09, and any ADR in play. Then read the whole diff, not just the headline files.
+1. **Read the item's sources of truth:** the feature catalogue section, the screens in `docs/plan/12-screen-catalogue.md` and `design/mockups/`, doc 03 permissions, doc 09, and any ADR in play. Then read the PR body's "## Decisions made" section and challenge any default the Builder chose that looks wrong or unsafe (change it in the PR, or open a `decision-needed` issue if it is the owner's call). Then read the whole diff, not just the headline files.
 2. **Completeness against the item:** every acceptance point and sub-item is really built, not stubbed. No TODOs, no `skip` or `only` in tests, no commented-out code, no dead code.
 3. **Definition of Done** ([doc 08](../plan/08-roadmap.md)): permission and entitlement checks in the API (not just the UI), data scope and field security, a cross-tenant denial test for every new or changed endpoint, RLS and a `rls.test.ts` case for every new tenant-owned table, unit, API and e2e tests, audit events, custom fields and workflow where configurable, demo data, help text, a CHANGELOG line.
 4. **Correctness and bugs:** read for logic errors, off-by-ones, race conditions, error and empty states, time zones and the site calendar for SLA maths, money as integer minor units plus a currency code, times in UTC, and input validation with Zod. Try to break it: run the app, use the feature as each relevant demo persona, and try the unhappy paths.
