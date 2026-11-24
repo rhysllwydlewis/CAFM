@@ -130,6 +130,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-08b** View bar on the work order, asset, request and PPM lists: filters, sort, group, column chooser, saved and shared views.
   - [x] **P1-08c** Bulk selection and bulk actions (assign, status, priority) with per-row results.
   - [ ] **P1-08d** Kanban and calendar layouts.
+    - [x] Work orders: board (earlier) and calendar. ([guide](views.md#calendar-layout-on-work-orders))
+    - [ ] Calendar on planned maintenance schedules, and a board on requests.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
   - [x] **P1-09a** Admin console shell, overview (licences, seats, changes, setup checklist) and Users and licences (invite, withdraw, change role, deactivate). ([guide](admin.md))
   - [ ] **P1-09b** Roles matrix screen, teams, scopes and delegated admin.

@@ -18,6 +18,7 @@ import ModulePage from '../[module]/page';
 import { workOrderPage } from '@/lib/work-orders';
 import { NewWorkOrder } from './new-work-order';
 import { WorkOrderBoard } from './work-order-board';
+import { WorkOrderCalendar, calendarDays, calendarMonth, shiftMonth } from './work-order-calendar';
 import { ListDisplayFields } from '@/components/list-display';
 import { WORK_ORDER_COLUMNS, WORK_ORDER_GROUPS } from './work-order-columns';
 import { WorkOrderTable } from './work-order-table';
@@ -46,10 +47,13 @@ export default async function WorkOrdersPage({
   }
   const input = await searchParams;
   const board = input.layout === 'board';
+  const calendar = input.layout === 'calendar';
+  const now = Date.now();
+  const month = calendarMonth(input.month, now);
   const parsed = listWorkOrdersSchema.safeParse(Object.fromEntries(Object.entries(input).filter(([, value]) => value)));
   const filters = parsed.success ? parsed.data : listWorkOrdersSchema.parse({});
   const params = new URLSearchParams();
-  for (const key of ['view', 'status', 'priority', 'q', 'sort', 'dir', 'cursor'] as const) {
+  for (const key of ['view', 'status', 'priority', 'q', 'sort', 'dir', 'cursor', 'dueFrom', 'dueTo'] as const) {
     const value = filters[key];
     if (value) params.set(key, String(value));
   }
@@ -61,10 +65,16 @@ export default async function WorkOrdersPage({
   const query = new URLSearchParams(params);
   query.delete('groupby');
   query.delete('cols');
-  if (board) {
-    // The board shows what is still open, all in one go.
+  if (board || calendar) {
+    // The board and the calendar show what they find all in one go.
     query.delete('cursor');
     query.set('limit', '100');
+  }
+  if (calendar) {
+    // The calendar asks for the weeks it shows. It sets its own range, so a day's range from the list is dropped.
+    const days = calendarDays(month);
+    query.set('dueFrom', days[0]!);
+    query.set('dueTo', days.at(-1)!);
   }
   const data = await workOrderPage(query.toString());
   const currentView = filters.view;
@@ -72,18 +82,43 @@ export default async function WorkOrdersPage({
   const canCreate = can(user, 'work_orders.edit');
   // The layout is part of where a page returns to, so closing the new-job form keeps the board.
   const here = new URLSearchParams(params);
-  if (board) here.set('layout', 'board');
-  const layoutParams = (layout: 'list' | 'board') => {
+  if (board || calendar) here.set('layout', board ? 'board' : 'calendar');
+  if (calendar) here.set('month', month);
+  const layoutParams = (layout: 'list' | 'board' | 'calendar') => {
     const next = new URLSearchParams(params);
     next.delete('cursor');
-    if (layout === 'board') next.set('layout', 'board');
+    if (layout !== 'list') next.set('layout', layout);
+    if (layout === 'calendar') {
+      // A day's range from the list would hide the rest of the month.
+      next.delete('dueFrom');
+      next.delete('dueTo');
+      next.set('month', month);
+    }
     return '/app/work-orders?' + next.toString();
   };
   const viewHref = (view: WorkOrderView) => {
     const next = new URLSearchParams(params);
     next.set('view', view);
     next.delete('cursor');
-    if (board) next.set('layout', 'board');
+    if (board || calendar) next.set('layout', board ? 'board' : 'calendar');
+    if (calendar) next.set('month', month);
+    return '/app/work-orders?' + next.toString();
+  };
+  const monthHref = (target: string) => {
+    const next = new URLSearchParams(params);
+    next.delete('cursor');
+    next.delete('dueFrom');
+    next.delete('dueTo');
+    next.set('layout', 'calendar');
+    next.set('month', target);
+    return '/app/work-orders?' + next.toString();
+  };
+  const dayHref = (day: string) => {
+    const next = new URLSearchParams(params);
+    next.delete('cursor');
+    next.set('view', 'all');
+    next.set('dueFrom', day);
+    next.set('dueTo', day);
     return '/app/work-orders?' + next.toString();
   };
   if (data.cursorReset) params.delete('cursor');
@@ -149,8 +184,8 @@ export default async function WorkOrdersPage({
           ))}
           <span className="grow" />
           <Link
-            className={'btn sm ' + (board ? 'ghost' : 'primary')}
-            aria-current={board ? undefined : 'page'}
+            className={'btn sm ' + (board || calendar ? 'ghost' : 'primary')}
+            aria-current={board || calendar ? undefined : 'page'}
             href={layoutParams('list')}
           >
             List
@@ -162,10 +197,18 @@ export default async function WorkOrdersPage({
           >
             Board
           </Link>
+          <Link
+            className={'btn sm ' + (calendar ? 'primary' : 'ghost')}
+            aria-current={calendar ? 'page' : undefined}
+            href={layoutParams('calendar')}
+          >
+            Calendar
+          </Link>
         </nav>
         <form key={params.toString()} className={styles.filters}>
           <input type="hidden" name="view" value={currentView} />
-          {board && <input type="hidden" name="layout" value="board" />}
+          {(board || calendar) && <input type="hidden" name="layout" value={board ? 'board' : 'calendar'} />}
+          {calendar && <input type="hidden" name="month" value={month} />}
           <label className="field">
             <span className="label">Search work orders</span>
             <input className={styles.control} type="search" name="q" defaultValue={filters.q} />
@@ -210,7 +253,7 @@ export default async function WorkOrdersPage({
               <option value="desc">Descending</option>
             </select>
           </label>
-          {!board && (
+          {!board && !calendar && (
             <ListDisplayFields
               columns={WORK_ORDER_COLUMNS}
               groups={WORK_ORDER_GROUPS}
@@ -223,21 +266,40 @@ export default async function WorkOrdersPage({
           </button>
         </form>
         {data.cursorReset && <p className="card-b muted">The list changed. Showing the first page.</p>}
-        {board ? (
+        {!board && !calendar && filters.dueFrom && filters.dueFrom === filters.dueTo && (
+          <p className="card-b row g2">
+            Showing jobs due on {filters.dueFrom}. <Link href={viewHref(currentView)}>Show all dates</Link>
+          </p>
+        )}
+        {calendar ? (
+          <div className="card-b stack g3">
+            <WorkOrderCalendar
+              items={data.items}
+              month={month}
+              now={now}
+              prevHref={monthHref(shiftMonth(month, -1))}
+              nextHref={monthHref(shiftMonth(month, 1))}
+              dayHref={dayHref}
+            />
+            {data.nextCursor && (
+              <p className="sm muted">Showing the first 100 jobs in these weeks. Narrow the filters to see the rest.</p>
+            )}
+          </div>
+        ) : board ? (
           <div className="card-b">
-            <WorkOrderBoard items={data.items} now={Date.now()} permissions={user.permissions} />
+            <WorkOrderBoard items={data.items} now={now} permissions={user.permissions} />
             {data.nextCursor && <p className="sm muted">Showing the first 100. Use the list to see the rest.</p>}
           </div>
         ) : (
           <WorkOrderTable
             items={data.items}
-            now={Date.now()}
+            now={now}
             columns={input.cols}
             group={group}
             permissions={user.permissions}
           />
         )}
-        {!board && (data.nextCursor || params.has('cursor')) && (
+        {!board && !calendar && (data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">
             {params.has('cursor') && (
               <Link className="btn" href={viewHref(currentView)}>

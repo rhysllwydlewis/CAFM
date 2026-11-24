@@ -661,3 +661,41 @@ test('ticks several jobs and changes their priority together, reporting each one
   await page.goto('/app/work-orders/' + second.id);
   await expect(page.locator('.page-head .badge').nth(1)).toHaveText('P1 Emergency');
 });
+
+test('shows a job on the calendar on the day its fix is due', async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'helpdesk');
+  const response = await page.request.post('/api/work-orders', {
+    data: {
+      submissionId: randomUUID(),
+      title: 'E2E calendar ' + suffix,
+      description: 'Created by a browser test.',
+      locationId: seedId('location:demo-estates:CDF'),
+      impact: 2,
+      urgency: 2,
+    },
+  });
+  expect(response.ok()).toBe(true);
+  const job = (await response.json()) as { number: string; fixDueAt: string };
+  const dueDay = new Date(job.fixDueAt).toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+  const month = dueDay.slice(0, 7);
+
+  await page.goto('/app/work-orders?view=all&q=' + suffix);
+  await page.getByRole('link', { name: 'Calendar', exact: true }).click();
+  await expect(page).toHaveURL(/layout=calendar/);
+  const calendar = page.getByRole('table', { name: /Work orders by the day their fix is due/ });
+  await expect(calendar).toBeVisible();
+
+  // The job sits in the month its fix is due, and nowhere else.
+  await page.goto('/app/work-orders?view=all&layout=calendar&month=' + month + '&q=' + suffix);
+  const link = calendar.getByRole('link', { name: new RegExp(suffix) });
+  await expect(link).toBeVisible();
+  await assertAccessible(page);
+  await page.getByRole('link', { name: 'Next month' }).click();
+  await expect(page).toHaveURL(/month=\d{4}-\d{2}/);
+  await expect(calendar.getByRole('link', { name: new RegExp(suffix) })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Previous month' }).click();
+  await expect(link).toBeVisible();
+  await link.click();
+  await expect(page.getByRole('heading', { name: 'E2E calendar ' + suffix })).toBeVisible();
+});
