@@ -7,12 +7,8 @@ import { RolesManager, type RoleRow } from './roles-manager';
 
 export const metadata: Metadata = { title: 'Roles and permissions' };
 
-export default async function AdminRolesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ role?: string; deleted?: string }>;
-}) {
-  const [{ role, deleted }, user] = await Promise.all([searchParams, currentUser()]);
+export default async function AdminRolesPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
+  const [{ role }, user] = await Promise.all([searchParams, currentUser()]);
   if (!can(user, 'roles.read')) redirect(can(user, 'people.manage') ? '/app/admin/users' : '/app');
   const roles = await readAdmin<RoleRow[]>('/roles');
   const selected = roles.find((r) => r.key === role) ?? roles.find((r) => r.key === 'super_user') ?? roles[0];
@@ -23,7 +19,6 @@ export default async function AdminRolesPage({
       selected={selected?.key}
       canManage={can(user, 'roles.manage')}
       held={user.permissions}
-      deleted={deleted === '1'}
     />
   );
 }
