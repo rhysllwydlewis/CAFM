@@ -122,9 +122,7 @@ export function FieldsManager({ fields, limit }: { fields: AdminField[]; limit: 
           {ENTITY_TYPES.filter((e) => fields.some((f) => f.entityType === e)).map((e) => (
             <div key={e} className={styles.tableWrap}>
               <table className="tbl">
-                <caption className="sm medium" style={{ textAlign: 'left' }}>
-                  {ENTITY_LABELS[e]}
-                </caption>
+                <caption className={`sm medium ${styles.tableCaption}`}>{ENTITY_LABELS[e]}</caption>
                 <thead>
                   <tr>
                     <th scope="col">Label</th>

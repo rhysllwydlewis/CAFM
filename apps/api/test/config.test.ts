@@ -156,11 +156,26 @@ describe('custom fields', () => {
   });
 
   it('cross-tenant: the administration list shows only your own organisation’s fields', async () => {
-    const { agent } = await signIn(app, 'starter@demo.example');
-    const demoField = seedId('field:asset:criticality');
-    const res = await agent.get('/api/config/fields/all');
-    if (res.status === 200) expect(res.body.fields.some((f: { id: string }) => f.id === demoField)).toBe(false);
-    else expect(res.status).toBe(403);
+    const [one, two] = [await createTestTenant(db, 'professional'), await createTestTenant(db, 'professional')];
+    try {
+      const bossOne = await createTestAccount(db, [one.tenant.id], undefined, 'super_user');
+      const bossTwo = await createTestAccount(db, [two.tenant.id], undefined, 'super_user');
+      const { agent: agentOne } = await signIn(app, bossOne.email, bossOne.password);
+      const { agent: agentTwo } = await signIn(app, bossTwo.email, bossTwo.password);
+      const created = (
+        await agentOne
+          .post('/api/config/fields')
+          .send({ entityType: 'asset', key: 'only_mine', label: 'Only mine', type: 'text' })
+          .expect(201)
+      ).body;
+      const seen = (await agentTwo.get('/api/config/fields/all').expect(200)).body;
+      expect(seen.fields).toEqual([]);
+      const own = (await agentOne.get('/api/config/fields/all').expect(200)).body;
+      expect(own.fields.map((f: { id: string }) => f.id)).toEqual([created.id]);
+    } finally {
+      await one.cleanup();
+      await two.cleanup();
+    }
   });
 
   it('cross-tenant: another organisation’s fields are invisible and can’t be changed', async () => {
