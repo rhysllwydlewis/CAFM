@@ -47,14 +47,20 @@ describe('username-only accounts', () => {
 
   it('is refused to someone without people.manage', async () => {
     const { agent } = await signIn(app, 'requester@demo.example');
-    await agent.post('/api/admin/username-accounts').send({ name: 'A', username: unique(), role: 'technician' }).expect(403);
+    await agent
+      .post('/api/admin/username-accounts')
+      .send({ name: 'A', username: unique(), role: 'technician' })
+      .expect(403);
   });
 
   it('creates an account that signs in with the organisation address only, and an admin can reset it', async () => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     const username = unique();
     const made = (
-      await agent.post('/api/admin/username-accounts').send({ name: 'Rhian Test', username, role: 'technician' }).expect(201)
+      await agent
+        .post('/api/admin/username-accounts')
+        .send({ name: 'Rhian Test', username, role: 'technician' })
+        .expect(201)
     ).body;
     expect(made.signInPath).toBe('/t/demo-estates/login');
     expect(made.temporaryPassword.length).toBeGreaterThanOrEqual(16);
@@ -78,7 +84,9 @@ describe('username-only accounts', () => {
       .send({ identifier: username, password: made.temporaryPassword, organisation: 'starter-demo' })
       .expect(401);
 
-    const reset = (await agent.post(`/api/admin/username-accounts/${made.membershipId}/reset-password`).send({}).expect(200)).body;
+    const reset = (
+      await agent.post(`/api/admin/username-accounts/${made.membershipId}/reset-password`).send({}).expect(200)
+    ).body;
     expect(reset.temporaryPassword).not.toBe(made.temporaryPassword);
     await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -96,7 +104,10 @@ describe('username-only accounts', () => {
   it('cross-tenant: another organisation cannot reset the password', async () => {
     const demo = await signIn(app, 'superuser@demo.example');
     const made = (
-      await demo.agent.post('/api/admin/username-accounts').send({ name: 'Other', username: unique(), role: 'technician' }).expect(201)
+      await demo.agent
+        .post('/api/admin/username-accounts')
+        .send({ name: 'Other', username: unique(), role: 'technician' })
+        .expect(201)
     ).body;
     const starter = await signIn(app, 'starter@demo.example');
     await starter.agent.post(`/api/admin/username-accounts/${made.membershipId}/reset-password`).send({}).expect(404);
@@ -104,7 +115,10 @@ describe('username-only accounts', () => {
 
   it('will not reset the password of someone who has an email address', async () => {
     const { agent } = await signIn(app, 'superuser@demo.example');
-    const users = (await agent.get('/api/admin/users').expect(200)).body as { membershipId: string; email: string | null }[];
+    const users = (await agent.get('/api/admin/users').expect(200)).body as {
+      membershipId: string;
+      email: string | null;
+    }[];
     const withEmail = users.find((u) => u.email && u.email !== 'superuser@demo.example')!;
     await agent.post(`/api/admin/username-accounts/${withEmail.membershipId}/reset-password`).send({}).expect(409);
   });

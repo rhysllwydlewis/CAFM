@@ -14,7 +14,10 @@ export const usernameAccountCreateSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(USERNAME_PATTERN, 'Use 3 to 32 letters, numbers, dots, dashes or underscores, starting with a letter or number'),
+    .regex(
+      USERNAME_PATTERN,
+      'Use 3 to 32 letters, numbers, dots, dashes or underscores, starting with a letter or number',
+    ),
   role: z.string().min(1).max(64),
 });
 export type UsernameAccountCreate = z.infer<typeof usernameAccountCreateSchema>;

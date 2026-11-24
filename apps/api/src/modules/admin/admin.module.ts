@@ -7,6 +7,13 @@ import { SecurityController } from './security.controller';
 import { UsernameAccountsController } from './username-accounts.controller';
 
 @Module({
-  controllers: [AdminController, BrandingController, DisplayController, ImpersonationController, SecurityController, UsernameAccountsController],
+  controllers: [
+    AdminController,
+    BrandingController,
+    DisplayController,
+    ImpersonationController,
+    SecurityController,
+    UsernameAccountsController,
+  ],
 })
 export class AdminModule {}

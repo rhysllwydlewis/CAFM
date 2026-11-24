@@ -145,7 +145,10 @@ export class UsernameAccountsController {
       assertCanGrant(auth.access!, actor.role, role?.permissions ?? []);
       // An account in more than one organisation is not this organisation's to reset.
       if ((await tx.membership.count({ where: { accountId: member.accountId } })) > 1) {
-        throw new ConflictException({ code: 'shared_account', message: 'This account belongs to more than one organisation.' });
+        throw new ConflictException({
+          code: 'shared_account',
+          message: 'This account belongs to more than one organisation.',
+        });
       }
       await tx.account.update({
         where: { id: member.accountId },
