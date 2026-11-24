@@ -33,7 +33,16 @@ const ICONS: Record<string, string> = {
   space: 'space',
 };
 
-export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: string | null }) {
+export function LoginForm({
+  demo,
+  next,
+  organisation,
+}: {
+  demo: DemoAccounts | null;
+  next?: string | null;
+  /** The organisation's address on its own sign-in page: a short username is looked up inside it only. */
+  organisation?: string;
+}) {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -64,7 +73,7 @@ export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: st
     setBusy(true);
     setError(null);
     try {
-      const res = await postJson('/auth/login', { identifier, password, keepSignedIn });
+      const res = await postJson('/auth/login', { identifier, password, keepSignedIn, organisation });
       if (res.ok) {
         const body = (await res.json()) as LoginResponse;
         router.push(
@@ -95,7 +104,7 @@ export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: st
       <div>
         <h1 className="auth-title">Sign in</h1>
         <div className="muted" style={{ marginTop: 4 }}>
-          Use your work email or username.
+          {organisation ? 'Use the username your administrator gave you.' : 'Use your work email or username.'}
         </div>
       </div>
 
@@ -106,13 +115,13 @@ export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: st
             <div className="grow">{error}</div>
           </div>
         )}
-        <Field label="Email or username" htmlFor="identifier">
+        <Field label={organisation ? 'Username' : 'Email or username'} htmlFor="identifier">
           <TextInput
             lg
             id="identifier"
             name="identifier"
             autoComplete="username"
-            placeholder="name@organisation.co.uk"
+            placeholder={organisation ? undefined : 'name@organisation.co.uk'}
             value={identifier}
             invalid={!!error}
             aria-describedby={error ? 'login-error' : undefined}
@@ -153,9 +162,13 @@ export function LoginForm({ demo, next }: { demo: DemoAccounts | null; next?: st
             checked={keepSignedIn}
             onChange={(e) => setKeepSignedIn(e.target.checked)}
           />
-          <Link className="medium" href="/forgot-password">
-            Forgot password?
-          </Link>
+          {organisation ? (
+            <span className="muted">Ask your administrator to reset your password.</span>
+          ) : (
+            <Link className="medium" href="/forgot-password">
+              Forgot password?
+            </Link>
+          )}
         </div>
         <Button ref={submitRef} type="submit" variant="primary" size="lg" block disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}

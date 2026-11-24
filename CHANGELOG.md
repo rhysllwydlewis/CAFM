@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration: accounts with a username only, for staff without an email address. An administrator creates one on the Users screen (name, username, role) and is shown a generated password once. The person signs in with just the username at the organisation's own address, `/t/<organisation>/login`, and an administrator resets the password there too. Every creation and reset is audited.
 - Reports: an Executive overview screen (key figures and the busiest sites for the last 30 days), plus two new standard reports, reactive against planned work and the busiest sites. See [Reports](docs/reports.md).
 - Administration: a Security and sign-in screen sets the shortest password (12 to 64 characters) and the longest sign-in (1 to 720 hours), and records whether multi-factor authentication is required (enforced when authenticator-app sign-in arrives). An Audit log screen lists every change, newest first, with a search by event. Every change to the security settings is audited.
 - Administration: a regional admin who is limited to certain sites now sees only the people inside those sites from the people list too, not only on the users screen. A mockup of the Site access card (`admin-13-site-access`) is added.

@@ -1,7 +1,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { scopedLocations, withTenant } from '@cafm/db';
-import type { AdminOverview, AdminUser, SiteAccessOverview } from '@cafm/shared';
+import { shortUsername, type AdminOverview, type AdminUser, type SiteAccessOverview } from '@cafm/shared';
 import { administrableMembers, isDelegated } from '../../core/delegation';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -101,7 +101,7 @@ export class AdminController {
         membershipId: m.id,
         name: m.account.name,
         email: m.account.email,
-        username: m.account.username,
+        username: shortUsername(m.account.username),
         title: m.title,
         role: m.role,
         roleLabel: names.get(m.role) ?? m.role,

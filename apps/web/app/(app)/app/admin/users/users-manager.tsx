@@ -7,6 +7,7 @@ import type { AdminUser, SiteAccessOverview } from '@cafm/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 import { SiteAccessCard } from './site-access';
+import { UsernameAccountsCard } from './username-accounts';
 import { ViewAsCard } from './view-as';
 
 export type RoleOption = { key: string; name: string };
@@ -124,6 +125,7 @@ export function UsersManager({
           </form>
         </section>
       )}
+      <UsernameAccountsCard users={users} roles={roles} canCreate={!siteAccess.delegated} />
       {feedback && (
         <p role={feedback.error ? 'alert' : 'status'} className={feedback.error ? 'field-error' : 'muted'}>
           {feedback.text}
@@ -215,7 +217,7 @@ export function UsersManager({
                   <tr key={u.membershipId}>
                     <td>
                       <div className="medium">{u.name}</div>
-                      <div className="faint sm">{u.email ?? u.username}</div>
+                      <div className="faint sm">{u.email ?? `username: ${u.username}`}</div>
                     </td>
                     <td>
                       <label className="sr-only" htmlFor={'role-' + u.membershipId}>

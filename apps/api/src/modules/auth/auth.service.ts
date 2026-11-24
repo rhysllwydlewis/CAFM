@@ -3,6 +3,7 @@ import argon2 from 'argon2';
 import { withAccount, type Account } from '@cafm/db';
 import {
   roleLabel,
+  scopedUsername,
   SIGN_IN_FAILED,
   TOO_MANY_ATTEMPTS,
   type CurrentUser,
@@ -53,8 +54,11 @@ export class AuthService {
       throw new HttpException(TOO_MANY_ATTEMPTS, HttpStatus.TOO_MANY_REQUESTS);
     }
     const identifier = input.identifier.toLowerCase();
+    // On an organisation's own sign-in page a short username is looked up inside that organisation only.
+    const lookup =
+      input.organisation && !identifier.includes('@') ? scopedUsername(identifier, input.organisation) : identifier;
     const account = await this.db.account.findFirst({
-      where: { OR: [{ email: identifier }, { username: identifier }] },
+      where: { OR: [{ email: lookup }, { username: lookup }] },
     });
 
     if (!account) {
