@@ -102,7 +102,8 @@ export class AcceptInviteController {
       const now = new Date();
       let account = await tx.account.findUnique({ where: { email: invite.email } });
       if (account) {
-        if (!session || session.expiresAt <= now || session.accountId !== account.id) {
+        // A "view as" session is read-only and is not proof that the person themselves is signing in.
+        if (!session || session.impersonatorAccountId || session.expiresAt <= now || session.accountId !== account.id) {
           throw new UnauthorizedException({
             code: 'sign_in_required',
             message: `Sign in as ${invite.email} to accept this invitation.`,

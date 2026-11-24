@@ -138,6 +138,9 @@ model Session {
   tenantId     String?       @map("tenant_id") @db.Uuid
   /// Set for a mobile access token (P1-06a): the signed-in device it belongs to.
   deviceId     String?       @map("device_id") @db.Uuid
+  /// Set while a Super User views the app as this session's member (P1-09c): who is really signed in.
+  impersonatorAccountId    String? @map("impersonator_account_id") @db.Uuid
+  impersonatorMembershipId String? @map("impersonator_membership_id") @db.Uuid
   expiresAt    DateTime      @map("expires_at") @db.Timestamptz(3)
   ip           String?
   userAgent    String?       @map("user_agent")

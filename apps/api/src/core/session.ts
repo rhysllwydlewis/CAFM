@@ -22,6 +22,8 @@ export interface AuthContext {
   membership: (Membership & { tenant: Tenant }) | null;
   /** Present whenever membership is. */
   access: Access | null;
+  /** Set while a Super User views the app as this member (P1-09c): who is really signed in. */
+  impersonator: { accountId: string; membershipId: string; name: string } | null;
 }
 
 declare global {

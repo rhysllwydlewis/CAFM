@@ -33,7 +33,15 @@ export interface CurrentUser {
   scope: string;
   /** Effective entitlements (ADR 0006). Use feature() in the UI. */
   entitlements: { plan: string; features: string[]; limits: Record<string, number | null> };
+  /** Set while a Super User is viewing the app as this person (P1-09c). */
+  impersonation: { by: string; expiresAt: string } | null;
 }
+
+export const startImpersonationSchema = z.object({
+  membershipId: z.string().uuid(),
+  reason: z.string().trim().min(3, 'Give a reason, at least 3 characters').max(200),
+});
+export type StartImpersonation = z.infer<typeof startImpersonationSchema>;
 
 /** Generic message for any failed sign-in, so accounts can't be enumerated. */
 export const SIGN_IN_FAILED = 'Email/username or password is incorrect';

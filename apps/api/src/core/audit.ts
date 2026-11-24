@@ -19,8 +19,9 @@ export async function audit(tx: Tx, auth: AuthContext, entry: AuditEntry, ip?: s
   await tx.auditEvent.create({
     data: {
       tenantId: membership.tenantId,
-      actorAccountId: auth.account.id,
-      actorMembershipId: membership.id,
+      // While someone is viewing as another person, the record names the person really acting.
+      actorAccountId: auth.impersonator?.accountId ?? auth.account.id,
+      actorMembershipId: auth.impersonator?.membershipId ?? membership.id,
       ip,
       ...entry,
     },

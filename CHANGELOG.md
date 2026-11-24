@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Admin console: a Super User can view the app as another person to troubleshoot, from a View as user card on the users screen. It needs a reason, is read-only, ends after an hour, shows a banner on every page, and both ends are recorded in the audit log under the Super User. Super Users and people with more access than you can't be chosen.
 - Calendar layout on the work order list: a month calendar with each job on the day its fix is due, coloured for due soon and overdue, with previous and next month. On a phone it is a list of the days that have jobs. See [Saved list views](docs/views.md#calendar-layout-on-work-orders).
 - Bulk actions on the request queue, the asset register and the planned maintenance schedules: tick rows and change request status, assignee or priority, asset status, or archive, restore, assign and set the priority of schedules. Each row is checked on its own and the result lists any that could not be changed.
 - Admin console: switch menu modules on or off, use your own name and order for them, and use your own words for work order, request, site, asset and contractor. The menu follows for everyone in your organisation.

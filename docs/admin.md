@@ -53,3 +53,19 @@ Switching a module off hides it from the menu. It does not block the module's AP
 `/app/admin/terminology` lets you use your own word for a few standard terms: work order, request, site, asset and contractor, each with a singular and a plural. Leave both empty to keep the standard words. `GET` and `PUT /api/admin/terminology` (`settings.manage`) read and save them, audited as `settings.terminology_updated`, stored in `term_override` (row-level security).
 
 For now your words show in the menu: the Work orders, Assets, Locations and Contractors items use the plural of their term unless you have also named the module yourself. Screens, emails and reports pick them up as each is built, through `termLabel()` in `@cafm/shared`.
+
+## View as user
+
+The **View as user** card on `/app/admin/users` lets a Super User see the app as another person sees it, to troubleshoot ("why can't Tom see this job?"). It needs the `people.impersonate` permission, which only the Super User role holds. A custom role can be given it, but see the limits below.
+
+`POST /api/admin/impersonation` takes `{ membershipId, reason }` (the reason is 3 to 200 characters) and swaps your session for a viewing one. Rules:
+
+- **Read-only.** Any request that could change data (anything but GET, HEAD or OPTIONS) is refused with `impersonation_read_only`. That also stops a viewing session switching organisation or starting another view.
+- **One hour**, never extended, and one level only.
+- **Not yourself, and not a Super User.** The person must be active in your organisation (another organisation's people answer `404`). You can't view as someone who holds permissions you don't hold, and a delegated admin can only choose people inside their own sites.
+- **Always visible.** A banner on every page says who you are viewing as and who you are signed in as, with a Stop viewing button. `GET /api/auth/me` returns `impersonation: { by, expiresAt }` while it runs.
+- **Audited under you.** `impersonation.started` (with the person's name, your reason and when it ends) and `impersonation.ended` are written with you, not them, as the actor.
+
+`POST /api/admin/impersonation/end` gives you a fresh session of your own. If you have lost the permission or been deactivated meanwhile, it signs you out instead. The viewing session carries `impersonator_account_id` and `impersonator_membership_id` on the `session` row.
+
+Not built yet: the organisation setting "Allow view as user" (the mockup `admin-08-security`) comes with the security settings in P1-09e.

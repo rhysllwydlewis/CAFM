@@ -33,6 +33,7 @@ export default async function AdminUsersPage() {
       selfMembershipId={user.membershipId}
       siteAccess={siteAccess}
       canEditSiteAccess={siteAccess.delegated || can(user, 'locations.manage')}
+      canViewAs={can(user, 'people.impersonate')}
     />
   );
 }
