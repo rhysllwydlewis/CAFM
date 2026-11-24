@@ -11,7 +11,7 @@ export function filtersFromQuery(query: Record<string, string | string[] | undef
   for (const [key, value] of Object.entries(query)) {
     if (POSITION_KEYS.has(key) || key === 'layout' || key === 'view_id') continue;
     if (!/^[a-z][a-zA-Z0-9_.]*$/.test(key)) continue;
-    const text = typeof value === 'string' ? value.trim() : '';
+    const text = (Array.isArray(value) ? value.join(',') : (value ?? '')).trim();
     if (text && text.length <= 200) filters[key] = text;
   }
   return filters;
