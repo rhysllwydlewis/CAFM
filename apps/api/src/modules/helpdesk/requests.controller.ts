@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  HttpException,
   Get,
   NotFoundException,
   Param,
@@ -19,6 +20,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import { withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
   acceptsRequestComments,
+  bulkRequestSchema,
   changeRequestSchema,
   createRequestSchema,
   listRequestsSchema,
@@ -27,6 +29,8 @@ import {
   requestRatingSchema,
   REQUEST_STATUS_LABELS,
   REQUEST_TRANSITIONS,
+  type BulkRequestResponse,
+  type BulkRequestResult,
   type RequestPage,
   type RequestStatus,
 } from '@cafm/shared';
@@ -567,6 +571,46 @@ export class RequestsController {
       }
       return requestSummary(next);
     });
+  }
+
+  /**
+   * Changes several requests at once. Each is done by the same code as the single-request call, in its
+   * own transaction, so every rule (transitions, assignee eligibility, scope, versions) holds per row and
+   * one failure never undoes the others. The reply says what happened to each row.
+   */
+  @Post('requests/bulk')
+  @RequirePermission('requests.manage')
+  async bulk(@Req() req: Request, @Body() body: unknown): Promise<BulkRequestResponse> {
+    const input = parse(bulkRequestSchema, body);
+    const results: BulkRequestResult[] = [];
+    for (const { id, version } of input.items) {
+      try {
+        let change: Record<string, unknown>;
+        if (input.action === 'status') change = { version, status: input.status, note: input.note };
+        else if (input.action === 'assign') change = { version, assigneeId: input.assigneeId };
+        else {
+          const typeId = await withTenant(this.db, req.auth!.membership!.tenantId, async (tx) => {
+            return (await getRequest(tx, req.auth!, id, false)).typeId;
+          });
+          change = { version, triage: { typeId, impact: input.impact, urgency: input.urgency } };
+        }
+        const next = await this.change(req, id, change);
+        results.push({ id, ok: true, version: next.version });
+      } catch (error) {
+        if (!(error instanceof HttpException)) throw error;
+        const detail = error.getResponse();
+        const message =
+          typeof detail === 'string' ? detail : ((detail as { message?: unknown }).message ?? error.message);
+        results.push({
+          id,
+          ok: false,
+          status: error.getStatus(),
+          message: typeof message === 'string' ? message : error.message,
+        });
+      }
+    }
+    const succeeded = results.filter(({ ok }) => ok).length;
+    return { succeeded, failed: results.length - succeeded, results };
   }
 
   @Get('requests/:id/duplicates')

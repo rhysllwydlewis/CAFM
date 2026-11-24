@@ -47,6 +47,7 @@ export const jsonQuestions = requestQuestionSchema.array();
 export function requestSummary(row: RequestRow): RequestSummary {
   return {
     id: row.id,
+    version: row.version,
     number: row.number,
     title: row.title,
     status: row.status as RequestStatus,
@@ -103,7 +104,6 @@ export async function requestDetail(
   const custom = visibleCustom(record.custom, fields);
   return {
     ...requestSummary(record),
-    version: record.version,
     impact: record.impact,
     urgency: record.urgency,
     description: record.description,

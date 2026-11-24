@@ -553,3 +553,109 @@ it('binds browser notifications to each signed-in membership sharing an endpoint
     await cleanup();
   }
 });
+
+it('changes several requests at once and reports what happened to each', async () => {
+  const { operator, requester, bystander, worker, cleanup, input } = await fixture();
+  try {
+    const [a, b] = await Promise.all(
+      [1, 2].map(
+        async (n) =>
+          (await requester.post(helpdesk + '/requests').send(input({ title: 'Leak ' + n })).expect(201)).body,
+      ),
+    );
+    const list = (await operator.get(helpdesk + '/requests').expect(200)).body.items as {
+      id: string;
+      version: number;
+      priority: number;
+    }[];
+    const row = (id: string) => list.find((item) => item.id === id)!;
+    const bulk = (body: object) => operator.post(helpdesk + '/requests/bulk').send(body);
+
+    const assigned = (
+      await bulk({
+        action: 'assign',
+        assigneeId: worker.memberships[0],
+        items: [a, b].map(({ id }) => ({ id, version: row(id).version })),
+      }).expect(201)
+    ).body;
+    expect(assigned).toMatchObject({ succeeded: 2, failed: 0 });
+    expect((await operator.get(helpdesk + '/requests/' + a.id).expect(200)).body.status).toBe('assigned');
+
+    // A request that has moved on, one that is not there and a good one each get their own result.
+    const mixed = (
+      await bulk({
+        action: 'status',
+        status: 'in_progress',
+        items: [
+          { id: a.id, version: row(a.id).version },
+          { id: b.id, version: assigned.results[1].version },
+          { id: randomUUID(), version: 1 },
+        ],
+      }).expect(201)
+    ).body;
+    expect(mixed.results.map((r: { ok: boolean; status?: number }) => [r.ok, r.status])).toEqual([
+      [false, 409],
+      [true, undefined],
+      [false, 404],
+    ]);
+
+    const priority = (
+      await bulk({
+        action: 'priority',
+        impact: 3,
+        urgency: 3,
+        items: [{ id: a.id, version: row(a.id).version }],
+      }).expect(201)
+    ).body;
+    expect(priority).toMatchObject({ succeeded: 0, failed: 1 });
+    const current = (await operator.get(helpdesk + '/requests/' + a.id).expect(200)).body;
+    const changed = (
+      await bulk({
+        action: 'priority',
+        impact: 3,
+        urgency: 3,
+        items: [{ id: a.id, version: current.version }],
+      }).expect(201)
+    ).body;
+    expect(changed).toMatchObject({ succeeded: 1, failed: 0 });
+    expect((await operator.get(helpdesk + '/requests/' + a.id).expect(200)).body.priority).toBeGreaterThan(
+      current.priority,
+    );
+
+    // Refusals: bad input is refused whole, and people without the permission cannot use it.
+    await bulk({ action: 'assign', assigneeId: null, items: [] }).expect(400);
+    await bulk({ action: 'delete', items: [{ id: a.id, version: 1 }] }).expect(400);
+    await bulk({ action: 'status', status: 'merged', items: [{ id: a.id, version: 1 }] }).expect(400);
+    const one = [{ id: a.id, version: 1 }];
+    await bulk({ action: 'assign', assigneeId: null, items: [one[0], one[0]] }).expect(400);
+    await requester
+      .post(helpdesk + '/requests/bulk')
+      .send({ action: 'assign', assigneeId: null, items: one })
+      .expect(403);
+    await bystander
+      .post(helpdesk + '/requests/bulk')
+      .send({ action: 'assign', assigneeId: null, items: one })
+      .expect(403);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('does not let a bulk request action reach requests in another organisation', async () => {
+  const { requester, cleanup, input } = await fixture();
+  const stranger = await fixture();
+  try {
+    const created = (await requester.post(helpdesk + '/requests').send(input()).expect(201)).body;
+    const result = (
+      await stranger.admin
+        .post(helpdesk + '/requests/bulk')
+        .send({ action: 'status', status: 'rejected', note: 'No', items: [{ id: created.id, version: 1 }] })
+        .expect(201)
+    ).body;
+    expect(result).toMatchObject({ succeeded: 0, failed: 1 });
+    expect(result.results[0]).toMatchObject({ ok: false, status: 404 });
+  } finally {
+    await stranger.cleanup();
+    await cleanup();
+  }
+});
