@@ -37,3 +37,19 @@ The users screen has a **Site access** card. Pick a person, then choose "Every s
 - are still held by the no-privilege-escalation rule: they can't grant or manage a role with permissions they don't hold.
 
 Scoping by team is not built yet.
+
+## Modules and navigation
+
+`/app/admin/modules` (needs `settings.manage`) lists every module in the main menu with the plan that includes it. For each you can switch it off, give it your own name, and set its position within its menu section (1 is first). Home, My requests and Administration always show, so nobody is locked out.
+
+`GET /api/admin/modules` and `PUT /api/admin/modules` read and save the choices; saving a module back to its standard state removes its row. Every change is audited as `settings.modules_updated`. Choices live in `module_setting` (row-level security). A module your plan doesn't include stays locked whatever you choose: switching a module on never unlocks a feature.
+
+Switching a module off hides it from the menu. It does not block the module's API or its direct web address, and the data stays; it is a menu choice, not a permission or a plan limit.
+
+`GET /api/display` is readable by anyone signed in to the organisation. It returns only the choices the menu needs (which modules are off, their names and positions, and the terminology), never plan or role details.
+
+## Terminology
+
+`/app/admin/terminology` lets you use your own word for a few standard terms: work order, request, site, asset and contractor, each with a singular and a plural. Leave both empty to keep the standard words. `GET` and `PUT /api/admin/terminology` (`settings.manage`) read and save them, audited as `settings.terminology_updated`, stored in `term_override` (row-level security).
+
+For now your words show in the menu: the Work orders, Assets, Locations and Contractors items use the plural of their term unless you have also named the module yourself. Screens, emails and reports pick them up as each is built, through `termLabel()` in `@cafm/shared`.

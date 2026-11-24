@@ -55,7 +55,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
 | P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). P1-08b in progress on PR #62: the saved-views bar (open, save, share, delete) is on all four lists. Sort is built for work orders (merged). Batch 4 (PR #67): sort on assets, requests and PPM (merged). P1-08b done (view bar, sort, group and column chooser, PR #70). Next: bulk actions (P1-08c), then kanban and calendar (P1-08d). |
-| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 in progress (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off, terminology, then impersonation. Team scope (P1-09b) is later. Then P1-09d |
+| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Team scope (P1-09b) is later. Then P1-09d |
 
 ## Phase checklists
 
@@ -137,6 +137,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [x] Scopes by site, and delegated admin: site access card on the users screen; people limited to sites manage only people inside them. ([guide](admin.md#site-access-and-delegated-admin))
     - [ ] Scope by team (not built yet).
   - [ ] **P1-09c** Impersonation ("view as user"), modules on and off, terminology.
+    - [x] Modules on and off, and terminology, with their admin screens and the menu applying them. ([guide](admin.md#modules-and-navigation))
+    - [ ] Impersonation ("view as user"), audited, with a visible banner (not built yet).
   - [ ] **P1-09d** Branding, custom fields, statuses, SLA and calendars, categories screens.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
   - [ ] **P1-09f** Username-only accounts.

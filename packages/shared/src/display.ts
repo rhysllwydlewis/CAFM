@@ -86,7 +86,10 @@ const name = z
   .min(1, 'Enter a name.')
   .max(40, 'Use 40 characters or fewer.')
   // No markup or control characters in a menu label.
-  .refine((v) => !/[<>\u0000-\u001f]/.test(v), 'Use letters, numbers and ordinary punctuation only.');
+  .refine(
+    (v) => ![...v].some((c) => c === '<' || c === '>' || c.charCodeAt(0) < 32),
+    'Use letters, numbers and ordinary punctuation only.',
+  );
 
 export const updateModulesSchema = z.object({
   modules: z
@@ -123,4 +126,39 @@ export function termLabel(display: DisplaySettings | undefined, key: string, plu
   const custom = display?.terms.find((t) => t.key === key);
   const source = custom ?? standard;
   return (plural ? source?.plural : source?.singular) ?? key;
+}
+
+/** Modules that always show, so nobody is locked out of their own menu. */
+export const ALWAYS_ON = ['home', 'my-requests', 'admin'];
+
+/** The standard term whose plural is a module's default name, so renaming "Site" renames the Locations menu item. */
+const MODULE_TERM: Record<string, string> = {
+  'work-orders': 'work_order',
+  assets: 'asset',
+  locations: 'site',
+  contractors: 'contractor',
+};
+
+/**
+ * Applies an organisation's choices to the items of one menu section: drops modules switched off, renames
+ * them (their own name first, then the organisation's word for the term, then the standard name) and puts
+ * positioned ones where they asked, counting from 1 within the section. Unpositioned ones keep their order.
+ */
+export function applyDisplay<T extends { key: string; label: string }>(
+  items: T[],
+  display: DisplaySettings | undefined,
+): T[] {
+  if (!display) return items;
+  const kept: Array<{ item: T; position: number | null }> = [];
+  for (const item of items) {
+    const own = display.modules.find((m) => m.key === item.key);
+    if (own && !own.enabled && !ALWAYS_ON.includes(item.key)) continue;
+    const termKey = MODULE_TERM[item.key];
+    const term = termKey ? display.terms.find((t) => t.key === termKey) : undefined;
+    kept.push({ item: { ...item, label: own?.label ?? term?.plural ?? item.label }, position: own?.position ?? null });
+  }
+  const result = kept.filter((k) => k.position === null).map((k) => k.item);
+  const positioned = kept.filter((k) => k.position !== null).sort((a, b) => a.position! - b.position!);
+  for (const k of positioned) result.splice(Math.min(k.position! - 1, result.length), 0, k.item);
+  return result;
 }
