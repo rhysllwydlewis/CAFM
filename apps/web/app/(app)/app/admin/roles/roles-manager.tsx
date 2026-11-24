@@ -46,11 +46,14 @@ export function RolesManager({
   selected,
   canManage,
   held,
+  notice,
 }: {
   roles: RoleRow[];
   selected: string | undefined;
   canManage: boolean;
   held: string[];
+  /** Confirmation carried across the navigation that follows create, duplicate and delete. */
+  notice?: string;
 }) {
   const router = useRouter();
   const nameId = useId();
@@ -62,7 +65,9 @@ export function RolesManager({
   const [description, setDescription] = useState(role?.description ?? '');
   const [scope, setScope] = useState(role?.scope ?? 'all');
   const [permissions, setPermissions] = useState(() => new Set(role?.permissions ?? []));
-  const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
+  const [feedback, setFeedback] = useState<{ text: string; error?: boolean } | undefined>(
+    notice ? { text: notice } : undefined,
+  );
   const [busy, setBusy] = useState(false);
   const locked = !canManage || role?.key === 'super_user';
 
@@ -110,7 +115,7 @@ export function RolesManager({
     );
     if (created) {
       form.reset();
-      router.push('/app/admin/roles?role=' + created.key);
+      router.push('/app/admin/roles?notice=created&role=' + created.key);
     }
   }
 
@@ -126,13 +131,13 @@ export function RolesManager({
         }),
       'Role duplicated.',
     );
-    if (created) router.push('/app/admin/roles?role=' + created.key);
+    if (created) router.push('/app/admin/roles?notice=duplicated&role=' + created.key);
   }
 
   async function remove() {
     if (!role) return;
     const done = await run(() => adminWrite('/roles/' + role.id, undefined, 'DELETE'), 'Role deleted.');
-    if (done !== undefined) router.push('/app/admin/roles');
+    if (done !== undefined) router.push('/app/admin/roles?notice=deleted');
   }
 
   return (
