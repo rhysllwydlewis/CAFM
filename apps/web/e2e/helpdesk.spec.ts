@@ -177,8 +177,9 @@ test('reports a fault with a photo from a printed asset QR after signing in', as
 test('ticks several requests and rejects them together, reporting each one', async ({ page }) => {
   test.setTimeout(120_000);
   const suffix = randomUUID().slice(0, 8);
+  // The requester raises them, so the notifications go to them and the helpdesk inbox stays as it was.
   await page.goto('/login');
-  await signIn(page, 'helpdesk');
+  await signIn(page, 'requester');
   await expect(page).not.toHaveURL(/\/login/);
   const catalogue = (await (await page.request.get('/api/helpdesk/catalogue')).json()) as {
     types: { id: string; questions: { key: string }[] }[];
@@ -200,6 +201,10 @@ test('ticks several requests and rejects them together, reporting each one', asy
   };
   const first = await raise('E2E bulk request one ' + suffix);
   await raise('E2E bulk request two ' + suffix);
+  await page.context().clearCookies();
+  await page.goto('/login');
+  await signIn(page, 'helpdesk');
+  await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/app/helpdesk?view=all&q=' + suffix);
   const results = page.getByRole('region', { name: 'Request results' });
   await expect(results.getByRole('link', { name: first.number }).first()).toBeVisible();

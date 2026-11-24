@@ -24,7 +24,7 @@ All calls are inside the signed-in organisation, and each checks the list's own 
 
 ## On the screens
 
-Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions and kanban and calendar layouts for the other lists are built in later batches of P1-08.
+Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions are covered below, and kanban and calendar layouts come in a later batch of P1-08.
 
 ## Sorting the work order list
 
@@ -62,4 +62,14 @@ Tick rows on the work order list (or the box in the header for the whole page) a
 
 When assigning, the people offered are those who can work at the first ticked job's site. A job at another site where that person can't work is reported as not changed.
 
-Requests, assets and schedules get bulk actions in a later batch.
+## Bulk actions on requests, assets and schedules
+
+The same tick boxes and bar are on the request queue, the asset register and the schedules list. Each is offered only to people who may make the change on its own: `requests.manage`, `assets.manage` and `ppm.manage`.
+
+| List | Actions | Endpoint |
+|---|---|---|
+| Requests | Change status (In progress, Completed, Closed, Rejected, with a note, which Rejected needs), assign or clear the assignee, set impact and urgency | `POST /api/helpdesk/requests/bulk` |
+| Assets | Set status | `POST /api/assets/bulk` |
+| Schedules | Archive or restore, give the jobs to someone or clear it, set the priority | `POST /api/ppm/schedules/bulk` |
+
+Each takes `{ action, items: [{ id, version }], ... }` with up to 50 rows and replies `{ succeeded, failed, results }` exactly as the work order call does. A row is changed by the same code as its single-row call, in its own transaction, so every rule holds per row (request transitions, who can be assigned, decommissioning an asset with live components, the version you saw) and one refusal never undoes the others. Rows from another organisation answer 404 and show as failed rows. Setting a request's priority keeps each request's own type and changes only its impact and urgency.

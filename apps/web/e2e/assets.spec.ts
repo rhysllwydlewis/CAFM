@@ -330,26 +330,71 @@ test('opens asset records and renders all three printable tag types', async ({ p
 test('ticks several assets and changes their status together, reporting each one', async ({ page }) => {
   test.setTimeout(120_000);
   const suffix = randomUUID().slice(0, 8);
-  await signIn(page, 'manager');
-  const site = (await (await page.request.get('/api/locations?kind=site')).json()) as { items: { id: string }[] };
-  for (const name of ['One', 'Two']) {
-    const response = await page.request.post('/api/assets', {
-      data: { name: `E2E bulk ${name} ${suffix}`, locationId: site.items[0]!.id },
-    });
-    expect(response.ok()).toBe(true);
-  }
-  await page.goto('/app/assets?q=' + suffix);
-  const register = page.getByRole('region', { name: 'Asset register' });
-  await expect(register.getByRole('link', { name: 'E2E bulk One ' + suffix })).toBeVisible();
-  await assertAccessible(page);
+  const email = 'bulk-' + suffix + '@test.example';
+  const password = 'Pw-' + randomUUID();
+  const db = new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
+  });
+  // An organisation of its own, so the demo register keeps the assets other tests count.
+  const tenant = await createTenant(db, {
+    name: 'Bulk asset estate',
+    slug: 'bulk-' + suffix,
+    plan: 'starter',
+    adminEmail: email,
+    appUrl: 'http://localhost:3000',
+  });
+  const where = { tenantId: tenant.tenantId };
+  try {
+    const token = tenant.inviteUrl.split('/').at(-1);
+    expect(
+      (
+        await page.request.post('/api/auth/invites/' + token + '/accept', {
+          data: { name: 'Test asset manager', password, acceptTerms: true },
+        })
+      ).ok(),
+    ).toBe(true);
+    const post = async (path: string, data: object) => {
+      const response = await page.request.post('/api' + path, { data });
+      expect(response.ok(), path).toBe(true);
+      return response.json();
+    };
+    const site = await post('/locations', { code: 'S', name: 'Test site', kind: 'site' });
+    for (const name of ['One', 'Two']) await post('/assets', { name: 'Bulk ' + name, locationId: site.id });
 
-  await expect(page.getByRole('form', { name: 'Bulk actions' })).toHaveCount(0);
-  await page.getByLabel('Select all assets on this page').check();
-  const bar = page.getByRole('form', { name: 'Bulk actions' });
-  await expect(bar.getByText('2 selected')).toBeVisible();
-  await assertAccessible(page);
-  await bar.getByLabel('Set status to').selectOption({ label: 'Spare' });
-  await bar.getByRole('button', { name: 'Apply to 2' }).click();
-  await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
-  await expect(register.getByRole('row').filter({ hasText: 'Spare' })).toHaveCount(2);
+    await page.goto('/app/assets');
+    const register = page.getByRole('region', { name: 'Asset register' });
+    await expect(register.getByRole('link', { name: 'Bulk One' })).toBeVisible();
+    await assertAccessible(page);
+
+    // Nothing is offered until a row is ticked.
+    await expect(page.getByRole('form', { name: 'Bulk actions' })).toHaveCount(0);
+    await page.getByLabel('Select all assets on this page').check();
+    const bar = page.getByRole('form', { name: 'Bulk actions' });
+    await expect(bar.getByText('2 selected')).toBeVisible();
+    await assertAccessible(page);
+    await bar.getByLabel('Set status to').selectOption({ label: 'Spare' });
+    await bar.getByRole('button', { name: 'Apply to 2' }).click();
+    await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
+    await expect(register.getByRole('row').filter({ hasText: 'Spare' })).toHaveCount(2);
+  } finally {
+    const account = await db.account.findUnique({ where: { email } });
+    await db.$transaction(async (tx) => {
+      await tx.session.deleteMany({ where });
+      await tx.asset.deleteMany({ where });
+      await tx.assetClass.deleteMany({ where });
+      await tx.location.deleteMany({ where });
+      await tx.fieldDefinition.deleteMany({ where });
+      await tx.configVersion.deleteMany({ where });
+      await tx.numberSequence.deleteMany({ where });
+      await tx.auditEvent.deleteMany({ where });
+      await tx.invite.deleteMany({ where });
+      await tx.outboxMessage.deleteMany({ where });
+      await tx.membership.deleteMany({ where });
+      await tx.role.deleteMany({ where });
+      await tx.authEvent.deleteMany({ where: account ? { accountId: account.id } : where });
+      if (account) await tx.account.delete({ where: { id: account.id } });
+      await tx.tenant.delete({ where: { id: where.tenantId } });
+    });
+    await db.$disconnect();
+  }
 });
