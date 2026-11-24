@@ -8,7 +8,7 @@ This is how the CAFM build runs without someone typing "continue". It replaces t
 |---|---|---|
 | **CAFM Builder** | Builds the next roadmap item, one slice at a time, in a draft PR. Resumes an unfinished item before starting a new one. | Every 2 hours, at :17 |
 | **CAFM Reviewer** | A fresh-eyes pass over a finished build. Finds what's missing, broken, wrong, low quality or buggy, fixes it in the same PR, and signs it off as ready. | Every 3 hours, at :47 |
-| **CAFM Steward** | The safety net. Finds stuck or stale work and re-drives it, keeps branches mergeable, runs the phase-exit check, keeps the status issue true, and tells the product owner what needs them. Writes no product code. | Daily at 07:43, push notification on |
+| **CAFM Steward** | The safety net. Finds stuck or stale work and re-drives it, keeps branches mergeable, runs the phase-exit check, keeps the status issue true, and tells the product owner what needs them. Writes no product code. | Every three hours; push on a problem, and a morning digest at 07:45 |
 
 The **Reviewer merges** a PR it has signed off, when the safety conditions in "Merging" below all hold. The Builder never merges, and the owner keeps the phase gate and everything the Reviewer leaves unmerged (D13, revised 23 Nov 2026). Everything else is automatic.
 
@@ -122,7 +122,7 @@ Every loop has a limit, so an item always reaches `ready`, or reaches the owner 
 | Items being built | **1** (`Stage: build`) | The Builder finishes it before claiming another. |
 | PRs waiting (`review`, `ready` or `blocked`, all together) | **2** | The Builder stops claiming new work until the owner merges or unblocks one. The Steward says so in the digest. The Builder can build the next item while an earlier one is in review. A ready PR whose checks are failing is not counted as waiting on the owner: the Builder fixes it first (re-running a setup failure once). |
 | A PR in `build` or `review` with no heartbeat for 24 hours | | The Steward flags it on the status issue and, if usage is the cause, says so. After 48 hours it raises a `blocked` issue and pushes to the owner. |
-| A PR in `ready` for more than 2 days | | The Steward lists it first in the daily digest. |
+| A PR in `ready` for more than 3 hours | | The Steward lists it first in its next push. It runs every three hours and pushes only when something is wrong, plus a morning digest at 07:45. |
 | Blocked, or needs a decision | | Open or update an issue labelled `blocked` or `decision-needed`, put it in the Status block, set `Stage: blocked`, and stop. The Steward reports it. Never press on past a decision. |
 
 ## The Reviewer's pass
