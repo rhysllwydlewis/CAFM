@@ -224,3 +224,57 @@ test('ticks several requests and rejects them together, reporting each one', asy
   await bar.getByRole('button', { name: 'Apply to 2' }).click();
   await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
 });
+
+test('shows requests on the board by stage, and keeps the board through the filters', async ({ page }) => {
+  test.setTimeout(90_000);
+  const suffix = randomUUID().slice(0, 8);
+  const title = 'E2E board request ' + suffix;
+  await page.goto('/login');
+  await signIn(page, 'requester');
+  await expect(page).not.toHaveURL(/\/login/);
+  const catalogue = (await (await page.request.get('/api/helpdesk/catalogue')).json()) as {
+    types: { id: string; questions: { key: string }[] }[];
+  };
+  const type = catalogue.types.find(({ questions }) => questions.length === 0) ?? catalogue.types[0]!;
+  const response = await page.request.post('/api/helpdesk/requests', {
+    data: {
+      submissionId: randomUUID(),
+      title,
+      description: 'Created by a browser test.',
+      locationId: cardiff,
+      typeId: type.id,
+      answers: {},
+    },
+  });
+  expect(response.ok()).toBe(true);
+
+  await page.context().clearCookies();
+  await page.goto('/login');
+  await signIn(page, 'helpdesk');
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/app/helpdesk?q=' + suffix);
+  await page.getByRole('link', { name: 'Board', exact: true }).click();
+  await expect(page).toHaveURL(/layout=board/);
+  const lane = page.getByRole('region', { name: 'New', exact: true });
+  await expect(lane.getByRole('link', { name: title })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'In progress', exact: true })).toContainText('Nothing here.');
+  await checkAccessibility(page);
+
+  // Applying the filters keeps the board, and the card opens the request.
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page).toHaveURL(/layout=board/);
+  await lane.getByRole('link', { name: title }).click();
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+
+  // The list is a click away.
+  await page.goto('/app/helpdesk?layout=board&q=' + suffix);
+  await page.getByRole('link', { name: 'List', exact: true }).click();
+  await expect(page).not.toHaveURL(/layout=board/);
+  await expect(page.getByRole('region', { name: 'Request results' })).toContainText(title);
+
+  const db = new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
+  });
+  await db.serviceRequest.deleteMany({ where: { tenantId, title } });
+  await db.$disconnect();
+});

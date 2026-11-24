@@ -19,6 +19,7 @@ import { QueueLocationFilter } from './queue-location-filter';
 import { RequestForm } from './request-form';
 import { ListDisplayFields } from '@/components/list-display';
 import { REQUEST_COLUMNS, REQUEST_GROUPS } from './request-columns';
+import { RequestBoard } from './request-board';
 import { RequestTable } from './request-table';
 import styles from './helpdesk.module.css';
 
@@ -65,7 +66,14 @@ export default async function HelpdeskPage({
   for (const key of ['view', 'q', 'locationId', 'category', 'channel', 'sort', 'dir', 'cursor'] as const) {
     if (filters[key]) params.set(key, filters[key]);
   }
-  const apiQuery = params.toString();
+  const board = input.layout === 'board';
+  const apiParams = new URLSearchParams(params);
+  if (board) {
+    // The board shows what it finds all in one go.
+    apiParams.delete('cursor');
+    apiParams.set('limit', '100');
+  }
+  const apiQuery = apiParams.toString();
   // Grouping and columns only change how the page is shown, so the API never sees them.
   const group = parseGroup(input.groupby, REQUEST_GROUPS);
   if (group) params.set('groupby', group);
@@ -93,9 +101,16 @@ export default async function HelpdeskPage({
     const next = new URLSearchParams(params);
     next.set('view', view);
     next.delete('cursor');
+    if (board) next.set('layout', 'board');
     return '/app/helpdesk?' + next.toString();
   };
   if (data.cursorReset) params.delete('cursor');
+  const layoutHref = (layout: 'list' | 'board') => {
+    const next = new URLSearchParams(params);
+    next.delete('cursor');
+    if (layout === 'board') next.set('layout', 'board');
+    return '/app/helpdesk?' + next.toString();
+  };
   const next = new URLSearchParams(params);
   if (data.nextCursor) next.set('cursor', data.nextCursor);
   const { categories, location } = queueFilters;
@@ -155,8 +170,25 @@ export default async function HelpdeskPage({
             </Link>
           ))}
         </nav>
-        <form key={params.toString()} className={styles.filters}>
+        <nav aria-label="Layout" className={styles.filters}>
+          <Link
+            className={'btn sm ' + (board ? 'ghost' : 'primary')}
+            aria-current={board ? undefined : 'page'}
+            href={layoutHref('list')}
+          >
+            List
+          </Link>
+          <Link
+            className={'btn sm ' + (board ? 'primary' : 'ghost')}
+            aria-current={board ? 'page' : undefined}
+            href={layoutHref('board')}
+          >
+            Board
+          </Link>
+        </nav>
+        <form key={params.toString() + board} className={styles.filters}>
           <input type="hidden" name="view" value={currentView} />
+          {board && <input type="hidden" name="layout" value="board" />}
           <label className="field">
             <span className="label">Search requests</span>
             <input className={styles.control} type="search" name="q" defaultValue={filters.q} />
@@ -208,14 +240,21 @@ export default async function HelpdeskPage({
           </button>
         </form>
         {data.cursorReset && <p className="card-b muted">The list changed. Showing the first page.</p>}
-        <RequestTable
-          items={data.items}
-          now={Date.now()}
-          columns={input.cols}
-          group={group}
-          bulk={can(user, 'requests.manage')}
-        />
-        {(data.nextCursor || params.has('cursor')) && (
+        {board ? (
+          <div className="card-b">
+            <RequestBoard items={data.items} now={Date.now()} />
+            {data.nextCursor && <p className="sm muted">Showing the first 100. Use the list to see the rest.</p>}
+          </div>
+        ) : (
+          <RequestTable
+            items={data.items}
+            now={Date.now()}
+            columns={input.cols}
+            group={group}
+            bulk={can(user, 'requests.manage')}
+          />
+        )}
+        {!board && (data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">
             {params.has('cursor') && (
               <Link className="btn" href={viewHref(currentView)}>
@@ -231,7 +270,13 @@ export default async function HelpdeskPage({
         )}
       </section>
       {operator && input.log === '1' && types && (
-        <RequestForm staff data={types} returnTo={'/app/helpdesk?' + params.toString()} />
+        <RequestForm
+          staff
+          data={types}
+          returnTo={
+            '/app/helpdesk?' + (board ? new URLSearchParams([...params, ['layout', 'board']]) : params).toString()
+          }
+        />
       )}
     </div>
   );

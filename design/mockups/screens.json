@@ -160,6 +160,14 @@
     "file": "02-helpdesk-work.js"
   },
   {
+    "id": "helpdesk-04-board",
+    "group": "Helpdesk",
+    "title": "Helpdesk board",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
     "id": "helpdesk-02-log-request",
     "group": "Helpdesk",
     "title": "Log request (with AI triage)",
@@ -227,6 +235,14 @@
     "id": "ppm-01-planner",
     "group": "Planned maintenance",
     "title": "52-week PPM planner",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "03-ppm-assets.js"
+  },
+  {
+    "id": "ppm-03-calendar",
+    "group": "Planned maintenance",
+    "title": "PPM calendar",
     "viewport": "desktop",
     "theme": "light",
     "file": "03-ppm-assets.js"

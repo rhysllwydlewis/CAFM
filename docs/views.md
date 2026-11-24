@@ -24,7 +24,7 @@ All calls are inside the signed-in organisation, and each checks the list's own 
 
 ## On the screens
 
-Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions are covered below. The work order list also has a board and a calendar layout (see below); the other lists get theirs in a later batch of P1-08.
+Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions are covered below. The work order list has a board and a calendar layout, requests have a board and planned maintenance has a calendar (see below).
 
 ## Sorting the work order list
 
@@ -79,3 +79,11 @@ Each takes `{ action, items: [{ id, version }], ... }` with up to 50 rows and re
 **Calendar** beside **List** and **Board** shows one month, Monday first, with each job on the day its fix is due (UK time). Jobs are coloured as in the list: due within two days is amber, overdue is red (a job whose clock is paused is not overdue). **Previous month** and **Next month** move on; the month is in the address as `month=YYYY-MM`, and the layout is saved with a view. The filters above the calendar apply. It shows up to 100 jobs for the weeks on screen, and says so if there are more. A day with more than three jobs has a **+N more** link to the list for that day. Jobs with no fix-by date are not on the calendar. On a phone the calendar is a list of the days that have jobs.
 
 `GET /api/work-orders` takes `dueFrom` and `dueTo` (UK dates, `YYYY-MM-DD`, both ends included) to return jobs whose fix is due in that range. An invalid date answers 400. The same permission and site scope apply as to the list.
+
+## Board on requests
+
+**Board** beside **List** on the Helpdesk queue shows one lane for each stage: New, Assigned, In progress, Completed, and Closed or rejected. Each card has the number, priority, title, location, response SLA and who it is assigned to, and opens the request. The queue views (Open, Mine, Unassigned, At risk, All) and the filters apply, and the layout is in the address as `layout=board`, so a saved view keeps it. It shows up to 100 requests and says so if there are more. A request changes stage on its own page, where a rejection can be explained, or through the bulk actions on the list, so the board has no move menu. Open is the default view, so the last lane fills only under **All**.
+
+## Calendar on planned maintenance
+
+**Calendar** beside the other planned maintenance views shows one month, Monday first, with each schedule on the day its next visit is due. That is the earliest due date across the schedule's assets. A date in the past is red, and one in the next two days is amber. **Previous month** and **Next month** move on (`month=YYYY-MM`). The search, criticality, discipline and status filters apply. A day with more than three schedules has a **+N more** link that lists the schedules due that day (`day=YYYY-MM-DD`), with **Show all dates** to return. Schedules based on a meter have no date, so they are not shown. It shows up to 100 schedules and says so if there are more. On a phone the calendar is a list of the days that have schedules. It uses the same schedule list call as the Schedules view, so the same permission applies.

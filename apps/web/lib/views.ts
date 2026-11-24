@@ -3,7 +3,7 @@ import type { SavedView, ViewEntity } from '@cafm/shared';
 import { apiGet } from './api';
 
 /** Params that describe where you are in a list, not what it is filtered by. They are never saved in a view. */
-const POSITION_KEYS = new Set(['cursor', 'after', 'offset', 'new', 'log', 'page', 'limit', 'month']);
+const POSITION_KEYS = new Set(['cursor', 'after', 'offset', 'new', 'log', 'page', 'limit', 'month', 'day']);
 
 /** The filters in an address: every short text param except paging and form-open flags. */
 export function filtersFromQuery(query: Record<string, string | string[] | undefined>): Record<string, string> {
