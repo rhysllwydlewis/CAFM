@@ -146,6 +146,8 @@ export class UsernameAccountsController {
       const role = await tx.role.findUnique({ where: { tenantId_key: { tenantId, key: member.role } } });
       assertCanGrant(auth.access!, actor.role, role?.permissions ?? []);
       // An account in more than one organisation is not this organisation's to reset.
+      // Memberships of other organisations are hidden from a tenant-only context, so add the account's own.
+      await tx.$queryRaw`SELECT set_config('app.account_id', ${member.accountId}, true)`;
       if ((await tx.membership.count({ where: { accountId: member.accountId } })) > 1) {
         throw new ConflictException({
           code: 'shared_account',
@@ -165,6 +167,11 @@ export class UsernameAccountsController {
       return member;
     });
     await this.db.session.deleteMany({ where: { accountId: target.accountId } });
+    // A phone signed in earlier would otherwise renew itself with its refresh token.
+    await this.db.mobileDevice.updateMany({
+      where: { accountId: target.accountId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
     return {
       membershipId: target.id,
       name: target.account.name,

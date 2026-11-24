@@ -125,7 +125,7 @@ export function UsersManager({
           </form>
         </section>
       )}
-      {canInvite && <UsernameAccountsCard users={users} roles={roles} />}
+      <UsernameAccountsCard users={users} roles={roles} canCreate={!siteAccess.delegated} />
       {feedback && (
         <p role={feedback.error ? 'alert' : 'status'} className={feedback.error ? 'field-error' : 'muted'}>
           {feedback.text}

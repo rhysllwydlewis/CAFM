@@ -152,4 +152,34 @@ describe('username-only accounts', () => {
     const self = users.find((u) => u.email === 'superuser@demo.example')!;
     await agent.post(`/api/admin/username-accounts/${self.membershipId}/reset-password`).send({}).expect(403);
   });
+
+  it('will not reset an account that also belongs to another organisation, and revokes phones on reset', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    const made = (
+      await agent
+        .post('/api/admin/username-accounts')
+        .send({ name: 'Shared', username: unique(), role: 'technician' })
+        .expect(201)
+    ).body;
+    const member = await owner.membership.findUniqueOrThrow({ where: { id: made.membershipId } });
+    const other = await owner.tenant.findFirstOrThrow({ where: { id: { not: member.tenantId } } });
+    const extra = await owner.membership.create({
+      data: { tenantId: other.id, accountId: member.accountId, role: 'technician', licence: 'limited' },
+    });
+    await agent.post(`/api/admin/username-accounts/${made.membershipId}/reset-password`).send({}).expect(409);
+    await owner.membership.delete({ where: { id: extra.id } });
+
+    const device = await owner.mobileDevice.create({
+      data: {
+        accountId: member.accountId,
+        membershipId: member.id,
+        name: 'Test phone',
+        refreshHash: `test-${Math.random()}`,
+        refreshExpiresAt: new Date(Date.now() + 86_400_000),
+      },
+    });
+    await agent.post(`/api/admin/username-accounts/${made.membershipId}/reset-password`).send({}).expect(200);
+    expect((await owner.mobileDevice.findUniqueOrThrow({ where: { id: device.id } })).revokedAt).not.toBeNull();
+    await owner.mobileDevice.delete({ where: { id: device.id } });
+  });
 });

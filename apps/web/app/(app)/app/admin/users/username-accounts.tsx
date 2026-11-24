@@ -12,7 +12,16 @@ import type { RoleOption } from './users-manager';
  * Username-only accounts (P1-09f): for staff without an email address, such as operatives on shared devices.
  * The password is shown once, here, and can't be read again. Resetting makes a new one.
  */
-export function UsernameAccountsCard({ users, roles }: { users: AdminUser[]; roles: RoleOption[] }) {
+export function UsernameAccountsCard({
+  users,
+  roles,
+  canCreate,
+}: {
+  users: AdminUser[];
+  roles: RoleOption[];
+  /** Organisation-wide admins only: a new account carries no site. Resetting is open to delegated admins too. */
+  canCreate: boolean;
+}) {
   const router = useRouter();
   const nameId = useId();
   const usernameId = useId();
@@ -77,41 +86,43 @@ export function UsernameAccountsCard({ users, roles }: { users: AdminUser[]; rol
           For staff without an email address. They sign in with a username on your organisation’s own sign-in page.
           There is no email, so you give them the password, and you reset it if they forget it.
         </p>
-        <form className={styles.inviteForm} onSubmit={create}>
-          <Field label="Name" htmlFor={nameId}>
-            <TextInput id={nameId} name="name" required autoComplete="off" />
-          </Field>
-          <Field label="Username" htmlFor={usernameId}>
-            <TextInput
-              id={usernameId}
-              name="username"
-              required
-              autoComplete="off"
-              autoCapitalize="none"
-              aria-describedby={usernameId + '-hint'}
-            />
-            <span className="xs faint" id={usernameId + '-hint'}>
-              3 to 32 letters, numbers, dots, dashes or underscores.
-            </span>
-          </Field>
-          <Field label="Role" htmlFor={roleId}>
-            <select className={styles.control} id={roleId} name="role" required defaultValue="">
-              <option value="" disabled>
-                Choose a role
-              </option>
-              {roles.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {r.name}
+        {canCreate && (
+          <form className={styles.inviteForm} onSubmit={create}>
+            <Field label="Name" htmlFor={nameId}>
+              <TextInput id={nameId} name="name" required autoComplete="off" />
+            </Field>
+            <Field label="Username" htmlFor={usernameId}>
+              <TextInput
+                id={usernameId}
+                name="username"
+                required
+                autoComplete="off"
+                autoCapitalize="none"
+                aria-describedby={usernameId + '-hint'}
+              />
+              <span className="xs faint" id={usernameId + '-hint'}>
+                3 to 32 letters, numbers, dots, dashes or underscores.
+              </span>
+            </Field>
+            <Field label="Role" htmlFor={roleId}>
+              <select className={styles.control} id={roleId} name="role" required defaultValue="">
+                <option value="" disabled>
+                  Choose a role
                 </option>
-              ))}
-            </select>
-          </Field>
-          <div>
-            <Button type="submit" variant="primary" disabled={busy}>
-              Create account
-            </Button>
-          </div>
-        </form>
+                {roles.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div>
+              <Button type="submit" variant="primary" disabled={busy}>
+                Create account
+              </Button>
+            </div>
+          </form>
+        )}
         {accounts.length > 0 && (
           <form className={styles.inviteForm} onSubmit={resetPassword}>
             <Field label="Reset a password" htmlFor={personId}>
