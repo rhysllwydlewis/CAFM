@@ -54,6 +54,7 @@ test('a Super User edits a custom role in the roles matrix', async ({ page }) =>
   await page.getByLabel('New role').fill(name);
   await page.getByRole('button', { name: 'Create role' }).click();
   await expect(page.getByRole('heading', { name: 'Role: ' + name })).toBeVisible();
+  await expect(page.getByText('Role created.')).toBeVisible();
   await page.getByLabel('See assets', { exact: true }).check();
   await page.getByRole('button', { name: 'Save role' }).click();
   await expect(page.getByText('Role saved.')).toBeVisible();
