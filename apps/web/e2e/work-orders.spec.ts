@@ -696,6 +696,17 @@ test('shows a job on the calendar on the day its fix is due', async ({ page }) =
   await expect(calendar.getByRole('link', { name: new RegExp(suffix) })).toHaveCount(0);
   await page.getByRole('link', { name: 'Previous month' }).click();
   await expect(link).toBeVisible();
+
+  // A day's list keeps its day through the filter form, and "Show all dates" lets go of it.
+  await page.goto('/app/work-orders?view=all&dueFrom=' + dueDay + '&dueTo=' + dueDay + '&q=' + suffix);
+  await expect(page.getByText('Showing jobs due on ' + dueDay)).toBeVisible();
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page).toHaveURL(new RegExp('dueFrom=' + dueDay));
+  await page.getByRole('link', { name: 'Show all dates' }).click();
+  await expect(page).not.toHaveURL(/dueFrom=/);
+  await expect(page).toHaveURL(/view=all/);
+
+  await page.goto('/app/work-orders?view=all&layout=calendar&month=' + month + '&q=' + suffix);
   await link.click();
   await expect(page.getByRole('heading', { name: 'E2E calendar ' + suffix })).toBeVisible();
 });

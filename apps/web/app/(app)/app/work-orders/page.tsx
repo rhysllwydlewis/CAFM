@@ -116,9 +116,15 @@ export default async function WorkOrdersPage({
   const dayHref = (day: string) => {
     const next = new URLSearchParams(params);
     next.delete('cursor');
-    next.set('view', 'all');
     next.set('dueFrom', day);
     next.set('dueTo', day);
+    return '/app/work-orders?' + next.toString();
+  };
+  const allDatesHref = () => {
+    const next = new URLSearchParams(params);
+    next.delete('cursor');
+    next.delete('dueFrom');
+    next.delete('dueTo');
     return '/app/work-orders?' + next.toString();
   };
   if (data.cursorReset) params.delete('cursor');
@@ -209,6 +215,8 @@ export default async function WorkOrdersPage({
           <input type="hidden" name="view" value={currentView} />
           {(board || calendar) && <input type="hidden" name="layout" value={board ? 'board' : 'calendar'} />}
           {calendar && <input type="hidden" name="month" value={month} />}
+          {!board && !calendar && filters.dueFrom && <input type="hidden" name="dueFrom" value={filters.dueFrom} />}
+          {!board && !calendar && filters.dueTo && <input type="hidden" name="dueTo" value={filters.dueTo} />}
           <label className="field">
             <span className="label">Search work orders</span>
             <input className={styles.control} type="search" name="q" defaultValue={filters.q} />
@@ -268,7 +276,7 @@ export default async function WorkOrdersPage({
         {data.cursorReset && <p className="card-b muted">The list changed. Showing the first page.</p>}
         {!board && !calendar && filters.dueFrom && filters.dueFrom === filters.dueTo && (
           <p className="card-b row g2">
-            Showing jobs due on {filters.dueFrom}. <Link href={viewHref(currentView)}>Show all dates</Link>
+            Showing jobs due on {filters.dueFrom}. <Link href={allDatesHref()}>Show all dates</Link>
           </p>
         )}
         {calendar ? (

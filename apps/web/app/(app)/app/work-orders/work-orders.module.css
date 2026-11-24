@@ -341,7 +341,6 @@
 /* On a phone the month is a list of the days that have jobs, because seven columns are too narrow to read. */
 @media (width <= 640px) {
   .calendar thead,
-  .dayEmpty,
   .shortDay {
     display: none;
   }
@@ -355,6 +354,11 @@
 
   .day {
     height: auto;
+  }
+
+  /* After the block rule above, so the empty days stay hidden. */
+  .day.dayEmpty {
+    display: none;
   }
 
   .longDay {
