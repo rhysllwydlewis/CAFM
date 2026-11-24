@@ -24,7 +24,7 @@ export async function ListViewBar({
       entity={entity}
       route={route}
       filters={filtersFromQuery(query)}
-      layout={query.layout === 'board' ? 'board' : 'list'}
+      layout={query.layout === 'board' || query.layout === 'calendar' ? query.layout : 'list'}
       views={views}
       canShare={can(user, 'views.share')}
       activeId={views.some((view) => view.id === active) ? active : undefined}

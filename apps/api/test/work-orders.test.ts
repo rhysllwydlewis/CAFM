@@ -1162,3 +1162,31 @@ it('does not let a bulk action reach jobs in another organisation', async () => 
     await cleanup();
   }
 });
+
+it('lists the jobs whose fix is due in a range of UK days, for the calendar', async () => {
+  const { manager, cleanup, job } = await fixture();
+  const stranger = await fixture();
+  try {
+    const created = (await manager.post(jobs).send(job()).expect(201)).body;
+    const due = new Date(created.fixDueAt);
+    const day = (offset: number) => new Date(due.getTime() + offset * 86_400_000).toISOString().slice(0, 10);
+    const ids = async (query: string) =>
+      (await manager.get(jobs + '?view=all' + query).expect(200)).body.items.map(({ id }: { id: string }) => id);
+    // The range includes both ends, and a day either side leaves the job out.
+    expect(await ids('&dueFrom=' + day(-1) + '&dueTo=' + day(1))).toEqual([created.id]);
+    expect(await ids('&dueFrom=' + day(-1))).toEqual([created.id]);
+    expect(await ids('&dueTo=' + day(1))).toEqual([created.id]);
+    expect(await ids('&dueFrom=' + day(2) + '&dueTo=' + day(3))).toEqual([]);
+    expect(await ids('&dueFrom=' + day(-3) + '&dueTo=' + day(-2))).toEqual([]);
+    // Dates must be real.
+    await manager.get(jobs + '?dueFrom=2026-13-45').expect(400);
+    await manager.get(jobs + '?dueTo=tomorrow').expect(400);
+    // Another organisation sees nothing, whatever the range.
+    expect(
+      (await stranger.admin.get(jobs + '?view=all&dueFrom=' + day(-1) + '&dueTo=' + day(1)).expect(200)).body.items,
+    ).toEqual([]);
+  } finally {
+    await stranger.cleanup();
+    await cleanup();
+  }
+});

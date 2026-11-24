@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). P1-08b in progress on PR #62: the saved-views bar (open, save, share, delete) is on all four lists. Sort is built for work orders (merged). Batch 4 (PR #67): sort on assets, requests and PPM (merged). P1-08b done (view bar, sort, group and column chooser, PR #70). Batch 6 (PR #71): bulk actions on work orders (merged). Batch 7 (`claude/build-p1-08-bulk-other`): bulk actions on requests, assets and schedules (P1-08c done). Next: kanban and calendar layouts (P1-08d). |
+| P1-08 | Claude (Builder routine) | `claude/build-p1-08-*` | 23 Nov 2026 | P1-08a done (saved views model, RLS, API, docs/views.md). P1-08b in progress on PR #62: the saved-views bar (open, save, share, delete) is on all four lists. Sort is built for work orders (merged). Batch 4 (PR #67): sort on assets, requests and PPM (merged). P1-08b done (view bar, sort, group and column chooser, PR #70). Batch 6 (PR #71): bulk actions on work orders (merged). Batch 7 (`claude/build-p1-08-bulk-other`): bulk actions on requests, assets and schedules (P1-08c done). Batch 8 (`claude/build-p1-08-kanban-calendar`, PR in draft): work order calendar layout (P1-08d), with its mockup first. The board already exists on work orders. Next after it: calendar on planned maintenance, and a board on requests. |
 | P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Next: P1-09d (branding, custom fields, statuses, SLA and calendars, categories screens), then P1-09e, P1-09f. Team scope (P1-09b) is later. |
 
 ## Phase checklists
@@ -130,6 +130,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-08b** View bar on the work order, asset, request and PPM lists: filters, sort, group, column chooser, saved and shared views.
   - [x] **P1-08c** Bulk selection and bulk actions (assign, status, priority) with per-row results.
   - [ ] **P1-08d** Kanban and calendar layouts.
+    - [x] Work orders: board (earlier) and calendar. ([guide](views.md#calendar-layout-on-work-orders))
+    - [ ] Calendar on planned maintenance schedules, and a board on requests.
 - [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
   - [x] **P1-09a** Admin console shell, overview (licences, seats, changes, setup checklist) and Users and licences (invite, withdraw, change role, deactivate). ([guide](admin.md))
   - [ ] **P1-09b** Roles matrix screen, teams, scopes and delegated admin.
