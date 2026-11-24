@@ -53,6 +53,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- Deleting a role on the roles screen now shows "Role deleted." on the role you land on. Before, the message was cleared as the screen switched, so it could flash by or never appear.
+
 - A new homepage: one day at Cardiff HQ, with scroll as the clock. The day plays on the building from 05:00, with what CAFM did at each time (a request logged by QR code, planned visits raised, a boiler fault at 17:45), then at 18:00 the floors slide apart and the evening follows the fix through the plant room to midnight, ending on the links to try the demo or sign in. With reduced motion the film steps between still frames, and without WebGL the stills cross-fade.
 
 - Fix a site whose opening hours end at 24:00 (the way overnight opening is entered) being unable to receive Helpdesk requests, because the response deadline couldn't be worked out.

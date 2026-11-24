@@ -46,11 +46,14 @@ export function RolesManager({
   selected,
   canManage,
   held,
+  deleted = false,
 }: {
   roles: RoleRow[];
   selected: string | undefined;
   canManage: boolean;
   held: string[];
+  /** True when the person has just deleted a role, so the confirmation shows on the role now selected. */
+  deleted?: boolean;
 }) {
   const router = useRouter();
   const nameId = useId();
@@ -62,7 +65,9 @@ export function RolesManager({
   const [description, setDescription] = useState(role?.description ?? '');
   const [scope, setScope] = useState(role?.scope ?? 'all');
   const [permissions, setPermissions] = useState(() => new Set(role?.permissions ?? []));
-  const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
+  const [feedback, setFeedback] = useState<{ text: string; error?: boolean } | undefined>(
+    deleted ? { text: 'Role deleted.' } : undefined,
+  );
   const [busy, setBusy] = useState(false);
   const locked = !canManage || role?.key === 'super_user';
 
@@ -131,8 +136,18 @@ export function RolesManager({
 
   async function remove() {
     if (!role) return;
-    const done = await run(() => adminWrite('/roles/' + role.id, undefined, 'DELETE'), 'Role deleted.');
-    if (done !== undefined) router.push('/app/admin/roles');
+    setBusy(true);
+    setFeedback(undefined);
+    try {
+      await adminWrite('/roles/' + role.id, undefined, 'DELETE');
+      // The screen switches to another role once this one is gone, which starts the page afresh and would lose
+      // a message held here. So the confirmation travels in the address instead.
+      router.push('/app/admin/roles?deleted=1');
+    } catch (error) {
+      setFeedback({ text: error instanceof Error ? error.message : 'Could not delete the role.', error: true });
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
