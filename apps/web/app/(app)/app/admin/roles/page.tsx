@@ -29,7 +29,7 @@ export default async function AdminRolesPage({
       selected={selected?.key}
       canManage={can(user, 'roles.manage')}
       held={user.permissions}
-      notice={notice ? NOTICES[notice] : undefined}
+      notice={notice && Object.hasOwn(NOTICES, notice) ? NOTICES[notice] : undefined}
     />
   );
 }
