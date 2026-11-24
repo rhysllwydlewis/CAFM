@@ -208,6 +208,14 @@
     "file": "02-helpdesk-work.js"
   },
   {
+    "id": "wo-06-calendar",
+    "group": "Work orders",
+    "title": "Work order calendar",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
     "id": "wo-04-job-sheet",
     "group": "Work orders",
     "title": "Job sheet (PDF)",

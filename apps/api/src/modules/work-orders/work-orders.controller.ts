@@ -94,6 +94,16 @@ function entry(
   });
 }
 
+/** The instants a run of UK calendar days covers: from the start of the first day to the start of the day after the last. */
+function ukDayRange(from?: string, to?: string): { gte?: Date; lt?: Date } {
+  const start = (day: string) =>
+    new Date(Temporal.PlainDate.from(day).toZonedDateTime('Europe/London').epochMilliseconds);
+  return {
+    ...(from ? { gte: start(from) } : {}),
+    ...(to ? { lt: start(Temporal.PlainDate.from(to).add({ days: 1 }).toString()) } : {}),
+  };
+}
+
 @Controller('work-orders')
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
 @RequireFeature('work_orders')
@@ -130,6 +140,7 @@ export class WorkOrdersController {
           ...(input.priority ? [{ priority: input.priority }] : []),
           ...(input.assetId ? [{ assetId: input.assetId }] : []),
           ...(input.requestId ? [{ requestId: input.requestId }] : []),
+          ...(input.dueFrom || input.dueTo ? [{ fixDueAt: ukDayRange(input.dueFrom, input.dueTo) }] : []),
           ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
           ...(input.q
             ? [

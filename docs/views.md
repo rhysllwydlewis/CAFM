@@ -24,7 +24,7 @@ All calls are inside the signed-in organisation, and each checks the list's own 
 
 ## On the screens
 
-Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions are covered below, and kanban and calendar layouts come in a later batch of P1-08.
+Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions are covered below. The work order list also has a board and a calendar layout (see below); the other lists get theirs in a later batch of P1-08.
 
 ## Sorting the work order list
 
@@ -73,3 +73,9 @@ The same tick boxes and bar are on the request queue, the asset register and the
 | Schedules | Archive or restore, give the jobs to someone or clear it, set the priority | `POST /api/ppm/schedules/bulk` |
 
 Each takes `{ action, items: [{ id, version }], ... }` with up to 50 rows and replies `{ succeeded, failed, results }` exactly as the work order call does. A row is changed by the same code as its single-row call, in its own transaction, so every rule holds per row (request transitions, who can be assigned, decommissioning an asset with live components, the version you saw) and one refusal never undoes the others. Rows from another organisation answer 404 and show as failed rows. Setting a request's priority keeps each request's own type and changes only its impact and urgency.
+
+## Calendar layout on work orders
+
+**Calendar** beside **List** and **Board** shows one month, Monday first, with each job on the day its fix is due (UK time). Jobs are coloured as in the list: due within two days is amber, overdue is red (a job whose clock is paused is not overdue). **Previous month** and **Next month** move on; the month is in the address as `month=YYYY-MM`, and the layout is saved with a view. The filters above the calendar apply. It shows up to 100 jobs for the weeks on screen, and says so if there are more. A day with more than three jobs has a **+N more** link to the list for that day. Jobs with no fix-by date are not on the calendar. On a phone the calendar is a list of the days that have jobs.
+
+`GET /api/work-orders` takes `dueFrom` and `dueTo` (UK dates, `YYYY-MM-DD`, both ends included) to return jobs whose fix is due in that range. An invalid date answers 400. The same permission and site scope apply as to the list.

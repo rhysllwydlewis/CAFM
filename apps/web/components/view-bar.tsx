@@ -28,7 +28,7 @@ export function viewHref(route: string, view: Pick<SavedView, 'id' | 'config'>):
       for (const item of value) params.append(key, item);
     }
   }
-  if (view.config.layout === 'board') params.set('layout', 'board');
+  if (view.config.layout !== 'list') params.set('layout', view.config.layout);
   params.set('view_id', view.id);
   return route + '?' + params.toString();
 }
