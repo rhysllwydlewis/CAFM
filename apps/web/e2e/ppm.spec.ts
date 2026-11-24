@@ -180,3 +180,40 @@ test('adds a task to the library, plans a schedule for it, puts an asset on it a
   await expect(page).toHaveURL(/\/app\/ppm\/tasks$/);
   await expect(page.getByRole('link', { name: taskName })).toHaveCount(0);
 });
+
+test('ticks several schedules and archives them together, reporting each one', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'planner');
+  for (const name of ['One', 'Two']) {
+    const response = await page.request.post('/api/ppm/schedules', {
+      data: {
+        title: `E2E bulk ${name} ${suffix}`,
+        criticality: 'optimal',
+        frequency: { type: 'calendar', unit: 'month', interval: 6 },
+        mode: 'fixed',
+        startsOn: inDays(30),
+        leadDays: 28,
+        durationMinutes: 60,
+        priority: 3,
+        assets: [],
+      },
+    });
+    expect(response.ok()).toBe(true);
+  }
+  await page.goto('/app/ppm?view=list&q=' + suffix);
+  const list = page.getByRole('region', { name: 'Schedules', exact: true });
+  await expect(list.getByRole('link', { name: 'E2E bulk One ' + suffix })).toBeVisible();
+  await assertAccessible(page);
+
+  await expect(page.getByRole('form', { name: 'Bulk actions' })).toHaveCount(0);
+  await page.getByLabel('Select all schedules on this page').check();
+  const bar = page.getByRole('form', { name: 'Bulk actions' });
+  await expect(bar.getByText('2 selected')).toBeVisible();
+  await assertAccessible(page);
+  await bar.getByLabel('Action').selectOption({ label: 'Archive' });
+  await bar.getByRole('button', { name: 'Apply to 2' }).click();
+  await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
+  // Archived schedules leave the active list.
+  await expect(page.getByRole('link', { name: 'E2E bulk One ' + suffix })).toHaveCount(0);
+});

@@ -326,3 +326,30 @@ test('opens asset records and renders all three printable tag types', async ({ p
   await expect(page.getByText('Boiler 2 · AST-00003', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Record meter reading' })).toBeVisible();
 });
+
+test('ticks several assets and changes their status together, reporting each one', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  await signIn(page, 'manager');
+  const site = (await (await page.request.get('/api/locations?kind=site')).json()) as { items: { id: string }[] };
+  for (const name of ['One', 'Two']) {
+    const response = await page.request.post('/api/assets', {
+      data: { name: `E2E bulk ${name} ${suffix}`, locationId: site.items[0]!.id },
+    });
+    expect(response.ok()).toBe(true);
+  }
+  await page.goto('/app/assets?q=' + suffix);
+  const register = page.getByRole('region', { name: 'Asset register' });
+  await expect(register.getByRole('link', { name: 'E2E bulk One ' + suffix })).toBeVisible();
+  await assertAccessible(page);
+
+  await expect(page.getByRole('form', { name: 'Bulk actions' })).toHaveCount(0);
+  await page.getByLabel('Select all assets on this page').check();
+  const bar = page.getByRole('form', { name: 'Bulk actions' });
+  await expect(bar.getByText('2 selected')).toBeVisible();
+  await assertAccessible(page);
+  await bar.getByLabel('Set status to').selectOption({ label: 'Spare' });
+  await bar.getByRole('button', { name: 'Apply to 2' }).click();
+  await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
+  await expect(register.getByRole('row').filter({ hasText: 'Spare' })).toHaveCount(2);
+});
