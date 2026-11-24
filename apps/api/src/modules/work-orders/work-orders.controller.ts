@@ -2,7 +2,9 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
+  HttpException,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -18,6 +20,9 @@ import { Temporal } from '@js-temporal/polyfill';
 import { PPM_TIME_ZONE, recordPpmCancelled, recordPpmDone, withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
   assignWorkOrderSchema,
+  bulkWorkOrderSchema,
+  type BulkWorkOrderResponse,
+  type BulkWorkOrderResult,
   changeWorkOrderSchema,
   changeWorkOrderStatusSchema,
   convertRequestSchema,
@@ -679,6 +684,50 @@ export class WorkOrdersController {
       );
       return workOrderSummary(next);
     });
+  }
+
+  /**
+   * Changes several jobs at once. Each is done by the same code as the single-job call, in its own
+   * transaction, so every rule (status order, checklists, assignee eligibility, scope, versions) holds
+   * per row and one failure never undoes the others. The reply says what happened to each row.
+   */
+  @Post('bulk')
+  @RequirePermission('work_orders.read')
+  async bulk(@Req() req: Request, @Body() body: unknown): Promise<BulkWorkOrderResponse> {
+    const input = parse(bulkWorkOrderSchema, body);
+    const held = req.auth!.access!.permissions;
+    const needed =
+      input.action === 'assign'
+        ? ['work_orders.assign']
+        : input.action === 'priority'
+          ? ['work_orders.edit']
+          : ['work_orders.edit', 'work_orders.close'];
+    if (!needed.some((key) => held.has(key as never))) throw new ForbiddenException();
+    const results: BulkWorkOrderResult[] = [];
+    for (const { id, version } of input.items) {
+      try {
+        const next =
+          input.action === 'status'
+            ? await this.status(req, id, { version, status: input.status, pauseReason: input.pauseReason })
+            : input.action === 'assign'
+              ? await this.assign(req, id, { version, assigneeId: input.assigneeId })
+              : await this.change(req, id, { version, impact: input.impact, urgency: input.urgency });
+        results.push({ id, ok: true, version: next.version });
+      } catch (error) {
+        if (!(error instanceof HttpException)) throw error;
+        const detail = error.getResponse();
+        const message =
+          typeof detail === 'string' ? detail : ((detail as { message?: unknown }).message ?? error.message);
+        results.push({
+          id,
+          ok: false,
+          status: error.getStatus(),
+          message: typeof message === 'string' ? message : error.message,
+        });
+      }
+    }
+    const succeeded = results.filter(({ ok }) => ok).length;
+    return { succeeded, failed: results.length - succeeded, results };
   }
 
   @Post(':id/comments')
