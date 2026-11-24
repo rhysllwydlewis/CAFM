@@ -7,6 +7,7 @@ import type { AdminUser, SiteAccessOverview } from '@cafm/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 import { SiteAccessCard } from './site-access';
+import { ViewAsCard } from './view-as';
 
 export type RoleOption = { key: string; name: string };
 export type PendingInvite = { id: string; email: string; role: string; expiresAt: string };
@@ -36,6 +37,7 @@ export function UsersManager({
   selfMembershipId,
   siteAccess,
   canEditSiteAccess,
+  canViewAs,
 }: {
   users: AdminUser[];
   roles: RoleOption[];
@@ -45,6 +47,8 @@ export function UsersManager({
   siteAccess: SiteAccessOverview;
   /** Delegated admins, or organisations-wide admins who also hold `locations.manage`. */
   canEditSiteAccess: boolean;
+  /** Holds `people.impersonate` (Super Users). */
+  canViewAs: boolean;
 }) {
   const router = useRouter();
   const emailId = useId();
@@ -292,6 +296,7 @@ export function UsersManager({
           selfMembershipId={selfMembershipId}
         />
       )}
+      {canViewAs && <ViewAsCard users={users} selfMembershipId={selfMembershipId} />}
     </>
   );
 }

@@ -4,6 +4,10 @@
  * through components. Placeholders: {name}.
  */
 const enGB = {
+  'impersonation.banner':
+    'You are viewing as {viewing}. You are signed in as {by}. This is read-only and ends at {until}.',
+  'impersonation.end': 'Stop viewing',
+  'impersonation.endFailed': 'Could not end this. Try again.',
   'shell.search': 'Search or jump to…',
   'shell.searchShortcut': 'Ctrl K',
   'shell.notifications': 'Notifications',

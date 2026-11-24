@@ -179,3 +179,32 @@ test('a Super User renames a module and a term, and the menu follows', async ({ 
     await db.$disconnect();
   }
 });
+
+test('a Super User views the app as a technician and then stops', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/users');
+  await expect(page.getByRole('heading', { name: 'View as user' })).toBeVisible();
+  await assertAccessible(page);
+  const card = page.getByRole('region', { name: 'View as user' });
+  await card.getByLabel('Person').selectOption({ label: 'Tom Price (Technician)' });
+  await card.getByLabel('Reason').fill('Checking what the technician sees');
+  // By keyboard, as the site access test does: at phone width this page is wider than the screen (see the PR's known gaps).
+  await card.getByRole('button', { name: 'View as this person' }).focus();
+  await page.keyboard.press('Enter');
+
+  const banner = page.getByRole('status').filter({ hasText: 'You are viewing as Tom Price' });
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText('signed in as Sam Sutton');
+  await assertAccessible(page);
+
+  await banner.getByRole('button', { name: 'Stop viewing' }).click();
+  await expect(page.getByRole('heading', { name: /^People/ })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'You are viewing as' })).toHaveCount(0);
+});
+
+test('an Administrator has no view as user card', async ({ page }) => {
+  await signInAs(page, 'admin');
+  await page.goto('/app/admin/users');
+  await expect(page.getByRole('heading', { name: /^People/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'View as user' })).toHaveCount(0);
+});

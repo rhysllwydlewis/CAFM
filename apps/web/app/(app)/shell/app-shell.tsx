@@ -6,6 +6,7 @@ import { Icon } from '@cafm/ui';
 import { t } from '@/lib/i18n';
 import { CommandPalette } from './command-palette';
 import { DemoResetBanner } from './demo-banner';
+import { ImpersonationBanner } from './impersonation-banner';
 import { NotificationsDrawer } from './notifications';
 import { SideNav } from './side-nav';
 import type { ShellNavSection, ShellOrganisation } from './types';
@@ -17,12 +18,23 @@ interface Props {
   demo: boolean;
   user: { name: string; email: string | null; roleLabel: string };
   organisations: ShellOrganisation[];
+  impersonation: { by: string; expiresAt: string } | null;
   footer: ReactNode;
   children: ReactNode;
 }
 
 /** The authenticated app's frame (mockups home-01, home-03, home-04, shell-01 to shell-04). */
-export function AppShell({ sections, tenantName, planLabel, demo, user, organisations, footer, children }: Props) {
+export function AppShell({
+  sections,
+  tenantName,
+  planLabel,
+  demo,
+  user,
+  organisations,
+  impersonation,
+  footer,
+  children,
+}: Props) {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -57,6 +69,7 @@ export function AppShell({ sections, tenantName, planLabel, demo, user, organisa
         onClose={() => setNavOpen(false)}
       />
       <main className="main">
+        {impersonation && <ImpersonationBanner viewing={user.name} {...impersonation} />}
         {demo && <DemoResetBanner />}
         <header className="topbar">
           <button
