@@ -40,9 +40,11 @@ export class HomeController {
       const jobs = seesJobs
         ? await Promise.all([
             tx.workOrder.count({ where: { AND: open } }),
-            tx.workOrder.count({ where: { AND: [...open, { fixDueAt: { lt: now } }] } }),
+            // A job whose clock is stopped by a pause is not running late (same rule as the work order list).
+            tx.workOrder.count({ where: { AND: [...open, { slaPausedAt: null, fixDueAt: { lt: now } }] } }),
             tx.workOrder.count({ where: { AND: [...open, { fixDueAt: { gte: dayStart, lt: dayEnd } }] } }),
-            tx.workOrder.count({ where: { AND: [...open, { assigneeId: null }] } }),
+            // Same meaning as the work order list: logged and not yet picked up by a person or a contractor.
+            tx.workOrder.count({ where: { AND: [workOrderScope(auth), { status: 'logged' }] } }),
           ]).then(([count, overdue, dueToday, unassigned]) => ({
             own: auth.access?.scope === 'own',
             open: count,
@@ -74,9 +76,20 @@ export class HomeController {
             return { currency, amountMinor: sum._sum.amountMinor ?? 0 };
           }),
         );
-        const overLimitJobs = await tx.workOrder.count({
-          where: { AND: [workOrderScope(auth), { costs: { some: { overNte: true, incurredOn } } }] },
+        // Over the limit now: total cost against the job's current limit, not the flag set when a cost was added.
+        const limited = await tx.workOrder.findMany({
+          where: { AND: [workOrderScope(auth), { nteMinor: { not: null } }] },
+          select: { id: true, nteMinor: true },
         });
+        const sums = limited.length
+          ? await tx.workOrderCost.groupBy({
+              by: ['workOrderId'],
+              where: { workOrderId: { in: limited.map((j) => j.id) } },
+              _sum: { amountMinor: true },
+            })
+          : [];
+        const spent = new Map(sums.map((r) => [r.workOrderId, r._sum.amountMinor ?? 0]));
+        const overLimitJobs = limited.filter((j) => (spent.get(j.id) ?? 0) > j.nteMinor!).length;
         spend = {
           from,
           to: today.toString(),

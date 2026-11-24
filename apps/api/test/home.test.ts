@@ -157,3 +157,47 @@ it('never counts another organisation’s work (cross-tenant)', async () => {
     await b.cleanup();
   }
 });
+
+it('judges the limit by current totals and ignores paused or contractor-held jobs', async () => {
+  const f = await fixture();
+  try {
+    const job = await f.job();
+    const today = new Date().toISOString().slice(0, 10);
+    const cost = (amountMinor: number, extra: Record<string, unknown> = {}) =>
+      f.manager
+        .post(`/api/work-orders/${job.id}/costs`)
+        .send({ kind: 'expense', description: 'Parts', amountMinor, incurredOn: today, ...extra })
+        .expect(201);
+    const limit = async (nteMinor: number | null) => {
+      const current = (await f.manager.get(`/api/work-orders/${job.id}`).expect(200)).body;
+      await f.manager
+        .put(`/api/work-orders/${job.id}/costs/limit`)
+        .send({ nteMinor, version: current.version })
+        .expect(200);
+    };
+    await limit(1000);
+    await cost(1500, { overNteReason: 'Extra parts' });
+    expect((await f.finance.get(url).expect(200)).body.spend.overLimitJobs).toBe(1);
+    await limit(5000);
+    expect((await f.finance.get(url).expect(200)).body.spend.overLimitJobs).toBe(0);
+
+    // A paused job past its target is not overdue, and a logged job counts as unassigned.
+    const owner = ownerDb();
+    try {
+      await owner.workOrder.update({
+        where: { id: job.id },
+        data: {
+          fixDueAt: new Date(Date.now() - 3_600_000),
+          status: 'paused',
+          pauseReason: 'awaiting_parts',
+          slaPausedAt: new Date(),
+        },
+      });
+    } finally {
+      await owner.$disconnect();
+    }
+    expect((await f.manager.get(url).expect(200)).body.jobs).toMatchObject({ overdue: 0 });
+  } finally {
+    await f.cleanup();
+  }
+});
