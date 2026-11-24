@@ -1056,3 +1056,109 @@ it('refuses work orders when the plan does not include them', async () => {
     await cleanup();
   }
 });
+
+it('changes several jobs at once and reports what happened to each', async () => {
+  const { manager, tech, reporter, cleanup, job, member } = await fixture();
+  try {
+    const [a, b, c] = await Promise.all(
+      [1, 2, 3].map(
+        async (n) =>
+          (
+            await manager
+              .post(jobs)
+              .send(job({ title: 'Job ' + n }))
+              .expect(201)
+          ).body,
+      ),
+    );
+    const bulk = (body: object) => manager.post(jobs + '/bulk').send(body);
+
+    const assigned = (
+      await bulk({
+        action: 'assign',
+        assigneeId: member('tech'),
+        items: [a, b].map(({ id, version }) => ({ id, version })),
+      }).expect(201)
+    ).body;
+    expect(assigned).toMatchObject({ succeeded: 2, failed: 0 });
+    expect((await manager.get(jobs + '/' + a.id).expect(200)).body).toMatchObject({
+      assigneeId: member('tech'),
+      status: 'assigned',
+    });
+
+    // A job that has moved on, a job that is not there and a good one each get their own result.
+    const mixed = (
+      await bulk({
+        action: 'status',
+        status: 'cancelled',
+        items: [
+          { id: a.id, version: a.version },
+          { id: b.id, version: assigned.results[1].version },
+          { id: randomUUID(), version: 1 },
+        ],
+      }).expect(201)
+    ).body;
+    expect(mixed).toMatchObject({ succeeded: 1, failed: 2 });
+    expect(mixed.results.map((row: { ok: boolean; status?: number }) => [row.ok, row.status])).toEqual([
+      [false, 409],
+      [true, undefined],
+      [false, 404],
+    ]);
+
+    const priority = (
+      await bulk({ action: 'priority', impact: 1, urgency: 1, items: [{ id: c.id, version: c.version }] }).expect(201)
+    ).body;
+    expect(priority).toMatchObject({ succeeded: 1, failed: 0 });
+    expect((await manager.get(jobs + '/' + c.id).expect(200)).body.priority).toBeLessThan(c.priority);
+
+    // Unsupported input, an empty list and repeated jobs are refused whole.
+    await bulk({ action: 'assign', assigneeId: null, items: [] }).expect(400);
+    await bulk({ action: 'delete', items: [{ id: c.id, version: 1 }] }).expect(400);
+    await bulk({
+      action: 'assign',
+      assigneeId: null,
+      items: [
+        { id: c.id, version: 1 },
+        { id: c.id, version: 1 },
+      ],
+    }).expect(400);
+    await bulk({ action: 'status', status: 'paused', items: [{ id: c.id, version: 1 }] }).expect(400);
+
+    // Each action needs the permission its single-job call needs.
+    const one = [{ id: c.id, version: 1 }];
+    await reporter
+      .post(jobs + '/bulk')
+      .send({ action: 'assign', assigneeId: null, items: one })
+      .expect(403);
+    await tech
+      .post(jobs + '/bulk')
+      .send({ action: 'priority', impact: 1, urgency: 1, items: one })
+      .expect(403);
+    await tech
+      .post(jobs + '/bulk')
+      .send({ action: 'assign', assigneeId: null, items: one })
+      .expect(403);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('does not let a bulk action reach jobs in another organisation', async () => {
+  const { manager, cleanup, job } = await fixture();
+  const stranger = await fixture();
+  try {
+    const created = (await manager.post(jobs).send(job()).expect(201)).body;
+    const result = (
+      await stranger.admin
+        .post(jobs + '/bulk')
+        .send({ action: 'status', status: 'cancelled', items: [{ id: created.id, version: created.version }] })
+        .expect(201)
+    ).body;
+    expect(result).toMatchObject({ succeeded: 0, failed: 1 });
+    expect(result.results[0]).toMatchObject({ ok: false, status: 404 });
+    expect((await manager.get(jobs + '/' + created.id).expect(200)).body.status).toBe('logged');
+  } finally {
+    await stranger.cleanup();
+    await cleanup();
+  }
+});
