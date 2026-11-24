@@ -560,7 +560,12 @@ it('changes several requests at once and reports what happened to each', async (
     const [a, b] = await Promise.all(
       [1, 2].map(
         async (n) =>
-          (await requester.post(helpdesk + '/requests').send(input({ title: 'Leak ' + n })).expect(201)).body,
+          (
+            await requester
+              .post(helpdesk + '/requests')
+              .send(input({ title: 'Leak ' + n }))
+              .expect(201)
+          ).body,
       ),
     );
     const list = (await operator.get(helpdesk + '/requests').expect(200)).body.items as {
@@ -645,7 +650,12 @@ it('does not let a bulk request action reach requests in another organisation', 
   const { requester, cleanup, input } = await fixture();
   const stranger = await fixture();
   try {
-    const created = (await requester.post(helpdesk + '/requests').send(input()).expect(201)).body;
+    const created = (
+      await requester
+        .post(helpdesk + '/requests')
+        .send(input())
+        .expect(201)
+    ).body;
     const result = (
       await stranger.admin
         .post(helpdesk + '/requests/bulk')

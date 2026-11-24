@@ -10,6 +10,7 @@ import {
   type RequestSummary,
 } from '@cafm/shared';
 import { REQUEST_COLUMNS } from './request-columns';
+import { RequestBulkBar } from './request-bulk-bar';
 import { GroupRows } from '@/components/list-display';
 import { Icon } from '@cafm/ui';
 import styles from './helpdesk.module.css';
@@ -59,6 +60,7 @@ export function RequestTable({
   own = false,
   columns: chosen,
   group,
+  bulk = false,
 }: {
   items: RequestSummary[];
   now: number;
@@ -66,7 +68,10 @@ export function RequestTable({
   /** The `cols` value from the address. */
   columns?: string | string[];
   group?: string;
+  /** Lets rows be ticked for a bulk action. Only for people who manage requests. */
+  bulk?: boolean;
 }) {
+  const [ticked, setTicked] = useState<Set<string>>(new Set());
   const [clock, setClock] = useState(now);
   useEffect(() => {
     if (own) return;
@@ -101,68 +106,108 @@ export function RequestTable({
     );
   const shown = new Set(visibleColumns(REQUEST_COLUMNS, chosen).map(({ key }) => key));
   const has = (key: string) => shown.has(key);
+  const span = shown.size + (bulk ? 1 : 0);
+  // Only rows still on the page count, so a row that has gone from the list can't be changed unseen.
+  const selected = items.filter(({ id }) => ticked.has(id));
+  const toggle = (id: string, on: boolean) =>
+    setTicked((current) => {
+      const next = new Set(current);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   return (
-    <div className={styles.tableWrap} role="region" aria-label="Request results" tabIndex={0}>
-      <table className="tbl">
-        <thead>
-          <tr>
-            {REQUEST_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
-              <th key={key} scope="col">
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {groupRows(items, group ? GROUP_LABELS[group] : undefined).map((section) => (
-            <GroupRows key={section.label} label={section.label} count={section.items.length} span={shown.size}>
-              {section.items.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <Link className="ref" href={route + item.id}>
-                      {item.number}
-                    </Link>
-                  </td>
-                  <td>
-                    <Link className="medium" href={route + item.id}>
-                      {item.title}
-                    </Link>
-                    <div className="sm muted">
-                      {item.location.name} · {item.location.code}
-                    </div>
-                  </td>
-                  {has('category') && (
-                    <td>
-                      {item.type.category} › {item.type.problemCode}
-                    </td>
-                  )}
-                  {has('priority') && (
-                    <td>
-                      <span
-                        className={'badge ' + (item.priority === 1 ? 'danger' : item.priority === 2 ? 'warning' : '')}
-                      >
-                        P{item.priority} {PRIORITY_NAMES[item.priority - 1]}
-                      </span>
-                    </td>
-                  )}
-                  {has('sla') && (
-                    <td>
-                      <Sla item={item} now={clock} />
-                    </td>
-                  )}
-                  {has('status') && (
-                    <td>
-                      <RequestStatus item={item} />
-                    </td>
-                  )}
-                  {has('requester') && <td>{item.requesterName ?? 'Email requester'}</td>}
-                  {has('channel') && <td>{REQUEST_CHANNEL_LABELS[item.channel]}</td>}
-                </tr>
+    <>
+      {bulk && (
+        <RequestBulkBar
+          selected={selected}
+          onDone={(changed) => setTicked((current) => new Set([...current].filter((id) => !changed.includes(id))))}
+        />
+      )}
+      <div className={styles.tableWrap} role="region" aria-label="Request results" tabIndex={0}>
+        <table className="tbl">
+          <thead>
+            <tr>
+              {bulk && (
+                <th scope="col">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all requests on this page"
+                    checked={selected.length === items.length}
+                    onChange={(event) =>
+                      setTicked(event.target.checked ? new Set(items.map(({ id }) => id)) : new Set())
+                    }
+                  />
+                </th>
+              )}
+              {REQUEST_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
+                <th key={key} scope="col">
+                  {label}
+                </th>
               ))}
-            </GroupRows>
-          ))}
-        </tbody>
-      </table>
-    </div>
+            </tr>
+          </thead>
+          <tbody>
+            {groupRows(items, group ? GROUP_LABELS[group] : undefined).map((section) => (
+              <GroupRows key={section.label} label={section.label} count={section.items.length} span={span}>
+                {section.items.map((item) => (
+                  <tr key={item.id} aria-selected={bulk ? ticked.has(item.id) : undefined}>
+                    {bulk && (
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label={'Select ' + item.number}
+                          checked={ticked.has(item.id)}
+                          onChange={(event) => toggle(item.id, event.target.checked)}
+                        />
+                      </td>
+                    )}
+                    <td>
+                      <Link className="ref" href={route + item.id}>
+                        {item.number}
+                      </Link>
+                    </td>
+                    <td>
+                      <Link className="medium" href={route + item.id}>
+                        {item.title}
+                      </Link>
+                      <div className="sm muted">
+                        {item.location.name} · {item.location.code}
+                      </div>
+                    </td>
+                    {has('category') && (
+                      <td>
+                        {item.type.category} › {item.type.problemCode}
+                      </td>
+                    )}
+                    {has('priority') && (
+                      <td>
+                        <span
+                          className={'badge ' + (item.priority === 1 ? 'danger' : item.priority === 2 ? 'warning' : '')}
+                        >
+                          P{item.priority} {PRIORITY_NAMES[item.priority - 1]}
+                        </span>
+                      </td>
+                    )}
+                    {has('sla') && (
+                      <td>
+                        <Sla item={item} now={clock} />
+                      </td>
+                    )}
+                    {has('status') && (
+                      <td>
+                        <RequestStatus item={item} />
+                      </td>
+                    )}
+                    {has('requester') && <td>{item.requesterName ?? 'Email requester'}</td>}
+                    {has('channel') && <td>{REQUEST_CHANNEL_LABELS[item.channel]}</td>}
+                  </tr>
+                ))}
+              </GroupRows>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
