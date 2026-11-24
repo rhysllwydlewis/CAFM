@@ -214,6 +214,55 @@ export const changeWorkOrderStatusSchema = z
   });
 
 export const assignWorkOrderSchema = z.object({ version, assigneeId: uuid.nullable() }).strict();
+
+/** The most jobs one bulk action can change, so one request stays quick and its result readable. */
+export const BULK_WORK_ORDER_LIMIT = 50;
+
+const bulkItems = z
+  .array(z.object({ id: uuid, version }).strict())
+  .min(1)
+  .max(BULK_WORK_ORDER_LIMIT)
+  .refine((items) => new Set(items.map(({ id }) => id)).size === items.length, {
+    message: 'Each work order can appear once.',
+  });
+
+/** Each job is changed on its own, with the version the person saw, so one that has moved on is reported, not overwritten. */
+export const bulkWorkOrderSchema = z
+  .discriminatedUnion('action', [
+    z
+      .object({
+        action: z.literal('status'),
+        items: bulkItems,
+        status: z.enum(WORK_ORDER_STATUSES),
+        pauseReason: z.enum(WORK_ORDER_PAUSE_REASONS).optional(),
+      })
+      .strict(),
+    z.object({ action: z.literal('assign'), items: bulkItems, assigneeId: uuid.nullable() }).strict(),
+    z.object({ action: z.literal('priority'), items: bulkItems, impact: level, urgency: level }).strict(),
+  ])
+  .refine(
+    (change) => change.action !== 'status' || (change.status === 'paused') === (change.pauseReason !== undefined),
+    {
+      message: 'Choose why the jobs are paused.',
+      path: ['pauseReason'],
+    },
+  );
+export type BulkWorkOrderInput = z.infer<typeof bulkWorkOrderSchema>;
+
+export interface BulkWorkOrderResult {
+  id: string;
+  ok: boolean;
+  /** The HTTP status the single-job call would have given, for a row that failed. */
+  status?: number;
+  message?: string;
+  /** The job's new version, for a row that worked. */
+  version?: number;
+}
+export interface BulkWorkOrderResponse {
+  succeeded: number;
+  failed: number;
+  results: BulkWorkOrderResult[];
+}
 export const workOrderCommentSchema = z
   .object({ body: shortText(6000), internal: z.boolean().default(false) })
   .strict();
@@ -261,6 +310,8 @@ export type ContractorJob = {
 
 export type WorkOrderSummary = {
   id: string;
+  /** Changes with every edit. A bulk action sends the one the person saw. */
+  version: number;
   number: string;
   title: string;
   status: WorkOrderStatus;
@@ -284,7 +335,6 @@ export type WorkOrderSummary = {
   updatedAt: string;
 };
 export type WorkOrderRecord<CustomField = unknown> = WorkOrderSummary & {
-  version: number;
   type: string;
   /** For a visit raised from a PPM schedule: which, and the day it is due. */
   ppm: { scheduleId: string; scheduleNumber: string; dueOn: string } | null;

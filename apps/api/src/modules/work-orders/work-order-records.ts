@@ -46,6 +46,7 @@ export async function getWorkOrder(tx: Tx, auth: AuthContext, id: string): Promi
 export function workOrderSummary(row: WorkOrderRow): WorkOrderSummary {
   return {
     id: row.id,
+    version: row.version,
     number: row.number,
     title: row.title,
     status: row.status as WorkOrderStatus,

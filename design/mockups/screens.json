@@ -200,6 +200,14 @@
     "file": "02-helpdesk-work.js"
   },
   {
+    "id": "wo-05-bulk-actions",
+    "group": "Work orders",
+    "title": "Work order list: bulk actions",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "02-helpdesk-work.js"
+  },
+  {
     "id": "wo-04-job-sheet",
     "group": "Work orders",
     "title": "Job sheet (PDF)",

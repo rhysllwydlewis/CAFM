@@ -621,3 +621,43 @@ test('works through a checklist, adds a photo, signs the job off and makes a job
   await managerSheet.getByRole('button', { name: 'Email to the requester' }).click();
   await expect(managerSheet.getByRole('alert')).toContainText('no requester');
 });
+
+test('ticks several jobs and changes their priority together, reporting each one', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'helpdesk');
+  const raise = async (title: string) => {
+    const response = await page.request.post('/api/work-orders', {
+      data: {
+        submissionId: randomUUID(),
+        title,
+        description: 'Created by a browser test.',
+        locationId: seedId('location:demo-estates:CDF'),
+        impact: 2,
+        urgency: 2,
+      },
+    });
+    expect(response.ok()).toBe(true);
+    return (await response.json()) as { id: string; number: string };
+  };
+  const first = await raise('E2E bulk one ' + suffix);
+  const second = await raise('E2E bulk two ' + suffix);
+  await page.goto('/app/work-orders?view=all&q=' + suffix);
+  const results = page.getByRole('region', { name: 'Work order results' });
+  await expect(results.getByRole('link', { name: first.number }).first()).toBeVisible();
+  await assertAccessible(page);
+
+  // Nothing is offered until a row is ticked.
+  await expect(page.getByRole('form', { name: 'Bulk actions' })).toHaveCount(0);
+  await page.getByLabel('Select all work orders on this page').check();
+  const bar = page.getByRole('form', { name: 'Bulk actions' });
+  await expect(bar.getByText('2 selected')).toBeVisible();
+  await assertAccessible(page);
+  await bar.getByLabel('Action').selectOption({ label: 'Set priority' });
+  await bar.getByLabel('Impact').selectOption({ label: 'High' });
+  await bar.getByLabel('Urgency').selectOption({ label: 'High' });
+  await bar.getByRole('button', { name: 'Apply to 2' }).click();
+  await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
+  await page.goto('/app/work-orders/' + second.id);
+  await expect(page.locator('.page-head .badge').nth(1)).toHaveText('P1 Emergency');
+});
