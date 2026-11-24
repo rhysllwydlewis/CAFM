@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 /** The standard reports in the first release. Each one is a fixed query, not a builder. */
-export const REPORT_KEYS = ['open_jobs_by_age', 'sla_performance', 'ppm_compliance'] as const;
+export const REPORT_KEYS = [
+  'open_jobs_by_age',
+  'sla_performance',
+  'ppm_compliance',
+  'work_mix',
+  'busiest_sites',
+] as const;
 export type ReportKey = (typeof REPORT_KEYS)[number];
 
 /** Age bands for open jobs, in whole days since the job was logged. */
@@ -71,4 +77,26 @@ export interface PpmComplianceReport {
   upcoming: number;
   /** On time as a whole percent of visits whose due day has passed, or null when none has. */
   percentOnTime: number | null;
+}
+
+/** Jobs raised in the period, split into reactive (faults and requests) and planned (PPM) work. */
+export interface WorkMixReport {
+  key: 'work_mix';
+  generatedAt: string;
+  from: string;
+  to: string;
+  total: number;
+  reactive: number;
+  planned: number;
+  /** Reactive as a whole percent of all jobs raised, or null when there were none. */
+  percentReactive: number | null;
+}
+
+/** The sites with the most jobs raised in the period. Places not below a site are left out. */
+export interface BusiestSitesReport {
+  key: 'busiest_sites';
+  generatedAt: string;
+  from: string;
+  to: string;
+  sites: { locationId: string; name: string; jobs: number }[];
 }

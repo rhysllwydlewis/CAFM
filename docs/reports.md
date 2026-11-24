@@ -7,6 +7,10 @@ Standard reports are fixed queries over the jobs a person may already see (their
 | Open jobs by age | `GET /api/reports/open-jobs-by-age` | Jobs not yet finished, in bands of days since they were logged. Optional `locationId`. |
 | SLA performance | `GET /api/reports/sla-performance` | Jobs completed in the period that had a fix target, and how many met it, overall and by priority. `from` and `to` are UK days; the default is the last 30. |
 | PPM compliance | `GET /api/reports/ppm-compliance` | Planned visits due in the period: done on time, done late (completed on a later UK day than due), overdue, still to come. Cancelled visits are left out. |
+| Reactive and planned work | `GET /api/reports/work-mix` | Jobs raised in the period (default the last 30 UK days), reactive against planned (PPM), and the reactive share. |
+| Busiest sites | `GET /api/reports/busiest-sites` | The five sites with the most jobs raised in the period, counting jobs at places below each site. |
+
+The **Executive overview** (Reports, then Executive overview) puts the key figures and the busiest sites on one page for the last 30 days. Cost, satisfaction and carbon figures from the mockup arrive with those modules.
 
 The home page shows three key-figure tiles (open work orders, SLA met, PPM on time) to anyone who can read reports. Each links to the Reports screen.
 

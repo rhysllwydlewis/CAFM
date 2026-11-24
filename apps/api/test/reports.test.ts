@@ -49,6 +49,9 @@ it('refuses people who are signed out or may not read reports', async () => {
     await f.r.get(`${base}/open-jobs-by-age`).expect(403);
     await f.r.get(`${base}/sla-performance`).expect(403);
     await f.r.get(`${base}/ppm-compliance`).expect(403);
+    await f.r.get(`${base}/work-mix`).expect(403);
+    await f.r.get(`${base}/busiest-sites`).expect(403);
+    await request(app.getHttpServer()).get(`${base}/work-mix`).expect(401);
   } finally {
     await f.cleanup();
   }
@@ -161,8 +164,58 @@ it('never reports another organisation’s jobs', async () => {
     const res = await b.m.get(`${base}/open-jobs-by-age`).expect(200);
     expect(res.body.total).toBe(0);
     expect((await b.m.get(`${base}/ppm-compliance`).expect(200)).body.due).toBe(0);
+    expect((await b.m.get(`${base}/work-mix`).expect(200)).body.total).toBe(0);
+    expect((await b.m.get(`${base}/busiest-sites`).expect(200)).body.sites).toEqual([]);
   } finally {
     await a.cleanup();
     await b.cleanup();
+  }
+});
+
+it('splits jobs raised in the period into reactive and planned work', async () => {
+  const f = await fixture();
+  try {
+    const planned = await f.makeJob();
+    await f.makeJob();
+    await f.makeJob();
+    await withTenant(db, f.tenant.id, (tx) =>
+      tx.workOrder.update({ where: { id: planned.id }, data: { type: 'ppm' } }),
+    );
+    const res = await f.m.get(`${base}/work-mix`).expect(200);
+    expect(res.body).toMatchObject({ total: 3, reactive: 2, planned: 1, percentReactive: 67 });
+    await f.m
+      .get(`${base}/work-mix?from=2020-01-01&to=2020-01-31`)
+      .expect(200)
+      .expect((r) => {
+        expect(r.body).toMatchObject({ total: 0, percentReactive: null });
+      });
+    await f.m.get(`${base}/work-mix?from=2026-02-01&to=2026-01-01`).expect(422);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+it('ranks the busiest sites, counting jobs in rooms below each site', async () => {
+  const f = await fixture();
+  try {
+    const quiet = (
+      await f.m.post('/api/locations').send({ code: 'QUIET', name: 'Quiet site', kind: 'site' }).expect(201)
+    ).body;
+    const room = (
+      await f.m
+        .post('/api/locations')
+        .send({ code: 'R1', name: 'Room 1', kind: 'building', parentId: f.site.id })
+        .expect(201)
+    ).body;
+    const job = await f.makeJob();
+    await f.makeJob();
+    await withTenant(db, f.tenant.id, (tx) =>
+      tx.workOrder.update({ where: { id: job.id }, data: { locationId: room.id } }),
+    );
+    const res = await f.m.get(`${base}/busiest-sites`).expect(200);
+    expect(res.body.sites).toEqual([{ locationId: f.site.id, name: 'Main site', jobs: 2 }]);
+    expect(res.body.sites.some((s: { locationId: string }) => s.locationId === quiet.id)).toBe(false);
+  } finally {
+    await f.cleanup();
   }
 });

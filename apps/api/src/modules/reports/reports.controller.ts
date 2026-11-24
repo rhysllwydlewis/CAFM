@@ -6,9 +6,11 @@ import {
   AGE_BANDS,
   reportQuerySchema,
   WORK_ORDER_FINISHED,
+  type BusiestSitesReport,
   type OpenJobsByAgeReport,
   type PpmComplianceReport,
   type SlaPerformanceReport,
+  type WorkMixReport,
 } from '@cafm/shared';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -162,5 +164,93 @@ export class ReportsController {
         percentOnTime: passed ? Math.round((onTime / passed) * 100) : null,
       };
     });
+  }
+  /** Jobs raised in the period (UK days, default the last 30 days), reactive against planned. */
+  @Get('work-mix')
+  workMix(@Req() req: Request, @Query() query: unknown): Promise<WorkMixReport> {
+    const auth = req.auth!;
+    const input = parse(reportQuerySchema, query);
+    const { from, to } = this.period(input);
+    return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<WorkMixReport> => {
+      const groups = await tx.workOrder.groupBy({
+        by: ['type'],
+        _count: { _all: true },
+        where: this.raisedIn(auth, input.locationId, from, to),
+      });
+      let reactive = 0;
+      let planned = 0;
+      for (const group of groups) {
+        if (group.type === 'ppm') planned += group._count._all;
+        else reactive += group._count._all;
+      }
+      const total = reactive + planned;
+      return {
+        key: 'work_mix',
+        generatedAt: new Date().toISOString(),
+        from,
+        to,
+        total,
+        reactive,
+        planned,
+        percentReactive: total ? Math.round((reactive / total) * 100) : null,
+      };
+    });
+  }
+
+  /** The five sites with the most jobs raised in the period. */
+  @Get('busiest-sites')
+  busiestSites(@Req() req: Request, @Query() query: unknown): Promise<BusiestSitesReport> {
+    const auth = req.auth!;
+    const input = parse(reportQuerySchema, query);
+    const { from, to } = this.period(input);
+    return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<BusiestSitesReport> => {
+      const rows = await tx.workOrder.findMany({
+        where: this.raisedIn(auth, input.locationId, from, to),
+        select: { locationId: true },
+      });
+      const perPlace = new Map<string, number>();
+      for (const { locationId } of rows) perPlace.set(locationId, (perPlace.get(locationId) ?? 0) + 1);
+      const paths = perPlace.size
+        ? await tx.locationPath.findMany({
+            where: { descendantId: { in: [...perPlace.keys()] }, ancestor: { kind: 'site' } },
+            select: { ancestorId: true, descendantId: true, ancestor: { select: { name: true } } },
+          })
+        : [];
+      const perSite = new Map<string, { name: string; jobs: number }>();
+      for (const path of paths) {
+        const entry = perSite.get(path.ancestorId) ?? { name: path.ancestor.name, jobs: 0 };
+        entry.jobs += perPlace.get(path.descendantId) ?? 0;
+        perSite.set(path.ancestorId, entry);
+      }
+      const sites = [...perSite.entries()]
+        .map(([locationId, v]) => ({ locationId, ...v }))
+        .sort((a, b) => b.jobs - a.jobs || a.name.localeCompare(b.name))
+        .slice(0, 5);
+      return { key: 'busiest_sites', generatedAt: new Date().toISOString(), from, to, sites };
+    });
+  }
+
+  /** The period as UK days: the query's own, or the last 30 days. */
+  private period(input: { from?: string; to?: string }) {
+    const to = input.to ?? Temporal.Now.plainDateISO(LONDON).toString();
+    const from = input.from ?? Temporal.PlainDate.from(to).subtract({ days: 29 }).toString();
+    if (from > to) throw new UnprocessableEntityException('The start date must not be after the end date.');
+    return { from, to };
+  }
+
+  /** Jobs the person may see that were raised in the UK-day period, optionally below one place. */
+  private raisedIn(auth: NonNullable<Request['auth']>, locationId: string | undefined, from: string, to: string) {
+    return {
+      AND: [
+        workOrderScope(auth),
+        {
+          createdAt: {
+            gte: startOfDay(from),
+            lt: startOfDay(Temporal.PlainDate.from(to).add({ days: 1 }).toString()),
+          },
+        },
+        ...(locationId ? [{ location: { ancestors: { some: { ancestorId: locationId } } } }] : []),
+      ],
+    } satisfies Prisma.WorkOrderWhereInput;
   }
 }
