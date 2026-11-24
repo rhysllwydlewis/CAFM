@@ -63,6 +63,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is remembered, and the phone menu is unchanged.
 - The Light, Dark and System theme buttons in the account menu now look like the rest of the interface (a soft track with a raised chip for the chosen one) instead of plain browser buttons.
 - The side menu has a rounded scrollbar in the navigation colours. It is wide enough to grab easily, fades out until you hover over the menu, and takes the petrol accent as you drag it.
 

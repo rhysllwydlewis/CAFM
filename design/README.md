@@ -11,7 +11,7 @@ The visual source of truth for the CAFM platform: design tokens, icon set, logo 
 |------|----------|
 | `tokens/tokens.css` | Colour, type, spacing, radius, elevation, motion; light and dark themes |
 | `tokens/tokens.json` | Same tokens as JSON (generated), for tooling and the future native mobile app (the web app uses `tokens.css`, ADR 0009) |
-| `icons/svg/` | 172 icons, one SVG each (`currentColor`) |
+| `icons/svg/` | 174 icons, one SVG each (`currentColor`) |
 | `icons/sprite.svg`, `icons/icons.json` | Symbol sprite and manifest (generated) |
 | `icons/logo/` | Placeholder logomark variants |
 | `mockups/src/` | Mockup stylesheet, HTML/SVG component builders, demo data |

@@ -19,6 +19,24 @@ const userMenu = shell({
   </div>`,
 });
 
+const navExpanded = shell({
+  active: 'home',
+  crumbs: ['Demo Estates Ltd', 'Home'],
+  title: 'Good morning, Sam',
+  sub: 'Monday 23 November',
+  body: [card('Getting started', `<div class="muted">Modules appear in the menu as they are built.</div>`)],
+  toggle: true,
+});
+
+const navCollapsed = shell({
+  active: 'home',
+  crumbs: ['Demo Estates Ltd', 'Home'],
+  title: 'Good morning, Sam',
+  sub: 'Monday 23 November',
+  body: [card('Getting started', `<div class="muted">Modules appear in the menu as they are built.</div>`)],
+  collapsed: true,
+});
+
 const placeholder = (active, title, crumbs, icon, heading, text, extra = '') =>
   shell({
     active,
@@ -70,4 +88,6 @@ export default [
   { id: 'shell-02-module-coming', group: 'App shell', title: 'Module not built yet', desc: 'Menu items for modules that arrive in a later phase.', html: comingSoon },
   { id: 'shell-03-module-locked', group: 'App shell', title: 'Module not in the plan', desc: 'Shown when the organisation’s plan doesn’t include the module (feature()).', html: locked },
   { id: 'shell-04-mobile-nav', group: 'App shell', title: 'Navigation on a phone', desc: 'The side menu opens as a drawer from the top bar.', html: mobileNav },
+  { id: 'shell-05-nav-expanded', group: 'App shell', title: 'Side menu with a collapse button', desc: 'On a desktop the side menu has a button beside the logo that collapses it to a slim icon rail. Not shown on a phone, where the menu is a drawer.', html: navExpanded },
+  { id: 'shell-06-nav-collapsed', group: 'App shell', title: 'Side menu collapsed', desc: 'A 64px rail of icons that leaves more room for the page. Hover or focus an icon to see its name; the button under the logo opens the menu again. The choice is remembered.', html: navCollapsed },
 ];

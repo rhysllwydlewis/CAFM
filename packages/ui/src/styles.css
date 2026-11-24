@@ -667,6 +667,60 @@ button.tb-icon:hover {
   }
 }
 
+/* Collapse button: desktop only. On a phone the menu is a drawer with its own Close button. */
+@media (max-width: 767px) {
+  .nav-toggle {
+    display: none;
+  }
+}
+.nav-toggle:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* The collapsed rail (mockup shell-06): the generic rules are in the design stylesheet; these cover the
+   account button and Sign out, which only the real app has. Labels stay for screen readers. */
+@media (min-width: 768px) {
+  .nav-collapsed .user-menu {
+    flex: none;
+    width: auto;
+  }
+  .nav-collapsed .user-menu-trigger {
+    justify-content: center;
+    width: auto;
+  }
+  .nav-collapsed .user-menu-trigger .grow,
+  .nav-collapsed .nav-signout-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .nav-collapsed .nav-signout {
+    width: 34px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+  }
+  /* The menu pops out beside the rail rather than inside it. */
+  .nav-collapsed .user-menu-panel {
+    left: calc(100% + 8px);
+    bottom: 8px;
+  }
+  /* The scrollbar takes a narrower gutter so the icons keep their width in a 64px rail. */
+  .nav-collapsed .nav-scroll {
+    padding-right: 2px;
+  }
+  .nav-collapsed .nav-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+  .nav-collapsed .nav-scroll::-webkit-scrollbar-thumb {
+    border-width: 2px;
+  }
+}
+
 .nav .btn.ghost.shell-nav-close {
   color: var(--nav-text-strong);
 }

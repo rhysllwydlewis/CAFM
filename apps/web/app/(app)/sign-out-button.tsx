@@ -34,7 +34,7 @@ export function SignOutButton() {
         aria-busy={busy}
         onClick={signOut}
       >
-        Sign out
+        <span className="nav-signout-label">Sign out</span>
       </Button>
       {failed && (
         <div className="xs nav-signout-error" role="alert">

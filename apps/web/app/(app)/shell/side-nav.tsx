@@ -17,10 +17,26 @@ interface Props {
   footer: ReactNode;
   open: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }
 
-/** The side menu. On a phone it is a drawer opened from the top bar (mockup shell-04). */
-export function SideNav({ sections, tenantName, planLabel, user, organisations, footer, open, onClose }: Props) {
+/**
+ * The side menu. On a phone it is a drawer opened from the top bar (mockup shell-04). On a desktop a button beside
+ * the logo collapses it to a slim icon rail and back (mockups shell-05 and shell-06).
+ */
+export function SideNav({
+  sections,
+  tenantName,
+  planLabel,
+  user,
+  organisations,
+  footer,
+  open,
+  onClose,
+  collapsed,
+  onToggleCollapsed,
+}: Props) {
   const pathname = usePathname();
   const ref = useRef<HTMLElement>(null);
 
@@ -42,6 +58,16 @@ export function SideNav({ sections, tenantName, planLabel, user, organisations, 
               <Logo size={28} />
               <span>CAFM</span>
             </div>
+            <button
+              type="button"
+              className="nav-toggle"
+              aria-label={collapsed ? t('shell.expandNav') : t('shell.collapseNav')}
+              aria-expanded={!collapsed}
+              title={collapsed ? t('shell.expandNav') : t('shell.collapseNav')}
+              onClick={onToggleCollapsed}
+            >
+              <Icon name={collapsed ? 'panel-left-open' : 'panel-left-close'} />
+            </button>
             <button type="button" className="btn ghost sm shell-nav-close" onClick={onClose}>
               {t('shell.closeMenu')}
             </button>
@@ -66,6 +92,7 @@ export function SideNav({ sections, tenantName, planLabel, user, organisations, 
                     className={`nav-item ${active ? 'active' : ''}`}
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
+                    title={collapsed ? (item.locked ? `${item.label} (${t('shell.locked')})` : item.label) : undefined}
                   >
                     <Icon name={item.icon} />
                     <span>{item.label}</span>
