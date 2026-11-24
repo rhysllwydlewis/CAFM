@@ -165,6 +165,7 @@ export class ReportsController {
       };
     });
   }
+
   /** Jobs raised in the period (UK days, default the last 30 days), reactive against planned. */
   @Get('work-mix')
   workMix(@Req() req: Request, @Query() query: unknown): Promise<WorkMixReport> {
@@ -204,12 +205,12 @@ export class ReportsController {
     const input = parse(reportQuerySchema, query);
     const { from, to } = this.period(input);
     return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<BusiestSitesReport> => {
-      const rows = await tx.workOrder.findMany({
+      const rows = await tx.workOrder.groupBy({
+        by: ['locationId'],
+        _count: { _all: true },
         where: this.raisedIn(auth, input.locationId, from, to),
-        select: { locationId: true },
       });
-      const perPlace = new Map<string, number>();
-      for (const { locationId } of rows) perPlace.set(locationId, (perPlace.get(locationId) ?? 0) + 1);
+      const perPlace = new Map<string, number>(rows.map((row) => [row.locationId, row._count._all]));
       const paths = perPlace.size
         ? await tx.locationPath.findMany({
             where: { descendantId: { in: [...perPlace.keys()] }, ancestor: { kind: 'site' } },
