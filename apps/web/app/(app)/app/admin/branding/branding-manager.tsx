@@ -83,6 +83,7 @@ export function BrandingManager({ branding }: { branding: BrandingView }) {
             disabled={busy}
           />
         </Field>
+        <p className="faint sm">The message is saved now. It will appear on the sign-in screen in a later release.</p>
         <p role="status" className={feedback?.error ? 'field-error' : 'muted'}>
           {feedback?.text}
         </p>

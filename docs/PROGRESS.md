@@ -142,7 +142,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [x] Modules on and off, and terminology, with their admin screens and the menu applying them. ([guide](admin.md#modules-and-navigation))
     - [x] Impersonation ("view as user"), audited, with a visible banner, read-only and limited to an hour. ([guide](admin.md#view-as-user))
   - [ ] **P1-09d** Branding, custom fields, statuses, SLA and calendars, categories screens.
-    - [x] Branding: accent colour with contrast check, and sign-in message (logo, domain and sender not built). ([guide](admin.md#branding))
+    - [x] Branding: accent colour with contrast check, applied across the app. ([guide](admin.md#branding))
+    - [ ] Branding: sign-in message shown on the sign-in screen, logo, custom domain and email sender (the message is saved already).
     - [ ] Custom fields screen, statuses, SLA and calendars, categories.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
   - [ ] **P1-09f** Username-only accounts.
