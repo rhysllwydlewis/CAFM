@@ -61,3 +61,16 @@ model TermOverride {
   @@id([tenantId, termKey])
   @@map("term_override")
 }
+
+/// An organisation's look: its accent colour and sign-in message (doc 02 branding). One row per tenant (RLS).
+model TenantBranding {
+  tenantId     String   @id @map("tenant_id") @db.Uuid
+  /// Hex colour such as #136676, checked for AA contrast with white text before it is saved.
+  accentColour String?  @map("accent_colour")
+  /// Shown on the requester portal's sign-in screen.
+  loginMessage String?  @map("login_message")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_branding")
+}
