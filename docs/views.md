@@ -24,7 +24,7 @@ All calls are inside the signed-in organisation, and each checks the list's own 
 
 ## On the screens
 
-Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and a column chooser, bulk actions, and kanban and calendar layouts for the other lists are built in later batches of P1-08.
+Each of the four lists has a **Saved view** bar above its filters. Pick a view to open the list with its filters (the address carries them, so it can be bookmarked), choose **Save current filters as a view** to keep what you are looking at, and delete a view you own (or a shared one, if you can share). The bar saves the filters in the address and the layout (list or board). Sort, grouping and the column chooser are covered below. Bulk actions and kanban and calendar layouts for the other lists are built in later batches of P1-08.
 
 ## Sorting the work order list
 
@@ -39,4 +39,17 @@ The same **Sort by** and **Sort order** controls are on the other three lists, a
 | Assets | `GET /api/assets` | `created`, `number`, `name` | oldest first, as before |
 | Planned maintenance schedules | `GET /api/ppm/schedules` | `number`, `title`, `priority` | by reference |
 
-Requests and assets page with a cursor on a column that is never empty, with the id to break ties. Schedules page with `offset`. An unknown `sort` is refused with 400. Grouping and the column chooser come in a later batch.
+Requests and assets page with a cursor on a column that is never empty, with the id to break ties. Schedules page with `offset`. An unknown `sort` is refused with 400.
+
+## Grouping and choosing columns
+
+Every list has a **Group by** control and a **Columns** chooser beside its filters. They work on the rows of the page you are looking at: a group heading with a count is shown each time the value changes, in the order the sort gives, so a group can continue on the next page.
+
+| List | Group by | Columns that can be hidden |
+|---|---|---|
+| Work orders | status, priority, assigned to, location | priority, status, assigned to, SLA |
+| Requests | status, priority, category, channel, location | category, priority, SLA, status, requester, channel |
+| Assets | condition, criticality, status, location | make and model, location, condition, criticality, status |
+| Schedules | criticality, fixed or floating, assigned to | how often, assets, next due, overdue, assigned to |
+
+The reference and title columns always show. With nothing chosen, every column shows. The choice is in the address as `groupby` and `cols`, so a saved view keeps it. On assets, `group` is still the asset class from the Classification panel; `groupby` is the display grouping. The API never sees either, and neither changes who can see which rows or fields.

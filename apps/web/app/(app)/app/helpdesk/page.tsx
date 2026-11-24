@@ -4,6 +4,8 @@ import {
   can,
   feature,
   listRequestsSchema,
+  parseColumnKeys,
+  parseGroup,
   REQUEST_CHANNEL_LABELS,
   REQUEST_SORTS,
   type ReportLocation,
@@ -15,6 +17,8 @@ import { ListViewBar } from '@/components/list-view-bar';
 import { catalogue, readHelpdesk, requestPage } from '@/lib/helpdesk';
 import { QueueLocationFilter } from './queue-location-filter';
 import { RequestForm } from './request-form';
+import { ListDisplayFields } from '@/components/list-display';
+import { REQUEST_COLUMNS, REQUEST_GROUPS } from './request-columns';
 import { RequestTable } from './request-table';
 import styles from './helpdesk.module.css';
 
@@ -61,10 +65,16 @@ export default async function HelpdeskPage({
   for (const key of ['view', 'q', 'locationId', 'category', 'channel', 'sort', 'dir', 'cursor'] as const) {
     if (filters[key]) params.set(key, filters[key]);
   }
+  const apiQuery = params.toString();
+  // Grouping and columns only change how the page is shown, so the API never sees them.
+  const group = parseGroup(input.groupby, REQUEST_GROUPS);
+  if (group) params.set('groupby', group);
+  const cols = parseColumnKeys(input.cols);
+  if (cols.length) params.set('cols', cols.join(','));
   const operator = can(user, 'requests.create') && can(user, 'requests.manage');
   const filterQuery = filters.locationId ? '?locationId=' + filters.locationId : '';
   const [data, types, queueFilters] = await Promise.all([
-    requestPage('requests', '?' + params.toString()),
+    requestPage('requests', '?' + apiQuery),
     operator && input.log === '1' ? catalogue() : null,
     readHelpdesk<{ categories: string[]; location: ReportLocation | null }>('/queue-filters' + filterQuery),
   ]);
@@ -192,12 +202,13 @@ export default async function HelpdeskPage({
               <option value="desc">Descending</option>
             </select>
           </label>
+          <ListDisplayFields columns={REQUEST_COLUMNS} groups={REQUEST_GROUPS} group={group} chosen={input.cols} />
           <button type="submit" className="btn">
             Apply filters
           </button>
         </form>
         {data.cursorReset && <p className="card-b muted">The list changed. Showing the first page.</p>}
-        <RequestTable items={data.items} now={Date.now()} />
+        <RequestTable items={data.items} now={Date.now()} columns={input.cols} group={group} />
         {(data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">
             {params.has('cursor') && (

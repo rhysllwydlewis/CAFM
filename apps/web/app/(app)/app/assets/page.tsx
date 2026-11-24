@@ -8,11 +8,18 @@ import {
   ASSET_STATUSES,
   can,
   feature,
+  groupRows,
+  parseColumnKeys,
+  parseGroup,
+  visibleColumns,
   type AssetPage,
+  type GroupOption,
+  type ListColumn,
   type AssetSummary,
 } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
+import { GroupRows, ListDisplayFields } from '@/components/list-display';
 import { locationPage } from '../locations/location-data';
 import { assetPage, assetSummary } from './asset-data';
 import {
@@ -29,6 +36,28 @@ import styles from './assets.module.css';
 
 export const metadata: Metadata = { title: 'Assets' };
 const SORT_LABELS = { created: 'Date added', number: 'Reference', name: 'Name' } as const;
+
+const ASSET_COLUMNS: ListColumn[] = [
+  { key: 'number', label: 'Reference', locked: true },
+  { key: 'name', label: 'Asset', locked: true },
+  { key: 'model', label: 'Make / model' },
+  { key: 'location', label: 'Location' },
+  { key: 'condition', label: 'Condition' },
+  { key: 'criticality', label: 'Criticality' },
+  { key: 'status', label: 'Status' },
+];
+const ASSET_GROUPS: GroupOption[] = [
+  { key: 'condition', label: 'Condition' },
+  { key: 'criticality', label: 'Criticality' },
+  { key: 'status', label: 'Status' },
+  { key: 'location', label: 'Location' },
+];
+const GROUP_LABELS: Record<string, (asset: AssetPage['items'][number]) => string> = {
+  condition: (asset) => 'Condition ' + (asset.condition ?? 'not graded'),
+  criticality: (asset) => CRITICALITY_LABELS[asset.criticality] ?? String(asset.criticality),
+  status: (asset) => STATUS_LABELS[asset.status] ?? String(asset.status),
+  location: (asset) => locationLabel(asset.locationPath),
+};
 
 type Query = Record<string, string | string[] | undefined>;
 const one = (value: string | string[] | undefined) => (typeof value === 'string' ? value : undefined);
@@ -50,6 +79,9 @@ function filtersFrom(query: Query) {
     sort: pick(one(query.sort), ASSET_SORTS) ?? 'created',
     dir: pick(one(query.dir), ['asc', 'desc'] as const),
     after: validAssetId(after) ? after : undefined,
+    // How the page is shown. The API never sees these.
+    groupby: parseGroup(query.groupby, ASSET_GROUPS),
+    cols: parseColumnKeys(query.cols).join(',') || undefined,
   };
 }
 type Filters = ReturnType<typeof filtersFrom>;
@@ -205,6 +237,7 @@ function Filters({ filters, sites }: { filters: Filters; sites: { id: string; na
         ],
         'Default',
       )}
+      <ListDisplayFields columns={ASSET_COLUMNS} groups={ASSET_GROUPS} group={filters.groupby} chosen={filters.cols} />
       <button type="submit" className="btn">
         Apply filters
       </button>
@@ -227,51 +260,61 @@ function Filters({ filters, sites }: { filters: Filters; sites: { id: string; na
   );
 }
 
-function Rows({ page }: { page: AssetPage }) {
+function Rows({ page, filters }: { page: AssetPage; filters: Filters }) {
+  const shown = new Set(visibleColumns(ASSET_COLUMNS, filters.cols).map(({ key }) => key));
+  const has = (key: string) => shown.has(key);
   return (
     <div className={styles.tableWrap}>
       <table className="tbl">
         <thead>
           <tr>
-            <th scope="col">Reference</th>
-            <th scope="col">Asset</th>
-            <th scope="col">Make / model</th>
-            <th scope="col">Location</th>
-            <th scope="col">Condition</th>
-            <th scope="col">Criticality</th>
-            <th scope="col">Status</th>
+            {ASSET_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
+              <th key={key} scope="col">
+                {label}
+              </th>
+            ))}
           </tr>
         </thead>
-        <tbody>
-          {page.items.map((asset) => (
-            <tr key={asset.id}>
-              <td>
-                <span className="mono">{asset.number}</span>
-              </td>
-              <td>
-                <Link className={styles.assetName} href={`${route}/${asset.id}`}>
-                  {asset.name}
-                </Link>
-                {asset.componentCount > 0 && (
-                  <small className="faint xs">
-                    {asset.componentCount} {asset.componentCount === 1 ? 'component' : 'components'}
-                  </small>
-                )}
-              </td>
-              <td className="muted">{[asset.make, asset.model].filter(Boolean).join(' ')}</td>
-              <td className="muted">{locationLabel(asset.locationPath)}</td>
-              <td>
-                <ConditionBadge condition={asset.condition} />
-              </td>
-              <td>
-                <CriticalityBadge criticality={asset.criticality} />
-              </td>
-              <td>
-                <StatusBadge status={asset.status} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
+        {groupRows(page.items, filters.groupby ? GROUP_LABELS[filters.groupby] : undefined).map((section) => (
+          <tbody key={section.label}>
+            <GroupRows label={section.label} count={section.items.length} span={shown.size}>
+              {section.items.map((asset) => (
+                <tr key={asset.id}>
+                  <td>
+                    <span className="mono">{asset.number}</span>
+                  </td>
+                  <td>
+                    <Link className={styles.assetName} href={`${route}/${asset.id}`}>
+                      {asset.name}
+                    </Link>
+                    {asset.componentCount > 0 && (
+                      <small className="faint xs">
+                        {asset.componentCount} {asset.componentCount === 1 ? 'component' : 'components'}
+                      </small>
+                    )}
+                  </td>
+                  {has('model') && <td className="muted">{[asset.make, asset.model].filter(Boolean).join(' ')}</td>}
+                  {has('location') && <td className="muted">{locationLabel(asset.locationPath)}</td>}
+                  {has('condition') && (
+                    <td>
+                      <ConditionBadge condition={asset.condition} />
+                    </td>
+                  )}
+                  {has('criticality') && (
+                    <td>
+                      <CriticalityBadge criticality={asset.criticality} />
+                    </td>
+                  )}
+                  {has('status') && (
+                    <td>
+                      <StatusBadge status={asset.status} />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </GroupRows>
+          </tbody>
+        ))}
       </table>
     </div>
   );
@@ -378,7 +421,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
               </p>
             </div>
           ) : (
-            <Rows page={page} />
+            <Rows page={page} filters={filters} />
           )}
           <footer className={`card-f ${styles.footer}`}>
             <span className="muted" aria-live="polite">

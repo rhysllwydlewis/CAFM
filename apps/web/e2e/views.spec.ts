@@ -84,3 +84,54 @@ for (const list of sortable) {
     expect(results.violations.map((violation) => violation.id)).toEqual([]);
   });
 }
+
+const displayable = [
+  { name: 'work orders', path: '/app/work-orders?view=all', group: 'Status', hide: 'Assigned to' },
+  { name: 'assets', path: '/app/assets', group: 'Status', hide: 'Make / model' },
+  { name: 'requests', path: '/app/helpdesk?view=all', group: 'Priority', hide: 'Channel' },
+  { name: 'planned maintenance schedules', path: '/app/ppm?view=list', group: 'Criticality', hide: 'Assigned to' },
+] as const;
+
+for (const list of displayable) {
+  test(`a manager groups the ${list.name} and hides a column`, async ({ page }) => {
+    await signInAs(page, 'manager');
+    await page.goto(list.path);
+    await expect(page.getByRole('columnheader', { name: list.hide, exact: true })).toBeVisible();
+    await page.getByLabel('Group by').selectOption({ label: list.group });
+    await page.getByText('Columns', { exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Show ' + list.hide + ' column' }).uncheck();
+    await page.getByRole('button', { name: 'Apply filters' }).click();
+    await expect(page).toHaveURL(/groupby=/);
+    await expect(page).toHaveURL(/cols=/);
+    await expect(page.getByRole('columnheader', { name: list.hide, exact: true })).toHaveCount(0);
+    expect(await page.locator('th[scope="colgroup"]').count()).toBeGreaterThan(0);
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+}
+
+test('a saved view keeps the grouping and the columns', async ({ page }) => {
+  await signInAs(page, 'manager');
+  await page.goto('/app/work-orders?view=all&groupby=status&cols=priority,status&status=open');
+  const name = 'Grouped ' + Date.now();
+  await page.getByRole('button', { name: 'Save current filters as a view' }).click();
+  await page.getByLabel('Name').fill(name);
+  await page.getByRole('button', { name: 'Save view' }).click();
+  await expect(page).toHaveURL(/view_id=/);
+  await expect(page).toHaveURL(/groupby=status/);
+  await expect(page.getByRole('columnheader', { name: 'SLA (fix)' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Delete view' }).click();
+  await expect(page).not.toHaveURL(/view_id=/);
+});
+
+test('hiding every optional column keeps only the locked ones', async ({ page }) => {
+  await signInAs(page, 'manager');
+  await page.goto('/app/work-orders?view=all');
+  await page.getByText('Columns', { exact: true }).click();
+  for (const label of ['Priority', 'Status', 'Assigned to', 'SLA (fix)']) {
+    await page.getByRole('checkbox', { name: 'Show ' + label + ' column' }).uncheck();
+  }
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page.getByRole('columnheader', { name: 'Ref', exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Status', exact: true })).toHaveCount(0);
+});

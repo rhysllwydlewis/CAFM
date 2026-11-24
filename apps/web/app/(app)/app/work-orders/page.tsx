@@ -7,6 +7,8 @@ import {
   WORK_ORDER_SORTS,
   WORK_ORDER_STATUS_LABELS,
   WORK_ORDER_STATUSES,
+  parseColumnKeys,
+  parseGroup,
   type WorkOrderView,
 } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
@@ -16,6 +18,8 @@ import ModulePage from '../[module]/page';
 import { workOrderPage } from '@/lib/work-orders';
 import { NewWorkOrder } from './new-work-order';
 import { WorkOrderBoard } from './work-order-board';
+import { ListDisplayFields } from '@/components/list-display';
+import { WORK_ORDER_COLUMNS, WORK_ORDER_GROUPS } from './work-order-columns';
 import { WorkOrderTable } from './work-order-table';
 import { PRIORITY_LABELS } from './work-order-parts';
 import styles from './work-orders.module.css';
@@ -49,7 +53,14 @@ export default async function WorkOrdersPage({
     const value = filters[key];
     if (value) params.set(key, String(value));
   }
+  // Grouping and columns only change how the page is shown, so the API never sees them.
+  const group = parseGroup(input.groupby, WORK_ORDER_GROUPS);
+  if (group) params.set('groupby', group);
+  const cols = parseColumnKeys(input.cols);
+  if (cols.length) params.set('cols', cols.join(','));
   const query = new URLSearchParams(params);
+  query.delete('groupby');
+  query.delete('cols');
   if (board) {
     // The board shows what is still open, all in one go.
     query.delete('cursor');
@@ -199,6 +210,14 @@ export default async function WorkOrdersPage({
               <option value="desc">Descending</option>
             </select>
           </label>
+          {!board && (
+            <ListDisplayFields
+              columns={WORK_ORDER_COLUMNS}
+              groups={WORK_ORDER_GROUPS}
+              group={group}
+              chosen={input.cols}
+            />
+          )}
           <button type="submit" className="btn">
             Apply filters
           </button>
@@ -210,7 +229,7 @@ export default async function WorkOrdersPage({
             {data.nextCursor && <p className="sm muted">Showing the first 100. Use the list to see the rest.</p>}
           </div>
         ) : (
-          <WorkOrderTable items={data.items} now={Date.now()} />
+          <WorkOrderTable items={data.items} now={Date.now()} columns={input.cols} group={group} />
         )}
         {!board && (data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">

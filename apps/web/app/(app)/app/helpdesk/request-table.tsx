@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { REQUEST_CHANNEL_LABELS, REQUEST_STATUS_LABELS, type RequestSummary } from '@cafm/shared';
+import {
+  groupRows,
+  REQUEST_CHANNEL_LABELS,
+  REQUEST_STATUS_LABELS,
+  visibleColumns,
+  type RequestSummary,
+} from '@cafm/shared';
+import { REQUEST_COLUMNS } from './request-columns';
+import { GroupRows } from '@/components/list-display';
 import { Icon } from '@cafm/ui';
 import styles from './helpdesk.module.css';
 
@@ -35,7 +43,30 @@ function Sla({ item, now }: { item: RequestSummary; now: number }) {
   );
 }
 
-export function RequestTable({ items, now, own = false }: { items: RequestSummary[]; now: number; own?: boolean }) {
+const PRIORITY_NAMES = ['Emergency', 'Urgent', 'Routine', 'Planned'];
+
+const GROUP_LABELS: Record<string, (item: RequestSummary) => string> = {
+  status: (item) => REQUEST_STATUS_LABELS[item.linkedStatus ?? item.status],
+  priority: (item) => 'P' + item.priority + ' ' + (PRIORITY_NAMES[item.priority - 1] ?? ''),
+  category: (item) => item.type.category,
+  channel: (item) => REQUEST_CHANNEL_LABELS[item.channel],
+  location: (item) => item.location.name + ' · ' + item.location.code,
+};
+
+export function RequestTable({
+  items,
+  now,
+  own = false,
+  columns: chosen,
+  group,
+}: {
+  items: RequestSummary[];
+  now: number;
+  own?: boolean;
+  /** The `cols` value from the address. */
+  columns?: string | string[];
+  group?: string;
+}) {
   const [clock, setClock] = useState(now);
   useEffect(() => {
     if (own) return;
@@ -68,53 +99,67 @@ export function RequestTable({ items, now, own = false }: { items: RequestSummar
         ))}
       </ul>
     );
+  const shown = new Set(visibleColumns(REQUEST_COLUMNS, chosen).map(({ key }) => key));
+  const has = (key: string) => shown.has(key);
   return (
     <div className={styles.tableWrap} role="region" aria-label="Request results" tabIndex={0}>
       <table className="tbl">
         <thead>
           <tr>
-            {['Ref', 'Request', 'Category', 'Priority', 'SLA (response)', 'Status', 'Requester', 'Channel'].map(
-              (label) => (
-                <th key={label} scope="col">
-                  {label}
-                </th>
-              ),
-            )}
+            {REQUEST_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
+              <th key={key} scope="col">
+                {label}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <Link className="ref" href={route + item.id}>
-                  {item.number}
-                </Link>
-              </td>
-              <td>
-                <Link className="medium" href={route + item.id}>
-                  {item.title}
-                </Link>
-                <div className="sm muted">
-                  {item.location.name} · {item.location.code}
-                </div>
-              </td>
-              <td>
-                {item.type.category} › {item.type.problemCode}
-              </td>
-              <td>
-                <span className={'badge ' + (item.priority === 1 ? 'danger' : item.priority === 2 ? 'warning' : '')}>
-                  P{item.priority} {['Emergency', 'Urgent', 'Routine', 'Planned'][item.priority - 1]}
-                </span>
-              </td>
-              <td>
-                <Sla item={item} now={clock} />
-              </td>
-              <td>
-                <RequestStatus item={item} />
-              </td>
-              <td>{item.requesterName ?? 'Email requester'}</td>
-              <td>{REQUEST_CHANNEL_LABELS[item.channel]}</td>
-            </tr>
+          {groupRows(items, group ? GROUP_LABELS[group] : undefined).map((section) => (
+            <GroupRows key={section.label} label={section.label} count={section.items.length} span={shown.size}>
+              {section.items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <Link className="ref" href={route + item.id}>
+                      {item.number}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link className="medium" href={route + item.id}>
+                      {item.title}
+                    </Link>
+                    <div className="sm muted">
+                      {item.location.name} · {item.location.code}
+                    </div>
+                  </td>
+                  {has('category') && (
+                    <td>
+                      {item.type.category} › {item.type.problemCode}
+                    </td>
+                  )}
+                  {has('priority') && (
+                    <td>
+                      <span
+                        className={'badge ' + (item.priority === 1 ? 'danger' : item.priority === 2 ? 'warning' : '')}
+                      >
+                        P{item.priority} {PRIORITY_NAMES[item.priority - 1]}
+                      </span>
+                    </td>
+                  )}
+                  {has('sla') && (
+                    <td>
+                      <Sla item={item} now={clock} />
+                    </td>
+                  )}
+                  {has('status') && (
+                    <td>
+                      <RequestStatus item={item} />
+                    </td>
+                  )}
+                  {has('requester') && <td>{item.requesterName ?? 'Email requester'}</td>}
+                  {has('channel') && <td>{REQUEST_CHANNEL_LABELS[item.channel]}</td>}
+                </tr>
+              ))}
+            </GroupRows>
           ))}
         </tbody>
       </table>
