@@ -39,6 +39,7 @@ export function ListDisplayFields({
                 type="checkbox"
                 name="cols"
                 value={column.key}
+                aria-label={'Show ' + column.label + ' column'}
                 defaultChecked={column.locked || all || wanted.has(column.key)}
                 disabled={column.locked}
               />

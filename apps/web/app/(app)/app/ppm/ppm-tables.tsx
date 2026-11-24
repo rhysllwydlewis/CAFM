@@ -3,52 +3,101 @@ import {
   frequencyText,
   PPM_MODE_LABELS,
   formatMinor,
+  groupRows,
+  visibleColumns,
+  type GroupOption,
+  type ListColumn,
   type PpmComplianceGroup,
   type PpmForecast,
   type PpmOverdueItem,
   type PpmScheduleSummary,
 } from '@cafm/shared';
+import { GroupRows } from '@/components/list-display';
 import { criticalityBadge, criticalityLabel, hours, longDay, monthName } from '@/lib/ppm-format';
 import styles from './ppm.module.css';
 
-export function ScheduleTable({ items }: { items: PpmScheduleSummary[] }) {
+export const SCHEDULE_COLUMNS: ListColumn[] = [
+  { key: 'title', label: 'Schedule', locked: true },
+  { key: 'frequency', label: 'How often' },
+  { key: 'assets', label: 'Assets' },
+  { key: 'next', label: 'Next due' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'assignee', label: 'Assigned to' },
+];
+
+export const SCHEDULE_GROUPS: GroupOption[] = [
+  { key: 'criticality', label: 'Criticality' },
+  { key: 'mode', label: 'Fixed or floating' },
+  { key: 'assignee', label: 'Assigned to' },
+];
+
+const GROUP_LABELS: Record<string, (item: PpmScheduleSummary) => string> = {
+  criticality: (item) => criticalityLabel(item.criticality),
+  mode: (item) => PPM_MODE_LABELS[item.mode],
+  assignee: (item) => item.assigneeName ?? 'Unassigned',
+};
+
+export function ScheduleTable({
+  items,
+  columns: chosen,
+  group,
+}: {
+  items: PpmScheduleSummary[];
+  /** The `cols` value from the address. */
+  columns?: string;
+  group?: string;
+}) {
   if (!items.length) return <p className="card-b muted">No schedules match.</p>;
+  const shown = new Set(visibleColumns(SCHEDULE_COLUMNS, chosen).map(({ key }) => key));
+  const has = (key: string) => shown.has(key);
   return (
     <div className={styles.tableWrap} role="region" aria-label="Schedules" tabIndex={0}>
       <table className="tbl">
         <thead>
           <tr>
-            {['Schedule', 'How often', 'Assets', 'Next due', 'Overdue', 'Assigned to'].map((label) => (
-              <th key={label} scope="col">
+            {SCHEDULE_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
+              <th key={key} scope="col">
                 {label}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <Link href={'/app/ppm/schedules/' + item.id} className="medium">
-                  {item.title}
-                </Link>
-                <div className="row wrap g2 sm">
-                  <span className="muted">{item.number}</span>
-                  <span className={'badge ' + criticalityBadge(item.criticality)}>
-                    {criticalityLabel(item.criticality)}
-                  </span>
-                  {!item.active && <span className="badge outline">Archived</span>}
-                </div>
-              </td>
-              <td>
-                {frequencyText(item.frequency)}
-                <div className="sm muted">{PPM_MODE_LABELS[item.mode]}</div>
-              </td>
-              <td>{item.assets}</td>
-              <td>{item.nextDueOn ? longDay(item.nextDueOn) : item.frequency.type === 'meter' ? 'By meter' : '—'}</td>
-              <td>{item.overdue ? <span className="badge danger">{item.overdue}</span> : '0'}</td>
-              <td>{item.assigneeName ?? <span className="muted">Unassigned</span>}</td>
-            </tr>
+          {groupRows(items, group ? GROUP_LABELS[group] : undefined).map((section) => (
+            <GroupRows key={section.label} label={section.label} count={section.items.length} span={shown.size}>
+              {section.items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <Link href={'/app/ppm/schedules/' + item.id} className="medium">
+                      {item.title}
+                    </Link>
+                    <div className="row wrap g2 sm">
+                      <span className="muted">{item.number}</span>
+                      <span className={'badge ' + criticalityBadge(item.criticality)}>
+                        {criticalityLabel(item.criticality)}
+                      </span>
+                      {!item.active && <span className="badge outline">Archived</span>}
+                    </div>
+                  </td>
+                  {has('frequency') && (
+                    <td>
+                      {frequencyText(item.frequency)}
+                      <div className="sm muted">{PPM_MODE_LABELS[item.mode]}</div>
+                    </td>
+                  )}
+                  {has('assets') && <td>{item.assets}</td>}
+                  {has('next') && (
+                    <td>
+                      {item.nextDueOn ? longDay(item.nextDueOn) : item.frequency.type === 'meter' ? 'By meter' : '—'}
+                    </td>
+                  )}
+                  {has('overdue') && (
+                    <td>{item.overdue ? <span className="badge danger">{item.overdue}</span> : '0'}</td>
+                  )}
+                  {has('assignee') && <td>{item.assigneeName ?? <span className="muted">Unassigned</span>}</td>}
+                </tr>
+              ))}
+            </GroupRows>
           ))}
         </tbody>
       </table>

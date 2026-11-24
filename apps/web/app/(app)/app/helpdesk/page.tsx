@@ -18,7 +18,8 @@ import { catalogue, readHelpdesk, requestPage } from '@/lib/helpdesk';
 import { QueueLocationFilter } from './queue-location-filter';
 import { RequestForm } from './request-form';
 import { ListDisplayFields } from '@/components/list-display';
-import { REQUEST_COLUMNS, REQUEST_GROUPS, RequestTable } from './request-table';
+import { REQUEST_COLUMNS, REQUEST_GROUPS } from './request-columns';
+import { RequestTable } from './request-table';
 import styles from './helpdesk.module.css';
 
 export const metadata: Metadata = { title: 'Helpdesk' };

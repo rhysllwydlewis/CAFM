@@ -1,6 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature, formatMinor, PPM_CRITICALITIES, PPM_CRITICALITY_LABELS, PPM_SORTS } from '@cafm/shared';
+import {
+  can,
+  feature,
+  formatMinor,
+  parseColumnKeys,
+  parseGroup,
+  PPM_CRITICALITIES,
+  PPM_CRITICALITY_LABELS,
+  PPM_SORTS,
+} from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { hours } from '@/lib/ppm-format';
 import { ppmForecast, ppmOverdue, ppmPlanner, ppmSchedules, ppmSummary } from '@/lib/ppm';
@@ -9,7 +18,15 @@ import { ListViewBar } from '@/components/list-view-bar';
 import ModulePage from '../[module]/page';
 import { GenerateButton } from './generate-button';
 import { PlannerGrid, PlannerLegend } from './planner-grid';
-import { ComplianceTable, ForecastTable, OverdueTable, ScheduleTable } from './ppm-tables';
+import { ListDisplayFields } from '@/components/list-display';
+import {
+  ComplianceTable,
+  ForecastTable,
+  OverdueTable,
+  SCHEDULE_COLUMNS,
+  SCHEDULE_GROUPS,
+  ScheduleTable,
+} from './ppm-tables';
 import styles from './ppm.module.css';
 
 export const metadata: Metadata = { title: 'Planned maintenance' };
@@ -47,6 +64,9 @@ export default async function PpmPage({
     sort: PPM_SORTS.find((key) => key === one(input.sort)),
     dir: ['asc', 'desc'].find((key) => key === one(input.dir)),
   };
+  // How the page is shown. The API never sees these.
+  const group = parseGroup(input.groupby, SCHEDULE_GROUPS);
+  const cols = parseColumnKeys(input.cols).join(',') || undefined;
   const offset = Math.max(0, Math.floor(Number(one(input.offset))) || 0);
   const canManage = can(user, 'ppm.manage');
   const seesCosts = can(user, 'costs.read');
@@ -122,6 +142,8 @@ export default async function PpmPage({
     const next = new URLSearchParams({ view: 'list' });
     for (const key of ['q', 'criticality', 'discipline', 'status', 'sort', 'dir'] as const)
       if (filters[key]) next.set(key, filters[key]!);
+    if (group) next.set('groupby', group);
+    if (cols) next.set('cols', cols);
     if (target) next.set('offset', String(target));
     return '/app/ppm?' + next.toString();
   };
@@ -181,7 +203,7 @@ export default async function PpmPage({
         </nav>
 
         {(view === 'planner' || view === 'list') && (
-          <form key={JSON.stringify(filters)} className={styles.filters} aria-label="Filter schedules">
+          <form key={JSON.stringify([filters, group, cols])} className={styles.filters} aria-label="Filter schedules">
             {view !== 'planner' && <input type="hidden" name="view" value={view} />}
             <label className="field">
               <span className="label">Search schedules</span>
@@ -240,6 +262,9 @@ export default async function PpmPage({
                 </label>
               </>
             )}
+            {view === 'list' && (
+              <ListDisplayFields columns={SCHEDULE_COLUMNS} groups={SCHEDULE_GROUPS} group={group} chosen={cols} />
+            )}
             <button type="submit" className="btn">
               Apply filters
             </button>
@@ -266,7 +291,7 @@ export default async function PpmPage({
         )}
         {view === 'list' && data && 'items' in data && (
           <>
-            <ScheduleTable items={data.items} />
+            <ScheduleTable items={data.items} columns={cols} group={group} />
             {data.total > PAGE_SIZE && (
               <nav aria-label="Schedule pages" className={'card-b row between wrap g2 ' + styles.pages}>
                 <span className="sm muted">

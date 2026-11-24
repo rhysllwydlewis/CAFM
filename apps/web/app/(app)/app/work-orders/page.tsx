@@ -19,7 +19,8 @@ import { workOrderPage } from '@/lib/work-orders';
 import { NewWorkOrder } from './new-work-order';
 import { WorkOrderBoard } from './work-order-board';
 import { ListDisplayFields } from '@/components/list-display';
-import { WORK_ORDER_COLUMNS, WORK_ORDER_GROUPS, WorkOrderTable } from './work-order-table';
+import { WORK_ORDER_COLUMNS, WORK_ORDER_GROUPS } from './work-order-columns';
+import { WorkOrderTable } from './work-order-table';
 import { PRIORITY_LABELS } from './work-order-parts';
 import styles from './work-orders.module.css';
 

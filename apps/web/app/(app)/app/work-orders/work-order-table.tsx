@@ -3,15 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '@cafm/ui';
-import {
-  formatMinor,
-  groupRows,
-  visibleColumns,
-  WORK_ORDER_STATUS_LABELS,
-  type GroupOption,
-  type ListColumn,
-  type WorkOrderSummary,
-} from '@cafm/shared';
+import { formatMinor, groupRows, visibleColumns, WORK_ORDER_STATUS_LABELS, type WorkOrderSummary } from '@cafm/shared';
+import { WORK_ORDER_COLUMNS } from './work-order-columns';
 import { GroupRows } from '@/components/list-display';
 import { FixSla, PRIORITY_LABELS, PriorityBadge, StatusBadge } from './work-order-parts';
 import styles from './work-orders.module.css';
@@ -25,22 +18,6 @@ export function useClock(now: number) {
   }, [now]);
   return clock;
 }
-
-export const WORK_ORDER_COLUMNS: ListColumn[] = [
-  { key: 'ref', label: 'Ref', locked: true },
-  { key: 'title', label: 'Title and location', locked: true },
-  { key: 'priority', label: 'Priority' },
-  { key: 'status', label: 'Status' },
-  { key: 'assignee', label: 'Assigned to' },
-  { key: 'sla', label: 'SLA (fix)' },
-];
-
-export const WORK_ORDER_GROUPS: GroupOption[] = [
-  { key: 'status', label: 'Status' },
-  { key: 'priority', label: 'Priority' },
-  { key: 'assignee', label: 'Assigned to' },
-  { key: 'location', label: 'Location' },
-];
 
 const GROUP_LABELS: Record<string, (item: WorkOrderSummary) => string> = {
   status: (item) => WORK_ORDER_STATUS_LABELS[item.status] ?? item.status,

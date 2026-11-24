@@ -7,10 +7,9 @@ import {
   REQUEST_CHANNEL_LABELS,
   REQUEST_STATUS_LABELS,
   visibleColumns,
-  type GroupOption,
-  type ListColumn,
   type RequestSummary,
 } from '@cafm/shared';
+import { REQUEST_COLUMNS } from './request-columns';
 import { GroupRows } from '@/components/list-display';
 import { Icon } from '@cafm/ui';
 import styles from './helpdesk.module.css';
@@ -45,25 +44,6 @@ function Sla({ item, now }: { item: RequestSummary; now: number }) {
 }
 
 const PRIORITY_NAMES = ['Emergency', 'Urgent', 'Routine', 'Planned'];
-
-export const REQUEST_COLUMNS: ListColumn[] = [
-  { key: 'ref', label: 'Ref', locked: true },
-  { key: 'request', label: 'Request', locked: true },
-  { key: 'category', label: 'Category' },
-  { key: 'priority', label: 'Priority' },
-  { key: 'sla', label: 'SLA (response)' },
-  { key: 'status', label: 'Status' },
-  { key: 'requester', label: 'Requester' },
-  { key: 'channel', label: 'Channel' },
-];
-
-export const REQUEST_GROUPS: GroupOption[] = [
-  { key: 'status', label: 'Status' },
-  { key: 'priority', label: 'Priority' },
-  { key: 'category', label: 'Category' },
-  { key: 'channel', label: 'Channel' },
-  { key: 'location', label: 'Location' },
-];
 
 const GROUP_LABELS: Record<string, (item: RequestSummary) => string> = {
   status: (item) => REQUEST_STATUS_LABELS[item.linkedStatus ?? item.status],
