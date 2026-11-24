@@ -884,6 +884,38 @@ it('isolates teams and their members, and rejects a cross-tenant member', async 
   ).rejects.toThrow(/Foreign key constraint/);
 });
 
+it('isolates module settings and terminology between organisations', async () => {
+  expect(await db.moduleSetting.count()).toBe(0);
+  expect(await db.termOverride.count()).toBe(0);
+  const key = `rls-${randomUUID()}`;
+  await withTenant(db, demo, async (tx) => {
+    await tx.moduleSetting.create({ data: { tenantId: demo, moduleKey: key, enabled: false, label: 'Hidden' } });
+    await tx.termOverride.create({ data: { tenantId: demo, termKey: key, singular: 'Job', plural: 'Jobs' } });
+  });
+  try {
+    const seen = await withTenant(db, starter, async (tx) => ({
+      modules: await tx.moduleSetting.count({ where: { moduleKey: key } }),
+      terms: await tx.termOverride.count({ where: { termKey: key } }),
+    }));
+    expect(seen).toEqual({ modules: 0, terms: 0 });
+    // Another organisation can't change them, or write one into the demo organisation.
+    const changed = await withTenant(db, starter, (tx) =>
+      tx.moduleSetting.updateMany({ where: { moduleKey: key }, data: { enabled: true } }),
+    );
+    expect(changed.count).toBe(0);
+    await expect(
+      withTenant(db, starter, (tx) =>
+        tx.termOverride.create({ data: { tenantId: demo, termKey: `${key}-x`, singular: 'A', plural: 'As' } }),
+      ),
+    ).rejects.toThrow();
+  } finally {
+    await withTenant(db, demo, async (tx) => {
+      await tx.moduleSetting.deleteMany({ where: { moduleKey: key } });
+      await tx.termOverride.deleteMany({ where: { termKey: key } });
+    });
+  }
+});
+
 it('isolates saved list views and refuses a view owned by another organisation’s member', async () => {
   expect(await db.savedView.count()).toBe(0);
   const config = { layout: 'list', filters: {}, sort: null, group: null, columns: [] };
