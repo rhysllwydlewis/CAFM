@@ -140,6 +140,9 @@ export class AuthService {
       permissions: [...(auth.access?.permissions ?? [])].sort(),
       scope: auth.access?.scope ?? 'own',
       entitlements: auth.access?.entitlements ?? { plan: m.tenant.plan, features: [], limits: {} },
+      impersonation: auth.impersonator
+        ? { by: auth.impersonator.name, expiresAt: auth.session.expiresAt.toISOString() }
+        : null,
     };
   }
 

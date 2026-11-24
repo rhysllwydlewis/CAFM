@@ -14,6 +14,9 @@ import { loadAccess } from './access';
 import { PrismaService } from './prisma.service';
 import { hashToken, SESSION_COOKIE, type Access } from './session';
 
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+export const END_IMPERSONATION_PATH = '/api/admin/impersonation/end';
+
 /** Requires a valid, unexpired session. Attaches req.auth. */
 @Injectable()
 export class SessionGuard implements CanActivate {
@@ -35,6 +38,14 @@ export class SessionGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     const { account, ...rest } = session;
+    // "View as" (P1-09c) is read-only: anything that could change data is refused, except ending it.
+    const impersonating = !!(session.impersonatorAccountId && session.impersonatorMembershipId);
+    if (impersonating && !SAFE_METHODS.has(req.method) && req.originalUrl.split('?')[0] !== END_IMPERSONATION_PATH) {
+      throw new ForbiddenException({
+        code: 'impersonation_read_only',
+        message: 'You are viewing as another person, which is read-only. End it to make changes.',
+      });
+    }
     const tenantData =
       session.membershipId && session.tenantId
         ? await withTenant(this.db, session.tenantId, async (tx) => {
@@ -47,8 +58,18 @@ export class SessionGuard implements CanActivate {
             return { membership, access };
           })
         : null;
+    const impersonator = impersonating
+      ? await this.db.account.findUnique({ where: { id: session.impersonatorAccountId! }, select: { name: true } })
+      : null;
     req.auth = {
       session: rest,
+      impersonator: impersonating
+        ? {
+            accountId: session.impersonatorAccountId!,
+            membershipId: session.impersonatorMembershipId!,
+            name: impersonator?.name ?? 'A Super User',
+          }
+        : null,
       account,
       membership: tenantData?.membership ?? null,
       access: tenantData?.access ?? null,

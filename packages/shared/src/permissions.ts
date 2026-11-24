@@ -8,6 +8,11 @@ export const PERMISSIONS = {
   'people.read': { module: 'people', label: 'See the people in this organisation' },
   'people.invite': { module: 'people', label: 'Invite people', admin: true },
   'people.manage': { module: 'people', label: "Change people's roles and deactivate them", admin: true },
+  'people.impersonate': {
+    module: 'people',
+    label: 'View the app as another person (read-only, audited)',
+    admin: true,
+  },
   'roles.read': { module: 'roles', label: 'See roles and their permissions' },
   'roles.manage': { module: 'roles', label: 'Create and edit roles', admin: true },
   'audit.read': { module: 'audit', label: 'See the audit log', admin: true },
@@ -84,7 +89,7 @@ export const BUILTIN_ROLES: BuiltinRole[] = [
     key: 'administrator',
     name: 'Administrator',
     description: 'All configuration and user management, excluding billing',
-    permissions: ALL_PERMISSIONS.filter((p) => p !== 'billing.manage'),
+    permissions: ALL_PERMISSIONS.filter((p) => p !== 'billing.manage' && p !== 'people.impersonate'),
     scope: 'all',
   },
   {
