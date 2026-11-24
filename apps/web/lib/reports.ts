@@ -1,6 +1,7 @@
 import 'server-only';
 import type {
   BusiestSitesReport,
+  HomeSummary,
   OpenJobsByAgeReport,
   PpmComplianceReport,
   SlaPerformanceReport,
@@ -23,3 +24,9 @@ export const ppmCompliance = (period: { from?: string; to?: string }) =>
 export const workMix = (period: { from?: string; to?: string }) => read<WorkMixReport>('work-mix', period);
 export const busiestSites = (period: { from?: string; to?: string }) =>
   read<BusiestSitesReport>('busiest-sites', period);
+
+export async function homeSummary(): Promise<HomeSummary> {
+  const response = await apiGet('/home/summary');
+  if (!response.ok) throw new Error('Could not load the key figures.');
+  return response.json() as Promise<HomeSummary>;
+}

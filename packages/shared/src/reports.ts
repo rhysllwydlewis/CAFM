@@ -100,3 +100,24 @@ export interface BusiestSitesReport {
   to: string;
   sites: { locationId: string; name: string; jobs: number }[];
 }
+
+/** One money total on the home page: whole minor units plus the currency they are in. */
+export interface HomeSpend {
+  currency: string;
+  amountMinor: number;
+}
+
+/**
+ * The fixed key figures on the home page. Each block is present only when the person's role and plan allow it,
+ * so the page shows what suits the role: own work for a technician or contractor, the queue for the helpdesk,
+ * spend for finance. Every count is over the sites and jobs the person may already see.
+ */
+export interface HomeSummary {
+  generatedAt: string;
+  /** Jobs: `own` when only the person's own jobs are counted; open, past their fix target, and due to be fixed today (UK day). */
+  jobs: { own: boolean; open: number; overdue: number; dueToday: number; unassigned: number } | null;
+  /** Requests still to triage, and those past their response target. */
+  requests: { new: number; responseOverdue: number } | null;
+  /** Cost entered in the last 30 days, per currency, and jobs that have gone over their limit. */
+  spend: { from: string; to: string; totals: HomeSpend[]; overLimitJobs: number } | null;
+}

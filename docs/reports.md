@@ -12,6 +12,16 @@ Standard reports are fixed queries over the jobs a person may already see (their
 
 The **Executive overview** (Reports, then Executive overview) puts the key figures and the busiest sites on one page for the last 30 days. Cost, satisfaction and carbon figures from the mockup arrive with those modules.
 
-The home page shows three key-figure tiles (open work orders, SLA met, PPM on time) to anyone who can read reports. Each links to the Reports screen.
+## Home page key figures by role
 
-Not built yet: the executive dashboard, per-role dashboard layouts, and the report builder (Phase 4).
+The home page shows fixed key figures that suit the role, from `GET /api/home/summary`. Each block appears only when the role's permission and the plan allow it, and every count is over the sites and jobs the person may already see.
+
+| Tile | Who sees it | Shows |
+|---|---|---|
+| Your open jobs (technician, contractor) or Open work orders | `work_orders.read` | Open jobs, how many are past their fix target, how many are due today (UK day). |
+| Unassigned jobs | `work_orders.read`, not limited to own work | Open jobs with nobody assigned. |
+| New requests | `requests.manage` | Requests still to triage, and those past their response target. |
+| Cost, last 30 days | `costs.read` and `work_orders.read` | Cost entered in the last 30 days per currency (whole minor units, shown as money) and jobs that went over their limit. |
+| SLA met, PPM on time | `reports.read` | The two report figures, each linking to Reports. |
+
+Not built yet: configurable dashboards and the report builder (Phase 4).
