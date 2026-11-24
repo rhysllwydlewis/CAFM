@@ -169,7 +169,7 @@ test('a Super User renames a module and a term, and the menu follows', async ({ 
     await assertAccessible(page);
     await page.getByLabel('Record type').selectOption('asset');
     await page.getByLabel('Label', { exact: true }).fill('Fire zone');
-    await page.getByLabel('Type').selectOption('picklist');
+    await page.getByLabel('Type', { exact: true }).selectOption('picklist');
     await page.getByLabel('Options, one per line').fill('Zone A\nZone B');
     await page.getByRole('button', { name: 'Add field' }).click();
     await expect(page.getByRole('status')).toContainText('“Fire zone” added');
