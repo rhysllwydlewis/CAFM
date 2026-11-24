@@ -13,6 +13,8 @@ async function signInAs(page: Page, persona: string) {
 }
 
 async function assertAccessible(page: Page) {
+  // A refresh or navigation briefly leaves the title empty; a page that never gets one still fails here.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.map((violation) => [violation.id, violation.nodes.map((node) => node.target)])).toEqual([]);
 }
