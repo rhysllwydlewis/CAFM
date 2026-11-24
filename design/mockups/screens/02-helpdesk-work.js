@@ -53,6 +53,13 @@ const woList = shell({ active: 'work-orders', crumbs: ['Work orders', 'All open'
     table(['Reference', 'Title & location', 'Priority', 'Status', 'Assigned to', 'SLA', ['Cost', { num: 1 }]], wos.map(([r, t, l, p, s, a, [sl, st], c]) => [ref(r), cell2(`<span class="medium">${t}</span>`, l), prio(p), status(s), contractors.includes(a) ? `<span class="row">${av(a, { co: true, s: 's24' })}<span>${a}</span></span>` : `<span class="row">${av(a, { s: 's24' })}<span>${a}</span></span>`, sla(sl, st), `<span class="num">${c}</span>`]), { check: true, hover: 0, foot: `<span>1–11 of 148</span><span class="grow"></span>${btn('Previous', { sm: true })}${btn('Next', { sm: true })}` })], { flush: true }),
 ] });
 
+// ── Work order list with rows ticked: the bulk action bar and its result ──
+const woBulk = shell({ active: 'work-orders', crumbs: ['Work orders', 'All open'], title: 'Work orders', sub: '148 open · 11 overdue · £42,180 committed', acts: [btn('Export', { icon: 'export' }), btn('New work order', { v: 'primary', icon: 'add' })], body: [
+  card('', [`<div class="row wrap" style="gap:12px;padding:12px 16px;align-items:flex-end"><span class="medium">3 selected</span><div class="col" style="gap:4px"><span class="xs faint">Action</span><div class="input">Assign to</div></div><div class="col" style="gap:4px"><span class="xs faint">Assignee</span><div class="input">Tom Price</div></div>${btn('Apply to 3', { v: 'primary' })}</div><div class="sm muted" style="padding:0 16px 8px">The people listed can work at the first selected job’s site. Anyone who can’t work at another job’s site is reported for that job.</div>`,
+    `<div role="status" class="stack g2 sm" style="padding:0 16px 12px"><span>2 changed, 1 not changed.</span><span>${ref('WO-CBT-00207')}: This work order can’t be reassigned now.</span></div>`,
+    table(['Reference', 'Title & location', 'Priority', 'Status', 'Assigned to'], wos.slice(0, 4).map(([r, t, l, p, s, a]) => [ref(r), cell2(`<span class="medium">${t}</span>`, l), prio(p), status(s), `<span class="row">${av(a, { s: 's24' })}<span>${a}</span></span>`]), { check: true, hover: 0 })], { flush: true }),
+] });
+
 // ── Work order detail ──
 const woDetail = shell({ active: 'work-orders', crumbs: ['Work orders', 'WO-CDF-04812'], eyebrow: `${ref('WO-CDF-04812')} · Reactive · raised from REQ-10462`, title: 'Boiler 2 losing pressure overnight', acts: [btn('', { icon: 'print', iconOnly: true }), btn('', { icon: 'more', iconOnly: true }), btn('Pause', { icon: 'timer' }), btn('Complete', { v: 'primary', icon: 'success' })], body: [
   `<div class="row wrap" style="gap:10px">${status('In progress')}${prio(2)}${badge('Gas safety', 'outline', { icon: 'gas-safety' })}${badge('Permit required', 'outline', { icon: 'permit' })}<span class="grow"></span>${stepper(['Logged', 'Assigned', 'On site', 'Completed', 'Verified', 'Invoiced'], 2)}</div>`,
@@ -94,5 +101,6 @@ export default [
   { id: 'wo-01-list', group: 'Work orders', title: 'Work order list', html: woList },
   { id: 'wo-02-detail', group: 'Work orders', title: 'Work order detail', html: woDetail },
   { id: 'wo-03-board', group: 'Work orders', title: 'Work order board (kanban)', html: kanban },
+  { id: 'wo-05-bulk-actions', group: 'Work orders', title: 'Work order list: bulk actions', html: woBulk },
   { id: 'wo-04-job-sheet', group: 'Work orders', title: 'Job sheet (PDF)', viewport: 'a4', html: jobSheet },
 ];
