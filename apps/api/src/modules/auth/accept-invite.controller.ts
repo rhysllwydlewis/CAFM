@@ -23,6 +23,7 @@ import {
   TERMS_VERSION,
 } from '@cafm/shared';
 import { clientInfo, sessionToken, setSessionCookie } from '../../core/cookies';
+import { readSecurity } from '../../core/security-settings';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { AuthService } from './auth.service';
@@ -120,7 +121,11 @@ export class AcceptInviteController {
             message: 'Enter your name and choose a password.',
           });
         }
-        const problem = passwordProblem(input.password, invite.email);
+        const problem = passwordProblem(
+          input.password,
+          invite.email,
+          (await readSecurity(this.db, invite.tenantId)).passwordMinLength,
+        );
         if (problem) throw new UnprocessableEntityException({ code: 'weak_password', message: problem });
         account = await tx.account.create({
           data: {

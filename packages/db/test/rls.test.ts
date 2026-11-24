@@ -939,6 +939,29 @@ it('isolates branding between organisations', async () => {
   }
 });
 
+it('isolates security settings between organisations', async () => {
+  expect(await db.tenantSecurity.count()).toBe(0);
+  await withTenant(db, demo, (tx) =>
+    tx.tenantSecurity.upsert({
+      where: { tenantId: demo },
+      create: { tenantId: demo, passwordMinLength: 16 },
+      update: { passwordMinLength: 16 },
+    }),
+  );
+  try {
+    expect(await withTenant(db, starter, (tx) => tx.tenantSecurity.count())).toBe(0);
+    const changed = await withTenant(db, starter, (tx) =>
+      tx.tenantSecurity.updateMany({ data: { passwordMinLength: 12 } }),
+    );
+    expect(changed.count).toBe(0);
+    await expect(
+      withTenant(db, starter, (tx) => tx.tenantSecurity.create({ data: { tenantId: demo } })),
+    ).rejects.toThrow();
+  } finally {
+    await withTenant(db, demo, (tx) => tx.tenantSecurity.deleteMany({}));
+  }
+});
+
 it('isolates saved list views and refuses a view owned by another organisation’s member', async () => {
   expect(await db.savedView.count()).toBe(0);
   const config = { layout: 'list', filters: {}, sort: null, group: null, columns: [] };
