@@ -99,8 +99,20 @@ const siteMap = shell({ active: 'locations', crumbs: ['Locations', 'Portfolio ma
   ${card('Sites', `<div class="list">${sites.slice(0, 9).map(([c, n, t, city], i) => `<div class="li" style="padding:10px 16px;${i === 0 ? 'background:var(--primary-softer)' : ''}"><span class="ic ${['primary', 'primary', 'success', 'success', 'warning', 'success', 'danger', 'primary', 'warning'][i]}">${I(t.startsWith('Edu') ? 'education' : t.startsWith('Retail') ? 'site' : t.startsWith('Health') ? 'healthcare' : 'site')}</span><div class="grow col" style="gap:1px"><span class="medium sm">${n}</span><span class="xs faint">${t} · ${city}</span></div><span class="col" style="align-items:flex-end;gap:2px"><span class="num sm medium">${[31, 12, 3, 3, 7, 2, 5, 4, 6][i]} jobs</span><span class="xs faint">${['98.7%', '97.2%', '100%', '99.1%', '94.0%', '98.8%', '89.5%', '96.1%', '95.0%'][i]}</span></span></div>`).join('')}</div>`, { flush: true, acts: search('Filter', 120) })}</div>`,
 ] });
 
+// ── PPM calendar (month, by next due date) ──
+const ppmCalJobs = { 2: [['PPM-0012', 'Fire alarm test', 'p']], 5: [['PPM-0003', 'Boiler service', 'p'], ['PPM-0007', 'Lift inspection', 'w']], 11: [['PPM-0021', 'Emergency lighting', 'd']], 18: [['PPM-0009', 'AHU filters', 'p'], ['PPM-0010', 'Legionella flush', 'p'], ['PPM-0015', 'Gas safety', 'p']], 24: [['PPM-0004', 'Fire extinguishers', 'w']] };
+const ppmCalCells = Array.from({ length: 35 }, (_, i) => { const d = i - 5; const day = d > 0 && d <= 30 ? d : 0; const jobs = (ppmCalJobs[day] || []).slice(0, 2); const more = (ppmCalJobs[day] || []).length - 2;
+  return `<div style="min-height:104px;${day ? '' : 'background:var(--bg-subtle)'}"><div class="xs ${day === 24 ? 'medium' : 'faint'}" style="${day === 24 ? 'color:var(--primary-text)' : ''}">${day || ''}</div>${jobs.map(([r, t, k]) => `<div class="ev ${k}" title="${r} ${t}">${r} ${t}</div>`).join('')}${more > 0 ? `<div class="xs faint">+${more} more</div>` : ''}</div>`; }).join('');
+const ppmCalendar = shell({ active: 'ppm', crumbs: ['Planned maintenance', 'Calendar'], title: 'Planned maintenance', sub: 'Calendar view · schedules on the day their next visit is due', acts: [btn('New schedule', { v: 'primary', icon: 'add' })], body: [
+  `<div class="row">${seg([['Planner'], ['Schedules'], ['Calendar'], ['Forecast'], ['Overdue'], ['Compliance']], 2)}${search('Search schedules', 220)}${chip('Criticality')}${chip('Discipline')}</div>`,
+  card('', [`<div class="row between" style="padding:10px 14px">${btn('Previous month', { sm: true })}<span class="medium">November 2026</span>${btn('Next month', { sm: true })}</div>`,
+    `<div class="cal" style="grid-template-columns:repeat(7,minmax(0,1fr));border-left:0">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((h) => `<div class="hd">${h}</div>`).join('')}${ppmCalCells}</div>`,
+    `<div class="tbl-foot">${legend([['Due', 'p'], ['Due soon', 'w'], ['Overdue', 'd']])}<span class="grow"></span>Meter-based schedules have no date, so they are not shown</div>`], { flush: true }),
+] });
+
 export default [
   { id: 'ppm-01-planner', group: 'Planned maintenance', title: '52-week PPM planner', html: planner },
+  { id: 'ppm-03-calendar', group: 'Planned maintenance', title: 'PPM calendar', html: ppmCalendar },
   { id: 'ppm-02-schedule', group: 'Planned maintenance', title: 'PPM schedule detail (SFG20 tasks)', html: ppmDetail },
   { id: 'assets-01-register', group: 'Assets & locations', title: 'Asset register', html: assetList },
   { id: 'assets-03-records', group: 'Assets & locations', title: 'Asset records', html: assetOperations },
