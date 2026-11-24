@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration: a Custom fields screen. A Super User adds fields to requests, work orders, assets, locations and other records, renames them, makes them required, and deactivates them without losing saved values. It shows how many fields the plan allows. See [Custom fields](docs/admin.md#custom-fields).
 - The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is remembered, and the phone menu is unchanged.
 - Home: the key figures now suit the role. A technician or contractor sees their own open, overdue and due-today jobs; the helpdesk sees new requests and unassigned jobs; finance and managers see cost over the last 30 days. See [Reports](docs/reports.md).
 - Administration: accounts with a username only, for staff without an email address. An administrator creates one on the Users screen (name, username, role) and is shown a generated password once. The person signs in with just the username at the organisation's own address, `/t/<organisation>/login`, and an administrator resets the password there too. Every creation and reset is audited.

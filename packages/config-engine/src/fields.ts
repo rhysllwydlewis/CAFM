@@ -189,3 +189,29 @@ export function validateCustom(fields: readonly FieldDefinition[], values: unkno
   }
   return { success: false, errors };
 }
+
+const slug = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+/** A key the API accepts (a letter first, 2 to 48 characters) made from a label. */
+export function keyFromLabel(text: string): string {
+  const base = slug(text);
+  if (!base) return '';
+  const key = (/^[a-z]/.test(base) ? base : `f_${base}`).slice(0, 48).replace(/_+$/, '');
+  return key.length >= 2 ? key : `${key}_field`;
+}
+
+/** Option values made from their labels: never empty, never repeated, at most 64 characters. */
+export function optionsFromLabels(labels: string[]): { value: string; label: string }[] {
+  const used = new Set<string>();
+  return labels.map((label) => {
+    const base = (slug(label) || 'option').slice(0, 56);
+    let value = base;
+    for (let n = 2; used.has(value); n += 1) value = `${base}_${n}`;
+    used.add(value);
+    return { value, label };
+  });
+}
