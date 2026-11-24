@@ -217,3 +217,55 @@ test('ticks several schedules and archives them together, reporting each one', a
   // Archived schedules leave the active list.
   await expect(page.getByRole('link', { name: 'E2E bulk One ' + suffix })).toHaveCount(0);
 });
+
+test('shows a schedule on the calendar on the day its next visit is due', async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  await signInAs(page, 'planner');
+  const assets = (await (await page.request.get('/api/assets?limit=1')).json()) as { items: { id: string }[] };
+  const response = await page.request.post('/api/ppm/schedules', {
+    data: {
+      title: 'E2E calendar ' + suffix,
+      criticality: 'optimal',
+      frequency: { type: 'calendar', unit: 'month', interval: 6 },
+      mode: 'fixed',
+      startsOn: inDays(3),
+      leadDays: 28,
+      durationMinutes: 60,
+      priority: 3,
+      assets: [{ assetId: assets.items[0]!.id }],
+    },
+  });
+  expect(response.ok()).toBe(true);
+  const list = (await (await page.request.get('/api/ppm/schedules?q=' + suffix)).json()) as {
+    items: { nextDueOn: string | null }[];
+  };
+  const dueDay = list.items[0]!.nextDueOn!;
+  expect(dueDay).toBeTruthy();
+  const month = dueDay.slice(0, 7);
+
+  await page.goto('/app/ppm?q=' + suffix);
+  await page.getByRole('link', { name: 'Calendar', exact: true }).click();
+  await expect(page).toHaveURL(/view=calendar/);
+  await page.goto('/app/ppm?view=calendar&month=' + month + '&q=' + suffix);
+  const calendar = page.getByRole('table', { name: /Schedules by the day their next visit is due/ });
+  await expect(calendar).toBeVisible();
+  const link = calendar.getByRole('link', { name: new RegExp(suffix) });
+  await expect(link).toBeVisible();
+  await assertAccessible(page);
+
+  // It is in the month it falls due, and nowhere else.
+  await page.getByRole('link', { name: 'Next month' }).click();
+  await expect(page).toHaveURL(/month=\d{4}-\d{2}/);
+  await expect(calendar.getByRole('link', { name: new RegExp(suffix) })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Previous month' }).click();
+  await expect(link).toBeVisible();
+
+  // A day opens as a list, and "Show all dates" returns to the month.
+  await page.goto('/app/ppm?view=calendar&month=' + month + '&day=' + dueDay + '&q=' + suffix);
+  await expect(page.getByText('Schedules next due on')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'E2E calendar ' + suffix })).toBeVisible();
+  await page.getByRole('link', { name: 'Show all dates' }).click();
+  await expect(page).not.toHaveURL(/day=/);
+  await link.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'E2E calendar ' + suffix })).toBeVisible();
+});

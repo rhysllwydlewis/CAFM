@@ -27,7 +27,7 @@ export function RequestStatus({ item }: { item: Pick<RequestSummary, 'status' | 
   );
 }
 
-function Sla({ item, now }: { item: RequestSummary; now: number }) {
+export function RequestSla({ item, now }: { item: RequestSummary; now: number }) {
   if (item.firstResponseAt) return <span>Responded</span>;
   if (!item.responseDueAt || ['completed', 'closed', 'rejected', 'merged'].includes(item.status)) return <span>—</span>;
   const remaining = new Date(item.responseDueAt).getTime() - now;
@@ -191,7 +191,7 @@ export function RequestTable({
                     )}
                     {has('sla') && (
                       <td>
-                        <Sla item={item} now={clock} />
+                        <RequestSla item={item} now={clock} />
                       </td>
                     )}
                     {has('status') && (

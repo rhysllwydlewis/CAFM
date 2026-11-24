@@ -19,6 +19,8 @@ import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
 import ModulePage from '../[module]/page';
 import { GenerateButton } from './generate-button';
+import { calendarMonth, shiftMonth, ukDay } from '@/components/month-calendar';
+import { ScheduleCalendar } from './schedule-calendar';
 import { PlannerGrid, PlannerLegend } from './planner-grid';
 import { ListDisplayFields } from '@/components/list-display';
 import {
@@ -36,6 +38,7 @@ export const metadata: Metadata = { title: 'Planned maintenance' };
 const VIEWS = [
   ['planner', 'Planner'],
   ['list', 'Schedules'],
+  ['calendar', 'Calendar'],
   ['forecast', 'Forecast'],
   ['overdue', 'Overdue'],
   ['compliance', 'Compliance'],
@@ -43,6 +46,8 @@ const VIEWS = [
 type View = (typeof VIEWS)[number][0];
 
 const PAGE_SIZE = 50;
+/** The calendar shows what it finds all in one go, so it asks for the most the API gives. */
+const CALENDAR_LIMIT = 100;
 const SORT_LABELS = { number: 'Reference', title: 'Title', priority: 'Priority' } as const;
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) || undefined;
 
@@ -69,6 +74,9 @@ export default async function PpmPage({
   // How the page is shown. The API never sees these.
   const group = parseGroup(input.groupby, SCHEDULE_GROUPS);
   const cols = parseColumnKeys(input.cols).join(',') || undefined;
+  const now = Date.now();
+  const shown = calendarMonth(input.month, now);
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(one(input.day) ?? '') ? one(input.day)! : undefined;
   const offset = Math.max(0, Math.floor(Number(one(input.offset))) || 0);
   const canManage = can(user, 'ppm.manage');
   const seesCosts = can(user, 'costs.read');
@@ -126,18 +134,32 @@ export default async function PpmPage({
       ? await ppmPlanner({ q: filters.q, criticality: filters.criticality, discipline: filters.discipline })
       : view === 'list'
         ? await ppmSchedules({ ...filters, limit: String(PAGE_SIZE), offset: offset ? String(offset) : undefined })
-        : view === 'forecast'
-          ? await ppmForecast(12)
-          : view === 'overdue'
-            ? await ppmOverdue()
-            : null;
+        : view === 'calendar'
+          ? await ppmSchedules({ ...filters, sort: undefined, dir: undefined, limit: String(CALENDAR_LIMIT) })
+          : view === 'forecast'
+            ? await ppmForecast(12)
+            : view === 'overdue'
+              ? await ppmOverdue()
+              : null;
 
   const hrefFor = (target: View) => {
     const next = new URLSearchParams();
     if (target !== 'planner') next.set('view', target);
+    const searchable = target === 'planner' || target === 'list' || target === 'calendar';
     for (const key of ['q', 'criticality', 'discipline'] as const)
-      if (filters[key] && (target === 'planner' || target === 'list')) next.set(key, filters[key]!);
+      if (filters[key] && searchable) next.set(key, filters[key]!);
+    // Status only applies to the schedule list and the calendar, so it carries between those two.
+    if (filters.status && (target === 'list' || target === 'calendar')) next.set('status', filters.status);
     return '/app/ppm' + (next.size ? '?' + next.toString() : '');
+  };
+
+  const calendarHref = (target: { month?: string; day?: string }) => {
+    const next = new URLSearchParams({ view: 'calendar' });
+    for (const key of ['q', 'criticality', 'discipline', 'status'] as const)
+      if (filters[key]) next.set(key, filters[key]!);
+    next.set('month', target.month ?? shown);
+    if (target.day) next.set('day', target.day);
+    return '/app/ppm?' + next.toString();
   };
 
   const pageHref = (target: number) => {
@@ -204,9 +226,15 @@ export default async function PpmPage({
           ))}
         </nav>
 
-        {(view === 'planner' || view === 'list') && (
-          <form key={JSON.stringify([filters, group, cols])} className={styles.filters} aria-label="Filter schedules">
+        {(view === 'planner' || view === 'list' || view === 'calendar') && (
+          <form
+            key={JSON.stringify([filters, group, cols, shown])}
+            className={styles.filters}
+            aria-label="Filter schedules"
+          >
             {view !== 'planner' && <input type="hidden" name="view" value={view} />}
+            {view === 'calendar' && <input type="hidden" name="month" value={shown} />}
+            {view === 'calendar' && day && <input type="hidden" name="day" value={day} />}
             <label className="field">
               <span className="label">Search schedules</span>
               <input className={styles.control} type="search" name="q" defaultValue={filters.q} />
@@ -233,7 +261,7 @@ export default async function PpmPage({
                 ))}
               </select>
             </label>
-            {view === 'list' && (
+            {(view === 'list' || view === 'calendar') && (
               <label className="field">
                 <span className="label">Status</span>
                 <select className={styles.control} name="status" defaultValue={filters.status ?? 'active'}>
@@ -323,6 +351,48 @@ export default async function PpmPage({
               </nav>
             )}
           </>
+        )}
+        {view === 'calendar' && data && 'items' in data && (
+          <div className="card-b stack g3">
+            {day ? (
+              <>
+                <p className="row between wrap g2">
+                  <span>
+                    Schedules next due on{' '}
+                    {new Date(day + 'T00:00:00Z').toLocaleDateString('en-GB', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      timeZone: 'UTC',
+                    })}
+                  </span>
+                  <Link className="btn sm" href={calendarHref({ month: day.slice(0, 7) })}>
+                    Show all dates
+                  </Link>
+                </p>
+                <ScheduleTable items={data.items.filter((item) => item.nextDueOn === day)} />
+              </>
+            ) : (
+              <ScheduleCalendar
+                items={data.items}
+                month={shown}
+                now={now}
+                prevHref={calendarHref({ month: shiftMonth(shown, -1) })}
+                nextHref={calendarHref({ month: shiftMonth(shown, 1) })}
+                dayHref={(target) => calendarHref({ month: shown, day: target })}
+              />
+            )}
+            {data.total > CALENDAR_LIMIT && (
+              <p className="sm muted">
+                Showing the first {CALENDAR_LIMIT} of {data.total} schedules. Narrow the filters to see the rest.
+              </p>
+            )}
+            <p className="sm muted">
+              Each schedule is on the day its next visit is due. Meter-based schedules have no date, so they are not
+              shown here. Today is {ukDay(now).split('-').reverse().join('/')}.
+            </p>
+          </div>
         )}
         {view === 'forecast' && data && 'months' in data && <ForecastTable forecast={data} />}
         {view === 'overdue' && Array.isArray(data) && (
