@@ -23,7 +23,7 @@ const GROUP_LABELS: Record<string, (item: WorkOrderSummary) => string> = {
   status: (item) => WORK_ORDER_STATUS_LABELS[item.status] ?? item.status,
   priority: (item) => 'P' + item.priority + ' ' + (PRIORITY_LABELS[item.priority - 1] ?? ''),
   assignee: (item) => item.assigneeName ?? 'Unassigned',
-  location: (item) => item.location.name,
+  location: (item) => item.location.name + ' · ' + item.location.code,
 };
 
 export function WorkOrderTable({

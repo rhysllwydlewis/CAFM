@@ -50,7 +50,7 @@ const GROUP_LABELS: Record<string, (item: RequestSummary) => string> = {
   priority: (item) => 'P' + item.priority + ' ' + (PRIORITY_NAMES[item.priority - 1] ?? ''),
   category: (item) => item.type.category,
   channel: (item) => REQUEST_CHANNEL_LABELS[item.channel],
-  location: (item) => item.location.name,
+  location: (item) => item.location.name + ' · ' + item.location.code,
 };
 
 export function RequestTable({

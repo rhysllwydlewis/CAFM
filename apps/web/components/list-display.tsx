@@ -35,10 +35,11 @@ export function ListDisplayFields({
           <legend className="sr-only">Columns to show</legend>
           {columns.map((column) => (
             <label key={column.key} className="row g2">
+              {/* A disabled checkbox is not submitted, so locked keys go in hidden inputs: hiding every optional column then stays different from choosing nothing. */}
+              {column.locked && <input type="hidden" name="cols" value={column.key} />}
               <input
                 type="checkbox"
-                name="cols"
-                value={column.key}
+                {...(column.locked ? {} : { name: 'cols', value: column.key })}
                 aria-label={'Show ' + column.label + ' column'}
                 defaultChecked={column.locked || all || wanted.has(column.key)}
                 disabled={column.locked}

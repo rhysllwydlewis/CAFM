@@ -123,3 +123,15 @@ test('a saved view keeps the grouping and the columns', async ({ page }) => {
   await page.getByRole('button', { name: 'Delete view' }).click();
   await expect(page).not.toHaveURL(/view_id=/);
 });
+
+test('hiding every optional column keeps only the locked ones', async ({ page }) => {
+  await signInAs(page, 'manager');
+  await page.goto('/app/work-orders?view=all');
+  await page.getByText('Columns', { exact: true }).click();
+  for (const label of ['Priority', 'Status', 'Assigned to', 'SLA (fix)']) {
+    await page.getByRole('checkbox', { name: 'Show ' + label + ' column' }).uncheck();
+  }
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page.getByRole('columnheader', { name: 'Ref', exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Status', exact: true })).toHaveCount(0);
+});
