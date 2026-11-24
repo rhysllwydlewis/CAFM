@@ -146,6 +146,9 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [ ] Branding: sign-in message shown on the sign-in screen, logo, custom domain and email sender (the message is saved already).
     - [ ] Custom fields screen, statuses, SLA and calendars, categories.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
+    - [x] Password minimum length, longest sign-in and the MFA-required setting, with the screen. ([guide](admin.md#security-and-sign-in))
+    - [x] Audit log viewer: newest first, search by event, details. ([guide](admin.md#audit-log))
+    - [ ] Audit log filters by person, record and date range, and export; MFA enforced at sign-in (with P1-12).
   - [ ] **P1-09f** Username-only accounts.
 - [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
 - [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.

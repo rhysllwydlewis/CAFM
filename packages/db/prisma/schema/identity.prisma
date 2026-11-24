@@ -15,6 +15,7 @@ model Tenant {
   moduleSettings             ModuleSetting[]
   termOverrides              TermOverride[]
   branding                   TenantBranding?
+  security                   TenantSecurity?
   invites                    Invite[]
   fields                     FieldDefinition[]
   sequences                  NumberSequence[]

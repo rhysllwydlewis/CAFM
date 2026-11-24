@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration: a Security and sign-in screen sets the shortest password (12 to 64 characters) and the longest sign-in (1 to 720 hours), and records whether multi-factor authentication is required (enforced when authenticator-app sign-in arrives). An Audit log screen lists every change, newest first, with a search by event. Every change to the security settings is audited.
 - Administration: a regional admin who is limited to certain sites now sees only the people inside those sites from the people list too, not only on the users screen. A mockup of the Site access card (`admin-13-site-access`) is added.
 - Technician app: a change queued on the phone is now applied once even if it is sent twice at the same moment, for example a note when two screens sync together. The app also sends its queue one batch at a time.
 - Reports: a Reports screen with open jobs by age, SLA performance and PPM compliance for a chosen period, limited to the sites you can see, and three key-figure tiles on the home page.

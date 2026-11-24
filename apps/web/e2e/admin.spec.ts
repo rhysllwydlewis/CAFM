@@ -238,3 +238,31 @@ test('a Super User checks the contrast of an accent colour, saves it and puts th
     await expect(page.getByText(/Branding saved/)).toBeVisible();
   }
 });
+
+test('a Super User saves security settings and finds the change in the audit log', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/security');
+  await expect(page.getByRole('heading', { name: 'Security and sign-in' })).toBeVisible();
+  await assertAccessible(page);
+
+  await page.getByLabel('Minimum password length').fill('11');
+  await expect(page.getByText(/Use a whole number from 12 to 64/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+  await page.getByLabel('Minimum password length').fill('12');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Security settings saved.' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Audit log' }).click();
+  await expect(page).toHaveURL(/\/app\/admin\/audit$/);
+  await page.getByLabel('Search events').fill('security_updated');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByRole('cell', { name: 'settings.security_updated' }).first()).toBeVisible();
+  await assertAccessible(page);
+});
+
+test('someone without audit access cannot open the audit log', async ({ page }) => {
+  await signInAs(page, 'requester');
+  await page.goto('/app/admin/audit');
+  await expect(page).not.toHaveURL(/\/admin\/audit/);
+});

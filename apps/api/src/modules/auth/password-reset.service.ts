@@ -12,6 +12,7 @@ import { passwordProblem } from '@cafm/shared';
 import type { ClientInfo } from './auth.service';
 import { AuthService } from './auth.service';
 import { ResetRateLimiter } from './login-rate-limiter';
+import { strictestMinLength } from '../../core/security-settings';
 import { PrismaService } from '../../core/prisma.service';
 import { appUrl, queuePlatformEmail } from '../../core/mail';
 
@@ -88,7 +89,7 @@ export class PasswordResetService {
       });
     }
     if (reset.account.isDemo) throw new ForbiddenException({ code: 'demo_account' });
-    const problem = passwordProblem(password, reset.account.email);
+    const problem = passwordProblem(password, reset.account.email, await strictestMinLength(this.db, reset.accountId));
     if (problem) throw new UnprocessableEntityException({ code: 'weak_password', message: problem });
 
     const passwordHash = await argon2.hash(password, { type: argon2.argon2id });

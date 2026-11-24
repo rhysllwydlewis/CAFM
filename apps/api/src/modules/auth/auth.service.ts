@@ -11,6 +11,7 @@ import {
   type OrganisationOption,
 } from '@cafm/shared';
 import { PrismaService } from '../../core/prisma.service';
+import { readSecurity } from '../../core/security-settings';
 import { type AuthContext, hashToken, LONG_SESSION_MS, newSessionToken, SHORT_SESSION_MS } from '../../core/session';
 import { LoginRateLimiter } from './login-rate-limiter';
 
@@ -172,7 +173,13 @@ export class AuthService {
     client: ClientInfo,
   ): Promise<SessionIssued> {
     const { token, tokenHash } = newSessionToken();
-    const expiresAt = new Date(Date.now() + (persistent ? LONG_SESSION_MS : SHORT_SESSION_MS));
+    let lifetime = persistent ? LONG_SESSION_MS : SHORT_SESSION_MS;
+    // The organisation's sign-in length can shorten a session, never lengthen it.
+    if (tenantId) {
+      const { sessionTimeoutHours } = await readSecurity(this.db, tenantId);
+      if (sessionTimeoutHours) lifetime = Math.min(lifetime, sessionTimeoutHours * 60 * 60 * 1000);
+    }
+    const expiresAt = new Date(Date.now() + lifetime);
     await this.db.session.create({
       data: {
         tokenHash,
