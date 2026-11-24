@@ -50,6 +50,31 @@ test('shows the key figures on the home page for people who can read reports', a
   await expect(page.getByRole('region', { name: 'Key figures' })).toHaveCount(0);
 });
 
+test('gives each role the key figures that suit it on the home page', async ({ page }) => {
+  // A technician has no reports access but sees their own jobs, and nothing about the queue or money.
+  await signInAs(page, 'technician');
+  await page.goto('/app');
+  let figures = page.getByRole('region', { name: 'Key figures' });
+  await expect(figures.getByText('Your open jobs')).toBeVisible();
+  await expect(figures.getByText('New requests')).toHaveCount(0);
+  await expect(figures.getByText('Cost, last 30 days')).toHaveCount(0);
+  await assertAccessible(page);
+
+  await signInAs(page, 'helpdesk');
+  await page.goto('/app');
+  figures = page.getByRole('region', { name: 'Key figures' });
+  await expect(figures.getByText('New requests')).toBeVisible();
+  await expect(figures.getByText('Unassigned jobs')).toBeVisible();
+  await expect(figures.getByText('Cost, last 30 days')).toHaveCount(0);
+
+  await signInAs(page, 'finance');
+  await page.goto('/app');
+  figures = page.getByRole('region', { name: 'Key figures' });
+  await expect(figures.getByText('Cost, last 30 days')).toBeVisible();
+  await expect(figures.getByText('New requests')).toHaveCount(0);
+  await assertAccessible(page);
+});
+
 test('shows the executive overview and keeps people without report access out', async ({ page }) => {
   await signInAs(page, 'manager');
   await page.goto('/app/reports');
