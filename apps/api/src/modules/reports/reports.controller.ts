@@ -15,6 +15,7 @@ import {
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { locationScope } from '../locations/location-tree';
 import { workOrderScope } from '../work-orders/work-order-scope';
 
 const DAY_MS = 86_400_000;
@@ -212,7 +213,10 @@ export class ReportsController {
       for (const { locationId } of rows) perPlace.set(locationId, (perPlace.get(locationId) ?? 0) + 1);
       const paths = perPlace.size
         ? await tx.locationPath.findMany({
-            where: { descendantId: { in: [...perPlace.keys()] }, ancestor: { kind: 'site' } },
+            where: {
+              descendantId: { in: [...perPlace.keys()] },
+              ancestor: { kind: 'site', AND: [locationScope(auth)] },
+            },
             select: { ancestorId: true, descendantId: true, ancestor: { select: { name: true } } },
           })
         : [];
