@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant, Prisma } from '@cafm/db';
 import type { MobileMutationItem } from '@cafm/shared';
@@ -9,6 +9,13 @@ import { AssetOperationsController } from '../assets/asset-operations.controller
 import { WorkOrderChecklistsController } from '../work-orders/work-order-checklists.controller';
 import { WorkOrderTimeController } from '../work-orders/work-order-time.controller';
 import { WorkOrdersController } from '../work-orders/work-orders.controller';
+
+/** How long a request waits for another one that holds the same key before it asks the phone to try again. */
+const CLAIM_WAIT_MS = 10_000;
+/** A claim this old is from a request that died, so a retry may take the key over. */
+const CLAIM_ABANDONED_MS = 2 * 60_000;
+const CLAIM_POLL_MS = 100;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type MobileMutationResult = {
   key: string;
@@ -42,7 +49,8 @@ function messageOf(error: HttpException): string {
 /**
  * Applies the changes a phone made offline, each exactly once. A change goes through the same code as the
  * website's endpoint, so permissions, data scope, versions, checklist gates and audit events are the same.
- * The outcome is kept against the key, so a retry after a dropped connection is answered, not repeated.
+ * The key is claimed before the change runs and the outcome is kept against it, so a retry after a dropped
+ * connection, or the same key arriving twice at once, is answered and not repeated.
  */
 @Injectable()
 export class MobileMutations {
@@ -63,19 +71,19 @@ export class MobileMutations {
   private async applyOne(auth: AuthContext, ip: string | undefined, item: MobileMutationItem) {
     const { tenantId, id: memberId } = auth.membership!;
     const requestHash = hashOf(item);
-    const find = () =>
-      withTenant(this.db, tenantId, (tx) =>
-        tx.mobileMutation.findUnique({ where: { tenantId_memberId_key: { tenantId, memberId, key: item.key } } }),
-      );
-    const seen = await find();
-    if (seen) return this.replay(item.key, seen, requestHash);
+    const claim = await this.claim(tenantId, memberId, item, requestHash);
+    if (typeof claim !== 'string') return claim;
 
     let result: MobileMutationResult;
     try {
       await this.dispatch(auth, ip, item);
       result = { key: item.key, status: 'applied' };
     } catch (error) {
-      if (!(error instanceof HttpException) || error.getStatus() >= 500) throw error;
+      if (!(error instanceof HttpException) || error.getStatus() >= 500) {
+        // The change did not finish, so give the key back and let the phone try again.
+        await this.release(tenantId, claim);
+        throw error;
+      }
       result = {
         key: item.key,
         status: 'rejected',
@@ -83,27 +91,59 @@ export class MobileMutations {
         message: messageOf(error),
       };
     }
-    try {
-      await withTenant(this.db, tenantId, (tx) =>
-        tx.mobileMutation.create({
-          data: {
-            tenantId,
-            memberId,
-            key: item.key,
-            kind: item.kind,
-            requestHash,
-            outcome: result.status,
-            result: { code: result.code ?? null, message: result.message ?? null },
-          },
-        }),
-      );
-    } catch (error) {
-      // The same key arrived twice at once: the other request's outcome stands.
-      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
-      const other = await find();
-      if (other) return this.replay(item.key, other, requestHash);
-    }
+    await withTenant(this.db, tenantId, (tx) =>
+      tx.mobileMutation.update({
+        where: { id: claim },
+        data: { outcome: result.status, result: { code: result.code ?? null, message: result.message ?? null } },
+      }),
+    );
     return result;
+  }
+
+  /**
+   * Claims the key before the change runs, so two requests with the same key at the same moment cannot both run
+   * it. Returns the claim's id when this request may run the change, or the answer to give when the key already has
+   * an outcome. A request that finds another one still running waits a moment for its outcome, and asks the phone
+   * to try again if that takes too long.
+   */
+  private async claim(
+    tenantId: string,
+    memberId: string,
+    item: MobileMutationItem,
+    requestHash: string,
+  ): Promise<string | MobileMutationResult> {
+    const where = { tenantId_memberId_key: { tenantId, memberId, key: item.key } };
+    const deadline = Date.now() + CLAIM_WAIT_MS;
+    for (;;) {
+      try {
+        const row = await withTenant(this.db, tenantId, (tx) =>
+          tx.mobileMutation.create({
+            data: { tenantId, memberId, key: item.key, kind: item.kind, requestHash, outcome: 'pending' },
+            select: { id: true },
+          }),
+        );
+        return row.id;
+      } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
+      }
+      const seen = await withTenant(this.db, tenantId, (tx) => tx.mobileMutation.findUnique({ where }));
+      if (!seen) continue; // It was released between the two calls: try to claim it again.
+      if (seen.requestHash !== requestHash || seen.outcome !== 'pending')
+        return this.replay(item.key, seen, requestHash);
+      if (Date.now() - seen.createdAt.getTime() > CLAIM_ABANDONED_MS) {
+        await this.release(tenantId, seen.id);
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        throw new ServiceUnavailableException('This change is still being applied. Try again in a moment.');
+      }
+      await sleep(CLAIM_POLL_MS);
+    }
+  }
+
+  /** Gives a claimed key back, but only while it is still pending (an outcome is never deleted). */
+  private release(tenantId: string, id: string) {
+    return withTenant(this.db, tenantId, (tx) => tx.mobileMutation.deleteMany({ where: { id, outcome: 'pending' } }));
   }
 
   private replay(

@@ -250,7 +250,7 @@ model MobileMutation {
   kind        String
   /// A hash of what was sent, so the same key with different content is refused.
   requestHash String     @map("request_hash")
-  /// applied, or rejected with a reason the phone shows.
+  /// pending while the change runs, then applied, or rejected with a reason the phone shows.
   outcome     String
   result      Json       @default("{}")
   createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)

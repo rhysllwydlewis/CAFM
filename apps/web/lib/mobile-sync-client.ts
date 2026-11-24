@@ -103,7 +103,19 @@ async function settle(record: OutboxRecord, code: string | undefined, message: s
  * signal. An applied change leaves the queue. A change the server refuses stays, marked failed, so a
  * person sees it: nothing is dropped quietly.
  */
-export async function flushOutbox(): Promise<FlushResult> {
+let flushQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Sends the queued changes. Two screens can ask at once (a reconnect and a save), so flushes run one after another:
+ * the second one reads the outbox after the first has removed what it sent, and so never sends an entry twice.
+ */
+export function flushOutbox(): Promise<FlushResult> {
+  const run = flushQueue.then(flushOutboxOnce, flushOutboxOnce);
+  flushQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function flushOutboxOnce(): Promise<FlushResult> {
   const result: FlushResult = { sent: 0, failed: 0, stopped: null };
   try {
     const queue = (await readOutbox()).filter((record) => record.state === 'pending');
