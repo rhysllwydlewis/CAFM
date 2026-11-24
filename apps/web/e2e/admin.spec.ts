@@ -208,3 +208,31 @@ test('an Administrator has no view as user card', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^People/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'View as user' })).toHaveCount(0);
 });
+
+test('a Super User checks the contrast of an accent colour, saves it and puts the standard look back', async ({
+  page,
+}) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/branding');
+  await expect(page.getByRole('heading', { name: 'Branding', level: 2 })).toBeVisible();
+  await assertAccessible(page);
+
+  const accent = page.getByLabel('Accent colour');
+  await accent.fill('#ffee88');
+  await expect(page.getByText(/Too light/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+  try {
+    await accent.fill('#136676');
+    await page.getByLabel('Sign-in message').fill('Welcome to Demo Estates facilities.');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText(/Branding saved/)).toBeVisible();
+    await assertAccessible(page);
+  } finally {
+    // Leave the demo organisation as it was seeded.
+    await accent.fill('');
+    await page.getByLabel('Sign-in message').fill('');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText(/Branding saved/)).toBeVisible();
+  }
+});

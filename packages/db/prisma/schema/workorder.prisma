@@ -119,31 +119,31 @@ model WorkOrderContractor {
 /// A cost recorded against a job. The amount is worked out on the server from quantity and unit cost, in whole
 /// minor units, and the job's currency applies. Entries are removed, not edited, so each change is in the audit log.
 model WorkOrderCost {
-  id            String      @id @default(uuid(7)) @db.Uuid
-  tenantId      String      @map("tenant_id") @db.Uuid
-  workOrderId   String      @map("work_order_id") @db.Uuid
+  id            String         @id @default(uuid(7)) @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  workOrderId   String         @map("work_order_id") @db.Uuid
   /// labour, parts, subcontract or expense.
   kind          String
   /// For labour: on_site, travel or overtime.
-  labourType    String?     @map("labour_type")
+  labourType    String?        @map("labour_type")
   description   String
   /// An invoice or part number.
   reference     String?
   /// Thousandths of a unit: hours for labour, items for parts, 1000 for a single amount.
-  quantityMilli Int         @map("quantity_milli")
-  unitCostMinor Int         @map("unit_cost_minor")
-  amountMinor   Int         @map("amount_minor")
-  incurredOn    DateTime    @map("incurred_on") @db.Date
-  recordedById  String?     @map("recorded_by_id") @db.Uuid
+  quantityMilli Int            @map("quantity_milli")
+  unitCostMinor Int            @map("unit_cost_minor")
+  amountMinor   Int            @map("amount_minor")
+  incurredOn    DateTime       @map("incurred_on") @db.Date
+  recordedById  String?        @map("recorded_by_id") @db.Uuid
   /// Set when this entry took the job over its not-to-exceed limit, with the reason that was given.
-  overNte       Boolean     @default(false) @map("over_nte")
-  overNteReason String?     @map("over_nte_reason")
+  overNte       Boolean        @default(false) @map("over_nte")
+  overNteReason String?        @map("over_nte_reason")
   /// Set when the cost was posted from time recorded on the job.
-  timeId        String?     @map("time_id") @db.Uuid
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  tenant        Tenant      @relation(fields: [tenantId], references: [id])
-  workOrder     WorkOrder   @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
-  recordedBy    Membership? @relation(fields: [tenantId, recordedById], references: [tenantId, id], onDelete: Restrict)
+  timeId        String?        @map("time_id") @db.Uuid
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  workOrder     WorkOrder      @relation(fields: [tenantId, workOrderId], references: [tenantId, id], onDelete: Cascade)
+  recordedBy    Membership?    @relation(fields: [tenantId, recordedById], references: [tenantId, id], onDelete: Restrict)
   time          WorkOrderTime? @relation(fields: [tenantId, timeId], references: [tenantId, id], onDelete: Cascade)
 
   @@unique([tenantId, id])
