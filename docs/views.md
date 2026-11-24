@@ -53,3 +53,13 @@ Every list has a **Group by** control and a **Columns** chooser beside its filte
 | Schedules | criticality, fixed or floating, assigned to | how often, assets, next due, overdue, assigned to |
 
 The reference and title columns always show. With nothing chosen, every column shows. The choice is in the address as `groupby` and `cols`, so a saved view keeps it. On assets, `group` is still the asset class from the Classification panel; `groupby` is the display grouping. The API never sees either, and neither changes who can see which rows or fields.
+
+## Bulk actions on work orders
+
+Tick rows on the work order list (or the box in the header for the whole page) and a bar offers **Change status**, **Assign to**, **Clear assignee** and **Set priority**. Only the actions your role allows are listed: status needs `work_orders.edit` or `work_orders.close`, assigning needs `work_orders.assign`, and priority needs `work_orders.edit`.
+
+`POST /api/work-orders/bulk` takes `{ action, items: [{ id, version }], ... }` with up to 50 jobs and the same fields as the single-job call (`status` and `pauseReason`, `assigneeId`, or `impact` and `urgency`). Each job is changed by the same code as the single-job call, in its own transaction, so every rule holds per job (status order, checklists, who can be assigned, site access, the version you saw) and one refusal never undoes the others. The reply is `{ succeeded, failed, results }`, with `{ id, ok, version }` for a job that changed and `{ id, ok: false, status, message }` for one that did not. Each change is in the audit log and the job's activity as if it were made on its own. Jobs from another organisation answer 404, so they show as failed rows.
+
+When assigning, the people offered are those who can work at the first ticked job's site. A job at another site where that person can't work is reported as not changed.
+
+Requests, assets and schedules get bulk actions in a later batch.

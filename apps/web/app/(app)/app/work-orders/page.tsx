@@ -229,7 +229,13 @@ export default async function WorkOrdersPage({
             {data.nextCursor && <p className="sm muted">Showing the first 100. Use the list to see the rest.</p>}
           </div>
         ) : (
-          <WorkOrderTable items={data.items} now={Date.now()} columns={input.cols} group={group} />
+          <WorkOrderTable
+            items={data.items}
+            now={Date.now()}
+            columns={input.cols}
+            group={group}
+            permissions={user.permissions}
+          />
         )}
         {!board && (data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">
