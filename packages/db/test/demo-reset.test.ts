@@ -54,6 +54,10 @@ describe('demo reset', () => {
         },
       });
       await db.auditEvent.create({ data: { tenantId: tenant.id, action: 'x', entityType: 'x' } });
+      await db.moduleSetting.create({ data: { tenantId: tenant.id, moduleKey: 'finance', enabled: false } });
+      await db.termOverride.create({
+        data: { tenantId: tenant.id, termKey: 'site', singular: 'School', plural: 'Schools' },
+      });
       await db.ppmTaskTemplate.create({
         data: { tenantId: tenant.id, name: 'Visitor task', durationMinutes: 60, steps: [] },
       });
@@ -78,12 +82,16 @@ describe('demo reset', () => {
       expect(await db.checklistTemplate.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.ppmTaskTemplate.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.auditEvent.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.moduleSetting.count({ where: { tenantId: tenant.id } })).toBe(0);
+      expect(await db.termOverride.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.asset.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.assetClass.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.location.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.locationPath.count({ where: { tenantId: tenant.id } })).toBe(0);
       expect(await db.membershipSite.count({ where: { tenantId: tenant.id } })).toBe(0);
     } finally {
+      await db.moduleSetting.deleteMany({ where: { tenantId: tenant.id } });
+      await db.termOverride.deleteMany({ where: { tenantId: tenant.id } });
       await db.asset.deleteMany({ where: { tenantId: tenant.id } });
       await db.assetClass.deleteMany({ where: { tenantId: tenant.id } });
       await db.location.deleteMany({ where: { tenantId: tenant.id } });

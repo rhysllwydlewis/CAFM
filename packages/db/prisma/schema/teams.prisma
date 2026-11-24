@@ -29,3 +29,35 @@ model TeamMember {
   @@index([tenantId, membershipId])
   @@map("team_member")
 }
+
+// Modules and terminology (doc 03 § Admin: switch modules on or off, rename them, rename any label).
+
+/// A tenant's choice for one module: on or off, its own name for it, and its place in the menu. Tenant-owned (RLS).
+/// No row means the default: on, the standard name, the standard order.
+model ModuleSetting {
+  tenantId  String   @map("tenant_id") @db.Uuid
+  moduleKey String   @map("module_key")
+  enabled   Boolean  @default(true)
+  /// The organisation's own name for the module, for example "Jobs".
+  label     String?
+  /// Menu position within the module's section. Null keeps the standard order.
+  position  Int?
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@id([tenantId, moduleKey])
+  @@map("module_setting")
+}
+
+/// A tenant's own word for a standard term, for example "Work order" becomes "Job". Tenant-owned (RLS).
+model TermOverride {
+  tenantId  String   @map("tenant_id") @db.Uuid
+  termKey   String   @map("term_key")
+  singular  String
+  plural    String
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@id([tenantId, termKey])
+  @@map("term_override")
+}

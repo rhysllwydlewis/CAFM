@@ -55,6 +55,8 @@ export async function resetDemo(
     db.asset.deleteMany({ where }),
     db.assetClass.deleteMany({ where }),
     db.team.deleteMany({ where }),
+    db.moduleSetting.deleteMany({ where }),
+    db.termOverride.deleteMany({ where }),
     db.location.deleteMany({ where }),
     db.membership.deleteMany({ where: { id: { in: visitorMemberships.map((m) => m.id) } } }),
     db.role.deleteMany({ where: { ...where, builtin: false } }),

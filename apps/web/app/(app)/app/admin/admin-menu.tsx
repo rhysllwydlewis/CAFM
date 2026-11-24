@@ -21,6 +21,8 @@ export function AdminMenu({
     canManagePeople && { href: '/app/admin/users', label: 'Users and licences' },
     canReadRoles && { href: '/app/admin/roles', label: 'Roles and permissions' },
     canReadPeople && { href: '/app/admin/teams', label: 'Teams' },
+    canManageSettings && { href: '/app/admin/modules', label: 'Modules and navigation' },
+    canManageSettings && { href: '/app/admin/terminology', label: 'Terminology' },
   ].filter((item): item is { href: string; label: string } => !!item);
   return (
     <nav className="card" aria-label="Administration" style={{ alignSelf: 'start' }}>
