@@ -19,7 +19,7 @@ import {
   assertNotDemoLocked,
   assertNotLastSuperUser,
 } from '../../core/access-rules';
-import { assertAdministrable } from '../../core/delegation';
+import { administrableMembers, assertAdministrable } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -32,17 +32,22 @@ export class PeopleController {
 
   /**
    * People in the current organisation. RLS scopes the rows to the tenant; the
-   * where clause is belt and braces. A role with scope "own" sees only itself.
+   * where clause is belt and braces. A role with scope "own" sees only itself, and
+   * someone limited to sites sees themself and the people inside their own sites,
+   * the same people as on the users screen, so that screen cannot be bypassed here.
    */
   @Get()
   @RequirePermission('people.read')
   async list(@Req() req: Request) {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
+    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
     return withTenant(this.db, tenantId, async (tx) => {
+      const allowed = await administrableMembers(tx, auth);
       const [rows, roles] = await Promise.all([
         tx.membership.findMany({
-          where: { tenantId, ...(auth.access!.scope === 'own' ? { id: auth.membership!.id } : {}) },
+          // Both limits apply: a role's own-records scope and a delegated person's sites.
+          where: { tenantId, AND: [own, allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {}] },
           include: { account: true },
           orderBy: { account: { name: 'asc' } },
         }),

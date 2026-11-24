@@ -33,6 +33,7 @@ The users screen has a **Site access** card. Pick a person, then choose "Every s
 
 - see, and manage, only people who are limited to sites inside their own. Anyone else, including Super Users and people with organisation-wide access, is hidden and answers `404`;
 - can change role, deactivate and set site access, but only choose sites they hold themselves, and can't remove a limit (`null`);
+- get the same narrowed list from `GET /api/people` (`people.read`) as on the users screen: themselves and the people inside their own sites, so the screen can't be bypassed by calling the API directly. Everyone else's name and email stay out of the answer;
 - can't invite people, see invitations, or create, edit or delete teams (`403`), because neither has a site. An organisation-wide admin does those;
 - are still held by the no-privilege-escalation rule: they can't grant or manage a role with permissions they don't hold.
 
