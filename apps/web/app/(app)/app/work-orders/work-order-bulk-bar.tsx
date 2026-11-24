@@ -85,6 +85,8 @@ export function WorkOrderBulkBar({
   }
 
   const failures = outcome?.response.results.filter(({ ok }) => !ok) ?? [];
+  // Nothing to show until a row is ticked or a result is waiting to be read.
+  if (!selected.length && !outcome && !error) return null;
   return (
     <div className={'card-b stack g3 ' + styles.bulk}>
       {selected.length > 0 && (
