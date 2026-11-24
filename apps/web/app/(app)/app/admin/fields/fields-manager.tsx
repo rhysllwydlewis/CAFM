@@ -3,7 +3,14 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Checkbox, Field, TextInput } from '@cafm/ui';
-import { ENTITY_TYPES, FIELD_TYPES, FIELD_TYPE_LABELS, type FieldType } from '@cafm/config-engine';
+import {
+  ENTITY_TYPES,
+  FIELD_TYPES,
+  FIELD_TYPE_LABELS,
+  keyFromLabel,
+  optionsFromLabels,
+  type FieldType,
+} from '@cafm/config-engine';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 import type { AdminField } from './page';
@@ -17,13 +24,6 @@ const ENTITY_LABELS: Record<string, string> = {
   contractor: 'Contractors',
   person: 'People',
 };
-
-const slug = (text: string) =>
-  text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 64);
 
 /** Custom fields: add, rename, require and deactivate fields on each record type. */
 export function FieldsManager({ fields, limit }: { fields: AdminField[]; limit: number | null }) {
@@ -64,12 +64,12 @@ export function FieldsManager({ fields, limit }: { fields: AdminField[]; limit: 
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean);
-    const options = labels.map((l) => ({ value: slug(l) || l, label: l }));
+    const options = optionsFromLabels(labels);
     const ok = await run(
       () =>
         adminWrite('/config/fields', {
           entityType,
-          key: key || slug(label),
+          key: key || keyFromLabel(label),
           label,
           type,
           required,
@@ -259,7 +259,7 @@ export function FieldsManager({ fields, limit }: { fields: AdminField[]; limit: 
               id="new-key"
               value={key}
               maxLength={48}
-              placeholder={slug(label) || 'made from the label'}
+              placeholder={keyFromLabel(label) || 'made from the label'}
               aria-describedby="new-key-hint"
               onChange={(e) => setKey(e.target.value)}
             />

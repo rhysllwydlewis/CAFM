@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fieldDefinitionInput, validateCustom, type FieldDefinition } from '../src';
+import { fieldDefinitionInput, keyFromLabel, optionsFromLabels, validateCustom, type FieldDefinition } from '../src';
 
 const fields: FieldDefinition[] = [
   { key: 'contract_ref', label: 'Contract reference', type: 'text', required: true, maxLength: 12 },
@@ -141,5 +141,33 @@ describe('field definitions', () => {
         ],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('keys and option values made from labels', () => {
+  const accepts = (key: string) =>
+    fieldDefinitionInput.safeParse({ entityType: 'asset', key, label: 'x', type: 'text' }).success;
+
+  it('always makes a key the API accepts', () => {
+    for (const label of ['24 hour access', 'X', 'Contract reference', 'a'.repeat(80), '9']) {
+      expect(accepts(keyFromLabel(label)), label).toBe(true);
+    }
+    expect(keyFromLabel('24 hour access')).toBe('f_24_hour_access');
+    expect(keyFromLabel('!!!')).toBe('');
+  });
+
+  it('makes distinct, non-empty option values for distinct labels', () => {
+    const options = optionsFromLabels(['A+', 'A-', 'A', '???']);
+    expect(new Set(options.map((o) => o.value)).size).toBe(4);
+    expect(options.map((o) => o.label)).toEqual(['A+', 'A-', 'A', '???']);
+    expect(
+      fieldDefinitionInput.safeParse({
+        entityType: 'asset',
+        key: 'grade',
+        label: 'Grade',
+        type: 'picklist',
+        options,
+      }).success,
+    ).toBe(true);
   });
 });

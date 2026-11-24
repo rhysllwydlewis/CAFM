@@ -7,6 +7,7 @@ import { t } from '@/lib/i18n';
 import { CommandPalette } from './command-palette';
 import { DemoResetBanner } from './demo-banner';
 import { ImpersonationBanner } from './impersonation-banner';
+import { saveNavCollapsed } from './nav-state';
 import { NotificationsDrawer } from './notifications';
 import { SideNav } from './side-nav';
 import type { ShellNavSection, ShellOrganisation } from './types';
@@ -20,6 +21,7 @@ interface Props {
   organisations: ShellOrganisation[];
   impersonation: { by: string; expiresAt: string } | null;
   footer: ReactNode;
+  initialNavCollapsed?: boolean;
   children: ReactNode;
 }
 
@@ -33,10 +35,12 @@ export function AppShell({
   organisations,
   impersonation,
   footer,
+  initialNavCollapsed = false,
   children,
 }: Props) {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(initialNavCollapsed);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const items = sections.flatMap((s) => s.items);
@@ -44,6 +48,11 @@ export function AppShell({
 
   // Close the phone menu when the page changes.
   useEffect(() => setNavOpen(false), [pathname]);
+
+  const toggleNav = useCallback(() => {
+    setNavCollapsed(!navCollapsed);
+    saveNavCollapsed(!navCollapsed);
+  }, [navCollapsed]);
 
   const onKey = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -57,7 +66,7 @@ export function AppShell({
   }, [onKey]);
 
   return (
-    <div className="app">
+    <div className={`app ${navCollapsed ? 'nav-collapsed' : ''}`}>
       <SideNav
         sections={sections}
         tenantName={tenantName}
@@ -67,6 +76,8 @@ export function AppShell({
         footer={footer}
         open={navOpen}
         onClose={() => setNavOpen(false)}
+        collapsed={navCollapsed}
+        onToggleCollapsed={toggleNav}
       />
       <main className="main">
         {impersonation && <ImpersonationBanner viewing={user.name} {...impersonation} />}
