@@ -247,6 +247,56 @@ describe('mobile mutation queue', () => {
     }
   });
 
+  it('applies a change once when the same key arrives several times at the same moment', async () => {
+    const { cleanup, accounts, tech, job, tenant } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const key = randomUUID();
+      const note = { key, kind: 'note', workOrderId: mine.id, payload: { body: 'Isolated and drained.' } };
+      const answers = await Promise.all([1, 2, 3, 4, 5].map(() => post(tech, note)));
+      for (const answer of answers) {
+        expect(answer.status).toBe(201);
+        expect(answer.body.results[0]).toMatchObject({ key, status: 'applied' });
+      }
+      // Exactly one request ran the change; the others were given its outcome.
+      expect(answers.filter((answer) => !answer.body.results[0]!.replayed)).toHaveLength(1);
+      const notes = await withTenant(db, tenant.id, (tx) =>
+        tx.workOrderEntry.count({ where: { workOrderId: mine.id, kind: 'comment' } }),
+      );
+      expect(notes).toBe(1);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('takes over a claim left behind by a request that died, and never leaves a key pending', async () => {
+    const { cleanup, accounts, tech, job, tenant } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const key = randomUUID();
+      const note = { key, kind: 'note', workOrderId: mine.id, payload: { body: 'Back on site.' } };
+      expect((await post(tech, note)).body.results[0]).toMatchObject({ key, status: 'applied' });
+      // Make the stored outcome look like a claim from a request that died ten minutes ago.
+      await withTenant(db, tenant.id, (tx) =>
+        tx.mobileMutation.updateMany({
+          where: { key },
+          data: { outcome: 'pending', createdAt: new Date(Date.now() - 10 * 60_000) },
+        }),
+      );
+      const taken = await post(tech, note);
+      expect(taken.status).toBe(201);
+      expect(taken.body.results[0]).toMatchObject({ key, status: 'applied' });
+      expect(taken.body.results[0]!.replayed).toBeUndefined();
+      const outcomes = await withTenant(db, tenant.id, (tx) => tx.mobileMutation.findMany({ where: { key } }));
+      expect(outcomes.map((row) => row.outcome)).toEqual(['applied']);
+      // The same key with different content is still refused once it has an outcome.
+      const reused = await post(tech, { ...note, payload: { body: 'Something else.' } });
+      expect(reused.body.results[0]).toMatchObject({ status: 'rejected', code: 'key_reused' });
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('rejects a stale or invalid change on its own and carries on with the rest', async () => {
     const { cleanup, accounts, tech, job } = await fixture();
     try {

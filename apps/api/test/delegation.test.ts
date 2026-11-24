@@ -82,6 +82,50 @@ it('shows a delegated admin only the people inside their own sites', async () =>
   }
 });
 
+it('gives a delegated admin the same narrowed people list from the API, and everyone else the full list', async () => {
+  const { cleanup, admin, delegate, siteA, siteB, member, regional, superUser } = await estate();
+  try {
+    const inside = await member('technician', [siteA.id]);
+    const outside = await member('technician', [siteB.id]);
+    const straddling = await member('technician', [siteA.id, siteB.id]);
+    const unrestricted = await member('technician', null);
+
+    // An organisation-wide caller is unchanged: they see every member.
+    const full = ((await admin.get('/api/people').expect(200)).body as { membershipId: string }[]).map(
+      (p) => p.membershipId,
+    );
+    expect(full).toEqual(expect.arrayContaining([inside, outside, straddling, unrestricted]));
+
+    // A delegated admin sees themself and the people inside their sites, as on the users screen,
+    // so the narrowed screen cannot be bypassed with a direct request. Nobody else's name or email is returned.
+    const seen = (await delegate.get('/api/people').expect(200)).body as { membershipId: string; email: string }[];
+    expect(seen.map((p) => p.membershipId).sort()).toEqual([inside, regional.memberships[0]!].sort());
+    const users = (await delegate.get('/api/admin/users').expect(200)).body as { membershipId: string }[];
+    expect(seen.map((p) => p.membershipId).sort()).toEqual(users.map((u) => u.membershipId).sort());
+    expect(JSON.stringify(seen)).not.toContain(superUser.email);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('never returns a person from another organisation in the people list (cross-tenant)', async () => {
+  const one = await estate();
+  const two = await estate();
+  try {
+    const other = await two.member('technician', null);
+    for (const agent of [one.admin, one.delegate]) {
+      const seen = ((await agent.get('/api/people').expect(200)).body as { membershipId: string }[]).map(
+        (p) => p.membershipId,
+      );
+      expect(seen).not.toContain(other);
+      expect(seen).not.toContain(two.superUser.memberships[0]);
+    }
+  } finally {
+    await one.cleanup();
+    await two.cleanup();
+  }
+});
+
 it('lets a delegated admin manage people inside their sites and no one else', async () => {
   const { cleanup, delegate, siteA, siteB, member, superUser, tenant } = await estate();
   try {

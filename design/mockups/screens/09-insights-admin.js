@@ -39,6 +39,18 @@ const users = admin('Users & licences', 'Users & licences', '1,284 active · sea
   card('', [toolbar([search('Name, email, username', 220), chip('Licence'), chip('Role'), chip('Status', 'Active', true), chip('Site')], `<span class="sm faint">SCIM sync: Entra ID · 4 min ago</span>`), table(['User', 'Roles', 'Licence', 'Last sign-in', 'MFA', ''], [[who('Morgan Ellis', 'morgan.ellis@demo.example'), `<span class="row g1">${tag('FM Manager')}</span>`, badge('Full', 'primary'), 'Today 08:12', badge('Passkey', 'success'), I('more')], [who('Hana Patel', 'hana.patel@demo.example'), tag('Helpdesk'), badge('Full', 'primary'), 'Today 07:58', badge('TOTP', 'success'), I('more')], [who('Tom Price', 'tom.price@demo.example'), tag('Technician'), badge('Mobile', ''), 'Today 07:31', badge('TOTP', 'success'), I('more')], [who('Rhian Davies', 'username: rdavies'), tag('Technician'), badge('Mobile', ''), 'Yesterday', badge('PIN + device', 'outline'), I('more')], [who('Alex Rowe', 'alex.admin@demo.example'), `<span class="row g1">${tag('Administrator')}${tag('Regional admin (Wales)')}</span>`, badge('Full', 'primary'), '2 days ago', badge('Passkey', 'success'), I('more')], [who('Cara Lloyd', 'Sparks Electrical Ltd'), tag('Contractor'), badge('Contractor · free', 'outline'), 'Today 06:40', badge('TOTP', 'success'), I('more')], [who('Riley Morgan', 'riley.morgan@demo.example'), tag('Requester'), badge('Requester · free', 'outline'), 'Today 09:02', badge('SSO', 'success'), I('more')], [who('Peter Hall', 'ISO auditor · expires 30 Nov'), tag('Auditor'), badge('Read-only', 'outline'), '20 Nov', badge('Email code', 'outline'), I('more')]])], { flush: true }),
 ]);
 
+// ── Site access (users screen), as a delegated admin sees it ──
+const siteAccessRow = (label, kind, on) => `<div class="row" style="gap:8px">${cb(on)}<span>${label} <span class="faint sm">· ${kind}</span></span></div>`;
+const siteAccess = admin('Users & licences', 'Users & licences', 'Regional admin · you manage people at Cardiff HQ and Bristol Office', [btn('Invite users', { icon: 'add' })], [
+  card('Site access', `<div class="stack g3">
+    <p class="muted sm">You manage people at your own sites. You can only choose among those sites, and people with access to other sites stay out of this list.</p>
+    ${field('Person', select('Aisha Khan'))}
+    <div class="stack g2"><span class="sm medium">What they can see</span><div class="row" style="gap:8px"><span class="radio on"></span>Only the sites I choose</div></div>
+    <div class="stack g2"><span class="sm medium">Sites and regions</span>${siteAccessRow('Cardiff HQ', 'Site', true)}${siteAccessRow('Bristol Office', 'Site', false)}</div>
+    <div>${btn('Save site access', { v: 'primary' })}</div>
+  </div>`, { sub: 'Organisation-wide admins also see "Every site in the organisation" and every site and region.' }),
+]);
+
 // ── Role matrix ──
 const perms = [['Work orders', ['y', 'y', 'y', 'y', 'O', 'y', 'y']], ['Work order costs', ['y', 'n', 'y', 'n', 'n', 'y', 'n']], ['Approve POs', ['n', 'n', 'y', 'n', 'n', '£', 'n']], ['Assets', ['y', 'y', 'y', 'n', 'n', 'n', 'y']], ['Compliance certificates', ['y', 'y', 'y', 'y', 'n', 'n', 'y']], ['Contractors', ['y', 'n', 'y', 'n', 'n', 'y', 'n']], ['Users & roles', ['n', 'n', 'n', 'n', 'n', 'n', 'n']], ['Export data', ['y', 'n', 'y', 'n', 'n', 'y', 'n']]];
 const actions = ['View', 'Create', 'Edit', 'Assign', 'Close', 'Approve', 'Export'];
@@ -135,6 +147,7 @@ export default [
   { id: 'admin-09-audit', group: 'Super User administration', title: 'Audit log', html: audit },
   { id: 'admin-10-integrations', group: 'Super User administration', title: 'Integrations & API', html: integ },
   { id: 'admin-11-modules', group: 'Super User administration', title: 'Modules & terminology', html: modules },
+  { id: 'admin-13-site-access', group: 'Super User administration', title: 'Site access (delegated admin)', html: siteAccess },
   { id: 'admin-12-subscription', group: 'Super User administration', title: 'Subscription & billing', html: sub },
   { id: 'platform-01-tenants', group: 'Platform (vendor) admin', title: 'Tenant management', html: platform },
 ];
