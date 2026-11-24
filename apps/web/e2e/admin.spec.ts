@@ -256,7 +256,7 @@ test('a Super User saves security settings and finds the change in the audit log
   await page.getByRole('link', { name: 'Audit log' }).click();
   await expect(page).toHaveURL(/\/app\/admin\/audit$/);
   await page.getByLabel('Search events').fill('security_updated');
-  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'settings.security_updated' }).first()).toBeVisible();
   await assertAccessible(page);
 });
