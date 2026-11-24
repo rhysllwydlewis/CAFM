@@ -24,7 +24,7 @@ export const MODULES: ModuleDef[] = [
   { key: 'locations', label: 'Locations', feature: 'locations' },
   { key: 'space', label: 'Space and floor plans', feature: 'space' },
   { key: 'documents', label: 'Documents', feature: 'documents' },
-  { key: 'compliance', label: 'Compliance', feature: 'compliance' },
+  { key: 'compliance', label: 'Compliance', feature: 'compliance_basic' },
   { key: 'inspections', label: 'Inspections and audits', feature: 'compliance' },
   { key: 'safety', label: 'Health and safety', feature: 'health_safety' },
   { key: 'contractors', label: 'Contractors', feature: 'contractors' },
