@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '@cafm/ui';
 import { REQUEST_STATUS_LABELS, type RequestStatus as Status, type RequestSummary } from '@cafm/shared';
@@ -18,6 +21,12 @@ const LANES: { title: string; statuses: Status[] }[] = [
  * changes stage on its own page, where a rejection can be explained, or through the bulk actions on the list.
  */
 export function RequestBoard({ items, now }: { items: RequestSummary[]; now: number }) {
+  // Response deadlines keep counting while the board stays open, as they do on the list.
+  const [clock, setClock] = useState(now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
   return (
     <div className={styles.board} role="group" aria-label="Request board">
       {LANES.map(({ title, statuses }) => {
@@ -43,7 +52,7 @@ export function RequestBoard({ items, now }: { items: RequestSummary[]; now: num
                     </Link>
                     <div className="sm muted">{item.location.name}</div>
                     <div className="row between g2">
-                      <RequestSla item={item} now={now} />
+                      <RequestSla item={item} now={clock} />
                       <span className="sm">{item.assigneeName ?? 'Unassigned'}</span>
                     </div>
                     {statuses.length > 1 && <span className="sm muted">{REQUEST_STATUS_LABELS[item.status]}</span>}

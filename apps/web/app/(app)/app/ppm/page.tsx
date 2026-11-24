@@ -145,9 +145,11 @@ export default async function PpmPage({
   const hrefFor = (target: View) => {
     const next = new URLSearchParams();
     if (target !== 'planner') next.set('view', target);
+    const searchable = target === 'planner' || target === 'list' || target === 'calendar';
     for (const key of ['q', 'criticality', 'discipline'] as const)
-      if (filters[key] && target !== 'forecast' && target !== 'overdue' && target !== 'compliance')
-        next.set(key, filters[key]!);
+      if (filters[key] && searchable) next.set(key, filters[key]!);
+    // Status only applies to the schedule list and the calendar, so it carries between those two.
+    if (filters.status && (target === 'list' || target === 'calendar')) next.set('status', filters.status);
     return '/app/ppm' + (next.size ? '?' + next.toString() : '');
   };
 
