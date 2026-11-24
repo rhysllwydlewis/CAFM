@@ -60,7 +60,7 @@ Tenants can change the accent colour (white-label, [doc 03](03-roles-permissions
 
 ![Icon set](../../design/mockups/png/ds-06-icons.png)
 
-- **172 icons** in 9 categories: Lucide (ISC licence, free for commercial use) plus **38 custom CAFM icons** drawn on the same 24px grid with 2px round strokes. The custom set covers boiler, AHU, lift, pump, valve, legionella, asbestos, gas safety, EICR, PAT, fire door, emergency lighting, sprinkler, permit to work, lock-out/tag-out, golden thread, damp and mould, void property, floor plan, desk, kiosk, room panel, IoT, SLA and others.
+- **174 icons** in 9 categories: Lucide (ISC licence, free for commercial use) plus **38 custom CAFM icons** drawn on the same 24px grid with 2px round strokes. The custom set covers boiler, AHU, lift, pump, valve, legionella, asbestos, gas safety, EICR, PAT, fire door, emergency lighting, sprinkler, permit to work, lock-out/tag-out, golden thread, damp and mould, void property, floor plan, desk, kiosk, room panel, IoT, SLA and others.
 - Files: one SVG per icon in `design/icons/svg/` (uses `currentColor`), a `<symbol>` sprite in `design/icons/sprite.svg`, and a manifest in `design/icons/icons.json`.
 - Icons next to text are decorative (`aria-hidden="true"`). Icon-only buttons need an accessible label. Status is never shown by an icon or colour alone.
 - Use 16px in tables, buttons and menus (1.75 stroke), 18px in the top bar, 20–24px on mobile. Use the muted text colour by default, the primary colour when active, and status colours only when showing status, always with text.

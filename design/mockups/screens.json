@@ -939,5 +939,23 @@
     "viewport": "desktop",
     "theme": "light",
     "file": "14-shell.js"
+  },
+  {
+    "id": "shell-05-nav-expanded",
+    "group": "App shell",
+    "title": "Side menu with a collapse button",
+    "desc": "On a desktop the side menu has a button beside the logo that collapses it to a slim icon rail. Not shown on a phone, where the menu is a drawer.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
+  },
+  {
+    "id": "shell-06-nav-collapsed",
+    "group": "App shell",
+    "title": "Side menu collapsed",
+    "desc": "A 64px rail of icons that leaves more room for the page. Hover or focus an icon to see its name; the button under the logo opens the menu again. The choice is remembered.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
   }
 ]

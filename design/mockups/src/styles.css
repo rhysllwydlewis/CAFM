@@ -64,6 +64,28 @@ svg.i.s24 { width: 24px; height: 24px; } svg.i.s32 { width: 32px; height: 32px; 
 .nav-foot { border-top: 1px solid var(--nav-border); padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
 .nav-foot .who { color: var(--nav-text-strong); font-size: 13px; font-weight: 500; line-height: 16px; }
 
+/* Collapsible side menu (shell-05): a 64px rail of icons. Labels stay in the page, visually hidden, so screen readers still hear them. */
+.nav-toggle { width: 28px; height: 28px; flex: none; border: 0; border-radius: var(--radius-sm); background: none; color: var(--nav-text); display: grid; place-items: center; cursor: pointer; }
+.nav-toggle:hover { background: var(--nav-bg-elevated); color: var(--nav-text-strong); }
+.nav-toggle svg.i { width: 18px; height: 18px; color: inherit; }
+.app { transition: grid-template-columns var(--duration-base) var(--ease); }
+@media (prefers-reduced-motion: reduce) { .app { transition: none; } }
+@media (min-width: 768px) {
+  .nav-collapsed { grid-template-columns: var(--nav-width-collapsed) minmax(0, 1fr); }
+  .nav-collapsed .nav-top { align-items: center; padding: 14px 0 10px; }
+  .nav-collapsed .nav-top .row { flex-direction: column; gap: 10px; }
+  .nav-collapsed .brand { padding: 0; }
+  .nav-collapsed .tenant { padding: 8px; justify-content: center; }
+  .nav-collapsed .nav-scroll { padding-left: 10px; padding-right: 10px; }
+  .nav-collapsed .nav-sec { margin-top: 10px; }
+  .nav-collapsed .nav-label { height: 1px; padding: 0; margin: 0 8px 10px; background: var(--nav-border); font-size: 0; overflow: hidden; }
+  .nav-collapsed .nav-item { justify-content: center; gap: 0; padding: 0; }
+  .nav-collapsed .nav-foot { flex-direction: column; padding: 10px 0; gap: 8px; }
+  .nav-collapsed .brand span, .nav-collapsed .tenant .grow, .nav-collapsed .tenant > svg.i, .nav-collapsed .nav-item > span, .nav-collapsed .nav-foot > .grow:not(.user-menu), .nav-collapsed .nav-foot > svg.i {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
+  }
+}
+
 .main { display: flex; flex-direction: column; min-width: 0; }
 .topbar { height: var(--topbar-height); display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-6); background: var(--bg-surface); border-bottom: 1px solid var(--border); }
 .crumbs { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-faint); }
