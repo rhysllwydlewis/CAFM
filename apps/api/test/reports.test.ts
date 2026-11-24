@@ -90,6 +90,8 @@ it('measures SLA performance for jobs completed in the period', async () => {
     const res = await f.m.get(`${base}/sla-performance`).expect(200);
     expect(res.body).toMatchObject({ measured: 2, met: 1, breached: 1, percentMet: 50 });
     await f.m.get(`${base}/sla-performance?from=2026-02-01&to=2026-01-01`).expect(422);
+    await f.m.get(`${base}/sla-performance?to=2026-02-31`).expect(400);
+    await f.m.get(`${base}/ppm-compliance?from=2026-13-01`).expect(400);
   } finally {
     await f.cleanup();
   }

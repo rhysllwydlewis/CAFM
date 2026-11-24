@@ -12,6 +12,12 @@ export const AGE_BANDS = [
   { key: '31+', label: 'Over 30 days', maxDays: null },
 ] as const;
 
+/** True for a calendar day that exists (rejects 2026-02-31). */
+const isRealDay = (text: string) => {
+  const d = new Date(`${text}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === text;
+};
+
 export const reportQuerySchema = z.object({
   /** Limit to a site or any place below it. */
   locationId: z.string().uuid().optional(),
@@ -19,10 +25,12 @@ export const reportQuerySchema = z.object({
   from: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine(isRealDay, 'Use a real date as YYYY-MM-DD.')
     .optional(),
   to: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine(isRealDay, 'Use a real date as YYYY-MM-DD.')
     .optional(),
 });
 export type ReportQuery = z.infer<typeof reportQuerySchema>;
