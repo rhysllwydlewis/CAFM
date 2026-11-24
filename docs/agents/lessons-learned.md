@@ -67,6 +67,8 @@ Written on 23 Nov 2026, the day the three routines (Builder, Reviewer, Steward) 
 16. **Everything posted by a routine carries the owner's name.** Sign what agents write, and write rules about "the owner's words" in terms of the signature, not the account.
 17. **Re-check your own claims before the owner acts on them.** Query the same state you would act on, with the same filters, and read the code that decides the answer. Two of this evening's claims failed that test.
 18. **A cap that counts attempts must not count cheap ones.** Runs are cheap and frequent (every event starts one), so three retries were used up in under an hour. Count per hour and per cause, and never turn a problem outside the PR into the owner's job.
+19. **A rule that blocks every merge while `main` is red blocks the fix for `main` too.** The 24 Nov red `main` was a real bug. Its fix could not merge under "while `main` is red nothing is merged", so only a lucky re-run or the owner could free it. A PR that carries `Fixes main:` and whose own CI is green may merge, and nothing else may.
+20. **Two agents fixing one failure collide.** The Builder opened a second fix for issue #68 eleven minutes after another PR for it, both changing the same files. Before opening a fix, look for an open PR that already covers the failure.
 
 ## 4. What the first evening of running showed (23 Nov 2026)
 
