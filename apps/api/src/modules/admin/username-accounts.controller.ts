@@ -78,13 +78,15 @@ export class UsernameAccountsController {
       if (await tx.account.findUnique({ where: { username: stored }, select: { id: true } })) {
         throw new ConflictException({ code: 'username_taken', message: 'That username is already in use.' });
       }
-      const account = await tx.account.create({
-        data: {
-          username: stored,
-          name: input.name,
-          passwordHash,
-        },
-      });
+      const account = await tx.account
+        .create({ data: { username: stored, name: input.name, passwordHash } })
+        .catch((error: unknown) => {
+          // Two requests for the same name at once: the unique index decides, and the loser is told so.
+          if ((error as { code?: string }).code === 'P2002') {
+            throw new ConflictException({ code: 'username_taken', message: 'That username is already in use.' });
+          }
+          throw error;
+        });
       const member = await tx.membership.create({
         data: { tenantId, accountId: account.id, role: role.key, licence },
       });

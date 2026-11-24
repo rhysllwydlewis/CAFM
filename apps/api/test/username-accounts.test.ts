@@ -122,4 +122,34 @@ describe('username-only accounts', () => {
     const withEmail = users.find((u) => u.email && u.email !== 'superuser@demo.example')!;
     await agent.post(`/api/admin/username-accounts/${withEmail.membershipId}/reset-password`).send({}).expect(409);
   });
+
+  it('rejects names that are too short or contain an @', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    for (const username of ['ab', 'a@b.example', 'has space']) {
+      await agent.post('/api/admin/username-accounts').send({ name: 'X', username, role: 'technician' }).expect(400);
+    }
+  });
+
+  it('signs the person out everywhere when the password is reset, and will not reset your own', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    const username = unique();
+    const made = (
+      await agent.post('/api/admin/username-accounts').send({ name: 'Out', username, role: 'technician' }).expect(201)
+    ).body;
+    const person = request.agent(app.getHttpServer());
+    await person
+      .post('/api/auth/login')
+      .send({ identifier: username, password: made.temporaryPassword, organisation: 'demo-estates' })
+      .expect(200);
+    await person.get('/api/auth/me').expect(200);
+    await agent.post(`/api/admin/username-accounts/${made.membershipId}/reset-password`).send({}).expect(200);
+    await person.get('/api/auth/me').expect(401);
+
+    const users = (await agent.get('/api/admin/users').expect(200)).body as {
+      membershipId: string;
+      email: string | null;
+    }[];
+    const self = users.find((u) => u.email === 'superuser@demo.example')!;
+    await agent.post(`/api/admin/username-accounts/${self.membershipId}/reset-password`).send({}).expect(403);
+  });
 });
