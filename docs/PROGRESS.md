@@ -55,7 +55,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
 | P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. P1-09d (branding, custom fields, statuses, SLA and calendars, categories screens). Then P1-09e, P1-09f. Team scope (P1-09b) is later. |
-| P1-10 | Claude (Builder routine) | claude/build-p1-10-* | 24 Nov 2026 | Batch 1 (reports API, Reports screen, home key-figure tiles) merged. Batch 2 in progress: executive dashboard (home-02) and more standard reports. Then role-specific dashboard layouts. |
+| P1-10 | Claude (Builder routine) | claude/build-p1-10-* | 24 Nov 2026 | Batch 1 (reports API, Reports screen, home key-figure tiles) merged. Batch 2 (executive overview, reactive-vs-planned and busiest-sites reports) in review. Next batch: role-specific default dashboard layouts (technician, helpdesk, contractor, finance) and any remaining standard reports. |
 
 ## Phase checklists
 
