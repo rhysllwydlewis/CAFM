@@ -69,3 +69,7 @@ The **View as user** card on `/app/admin/users` lets a Super User see the app as
 `POST /api/admin/impersonation/end` gives you a fresh session of your own. If you have lost the permission or been deactivated meanwhile, it signs you out instead. The viewing session carries `impersonator_account_id` and `impersonator_membership_id` on the `session` row.
 
 Not built yet: the organisation setting "Allow view as user" (the mockup `admin-08-security`) comes with the security settings in P1-09e.
+
+## Branding
+
+`/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is stored but not yet shown on the sign-in screen. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). The logo, custom domain and email sender in the mockup are not built yet.

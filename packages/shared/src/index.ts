@@ -21,3 +21,4 @@ export * from './views';
 export * from './admin';
 export * from './list-display';
 export * from './display';
+export * from './branding';

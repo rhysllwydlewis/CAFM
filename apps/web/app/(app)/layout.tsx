@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   applyDisplay,
   can,
   feature,
   PLAN_LABELS,
+  type BrandingView,
   type DisplaySettings,
   type OrganisationOption,
   type Plan,
@@ -25,9 +26,17 @@ async function displaySettings(): Promise<DisplaySettings | undefined> {
   return res.ok ? ((await res.json()) as DisplaySettings) : undefined;
 }
 
+async function brandingSettings(): Promise<BrandingView | undefined> {
+  const res = await apiGet('/branding');
+  return res.ok ? ((await res.json()) as BrandingView) : undefined;
+}
+
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
-  const [orgs, display] = await Promise.all([organisations(), displaySettings()]);
+  const [orgs, display, branding] = await Promise.all([organisations(), displaySettings(), brandingSettings()]);
+  // The accent only applies on plans that include branding, and only colours that passed the contrast check.
+  const accent =
+    branding?.accentColour && feature(user.entitlements, 'custom_domain') ? branding.accentColour : undefined;
 
   // Menu items the member's role allows (can()); locked if the plan doesn't include them (feature()).
   const sections: ShellNavSection[] = NAV.map((section) => ({
@@ -48,17 +57,29 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   })).filter((s) => s.items.length > 0);
 
   return (
-    <AppShell
-      sections={sections}
-      tenantName={user.tenant.name}
-      planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
-      demo={user.tenant.demo}
-      user={{ name: user.name, email: user.email, roleLabel: user.roleLabel }}
-      impersonation={user.impersonation}
-      organisations={orgs.map((o) => ({ ...o, current: o.membershipId === user.membershipId }))}
-      footer={<SignOutButton />}
+    <div
+      style={
+        accent
+          ? ({
+              display: 'contents',
+              '--primary': accent,
+              '--primary-hover': `color-mix(in srgb, ${accent} 85%, black)`,
+            } as CSSProperties)
+          : { display: 'contents' }
+      }
     >
-      {children}
-    </AppShell>
+      <AppShell
+        sections={sections}
+        tenantName={user.tenant.name}
+        planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
+        demo={user.tenant.demo}
+        user={{ name: user.name, email: user.email, roleLabel: user.roleLabel }}
+        impersonation={user.impersonation}
+        organisations={orgs.map((o) => ({ ...o, current: o.membershipId === user.membershipId }))}
+        footer={<SignOutButton />}
+      >
+        {children}
+      </AppShell>
+    </div>
   );
 }
