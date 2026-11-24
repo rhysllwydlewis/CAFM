@@ -12,6 +12,11 @@ const env = {
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
+  // Every assertion waits for its condition and passes the moment it holds, so a longer limit costs time only when
+  // a test really fails. The default 5 seconds is too tight for a busy CI runner: the login test and the roles test
+  // both failed at that limit while passing on a re-run, and the login test, run 60 times with 20 workers on 4 CPUs,
+  // failed twice at 5 seconds and passed all 60 times at 30 (issue 68).
+  expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
