@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration: a regional admin who is limited to certain sites now sees only the people inside those sites from the people list too, not only on the users screen. A mockup of the Site access card (`admin-13-site-access`) is added.
 - Technician app: a change queued on the phone is now applied once even if it is sent twice at the same moment, for example a note when two screens sync together. The app also sends its queue one batch at a time.
 - Admin console: branding for Enterprise organisations. A Super User picks an accent colour for buttons, which is refused if white text on it would be hard to read, and a sign-in message (saved now, shown on the sign-in screen later). See [Branding](docs/admin.md#branding).
 - Admin console: a Super User can view the app as another person to troubleshoot, from a View as user card on the users screen. It needs a reason, is read-only, ends after an hour, shows a banner on every page, and both ends are recorded in the audit log under the Super User. Super Users and people with more access than you can't be chosen.
