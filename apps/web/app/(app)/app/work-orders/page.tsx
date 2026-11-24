@@ -53,12 +53,12 @@ export default async function WorkOrdersPage({
     if (value) params.set(key, String(value));
   }
   // Grouping and columns only change how the page is shown, so the API never sees them.
-  const group = parseGroup(input.group, WORK_ORDER_GROUPS);
-  if (group) params.set('group', group);
+  const group = parseGroup(input.groupby, WORK_ORDER_GROUPS);
+  if (group) params.set('groupby', group);
   const cols = parseColumnKeys(input.cols);
   if (cols.length) params.set('cols', cols.join(','));
   const query = new URLSearchParams(params);
-  query.delete('group');
+  query.delete('groupby');
   query.delete('cols');
   if (board) {
     // The board shows what is still open, all in one go.

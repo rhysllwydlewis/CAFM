@@ -20,7 +20,7 @@ export function ListDisplayFields({
     <>
       <label className="field">
         <span className="label">Group by</span>
-        <select className="select" name="group" defaultValue={group ?? ''}>
+        <select className="select" name="groupby" defaultValue={group ?? ''}>
           <option value="">No grouping</option>
           {groups.map((option) => (
             <option key={option.key} value={option.key}>
