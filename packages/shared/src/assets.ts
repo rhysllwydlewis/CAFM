@@ -128,6 +128,39 @@ export const updateAssetSchema = z
   .strict()
   .refine(({ version: _version, ...changes }) => Object.keys(changes).length > 0, { message: 'Nothing to change' });
 
+/** The most assets one bulk action can change, so one request stays quick and its result readable. */
+export const BULK_ASSET_LIMIT = 50;
+
+/** Each asset is changed on its own with the version the person saw, so one that has moved on is reported, not overwritten. */
+export const bulkAssetSchema = z
+  .object({
+    action: z.literal('status'),
+    items: z
+      .array(z.object({ id, version: z.number().int().positive() }).strict())
+      .min(1)
+      .max(BULK_ASSET_LIMIT)
+      .refine((items) => new Set(items.map((item) => item.id)).size === items.length, {
+        message: 'Each asset can appear once.',
+      }),
+    status: z.enum(ASSET_STATUSES),
+  })
+  .strict();
+export type BulkAssetInput = z.infer<typeof bulkAssetSchema>;
+export interface BulkAssetResult {
+  id: string;
+  ok: boolean;
+  /** The HTTP status the single-asset call would have given, for a row that failed. */
+  status?: number;
+  message?: string;
+  /** The asset's new version, for a row that worked. */
+  version?: number;
+}
+export interface BulkAssetResponse {
+  succeeded: number;
+  failed: number;
+  results: BulkAssetResult[];
+}
+
 export const ASSET_SORTS = ['number', 'name', 'created'] as const;
 export type AssetSort = (typeof ASSET_SORTS)[number];
 

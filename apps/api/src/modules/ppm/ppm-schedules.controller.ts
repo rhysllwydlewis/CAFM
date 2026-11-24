@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -16,7 +17,10 @@ import type { Request } from 'express';
 import { z } from 'zod';
 import { eligibleTechnician, generatePpm, nextNumber, Prisma, startingPoint, withTenant, type Tx } from '@cafm/db';
 import {
+  bulkScheduleSchema,
   createPpmScheduleSchema,
+  type BulkScheduleResponse,
+  type BulkScheduleResult,
   PPM_CRITICALITIES,
   PPM_SORTS,
   setScheduleAssetsSchema,
@@ -352,6 +356,55 @@ export class PpmSchedulesController {
       );
       return getScheduleRecord(tx, auth, id);
     });
+  }
+
+  /**
+   * Changes several schedules at once. Each is done by the same code as the single-schedule edit, in its own
+   * transaction, so every rule (assignee eligibility, versions, working the next visits out again) holds per row and
+   * one failure never undoes the others. The reply says what happened to each row.
+   */
+  @Post('bulk')
+  @RequirePermission('ppm.manage')
+  async bulk(@Req() req: Request, @Body() body: unknown): Promise<BulkScheduleResponse> {
+    const input = parse(bulkScheduleSchema, body);
+    const tenantId = req.auth!.membership!.tenantId;
+    const results: BulkScheduleResult[] = [];
+    for (const { id, version } of input.items) {
+      try {
+        // The edit takes the whole schedule, so start from what it is now and change one thing.
+        const current = await withTenant(this.db, tenantId, (tx) => getScheduleRecord(tx, req.auth!, id));
+        const next = await this.update(req, id, {
+          title: current.title,
+          templateId: current.templateId ?? undefined,
+          discipline: current.discipline ?? undefined,
+          criticality: current.criticality,
+          frequency: current.frequency,
+          mode: current.mode,
+          startsOn: current.startsOn,
+          leadDays: current.leadDays,
+          durationMinutes: current.durationMinutes,
+          priority: input.action === 'priority' ? input.priority : current.priority,
+          assigneeId: input.action === 'assign' ? input.assigneeId : current.assigneeId,
+          estimatedCostMinor: current.estimatedCostMinor,
+          active: input.action === 'active' ? input.active : current.active,
+          version,
+        });
+        results.push({ id, ok: true, version: next.version });
+      } catch (error) {
+        if (!(error instanceof HttpException)) throw error;
+        const detail = error.getResponse();
+        const message =
+          typeof detail === 'string' ? detail : ((detail as { message?: unknown }).message ?? error.message);
+        results.push({
+          id,
+          ok: false,
+          status: error.getStatus(),
+          message: typeof message === 'string' ? message : error.message,
+        });
+      }
+    }
+    const succeeded = results.filter(({ ok }) => ok).length;
+    return { succeeded, failed: results.length - succeeded, results };
   }
 
   /** Sets which assets are on the schedule. An asset taken off keeps its history; one put back starts afresh. */

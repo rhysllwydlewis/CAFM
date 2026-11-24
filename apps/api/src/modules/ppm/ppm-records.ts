@@ -84,6 +84,7 @@ function summarise(row: ScheduleRow, rows: VisibleRow[], now: string): PpmSchedu
     .sort();
   return {
     id: row.id,
+    version: row.version,
     number: row.number,
     title: row.title,
     discipline: row.discipline,
@@ -204,7 +205,6 @@ export async function getScheduleRecord(tx: Tx, auth: AuthContext, id: string): 
     safetyNotes: template?.safetyNotes ?? null,
     skills: template?.skills ?? null,
     steps: (template?.steps ?? []) as ChecklistItemInput[],
-    version: schedule.version,
     rows: rows.map((row): PpmScheduleAssetRow => ({
       id: row.id,
       asset: { id: row.asset.id, number: row.asset.number, name: row.asset.name },

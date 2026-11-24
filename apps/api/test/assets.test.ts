@@ -522,3 +522,73 @@ it('validates the organisation’s custom fields on assets', async () => {
     await cleanup();
   }
 });
+
+it('changes the status of several assets at once and reports what happened to each', async () => {
+  const first = await estate();
+  const second = await estate();
+  try {
+    const { room, floor } = await tree(first.agent);
+    const two = await tree(second.agent);
+    const [a, b] = await Promise.all(
+      ['Pump A', 'Pump B'].map(
+        async (name) => (await create(first.agent, { name, locationId: room.id }).expect(201)).body,
+      ),
+    );
+    const parent = (await create(first.agent, { name: 'System', locationId: floor.id }).expect(201)).body;
+    await create(first.agent, { name: 'Part', locationId: floor.id, parentId: parent.id }).expect(201);
+    const theirs = (await create(second.agent, { name: 'Theirs', locationId: two.room.id }).expect(201)).body;
+    const bulk = (agent: Agent, body: object) => agent.post(`${assets}/bulk`).send(body);
+
+    const result = (
+      await bulk(first.agent, {
+        action: 'status',
+        status: 'out_of_service',
+        items: [
+          { id: a.id, version: a.version },
+          { id: b.id, version: 99 },
+          { id: parent.id, version: parent.version },
+          { id: crypto.randomUUID(), version: 1 },
+        ],
+      }).expect(201)
+    ).body;
+    expect(result).toMatchObject({ succeeded: 2, failed: 2 });
+    expect(result.results.map((r: { ok: boolean; status?: number }) => [r.ok, r.status])).toEqual([
+      [true, undefined],
+      [false, 409],
+      [true, undefined],
+      [false, 404],
+    ]);
+    expect((await first.agent.get(`${assets}/${a.id}`).expect(200)).body.status).toBe('out_of_service');
+
+    // Decommissioning keeps its rule per row: a system with live components is refused.
+    const decommission = (
+      await bulk(first.agent, {
+        action: 'status',
+        status: 'decommissioned',
+        items: [{ id: parent.id, version: result.results[2].version }],
+      }).expect(201)
+    ).body;
+    expect(decommission.results[0]).toMatchObject({ ok: false, status: 409 });
+
+    await bulk(first.agent, { action: 'status', status: 'in_service', items: [] }).expect(400);
+    await bulk(first.agent, { action: 'status', status: 'gone', items: [{ id: a.id, version: 1 }] }).expect(400);
+    await bulk(first.agent, { action: 'rename', items: [{ id: a.id, version: 1 }] }).expect(400);
+
+    // Another organisation's assets answer 404, and a role without assets.manage is refused.
+    const cross = (
+      await bulk(first.agent, {
+        action: 'status',
+        status: 'spare',
+        items: [{ id: theirs.id, version: theirs.version }],
+      }).expect(201)
+    ).body;
+    expect(cross.results[0]).toMatchObject({ ok: false, status: 404 });
+    expect((await second.agent.get(`${assets}/${theirs.id}`).expect(200)).body.status).toBe('in_service');
+    const auditor = await createTestAccount(db, [first.tenant.id], undefined, 'auditor');
+    const audit = (await signIn(app, auditor.email, auditor.password)).agent;
+    await bulk(audit, { action: 'status', status: 'spare', items: [{ id: a.id, version: 1 }] }).expect(403);
+  } finally {
+    await first.cleanup();
+    await second.cleanup();
+  }
+});

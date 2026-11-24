@@ -1020,3 +1020,90 @@ it('shows and changes a visit’s estimated cost only for people who can see cos
     await cleanup();
   }
 });
+
+it('changes several schedules at once and reports what happened to each', async () => {
+  const { planner, auditor, tech, reporter, cleanup, schedule, member } = await fixture();
+  const stranger = await fixture();
+  try {
+    const [a, b] = [await schedule({ title: 'Schedule A' }), await schedule({ title: 'Schedule B' })];
+    const bulk = (body: object) => planner.post(schedules + '/bulk').send(body);
+
+    const assigned = (
+      await bulk({
+        action: 'assign',
+        assigneeId: member('tech'),
+        items: [a, b].map(({ id, version }) => ({ id, version })),
+      }).expect(201)
+    ).body;
+    expect(assigned).toMatchObject({ succeeded: 2, failed: 0 });
+    expect((await planner.get(schedules + '/' + a.id).expect(200)).body.assigneeId).toBe(member('tech'));
+
+    // A schedule that has moved on, one that is not there and a good one each get their own result.
+    const mixed = (
+      await bulk({
+        action: 'active',
+        active: false,
+        items: [
+          { id: a.id, version: a.version },
+          { id: b.id, version: assigned.results[1].version },
+          { id: randomUUID(), version: 1 },
+        ],
+      }).expect(201)
+    ).body;
+    expect(mixed.results.map((r: { ok: boolean; status?: number }) => [r.ok, r.status])).toEqual([
+      [false, 409],
+      [true, undefined],
+      [false, 404],
+    ]);
+    expect((await planner.get(schedules + '/' + b.id).expect(200)).body.active).toBe(false);
+
+    const priority = (
+      await bulk({ action: 'priority', priority: 1, items: [{ id: b.id, version: mixed.results[1].version }] }).expect(
+        201,
+      )
+    ).body;
+    expect(priority).toMatchObject({ succeeded: 1, failed: 0 });
+    expect((await planner.get(schedules + '/' + b.id).expect(200)).body).toMatchObject({ priority: 1, active: false });
+
+    // Someone who cannot work on the schedules' assets is refused for that row only.
+    const refused = (
+      await bulk({
+        action: 'assign',
+        assigneeId: member('reporter'),
+        items: [{ id: b.id, version: priority.results[0].version }],
+      }).expect(201)
+    ).body;
+    expect(refused).toMatchObject({ succeeded: 0, failed: 1 });
+
+    // Bad input is refused whole, and each role needs ppm.manage.
+    await bulk({ action: 'assign', assigneeId: null, items: [] }).expect(400);
+    await bulk({ action: 'priority', priority: 5, items: [{ id: a.id, version: 1 }] }).expect(400);
+    await bulk({ action: 'delete', items: [{ id: a.id, version: 1 }] }).expect(400);
+    await bulk({
+      action: 'assign',
+      assigneeId: null,
+      items: [
+        { id: a.id, version: 1 },
+        { id: a.id, version: 1 },
+      ],
+    }).expect(400);
+    for (const agent of [auditor, tech, reporter]) {
+      await agent
+        .post(schedules + '/bulk')
+        .send({ action: 'active', active: false, items: [{ id: a.id, version: 1 }] })
+        .expect(403);
+    }
+
+    // Schedules in another organisation answer 404, so they show as failed rows.
+    const theirs = await stranger.schedule();
+    const cross = (
+      await bulk({ action: 'active', active: false, items: [{ id: theirs.id, version: theirs.version }] }).expect(201)
+    ).body;
+    expect(cross).toMatchObject({ succeeded: 0, failed: 1 });
+    expect(cross.results[0]).toMatchObject({ ok: false, status: 404 });
+    expect((await stranger.planner.get(schedules + '/' + theirs.id).expect(200)).body.active).toBe(true);
+  } finally {
+    await stranger.cleanup();
+    await cleanup();
+  }
+});
