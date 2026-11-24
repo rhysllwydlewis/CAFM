@@ -12,7 +12,9 @@ import {
 } from '@cafm/shared';
 import { Icon } from '@cafm/ui';
 import { hours } from '@/lib/ppm-format';
-import { ppmForecast, ppmOverdue, ppmPlanner, ppmSchedules, ppmSummary } from '@/lib/ppm';
+import { ppmAssignees, ppmForecast, ppmOverdue, ppmPlanner, ppmSchedules, ppmSummary } from '@/lib/ppm';
+import { BulkSelection } from '@/components/bulk-selection';
+import { ScheduleBulkBar } from './schedule-bulk-bar';
 import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
 import ModulePage from '../[module]/page';
@@ -291,7 +293,14 @@ export default async function PpmPage({
         )}
         {view === 'list' && data && 'items' in data && (
           <>
-            <ScheduleTable items={data.items} columns={cols} group={group} />
+            {canManage ? (
+              <BulkSelection items={data.items.map(({ id, number, version }) => ({ id, label: number, version }))}>
+                <ScheduleBulkBar assignees={await ppmAssignees().catch(() => [])} />
+                <ScheduleTable items={data.items} columns={cols} group={group} bulk />
+              </BulkSelection>
+            ) : (
+              <ScheduleTable items={data.items} columns={cols} group={group} />
+            )}
             {data.total > PAGE_SIZE && (
               <nav aria-label="Schedule pages" className={'card-b row between wrap g2 ' + styles.pages}>
                 <span className="sm muted">
