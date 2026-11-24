@@ -19,7 +19,7 @@ test('shows the standard reports and lets the period change', async ({ page }) =
   await signInAs(page, 'manager');
   await page.goto('/app/reports');
   await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
-  for (const name of ['Open jobs by age', 'SLA performance', 'PPM compliance']) {
+  for (const name of ['Open jobs by age', 'SLA performance', 'PPM compliance', 'Reactive and planned work']) {
     await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
   }
   await assertAccessible(page);
@@ -48,4 +48,18 @@ test('shows the key figures on the home page for people who can read reports', a
   await signInAs(page, 'requester');
   await page.goto('/app');
   await expect(page.getByRole('region', { name: 'Key figures' })).toHaveCount(0);
+});
+
+test('shows the executive overview and keeps people without report access out', async ({ page }) => {
+  await signInAs(page, 'manager');
+  await page.goto('/app/reports');
+  await page.getByRole('link', { name: 'Executive overview' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Executive overview' })).toBeVisible();
+  const figures = page.getByRole('region', { name: 'Key figures' });
+  await expect(figures.getByText('Reactive share of work')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Busiest sites' })).toBeVisible();
+  await assertAccessible(page);
+  await signInAs(page, 'requester');
+  await page.goto('/app/reports/executive');
+  await expect(page.getByRole('heading', { name: /doesn’t include Reports/ })).toBeVisible();
 });

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { can, feature } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
-import { openJobsByAge, ppmCompliance, slaPerformance } from '@/lib/reports';
+import { openJobsByAge, ppmCompliance, slaPerformance, workMix } from '@/lib/reports';
 import ModulePage from '../[module]/page';
 import styles from './reports.module.css';
 
@@ -30,7 +31,12 @@ export default async function ReportsPage({
   const to = DAY.test(one(input.to) ?? '') ? one(input.to) : undefined;
   const invalid = Boolean(from && to && from > to);
   const period = invalid ? {} : { from, to };
-  const [age, sla, ppm] = await Promise.all([openJobsByAge(), slaPerformance(period), ppmCompliance(period)]);
+  const [age, sla, ppm, mix] = await Promise.all([
+    openJobsByAge(),
+    slaPerformance(period),
+    ppmCompliance(period),
+    workMix(period),
+  ]);
 
   return (
     <div className="page stack g4">
@@ -41,6 +47,9 @@ export default async function ReportsPage({
             Standard reports for {date(sla.from)} to {date(sla.to)}. They cover the sites you can see.
           </p>
         </div>
+        <Link href="/app/reports/executive" className="btn">
+          Executive overview
+        </Link>
       </div>
 
       <form method="get" className={styles.period} aria-label="Reporting period">
@@ -147,6 +156,17 @@ export default async function ReportsPage({
               </div>
             ))}
           </div>
+        </div>
+      </section>
+      <section className="card stack g3" aria-labelledby="r-mix">
+        <div className="card-b stack g3">
+          <h2 id="r-mix" className="h3">
+            Reactive and planned work
+          </h2>
+          <p className="sm muted">
+            Jobs raised in the period: {percent(mix.percentReactive)} were reactive ({mix.reactive} reactive,{' '}
+            {mix.planned} planned).
+          </p>
         </div>
       </section>
     </div>

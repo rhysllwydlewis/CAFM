@@ -1,5 +1,11 @@
 import 'server-only';
-import type { OpenJobsByAgeReport, PpmComplianceReport, SlaPerformanceReport } from '@cafm/shared';
+import type {
+  BusiestSitesReport,
+  OpenJobsByAgeReport,
+  PpmComplianceReport,
+  SlaPerformanceReport,
+  WorkMixReport,
+} from '@cafm/shared';
 import { apiGet } from './api';
 
 async function read<T>(path: string, params: Record<string, string | undefined> = {}): Promise<T> {
@@ -14,3 +20,6 @@ export const slaPerformance = (period: { from?: string; to?: string }) =>
   read<SlaPerformanceReport>('sla-performance', period);
 export const ppmCompliance = (period: { from?: string; to?: string }) =>
   read<PpmComplianceReport>('ppm-compliance', period);
+export const workMix = (period: { from?: string; to?: string }) => read<WorkMixReport>('work-mix', period);
+export const busiestSites = (period: { from?: string; to?: string }) =>
+  read<BusiestSitesReport>('busiest-sites', period);
