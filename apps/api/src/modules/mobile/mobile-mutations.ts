@@ -92,7 +92,9 @@ export class MobileMutations {
       };
     }
     await withTenant(this.db, tenantId, (tx) =>
-      tx.mobileMutation.update({
+      // updateMany, not update: if a slow request's claim was taken over and deleted, this must not turn a
+      // change that did run into a server error.
+      tx.mobileMutation.updateMany({
         where: { id: claim },
         data: { outcome: result.status, result: { code: result.code ?? null, message: result.message ?? null } },
       }),
