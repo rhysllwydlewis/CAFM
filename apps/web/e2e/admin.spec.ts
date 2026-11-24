@@ -163,11 +163,27 @@ test('a Super User renames a module and a term, and the menu follows', async ({ 
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('status')).toContainText('Terminology saved');
     await expect(menuLink('Schools')).toHaveCount(1);
+
+    await page.getByRole('link', { name: 'Custom fields' }).click();
+    await expect(page.getByRole('heading', { name: 'Custom fields', level: 2 })).toBeVisible();
+    await assertAccessible(page);
+    await page.getByLabel('Record type').selectOption('asset');
+    await page.getByLabel('Label', { exact: true }).fill('Fire zone');
+    await page.getByLabel('Type').selectOption('picklist');
+    await page.getByLabel('Options, one per line').fill('Zone A\nZone B');
+    await page.getByRole('button', { name: 'Add field' }).click();
+    await expect(page.getByRole('status')).toContainText('“Fire zone” added');
+    await expect(page.getByRole('row', { name: /Fire zone/ })).toContainText('Pick one');
+    await page.getByRole('button', { name: 'Deactivate' }).click();
+    await expect(page.getByRole('status')).toContainText('“Fire zone” deactivated');
+    await expect(page.getByRole('row', { name: /Fire zone/ })).toContainText('Deactivated');
   } finally {
     const account = await db.account.findUnique({ where: { email } });
     await db.$transaction(async (tx) => {
       await tx.session.deleteMany({ where });
       await tx.moduleSetting.deleteMany({ where });
+      await tx.configVersion.deleteMany({ where });
+      await tx.fieldDefinition.deleteMany({ where });
       await tx.termOverride.deleteMany({ where });
       await tx.auditEvent.deleteMany({ where });
       await tx.invite.deleteMany({ where });

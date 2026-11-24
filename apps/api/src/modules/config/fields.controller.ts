@@ -86,6 +86,24 @@ export class FieldsController {
     return rows.map(toFieldDefinition);
   }
 
+  /** Every field including deactivated ones, with the plan limit: the administration screen. */
+  @Get('all')
+  @RequirePermission('settings.manage')
+  async listAll(@Req() req: Request) {
+    const auth = req.auth!;
+    const tenantId = auth.membership!.tenantId;
+    const rows = await withTenant(this.db, tenantId, (tx) =>
+      tx.fieldDefinition.findMany({
+        where: { tenantId },
+        orderBy: [{ entityType: 'asc' }, { position: 'asc' }, { label: 'asc' }],
+      }),
+    );
+    return {
+      fields: rows.map(toFieldDefinition),
+      limit: auth.access!.entitlements.limits.custom_fields,
+    };
+  }
+
   /** Validates an entity's custom values against the active definitions. */
   @Post('validate')
   @HttpCode(200)

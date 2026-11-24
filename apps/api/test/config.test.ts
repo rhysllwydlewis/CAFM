@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import request from 'supertest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { nextNumber } from '../src/core/config';
@@ -129,6 +130,37 @@ describe('custom fields', () => {
       .post('/api/config/fields')
       .send({ entityType: 'asset', key: 'x1', label: 'X', type: 'text' })
       .expect(403);
+  });
+
+  it('the administration list includes deactivated fields and the plan limit, for settings.manage only', async () => {
+    const t = await createTestTenant(db, 'professional');
+    try {
+      const boss = await createTestAccount(db, [t.tenant.id], undefined, 'super_user');
+      const { agent } = await signIn(app, boss.email, boss.password);
+      const field = (
+        await agent
+          .post('/api/config/fields')
+          .send({ entityType: 'asset', key: 'old_tag', label: 'Old tag', type: 'text' })
+          .expect(201)
+      ).body;
+      await agent.delete(`/api/config/fields/${field.id}`).expect(204);
+      const all = (await agent.get('/api/config/fields/all').expect(200)).body;
+      expect(all.fields.map((f: { key: string; active: boolean }) => [f.key, f.active])).toEqual([['old_tag', false]]);
+      expect(all).toHaveProperty('limit');
+    } finally {
+      await t.cleanup();
+    }
+    const { agent: manager } = await signIn(app, 'manager@demo.example');
+    await manager.get('/api/config/fields/all').expect(403);
+    await request(app.getHttpServer()).get('/api/config/fields/all').expect(401);
+  });
+
+  it('cross-tenant: the administration list shows only your own organisation’s fields', async () => {
+    const { agent } = await signIn(app, 'starter@demo.example');
+    const demoField = seedId('field:asset:criticality');
+    const res = await agent.get('/api/config/fields/all');
+    if (res.status === 200) expect(res.body.fields.some((f: { id: string }) => f.id === demoField)).toBe(false);
+    else expect(res.status).toBe(403);
   });
 
   it('cross-tenant: another organisation’s fields are invisible and can’t be changed', async () => {
