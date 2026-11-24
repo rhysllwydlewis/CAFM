@@ -88,3 +88,12 @@ Not built yet: single sign-on, IP allow-lists, breached-password checks, separat
 ## Audit log
 
 Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`. Events are listed newest first, 50 at a time, with a search on the event name. Each row can show the recorded before and after values. Not built yet: filters by person, record and date range, and export. API: `GET /api/admin/audit` with `action`, `entityType`, `from`, `to` and `cursor`.
+
+## Username-only accounts
+
+For staff without an email address, such as operatives on shared devices. On the Users screen, **Accounts with a username only** creates one from a name, a username (3 to 32 letters, numbers, dots, dashes or underscores) and a role. The password is generated to meet your password rules and is shown once: copy it and pass it on.
+
+- The person signs in at your organisation's own address, `/t/<organisation>/login`, with the username. The username only works inside your organisation, so two organisations can use the same one. It does not work on the general sign-in page.
+- There is no email, so there is no "Forgot password" link. Choose **Reset password** on the same card: it makes a new password, signs the person out everywhere and clears any lockout.
+- Creating and resetting need `people.manage`, and, as with invitations, only organisation-wide administrators can create an account. The role you give is limited by the same no-privilege-escalation rule as a role change, and full-licence roles use a seat.
+- Anyone with an email address resets their own password from the link in an email, so the reset here refuses them.

@@ -4,6 +4,8 @@ export const loginRequestSchema = z.object({
   identifier: z.string().trim().min(1, 'Enter your email or username').max(254),
   password: z.string().min(1, 'Enter your password').max(512),
   keepSignedIn: z.boolean().optional().default(false),
+  /** Set on an organisation's own sign-in page: a short username is looked up inside this organisation only. */
+  organisation: z.string().trim().toLowerCase().max(64).optional(),
 });
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 

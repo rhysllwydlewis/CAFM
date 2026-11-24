@@ -266,3 +266,45 @@ test('someone without audit access cannot open the audit log', async ({ page }) 
   await page.goto('/app/admin/audit');
   await expect(page).not.toHaveURL(/\/admin\/audit/);
 });
+
+test('a Super User makes a username-only account, which signs in on the organisation page', async ({ page }) => {
+  const username = 'e2e' + randomUUID().slice(0, 6);
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/users');
+  const card = page.getByRole('region', { name: 'Accounts with a username only' });
+  await expect(card).toBeVisible();
+  await assertAccessible(page);
+
+  await card.getByLabel('Name', { exact: true }).fill('Rhian Operative');
+  await card.getByLabel('Username').fill(username);
+  await card.getByLabel('Role', { exact: true }).selectOption({ label: 'Technician' });
+  await card.getByRole('button', { name: 'Create account' }).focus();
+  await page.keyboard.press('Enter');
+  const issued = card.getByRole('status');
+  await expect(issued).toContainText('Account created for Rhian Operative');
+  const password = (await issued.getByText(/^Password:/).innerText()).replace('Password:', '').trim();
+  expect(password.length).toBeGreaterThanOrEqual(16);
+  await assertAccessible(page);
+
+  try {
+    await page.context().clearCookies();
+    await page.goto('/t/demo-estates/login');
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await assertAccessible(page);
+    await page.getByLabel('Username').fill(username);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).not.toHaveURL(/\/login/);
+  } finally {
+    const db = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+    const accounts = await db.account.findMany({
+      where: { username: `${username}@demo-estates` },
+      select: { id: true },
+    });
+    const ids = accounts.map((a) => a.id);
+    await db.session.deleteMany({ where: { accountId: { in: ids } } });
+    await db.membership.deleteMany({ where: { accountId: { in: ids } } });
+    await db.account.deleteMany({ where: { id: { in: ids } } });
+    await db.$disconnect();
+  }
+});
