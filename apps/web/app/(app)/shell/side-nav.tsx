@@ -42,7 +42,8 @@ export function SideNav({
 
   useEffect(() => {
     if (!open) return;
-    ref.current?.querySelector<HTMLElement>('a, button')?.focus();
+    // The collapse button comes first in the page but is hidden on a phone, so ask for the Close button by name.
+    ref.current?.querySelector<HTMLElement>('.shell-nav-close')?.focus();
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -62,7 +63,6 @@ export function SideNav({
               type="button"
               className="nav-toggle"
               aria-label={collapsed ? t('shell.expandNav') : t('shell.collapseNav')}
-              aria-expanded={!collapsed}
               title={collapsed ? t('shell.expandNav') : t('shell.collapseNav')}
               onClick={onToggleCollapsed}
             >

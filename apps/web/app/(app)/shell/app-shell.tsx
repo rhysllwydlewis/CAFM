@@ -50,11 +50,9 @@ export function AppShell({
   useEffect(() => setNavOpen(false), [pathname]);
 
   const toggleNav = useCallback(() => {
-    setNavCollapsed((collapsed) => {
-      saveNavCollapsed(!collapsed);
-      return !collapsed;
-    });
-  }, []);
+    setNavCollapsed(!navCollapsed);
+    saveNavCollapsed(!navCollapsed);
+  }, [navCollapsed]);
 
   const onKey = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {

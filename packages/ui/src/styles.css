@@ -617,8 +617,8 @@ button.tb-icon:hover {
 /* Side menu scrollbar: a rounded thumb on a clear track, wide enough to grab easily, built from the
    nav tokens only. On a device with a pointer it fades out until you hover the menu (or tab into
    it), then takes the petrol accent on the thumb itself and while dragged. Touch devices have no
-   hover, so they keep the quiet always-visible thumb. Firefox and Safari get the standard
-   properties; Chromium uses the pseudo-elements for the pill shape and the fade. */
+   hover, so they keep the quiet always-visible thumb. Firefox gets the standard properties;
+   Chromium and Safari use the pseudo-elements for the pill shape and the fade. */
 .nav-scroll {
   --nav-thumb: color-mix(in srgb, var(--nav-text) 45%, transparent);
   --nav-thumb-on: color-mix(in srgb, var(--nav-text) 70%, transparent);
@@ -708,6 +708,21 @@ button.tb-icon:hover {
   .nav-collapsed .user-menu-panel {
     left: calc(100% + 8px);
     bottom: 8px;
+  }
+  /* The 64px rail has no room for the message, so it shows beside the rail on a surface that reads on the page. */
+  .nav-collapsed .nav-signout-error {
+    position: absolute;
+    left: calc(100% + 8px);
+    bottom: 8px;
+    width: max-content;
+    max-width: 220px;
+    padding: 8px 12px;
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--danger-text);
+    box-shadow: var(--shadow-md);
+    z-index: 30;
   }
   /* The scrollbar takes a narrower gutter so the icons keep their width in a 64px rail. */
   .nav-collapsed .nav-scroll {

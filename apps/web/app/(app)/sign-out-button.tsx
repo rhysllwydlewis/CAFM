@@ -30,6 +30,7 @@ export function SignOutButton() {
         size="sm"
         icon="log-out"
         className="nav-signout"
+        title="Sign out"
         aria-disabled={busy}
         aria-busy={busy}
         onClick={signOut}

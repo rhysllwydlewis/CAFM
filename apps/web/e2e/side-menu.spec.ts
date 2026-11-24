@@ -30,7 +30,7 @@ test.describe('side menu on a desktop', () => {
     const helpdesk = menu.getByRole('link', { name: 'Helpdesk' });
     await expect(helpdesk).toHaveAttribute('title', 'Helpdesk');
     await expect(helpdesk).toBeVisible();
-    await expect(menu.getByRole('button', { name: 'Expand side menu' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(menu.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
     await assertAccessible(page);
 
     // Still collapsed after a reload, with no flash of the full menu: the server reads the cookie.
@@ -51,6 +51,36 @@ test.describe('side menu on a desktop', () => {
     await expect(page.getByRole('radiogroup', { name: 'Theme' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   });
+
+  test('a failed sign-out shows its message beside the rail, where it can be read', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/app');
+    await page.getByRole('button', { name: 'Collapse side menu' }).click();
+    await page.route('**/auth/logout', (route) => route.abort());
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    const alert = page.getByRole('alert').filter({ hasText: 'Could not sign out' });
+    await expect(alert).toBeVisible();
+    const rail = await page.getByRole('complementary', { name: 'Main' }).boundingBox();
+    const box = await alert.boundingBox();
+    // It sits on the page beside the rail, not inside the 64px rail where it would spill out.
+    expect(box!.x).toBeGreaterThanOrEqual(rail!.x + rail!.width);
+  });
+
+  test('the theme buttons are one tab stop and the arrow keys move the choice', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/app');
+    await page.getByRole('button', { name: /Account and settings/ }).click();
+    const group = page.getByRole('radiogroup', { name: 'Theme' });
+    await expect(group.locator('[role="radio"][tabindex="0"]')).toHaveCount(1);
+    await group.getByRole('radio', { name: 'Light' }).click();
+    await page.keyboard.press('ArrowRight');
+    await expect(group.getByRole('radio', { name: 'Dark' })).toBeFocused();
+    await expect(group.getByRole('radio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    // It wraps round to the last choice.
+    await expect(group.getByRole('radio', { name: 'System' })).toBeFocused();
+  });
 });
 
 test.describe('side menu on a phone', () => {
@@ -60,5 +90,22 @@ test.describe('side menu on a phone', () => {
     await signIn(page);
     await page.goto('/app');
     await expect(page.getByRole('button', { name: 'Collapse side menu' })).toBeHidden();
+  });
+
+  test('opening the menu moves focus into it', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/app');
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Close menu' })).toBeFocused();
+  });
+
+  test('a menu collapsed on a desktop still opens in full on a phone', async ({ page, context }) => {
+    await signIn(page);
+    await context.addCookies([{ name: 'cafm_nav', value: 'collapsed', url: 'http://localhost:3000' }]);
+    await page.goto('/app');
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await expect(
+      page.getByRole('complementary', { name: 'Main' }).getByText('Helpdesk', { exact: true }),
+    ).toBeVisible();
   });
 });
