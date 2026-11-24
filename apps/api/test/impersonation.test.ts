@@ -2,9 +2,23 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { BUILTIN_ROLES } from '@cafm/shared';
-import { createTestAccount, createTestTenant, DEMO_TENANT, signIn, startApp, STARTER_TENANT } from './helpers';
+import { newSessionToken, SESSION_COOKIE } from '../src/core/session';
+import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp, STARTER_TENANT } from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
+
+const owner = ownerDb();
+
+/** The queued invitation email to an address, as the worker would send it. */
+async function inviteToken(to: string): Promise<string> {
+  const msg = await owner.outboxMessage.findFirstOrThrow({
+    where: { topic: 'email.send', payload: { path: ['to'], equals: to } },
+    orderBy: { createdAt: 'desc' },
+  });
+  const match = (msg.payload as { text: string }).text.match(/\/accept-invite\/([A-Za-z0-9_-]+)/);
+  if (!match) throw new Error('No invitation link in the email');
+  return match[1]!;
+}
 
 let app: NestExpressApplication;
 beforeAll(async () => {
@@ -13,6 +27,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await app.close();
   await db.$disconnect();
+  await owner.$disconnect();
 });
 
 async function memberId(email: string, tenantId = DEMO_TENANT): Promise<string> {
@@ -152,6 +167,65 @@ describe('viewing as another person', () => {
     } finally {
       await target.cleanup();
       await owner.cleanup();
+      await tenant.cleanup();
+    }
+  });
+});
+
+describe('a viewing session ends when the real person loses access or is not proof of identity', () => {
+  it('stops working at once when the Super User is deactivated or loses the permission', async () => {
+    const tenant = await createTestTenant(db);
+    const owner = await createTestAccount(db, [tenant.tenant.id], undefined, 'administrator');
+    const target = await createTestAccount(db, [tenant.tenant.id], undefined, 'requester');
+    try {
+      await withTenant(db, tenant.tenant.id, (tx) =>
+        tx.role.update({
+          where: { tenantId_key: { tenantId: tenant.tenant.id, key: 'administrator' } },
+          data: { permissions: ['people.impersonate', ...requesterPermissions] },
+        }),
+      );
+      const { agent } = await signIn(app, owner.email, owner.password);
+      await agent.post('/api/admin/impersonation').send({ membershipId: target.memberships[0], reason }).expect(200);
+      await agent.get('/api/auth/me').expect(200);
+      await withTenant(db, tenant.tenant.id, (tx) =>
+        tx.membership.update({ where: { id: owner.memberships[0] }, data: { status: 'deactivated' } }),
+      );
+      await agent.get('/api/auth/me').expect(401);
+    } finally {
+      await target.cleanup();
+      await owner.cleanup();
+      await tenant.cleanup();
+    }
+  });
+
+  it('does not count as signing in to accept an invitation', async () => {
+    const tenant = await createTestTenant(db);
+    const boss = await createTestAccount(db, [tenant.tenant.id], undefined, 'super_user');
+    const other = await createTestAccount(db, [DEMO_TENANT]);
+    try {
+      const { agent } = await signIn(app, boss.email, boss.password);
+      await agent.post('/api/people/invites').send({ email: other.email, role: 'requester' }).expect(201);
+      const token = await inviteToken(other.email);
+      // A viewing session as the invited person, as the impersonation endpoint would create it.
+      const session = newSessionToken();
+      await db.session.create({
+        data: {
+          tokenHash: session.tokenHash,
+          accountId: other.account.id,
+          expiresAt: new Date(Date.now() + 60_000),
+          impersonatorAccountId: boss.account.id,
+          impersonatorMembershipId: boss.memberships[0],
+        },
+      });
+      const server = (await import('supertest')).default(app.getHttpServer());
+      await server
+        .post(`/api/auth/invites/${token}/accept`)
+        .set('Cookie', `${SESSION_COOKIE}=${session.token}`)
+        .send({ acceptTerms: true })
+        .expect(401);
+    } finally {
+      await other.cleanup().catch(() => undefined);
+      await boss.cleanup();
       await tenant.cleanup();
     }
   });

@@ -128,7 +128,12 @@ export class PeopleController {
     });
 
     // A deactivated member is signed out everywhere in this organisation.
-    if (result.status !== 'active') await this.db.session.deleteMany({ where: { membershipId: result.id } });
+    // That includes any "view as" sessions they started, which belong to the person they were viewing.
+    if (result.status !== 'active') {
+      await this.db.session.deleteMany({
+        where: { OR: [{ membershipId: result.id }, { impersonatorMembershipId: result.id }] },
+      });
+    }
     return { membershipId: result.id, role: result.role, status: result.status };
   }
 }

@@ -110,7 +110,9 @@ export class PasswordResetService {
         data: { passwordHash, failedAttempts: 0, lockedUntil: null },
       });
       // A new password signs the account out everywhere.
-      await tx.session.deleteMany({ where: { accountId: reset.accountId } });
+      await tx.session.deleteMany({
+        where: { OR: [{ accountId: reset.accountId }, { impersonatorAccountId: reset.accountId }] },
+      });
     });
     await this.auth.event('password_reset', { accountId: reset.accountId, ip: client.ip });
   }

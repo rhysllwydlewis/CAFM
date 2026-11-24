@@ -55,9 +55,21 @@ export class SessionGuard implements CanActivate {
             });
             if (!membership) return null;
             const access = await loadAccess(tx, membership.tenantId, membership.role, membership.tenant.plan);
+            if (impersonating) {
+              // The real person must still be active and still allowed to view as others, or the view ends now.
+              const real = await tx.membership.findFirst({
+                where: { id: session.impersonatorMembershipId!, status: 'active', tenant: { status: 'active' } },
+              });
+              const realAccess = real && (await loadAccess(tx, real.tenantId, real.role, membership.tenant.plan));
+              if (!realAccess?.permissions.has('people.impersonate')) return 'revoked' as const;
+            }
             return { membership, access };
           })
         : null;
+    if (tenantData === 'revoked') {
+      await this.db.session.deleteMany({ where: { id: session.id } });
+      throw new UnauthorizedException();
+    }
     const impersonator = impersonating
       ? await this.db.account.findUnique({ where: { id: session.impersonatorAccountId! }, select: { name: true } })
       : null;
