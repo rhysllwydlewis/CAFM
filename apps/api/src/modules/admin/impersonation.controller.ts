@@ -19,7 +19,8 @@ import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '.
 import { clientInfo, cookieOptions, setSessionCookie } from '../../core/cookies';
 import { administrableMembers } from '../../core/delegation';
 import { PrismaService } from '../../core/prisma.service';
-import { newSessionToken, SESSION_COOKIE, SHORT_SESSION_MS } from '../../core/session';
+import { sessionLifetimeMs } from '../../core/security-settings';
+import { newSessionToken, SESSION_COOKIE } from '../../core/session';
 import { parse } from '../../core/validation';
 
 /** A "view as" session is short and is never extended. */
@@ -118,7 +119,7 @@ export class ImpersonationController {
     const tenantId = auth.membership!.tenantId;
     const client = clientInfo(req);
     const { token, tokenHash } = newSessionToken();
-    const expiresAt = new Date(Date.now() + SHORT_SESSION_MS);
+    const expiresAt = new Date(Date.now() + (await sessionLifetimeMs(this.db, tenantId, false)));
     const own = await withTenant(this.db, tenantId, async (tx) => {
       await audit(
         tx,

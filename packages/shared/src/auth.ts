@@ -85,8 +85,9 @@ const COMMON_PASSWORDS = new Set([
  * Password rules (NCSC guidance): at least 12 characters, no arbitrary
  * complexity rules, not a common password, not built from the email name.
  */
-export function passwordProblem(password: string, email?: string | null): string | null {
-  if (password.length < 12) return 'Use at least 12 characters';
+export function passwordProblem(password: string, email?: string | null, minLength = 12): string | null {
+  const shortest = Math.max(12, minLength);
+  if (password.length < shortest) return `Use at least ${shortest} characters`;
   if (password.length > 256) return 'Use 256 characters or fewer';
   const lower = password.toLowerCase();
   if (COMMON_PASSWORDS.has(lower.replace(/[^a-z0-9]/g, ''))) return 'Choose a less common password';

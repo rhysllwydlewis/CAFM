@@ -54,7 +54,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. P1-09d (branding, custom fields, statuses, SLA and calendars, categories screens). Then P1-09e, P1-09f. Team scope (P1-09b) is later. |
+| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. Batch 7 (`claude/build-p1-09-security-settings`, draft PR): P1-09e security settings (password policy, session timeout, MFA enforcement setting, audit log viewer) in progress. After it: P1-09d remainder, P1-09f. Team scope (P1-09b) is later. |
 | P1-10 | Claude (Builder routine) | claude/build-p1-10-* | 24 Nov 2026 | Batch 1 (reports API, Reports screen, home key-figure tiles) merged. Batch 2 (executive overview, reactive-vs-planned and busiest-sites reports) in review. Next batch: role-specific default dashboard layouts (technician, helpdesk, contractor, finance) and any remaining standard reports. |
 
 ## Phase checklists
@@ -146,6 +146,9 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [ ] Branding: sign-in message shown on the sign-in screen, logo, custom domain and email sender (the message is saved already).
     - [ ] Custom fields screen, statuses, SLA and calendars, categories.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
+    - [x] Password minimum length, longest sign-in and the MFA-required setting, with the screen. ([guide](admin.md#security-and-sign-in))
+    - [x] Audit log viewer: newest first, search by event, details. ([guide](admin.md#audit-log))
+    - [ ] Audit log filters by person, record and date range, and export; MFA enforced at sign-in (with P1-12).
   - [ ] **P1-09f** Username-only accounts.
 - [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
 - [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.

@@ -9,11 +9,13 @@ export function AdminMenu({
   canManagePeople,
   canReadRoles,
   canReadPeople,
+  canReadAudit,
 }: {
   canManageSettings: boolean;
   canManagePeople: boolean;
   canReadRoles: boolean;
   canReadPeople: boolean;
+  canReadAudit: boolean;
 }) {
   const path = usePathname();
   const items = [
@@ -24,6 +26,8 @@ export function AdminMenu({
     canManageSettings && { href: '/app/admin/modules', label: 'Modules and navigation' },
     canManageSettings && { href: '/app/admin/terminology', label: 'Terminology' },
     canManageSettings && { href: '/app/admin/branding', label: 'Branding' },
+    canManageSettings && { href: '/app/admin/security', label: 'Security and sign-in' },
+    canReadAudit && { href: '/app/admin/audit', label: 'Audit log' },
   ].filter((item): item is { href: string; label: string } => !!item);
   return (
     <nav className="card" aria-label="Administration" style={{ alignSelf: 'start' }}>

@@ -74,3 +74,19 @@ model TenantBranding {
 
   @@map("tenant_branding")
 }
+
+/// An organisation's sign-in rules (doc 02 security settings): the shortest allowed password, how long a sign-in
+/// lasts, and whether everyone must use MFA. One row per tenant (RLS). No row means the standard rules.
+model TenantSecurity {
+  tenantId            String   @id @map("tenant_id") @db.Uuid
+  /// Shortest password allowed when someone sets one (12 to 64; 12 is the platform floor).
+  passwordMinLength   Int      @default(12) @map("password_min_length")
+  /// Longest a sign-in lasts, in hours. Null keeps the standard (12 hours, or 30 days with "keep me signed in").
+  sessionTimeoutHours Int?     @map("session_timeout_hours")
+  /// Saved now, enforced when authenticator-app sign-in (P1-12) ships.
+  mfaRequired         Boolean  @default(false) @map("mfa_required")
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_security")
+}

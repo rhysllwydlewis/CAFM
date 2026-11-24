@@ -74,3 +74,17 @@ Not built yet: the organisation setting "Allow view as user" (the mockup `admin-
 ## Branding
 
 `/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is stored but not yet shown on the sign-in screen. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). The logo, custom domain and email sender in the mockup are not built yet.
+
+## Security and sign-in
+
+Administration > Security and sign-in (needs the "Change organisation settings" permission). Screen: `admin-08-security`.
+
+- **Minimum password length:** 12 to 64. 12 is the platform floor and can only be raised. It applies when someone accepts an invitation or resets a password. A person who belongs to several organisations gets the strictest minimum among them when they reset a password.
+- **Longest sign-in:** 1 to 720 hours, or empty for the standard (12 hours, or 30 days with "Keep me signed in"). It only shortens a new sign-in. Existing sign-ins are not changed.
+- **Require multi-factor authentication:** saved now and enforced when authenticator-app sign-in (P1-12) ships.
+
+Not built yet: single sign-on, IP allow-lists, breached-password checks, separate idle timeout. Every save is recorded in the audit log as `settings.security_updated` with the before and after values. API: `GET` and `PUT /api/admin/security`.
+
+## Audit log
+
+Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`. Events are listed newest first, 50 at a time, with a search on the event name. Each row can show the recorded before and after values. Not built yet: filters by person, record and date range, and export. API: `GET /api/admin/audit` with `action`, `entityType`, `from`, `to` and `cursor`.
