@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Bulk actions on the request queue, the asset register and the planned maintenance schedules: tick rows and change request status, assignee or priority, asset status, or archive, restore, assign and set the priority of schedules. Each row is checked on its own and the result lists any that could not be changed.
 - Admin console: switch menu modules on or off, use your own name and order for them, and use your own words for work order, request, site, asset and contractor. The menu follows for everyone in your organisation.
 - Bulk actions on the work order list: tick jobs and change their status, assign or clear the assignee, or set the priority in one go. Each job is checked on its own and the result lists any that could not be changed and why. See [Saved list views](docs/views.md#bulk-actions-on-work-orders).
 - Group the work order, request, asset and planned maintenance schedule lists (by status, priority and more) and choose which columns each list shows. Both are kept when you save the filters as a view.

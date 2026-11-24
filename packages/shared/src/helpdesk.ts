@@ -164,6 +164,45 @@ export const changeRequestSchema = z
     (change) => change.status !== undefined || change.assigneeId !== undefined || change.triage !== undefined,
     'Choose a status, an assignee or triage details.',
   );
+/** The most requests one bulk action can change, so one request stays quick and its result readable. */
+export const BULK_REQUEST_LIMIT = 50;
+
+const bulkRequestItems = z
+  .array(z.object({ id: uuid, version }).strict())
+  .min(1)
+  .max(BULK_REQUEST_LIMIT)
+  .refine((items) => new Set(items.map(({ id }) => id)).size === items.length, {
+    message: 'Each request can appear once.',
+  });
+
+/** Each request is changed on its own with the version the person saw, so one that has moved on is reported, not overwritten. */
+export const bulkRequestSchema = z.discriminatedUnion('action', [
+  z
+    .object({
+      action: z.literal('status'),
+      items: bulkRequestItems,
+      status: z.enum(['in_progress', 'completed', 'closed', 'rejected']),
+      note: shortText(1200).optional(),
+    })
+    .strict(),
+  z.object({ action: z.literal('assign'), items: bulkRequestItems, assigneeId: uuid.nullable() }).strict(),
+  z.object({ action: z.literal('priority'), items: bulkRequestItems, impact: level, urgency: level }).strict(),
+]);
+export type BulkRequestInput = z.infer<typeof bulkRequestSchema>;
+export interface BulkRequestResult {
+  id: string;
+  ok: boolean;
+  /** The HTTP status the single-request call would have given, for a row that failed. */
+  status?: number;
+  message?: string;
+  /** The request's new version, for a row that worked. */
+  version?: number;
+}
+export interface BulkRequestResponse {
+  succeeded: number;
+  failed: number;
+  results: BulkRequestResult[];
+}
 export const mergeRequestSchema = z.object({ version, targetId: uuid, targetVersion: version }).strict();
 export const requestCommentSchema = z.object({ body: shortText(6000), internal: z.boolean().default(false) }).strict();
 export const requestRatingSchema = z
@@ -220,6 +259,8 @@ export type RequestCatalogue<FieldDefinition> = {
 };
 export type RequestSummary = {
   id: string;
+  /** Changes with every edit. A bulk action sends the one the person saw. */
+  version: number;
   number: string;
   title: string;
   status: RequestStatus;
@@ -238,7 +279,6 @@ export type RequestSummary = {
   rating: number | null;
 };
 export type RequestRecord<CustomField = unknown> = RequestSummary & {
-  version: number;
   impact: number;
   urgency: number;
   description: string;

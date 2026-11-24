@@ -20,6 +20,8 @@ import {
 import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
 import { GroupRows, ListDisplayFields } from '@/components/list-display';
+import { BulkSelection, SelectAll, SelectRow } from '@/components/bulk-selection';
+import { AssetBulkBar } from './asset-bulk-bar';
 import { locationPage } from '../locations/location-data';
 import { assetPage, assetSummary } from './asset-data';
 import {
@@ -261,13 +263,19 @@ function Filters({ filters, sites }: { filters: Filters; sites: { id: string; na
 }
 
 function Rows({ page, filters }: { page: AssetPage; filters: Filters }) {
+  const bulk = page.canManage;
   const shown = new Set(visibleColumns(ASSET_COLUMNS, filters.cols).map(({ key }) => key));
   const has = (key: string) => shown.has(key);
-  return (
+  const table = (
     <div className={styles.tableWrap}>
       <table className="tbl">
         <thead>
           <tr>
+            {bulk && (
+              <th scope="col">
+                <SelectAll noun="assets" />
+              </th>
+            )}
             {ASSET_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
               <th key={key} scope="col">
                 {label}
@@ -277,9 +285,14 @@ function Rows({ page, filters }: { page: AssetPage; filters: Filters }) {
         </thead>
         {groupRows(page.items, filters.groupby ? GROUP_LABELS[filters.groupby] : undefined).map((section) => (
           <tbody key={section.label}>
-            <GroupRows label={section.label} count={section.items.length} span={shown.size}>
+            <GroupRows label={section.label} count={section.items.length} span={shown.size + (bulk ? 1 : 0)}>
               {section.items.map((asset) => (
                 <tr key={asset.id}>
+                  {bulk && (
+                    <td>
+                      <SelectRow id={asset.id} label={asset.number} />
+                    </td>
+                  )}
                   <td>
                     <span className="mono">{asset.number}</span>
                   </td>
@@ -317,6 +330,13 @@ function Rows({ page, filters }: { page: AssetPage; filters: Filters }) {
         ))}
       </table>
     </div>
+  );
+  if (!bulk) return table;
+  return (
+    <BulkSelection items={page.items.map(({ id, number, version }) => ({ id, label: number, version }))}>
+      <AssetBulkBar />
+      {table}
+    </BulkSelection>
   );
 }
 

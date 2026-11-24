@@ -268,6 +268,41 @@ export const updatePpmScheduleSchema = z
   .transform(resolveMode)
   .refine(meterIsFloating.check, meterIsFloating.options);
 
+/** The most schedules one bulk action can change, so one request stays quick and its result readable. */
+export const BULK_SCHEDULE_LIMIT = 50;
+
+const bulkScheduleItems = z
+  .array(z.object({ id: uuid, version }).strict())
+  .min(1)
+  .max(BULK_SCHEDULE_LIMIT)
+  .refine((items) => new Set(items.map(({ id }) => id)).size === items.length, {
+    message: 'Each schedule can appear once.',
+  });
+
+/** Each schedule is changed on its own with the version the person saw, so one that has moved on is reported, not overwritten. */
+export const bulkScheduleSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('active'), items: bulkScheduleItems, active: z.boolean() }).strict(),
+  z.object({ action: z.literal('assign'), items: bulkScheduleItems, assigneeId: uuid.nullable() }).strict(),
+  z
+    .object({ action: z.literal('priority'), items: bulkScheduleItems, priority: z.number().int().min(1).max(4) })
+    .strict(),
+]);
+export type BulkScheduleInput = z.infer<typeof bulkScheduleSchema>;
+export interface BulkScheduleResult {
+  id: string;
+  ok: boolean;
+  /** The HTTP status the single-schedule call would have given, for a row that failed. */
+  status?: number;
+  message?: string;
+  /** The schedule's new version, for a row that worked. */
+  version?: number;
+}
+export interface BulkScheduleResponse {
+  succeeded: number;
+  failed: number;
+  results: BulkScheduleResult[];
+}
+
 export const setScheduleAssetsSchema = z
   .object({ version, assets: z.array(scheduleAsset).max(MAX_SCHEDULE_ASSETS) })
   .strict();
@@ -291,6 +326,8 @@ export type PpmTaskTemplate = {
 
 export type PpmScheduleSummary = {
   id: string;
+  /** Changes with every edit. A bulk action sends the one the person saw. */
+  version: number;
   number: string;
   title: string;
   discipline: string | null;
@@ -331,7 +368,6 @@ export type PpmScheduleRecord = PpmScheduleSummary & {
   safetyNotes: string | null;
   skills: string | null;
   steps: ChecklistItemInput[];
-  version: number;
   rows: PpmScheduleAssetRow[];
 };
 

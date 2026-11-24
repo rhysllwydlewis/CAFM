@@ -173,3 +173,54 @@ test('reports a fault with a photo from a printed asset QR after signing in', as
     await db.$disconnect();
   }
 });
+
+test('ticks several requests and rejects them together, reporting each one', async ({ page }) => {
+  test.setTimeout(120_000);
+  const suffix = randomUUID().slice(0, 8);
+  // The requester raises them, so the notifications go to them and the helpdesk inbox stays as it was.
+  await page.goto('/login');
+  await signIn(page, 'requester');
+  await expect(page).not.toHaveURL(/\/login/);
+  const catalogue = (await (await page.request.get('/api/helpdesk/catalogue')).json()) as {
+    types: { id: string; questions: { key: string }[] }[];
+  };
+  const type = catalogue.types.find(({ questions }) => questions.length === 0) ?? catalogue.types[0]!;
+  const raise = async (title: string) => {
+    const response = await page.request.post('/api/helpdesk/requests', {
+      data: {
+        submissionId: randomUUID(),
+        title,
+        description: 'Created by a browser test.',
+        locationId: cardiff,
+        typeId: type.id,
+        answers: Object.fromEntries(type.questions.map(({ key }) => [key, false])),
+      },
+    });
+    expect(response.ok()).toBe(true);
+    return (await response.json()) as { number: string };
+  };
+  const first = await raise('E2E bulk request one ' + suffix);
+  await raise('E2E bulk request two ' + suffix);
+  await page.context().clearCookies();
+  await page.goto('/login');
+  await signIn(page, 'helpdesk');
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/app/helpdesk?view=all&q=' + suffix);
+  const results = page.getByRole('region', { name: 'Request results' });
+  await expect(results.getByRole('link', { name: first.number }).first()).toBeVisible();
+  await checkAccessibility(page);
+
+  // Nothing is offered until a row is ticked.
+  await expect(page.getByRole('form', { name: 'Bulk actions' })).toHaveCount(0);
+  await page.getByLabel('Select all requests on this page').check();
+  const bar = page.getByRole('form', { name: 'Bulk actions' });
+  await expect(bar.getByText('2 selected')).toBeVisible();
+  await checkAccessibility(page);
+  await bar.getByLabel('Action').selectOption({ label: 'Change status' });
+  await bar.getByLabel('New status').selectOption({ label: 'Rejected' });
+  await bar.getByRole('button', { name: 'Apply to 2' }).click();
+  await expect(page.locator('p[role="alert"]')).toContainText('Enter a reason for rejection.');
+  await bar.getByLabel('Reason').fill('Raised in error by a test.');
+  await bar.getByRole('button', { name: 'Apply to 2' }).click();
+  await expect(page.getByRole('status').getByText('2 changed.')).toBeVisible();
+});

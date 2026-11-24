@@ -13,6 +13,7 @@ import {
   type PpmScheduleSummary,
 } from '@cafm/shared';
 import { GroupRows } from '@/components/list-display';
+import { SelectAll, SelectRow } from '@/components/bulk-selection';
 import { criticalityBadge, criticalityLabel, hours, longDay, monthName } from '@/lib/ppm-format';
 import styles from './ppm.module.css';
 
@@ -41,11 +42,14 @@ export function ScheduleTable({
   items,
   columns: chosen,
   group,
+  bulk = false,
 }: {
   items: PpmScheduleSummary[];
   /** The `cols` value from the address. */
   columns?: string;
   group?: string;
+  /** Adds a tick box to each row. Must sit inside `BulkSelection`. */
+  bulk?: boolean;
 }) {
   if (!items.length) return <p className="card-b muted">No schedules match.</p>;
   const shown = new Set(visibleColumns(SCHEDULE_COLUMNS, chosen).map(({ key }) => key));
@@ -55,6 +59,11 @@ export function ScheduleTable({
       <table className="tbl">
         <thead>
           <tr>
+            {bulk && (
+              <th scope="col">
+                <SelectAll noun="schedules" />
+              </th>
+            )}
             {SCHEDULE_COLUMNS.filter(({ key }) => has(key)).map(({ key, label }) => (
               <th key={key} scope="col">
                 {label}
@@ -64,9 +73,19 @@ export function ScheduleTable({
         </thead>
         <tbody>
           {groupRows(items, group ? GROUP_LABELS[group] : undefined).map((section) => (
-            <GroupRows key={section.label} label={section.label} count={section.items.length} span={shown.size}>
+            <GroupRows
+              key={section.label}
+              label={section.label}
+              count={section.items.length}
+              span={shown.size + (bulk ? 1 : 0)}
+            >
               {section.items.map((item) => (
                 <tr key={item.id}>
+                  {bulk && (
+                    <td>
+                      <SelectRow id={item.id} label={item.number} />
+                    </td>
+                  )}
                   <td>
                     <Link href={'/app/ppm/schedules/' + item.id} className="medium">
                       {item.title}

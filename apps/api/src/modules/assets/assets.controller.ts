@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  HttpException,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -18,7 +19,10 @@ import type { Request } from 'express';
 import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
 import { withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
+  bulkAssetSchema,
   createAssetSchema,
+  type BulkAssetResponse,
+  type BulkAssetResult,
   listAssetsSchema,
   updateAssetSchema,
   type AssetAttribute,
@@ -343,6 +347,37 @@ export class AssetsController {
         componentCount: await tx.asset.count({ where: { ...assetScope(auth), parentId: row.id } }),
       };
     });
+  }
+
+  /**
+   * Changes the status of several assets at once. Each is done by the same code as the single-asset edit, in its
+   * own transaction, so every rule (the version, a place on the plan when reinstating, components when
+   * decommissioning) holds per row and one failure never undoes the others.
+   */
+  @Post('bulk')
+  @RequirePermission('assets.manage')
+  async bulk(@Body() body: unknown, @Req() req: Request): Promise<BulkAssetResponse> {
+    const input = parse(bulkAssetSchema, body);
+    const results: BulkAssetResult[] = [];
+    for (const { id, version } of input.items) {
+      try {
+        const next = await this.update(id, { version, status: input.status }, req);
+        results.push({ id, ok: true, version: next?.version });
+      } catch (error) {
+        if (!(error instanceof HttpException)) throw error;
+        const detail = error.getResponse();
+        const message =
+          typeof detail === 'string' ? detail : ((detail as { message?: unknown }).message ?? error.message);
+        results.push({
+          id,
+          ok: false,
+          status: error.getStatus(),
+          message: typeof message === 'string' ? message : error.message,
+        });
+      }
+    }
+    const succeeded = results.filter(({ ok }) => ok).length;
+    return { succeeded, failed: results.length - succeeded, results };
   }
 
   @Post()

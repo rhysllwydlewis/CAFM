@@ -208,7 +208,13 @@ export default async function HelpdeskPage({
           </button>
         </form>
         {data.cursorReset && <p className="card-b muted">The list changed. Showing the first page.</p>}
-        <RequestTable items={data.items} now={Date.now()} columns={input.cols} group={group} />
+        <RequestTable
+          items={data.items}
+          now={Date.now()}
+          columns={input.cols}
+          group={group}
+          bulk={can(user, 'requests.manage')}
+        />
         {(data.nextCursor || params.has('cursor')) && (
           <div className="card-b row g2">
             {params.has('cursor') && (
