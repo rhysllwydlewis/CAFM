@@ -195,13 +195,13 @@ const NAV = [
 ];
 const EXTRA = { projects: ['Projects', 'projects'], leases: ['Real estate', 'real-estate'], capital: ['Capital planning', 'capital-planning'], iot: ['IoT & sensors', 'iot'], fleet: ['Fleet', 'fleet'], keys: ['Keys', 'keys'], moves: ['Moves', 'moves'], soft: ['Soft services', 'soft-services'], continuity: ['Business continuity', 'continuity'], housing: ['Housing', 'housing'], ai: ['Ask the estate', 'ai-assistant'], admin: ['Administration', 'admin'], platform: ['Platform admin', 'globe'] };
 
-export function nav(active, { tenant = 'Demo Estates Ltd', plan = 'Enterprise', user = 'Morgan Ellis', role = 'FM Manager' } = {}) {
+export function nav(active, { tenant = 'Demo Estates Ltd', plan = 'Enterprise', user = 'Morgan Ellis', role = 'FM Manager', collapsed = false, toggle = collapsed } = {}) {
   const item = ([key, label, icon, count, alert]) => `<div class="nav-item ${key === active ? 'active' : ''}">${I(icon)}<span>${label}</span>${count ? `<span class="count ${alert ? 'alert' : ''}">${count}</span>` : ''}</div>`;
   const inBase = NAV.some(([, items]) => items.some(([k]) => k === active));
   let html = NAV.map(([label, items]) => `<div class="nav-sec">${label ? `<div class="nav-label">${label}</div>` : ''}${items.map(item).join('')}</div>`).join('');
   const more = !inBase && EXTRA[active] && active !== 'admin' && active !== 'platform' ? item([active, ...EXTRA[active]]) : '';
   html += `<div class="nav-sec"><div class="nav-label">More</div>${more}<div class="nav-item">${I('more')}<span>All modules</span></div>${item(['admin', 'Administration', 'admin'])}</div>`;
-  return `<aside class="nav"><div class="nav-top"><div class="brand">${logo(28)}<span>CAFM</span></div><div class="tenant"><span class="t-logo">DE</span><div class="grow"><div class="t-name">${tenant}</div><div class="t-sub">${plan}</div></div>${I('chevron-down', 's14')}</div></div><div class="nav-scroll">${html}</div><div class="nav-foot"><span class="av s28" style="background:#1D3A40;color:#A8DCE3">${initials(user)}</span><div class="grow"><div class="who">${user}</div><div class="xs">${role}</div></div>${I('settings', 's14')}</div></aside>`;
+  return `<aside class="nav"><div class="nav-top">${toggle ? `<div class="row between"><div class="brand">${logo(28)}<span>CAFM</span></div><span class="nav-toggle">${I(collapsed ? 'panel-left-open' : 'panel-left-close')}</span></div>` : `<div class="brand">${logo(28)}<span>CAFM</span></div>`}<div class="tenant"><span class="t-logo">DE</span><div class="grow"><div class="t-name">${tenant}</div><div class="t-sub">${plan}</div></div>${I('chevron-down', 's14')}</div></div><div class="nav-scroll">${html}</div><div class="nav-foot"><span class="av s28" style="background:#1D3A40;color:#A8DCE3">${initials(user)}</span><div class="grow"><div class="who">${user}</div><div class="xs">${role}</div></div>${I('settings', 's14')}</div></aside>`;
 }
 export function topbar(crumbs = []) {
   const c = crumbs.map((x, i) => (i === crumbs.length - 1 ? `<b>${x}</b>` : `<span>${x}</span>${I('chevron-right')}`)).join('');
@@ -210,8 +210,8 @@ export function topbar(crumbs = []) {
 export function pageHead(title, { sub = '', acts = '', eyebrow = '' } = {}) {
   return `<div class="page-head"><div>${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ''}<h1 class="page-title">${title}</h1>${sub ? `<div class="page-sub">${sub}</div>` : ''}</div><div class="page-actions">${join(acts)}</div></div>`;
 }
-export function shell({ active, crumbs, title, sub, acts, eyebrow, body, tight, user, overlay = '' }) {
-  return `<div class="app">${nav(active, user)}<main class="main">${topbar(crumbs)}<div class="page ${tight ? 'tight' : ''}">${title ? pageHead(title, { sub, acts, eyebrow }) : ''}${join(body)}</div></main></div>${overlay}`;
+export function shell({ active, crumbs, title, sub, acts, eyebrow, body, tight, user, overlay = '', collapsed = false, toggle = collapsed }) {
+  return `<div class="app${collapsed ? ' nav-collapsed' : ''}">${nav(active, { ...user, collapsed, toggle })}<main class="main">${topbar(crumbs)}<div class="page ${tight ? 'tight' : ''}">${title ? pageHead(title, { sub, acts, eyebrow }) : ''}${join(body)}</div></main></div>${overlay}`;
 }
 
 // ── Devices ───────────────────────────────────────────────

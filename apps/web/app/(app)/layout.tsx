@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { cookies } from 'next/headers';
 import {
   applyDisplay,
   can,
@@ -14,6 +15,7 @@ import { NAV } from '@/lib/nav';
 import { currentUser } from '@/lib/session';
 import { AppShell } from './shell/app-shell';
 import type { ShellNavSection } from './shell/types';
+import { NAV_COOKIE } from './shell/nav-state';
 import { SignOutButton } from './sign-out-button';
 
 async function organisations(): Promise<OrganisationOption[]> {
@@ -33,6 +35,8 @@ async function brandingSettings(): Promise<BrandingView | undefined> {
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
+  // The side menu's collapsed state is remembered in a cookie so the first paint is already right.
+  const navCollapsed = (await cookies()).get(NAV_COOKIE)?.value === 'collapsed';
   const [orgs, display, branding] = await Promise.all([organisations(), displaySettings(), brandingSettings()]);
   // The accent only applies on plans that include branding, and only colours that passed the contrast check.
   const accent =
@@ -77,6 +81,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         impersonation={user.impersonation}
         organisations={orgs.map((o) => ({ ...o, current: o.membershipId === user.membershipId }))}
         footer={<SignOutButton />}
+        initialNavCollapsed={navCollapsed}
       >
         {children}
       </AppShell>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, initials } from '@cafm/ui';
 import { PLAN_LABELS, type Plan } from '@cafm/shared';
@@ -8,6 +8,12 @@ import { postJson } from '@/lib/client';
 import { t } from '@/lib/i18n';
 import { applyTheme, readTheme, type ThemeChoice } from '@/lib/theme';
 import type { ShellOrganisation } from './types';
+
+const THEME_OPTIONS = [
+  ['light', t('shell.themeLight'), 'theme-light'],
+  ['dark', t('shell.themeDark'), 'theme-dark'],
+  ['system', t('shell.themeSystem'), 'settings'],
+] as const;
 
 /** The name at the foot of the side menu opens this (mockup shell-01): organisation and theme. */
 export function UserMenu({
@@ -44,6 +50,19 @@ export function UserMenu({
   function chooseTheme(choice: ThemeChoice) {
     setTheme(choice);
     applyTheme(choice);
+  }
+
+  // A radio group is one tab stop, and the arrow keys move the choice (and the focus) around it.
+  function onThemeKey(e: ReactKeyboardEvent<HTMLDivElement>) {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const next =
+      THEME_OPTIONS[
+        (THEME_OPTIONS.findIndex(([value]) => value === theme) + step + THEME_OPTIONS.length) % THEME_OPTIONS.length
+      ]![0];
+    chooseTheme(next);
+    e.currentTarget.querySelector<HTMLElement>(`[data-theme-value="${next}"]`)?.focus();
   }
 
   async function switchTo(membershipId: string) {
@@ -113,19 +132,15 @@ export function UserMenu({
             <div className="xs faint medium user-menu-label" id="theme-label">
               {t('shell.theme')}
             </div>
-            <div className="seg" role="radiogroup" aria-labelledby="theme-label">
-              {(
-                [
-                  ['light', t('shell.themeLight'), 'theme-light'],
-                  ['dark', t('shell.themeDark'), 'theme-dark'],
-                  ['system', t('shell.themeSystem'), 'settings'],
-                ] as const
-              ).map(([value, label, icon]) => (
+            <div className="seg" role="radiogroup" aria-labelledby="theme-label" onKeyDown={onThemeKey}>
+              {THEME_OPTIONS.map(([value, label, icon]) => (
                 <button
                   key={value}
                   type="button"
                   role="radio"
                   aria-checked={theme === value}
+                  tabIndex={theme === value ? 0 : -1}
+                  data-theme-value={value}
                   className={theme === value ? 'on' : ''}
                   onClick={() => chooseTheme(value)}
                 >

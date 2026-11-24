@@ -195,6 +195,16 @@
     "source": "lucide:graduation-cap"
   },
   {
+    "name": "panel-left-close",
+    "category": "Modules & navigation",
+    "source": "lucide:panel-left-close"
+  },
+  {
+    "name": "panel-left-open",
+    "category": "Modules & navigation",
+    "source": "lucide:panel-left-open"
+  },
+  {
     "name": "add",
     "category": "Actions",
     "source": "lucide:plus"

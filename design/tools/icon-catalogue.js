@@ -44,6 +44,8 @@ export const catalogue = {
     'housing': 'lucide:house',
     'healthcare': 'lucide:hospital',
     'education': 'lucide:graduation-cap',
+    'panel-left-close': 'lucide:panel-left-close',
+    'panel-left-open': 'lucide:panel-left-open',
   },
   'Actions': {
     'add': 'lucide:plus',

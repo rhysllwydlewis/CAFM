@@ -15,6 +15,8 @@ const enGB = {
   'shell.help': 'Help',
   'shell.menu': 'Menu',
   'shell.closeMenu': 'Close menu',
+  'shell.collapseNav': 'Collapse side menu',
+  'shell.expandNav': 'Expand side menu',
   'shell.userMenu': 'Account and settings:',
   'shell.organisation': 'Organisation',
   'shell.theme': 'Theme',
