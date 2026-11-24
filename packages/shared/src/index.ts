@@ -24,3 +24,4 @@ export * from './display';
 export * from './reports';
 export * from './branding';
 export * from './security';
+export * from './username';
