@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Reports: a Reports screen with open jobs by age, SLA performance and PPM compliance for a chosen period, limited to the sites you can see, and three key-figure tiles on the home page.
 - Admin console: branding for Enterprise organisations. A Super User picks an accent colour for buttons, which is refused if white text on it would be hard to read, and a sign-in message (saved now, shown on the sign-in screen later). See [Branding](docs/admin.md#branding).
 - Admin console: a Super User can view the app as another person to troubleshoot, from a View as user card on the users screen. It needs a reason, is read-only, ends after an hour, shows a banner on every page, and both ends are recorded in the audit log under the Super User. Super Users and people with more access than you can't be chosen.
 - Board layout on the Helpdesk queue (a lane for each stage of a request, with the queue views and filters applying) and a Calendar view on planned maintenance (each schedule on the day its next visit is due). See [Saved list views](docs/views.md#board-on-requests).

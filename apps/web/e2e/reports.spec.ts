@@ -36,3 +36,16 @@ test('keeps people without report access out', async ({ page }) => {
   await page.goto('/app/reports');
   await expect(page.getByRole('heading', { name: /doesn’t include Reports/ })).toBeVisible();
 });
+
+test('shows the key figures on the home page for people who can read reports', async ({ page }) => {
+  await signInAs(page, 'manager');
+  await page.goto('/app');
+  const figures = page.getByRole('region', { name: 'Key figures' });
+  await expect(figures.getByText('Open work orders')).toBeVisible();
+  await expect(figures.getByText('SLA met, last 30 days')).toBeVisible();
+  await expect(figures.getByText('PPM on time, last 30 days')).toBeVisible();
+  await assertAccessible(page);
+  await signInAs(page, 'requester');
+  await page.goto('/app');
+  await expect(page.getByRole('region', { name: 'Key figures' })).toHaveCount(0);
+});
