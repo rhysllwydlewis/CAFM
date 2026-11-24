@@ -7,6 +7,7 @@ import {
   reportQuerySchema,
   WORK_ORDER_FINISHED,
   type OpenJobsByAgeReport,
+  type PpmComplianceReport,
   type SlaPerformanceReport,
 } from '@cafm/shared';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
@@ -105,6 +106,60 @@ export class ReportsController {
         breached: rows.length - met,
         percentMet: rows.length ? Math.round((met / rows.length) * 100) : null,
         byPriority: [...byPriority.entries()].sort(([a], [b]) => a - b).map(([priority, v]) => ({ priority, ...v })),
+      };
+    });
+  }
+
+  /** PPM visits due in the period (UK days, default the last 30 days): done on time, done late, overdue or still to come. */
+  @Get('ppm-compliance')
+  ppmCompliance(@Req() req: Request, @Query() query: unknown): Promise<PpmComplianceReport> {
+    const auth = req.auth!;
+    const input = parse(reportQuerySchema, query);
+    const today = Temporal.Now.plainDateISO(LONDON);
+    const to = input.to ?? today.toString();
+    const from = input.from ?? Temporal.PlainDate.from(to).subtract({ days: 29 }).toString();
+    if (from > to) throw new UnprocessableEntityException('The start date must not be after the end date.');
+    return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<PpmComplianceReport> => {
+      const rows = await tx.workOrder.findMany({
+        where: {
+          AND: [
+            workOrderScope(auth),
+            { type: 'ppm', status: { not: 'cancelled' } },
+            { scheduledFor: { gte: new Date(`${from}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } },
+            ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
+          ],
+        },
+        select: { scheduledFor: true, completedAt: true },
+      });
+      let onTime = 0;
+      let late = 0;
+      let overdue = 0;
+      let upcoming = 0;
+      const todayText = today.toString();
+      for (const row of rows) {
+        const dueDay = row.scheduledFor!.toISOString().slice(0, 10);
+        if (row.completedAt) {
+          const doneDay = Temporal.Instant.fromEpochMilliseconds(row.completedAt.getTime())
+            .toZonedDateTimeISO(LONDON)
+            .toPlainDate()
+            .toString();
+          if (doneDay <= dueDay) onTime += 1;
+          else late += 1;
+        } else if (dueDay < todayText) overdue += 1;
+        else upcoming += 1;
+      }
+      const passed = onTime + late + overdue;
+      return {
+        key: 'ppm_compliance',
+        generatedAt: new Date().toISOString(),
+        from,
+        to,
+        due: rows.length,
+        onTime,
+        late,
+        overdue,
+        upcoming,
+        percentOnTime: passed ? Math.round((onTime / passed) * 100) : null,
       };
     });
   }

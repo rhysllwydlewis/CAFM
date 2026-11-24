@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** The standard reports in the first release. Each one is a fixed query, not a builder. */
-export const REPORT_KEYS = ['open_jobs_by_age', 'sla_performance'] as const;
+export const REPORT_KEYS = ['open_jobs_by_age', 'sla_performance', 'ppm_compliance'] as const;
 export type ReportKey = (typeof REPORT_KEYS)[number];
 
 /** Age bands for open jobs, in whole days since the job was logged. */
@@ -46,4 +46,21 @@ export interface SlaPerformanceReport {
   /** Whole percent, or null when nothing was measured. */
   percentMet: number | null;
   byPriority: { priority: number; measured: number; met: number }[];
+}
+
+export interface PpmComplianceReport {
+  key: 'ppm_compliance';
+  generatedAt: string;
+  from: string;
+  to: string;
+  /** Planned visits that fell due in the period. */
+  due: number;
+  onTime: number;
+  late: number;
+  /** Not done, and the due day has passed. */
+  overdue: number;
+  /** Not done yet, and not due yet. */
+  upcoming: number;
+  /** On time as a whole percent of visits whose due day has passed, or null when none has. */
+  percentOnTime: number | null;
 }

@@ -39,7 +39,7 @@ async function fixture() {
         })
         .expect(201)
     ).body;
-  return { tenant, cleanup, m, r, makeJob, accounts: [manager, reporter] };
+  return { tenant, cleanup, m, r, site, makeJob, accounts: [manager, reporter] };
 }
 
 it('refuses people who are signed out or may not read reports', async () => {
@@ -48,6 +48,7 @@ it('refuses people who are signed out or may not read reports', async () => {
     await request(app.getHttpServer()).get(`${base}/open-jobs-by-age`).expect(401);
     await f.r.get(`${base}/open-jobs-by-age`).expect(403);
     await f.r.get(`${base}/sla-performance`).expect(403);
+    await f.r.get(`${base}/ppm-compliance`).expect(403);
   } finally {
     await f.cleanup();
   }
@@ -94,6 +95,62 @@ it('measures SLA performance for jobs completed in the period', async () => {
   }
 });
 
+it('measures PPM compliance for visits due in the period', async () => {
+  const f = await fixture();
+  try {
+    const site = f.site;
+    const assetIds: string[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      assetIds.push(
+        (
+          await f.m
+            .post('/api/assets')
+            .send({ name: `Pump ${i}`, locationId: site.id })
+            .expect(201)
+        ).body.id,
+      );
+    }
+    const created = (
+      await f.m
+        .post('/api/ppm/schedules')
+        .send({
+          title: 'Pump service',
+          criticality: 'statutory',
+          frequency: { type: 'calendar', unit: 'month', interval: 12 },
+          mode: 'fixed',
+          startsOn: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10),
+          leadDays: 28,
+          durationMinutes: 60,
+          priority: 3,
+          assets: assetIds.map((assetId) => ({ assetId })),
+        })
+        .expect(201)
+    ).body;
+    await f.m.post(`/api/ppm/schedules/${created.id}/generate`).send({}).expect(201);
+    const day = (offset: number) => new Date(Date.now() + offset * 86_400_000);
+    const dateOnly = (offset: number) => new Date(day(offset).toISOString().slice(0, 10) + 'T00:00:00Z');
+    await withTenant(db, f.tenant.id, async (tx) => {
+      const [a, b, c, d] = await tx.workOrder.findMany({ where: { type: 'ppm' }, orderBy: { title: 'asc' } });
+      expect(d).toBeDefined();
+      await tx.workOrder.update({
+        where: { id: a!.id },
+        data: { status: 'completed', scheduledFor: dateOnly(-5), completedAt: day(-6) },
+      });
+      await tx.workOrder.update({
+        where: { id: b!.id },
+        data: { status: 'completed', scheduledFor: dateOnly(-5), completedAt: day(-2) },
+      });
+      await tx.workOrder.update({ where: { id: c!.id }, data: { scheduledFor: dateOnly(-3) } });
+      await tx.workOrder.update({ where: { id: d!.id }, data: { scheduledFor: dateOnly(0) } });
+    });
+    const res = await f.m.get(`${base}/ppm-compliance`).expect(200);
+    expect(res.body).toMatchObject({ due: 4, onTime: 1, late: 1, overdue: 1, upcoming: 1, percentOnTime: 33 });
+    await f.m.get(`${base}/ppm-compliance?from=2026-02-01&to=2026-01-01`).expect(422);
+  } finally {
+    await f.cleanup();
+  }
+});
+
 it('never reports another organisation’s jobs', async () => {
   const a = await fixture();
   const b = await fixture();
@@ -101,6 +158,7 @@ it('never reports another organisation’s jobs', async () => {
     await a.makeJob();
     const res = await b.m.get(`${base}/open-jobs-by-age`).expect(200);
     expect(res.body.total).toBe(0);
+    expect((await b.m.get(`${base}/ppm-compliance`).expect(200)).body.due).toBe(0);
   } finally {
     await a.cleanup();
     await b.cleanup();
