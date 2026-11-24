@@ -219,3 +219,30 @@ it('ranks the busiest sites, counting jobs in rooms below each site', async () =
     await f.cleanup();
   }
 });
+
+it('does not name a site the reader has no access to', async () => {
+  const f = await fixture();
+  try {
+    const building = (
+      await f.m
+        .post('/api/locations')
+        .send({ code: 'B1', name: 'Building 1', kind: 'building', parentId: f.site.id })
+        .expect(201)
+    ).body;
+    const job = await f.makeJob();
+    await withTenant(db, f.tenant.id, async (tx) => {
+      await tx.workOrder.update({ where: { id: job.id }, data: { locationId: building.id } });
+      await tx.membership.update({
+        where: { id: f.accounts[0]!.memberships[0]! },
+        data: { locationScoped: true },
+      });
+      await tx.membershipSite.create({
+        data: { tenantId: f.tenant.id, membershipId: f.accounts[0]!.memberships[0]!, locationId: building.id },
+      });
+    });
+    expect((await f.m.get(`${base}/open-jobs-by-age`).expect(200)).body.total).toBe(1);
+    expect((await f.m.get(`${base}/busiest-sites`).expect(200)).body.sites).toEqual([]);
+  } finally {
+    await f.cleanup();
+  }
+});
