@@ -19,22 +19,24 @@ export function AuditViewer({ first }: { first: AuditPage }) {
   const [items, setItems] = useState<AuditEventView[]>(first.items);
   const [next, setNext] = useState<string | null>(first.nextCursor);
   const [action, setAction] = useState('');
+  // The search that produced the rows on screen. "Show older events" pages through this, not the text being edited.
+  const [applied, setApplied] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const [open, setOpen] = useState<string | null>(null);
 
-  async function load(cursor: string | null, replace: boolean) {
+  async function load(search: string, cursor: string | null, replace: boolean) {
     setBusy(true);
     setError(undefined);
     try {
       const params = new URLSearchParams();
-      if (action.trim()) params.set('action', action.trim());
+      if (search) params.set('action', search);
       if (cursor) params.set('cursor', cursor);
       const res = await fetch('/api/admin/audit?' + params.toString());
       if (!res.ok) throw new Error('Could not load the audit log.');
       const page = (await res.json()) as AuditPage;
       setItems((old) => (replace ? page.items : [...old, ...page.items]));
       setNext(page.nextCursor);
+      if (replace) setApplied(search);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the audit log.');
     } finally {
@@ -54,7 +56,7 @@ export function AuditViewer({ first }: { first: AuditPage }) {
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          void load(null, true);
+          void load(action.trim(), null, true);
         }}
       >
         <label className="sr-only" htmlFor="audit-search">
@@ -94,7 +96,7 @@ export function AuditViewer({ first }: { first: AuditPage }) {
                 <td>{e.ip ?? '—'}</td>
                 <td>
                   {e.changes ? (
-                    <details open={open === e.id} onToggle={(ev) => setOpen(ev.currentTarget.open ? e.id : null)}>
+                    <details>
                       <summary>Details</summary>
                       <pre className="faint sm">{JSON.stringify(e.changes, null, 2)}</pre>
                     </details>
@@ -117,7 +119,7 @@ export function AuditViewer({ first }: { first: AuditPage }) {
           {error}
         </p>
         {next && (
-          <Button onClick={() => load(next, false)} disabled={busy}>
+          <Button onClick={() => load(applied, next, false)} disabled={busy}>
             Show older events
           </Button>
         )}

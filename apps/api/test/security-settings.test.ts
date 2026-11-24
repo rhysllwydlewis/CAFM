@@ -2,7 +2,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@cafm/db';
-import { passwordProblem } from '@cafm/shared';
+import { DEMO_PASSWORD, passwordProblem } from '@cafm/shared';
 import { DEMO_TENANT, STARTER_TENANT, ownerDb, signIn, startApp } from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
@@ -100,6 +100,31 @@ describe('session timeout', () => {
       const ms = row!.expiresAt.getTime() - Date.now();
       expect(ms).toBeLessThan(61 * 60 * 1000);
       expect(ms).toBeGreaterThan(50 * 60 * 1000);
+    } finally {
+      await owner.$disconnect();
+    }
+  });
+});
+
+describe('session persistence under a limit', () => {
+  it('remembers "keep me signed in" even when the limit shortens the session', async () => {
+    const admin = await signIn(app, 'superuser@demo.example');
+    await admin.agent
+      .put('/api/admin/security')
+      .send({ ...settings, sessionTimeoutHours: 2 })
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ identifier: 'manager@demo.example', password: DEMO_PASSWORD, keepSignedIn: true })
+      .expect(200);
+    const owner = ownerDb();
+    try {
+      const row = await owner.session.findFirst({
+        where: { account: { email: 'manager@demo.example' } },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(row!.persistent).toBe(true);
+      expect(row!.expiresAt.getTime() - Date.now()).toBeLessThan(2 * 60 * 60 * 1000 + 1000);
     } finally {
       await owner.$disconnect();
     }

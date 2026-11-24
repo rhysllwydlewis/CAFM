@@ -144,6 +144,8 @@ model Session {
   impersonatorAccountId    String?       @map("impersonator_account_id") @db.Uuid
   impersonatorMembershipId String?       @map("impersonator_membership_id") @db.Uuid
   expiresAt                DateTime      @map("expires_at") @db.Timestamptz(3)
+  /// "Keep me signed in" was chosen. Kept apart from the expiry, which an organisation's sign-in limit can shorten.
+  persistent               Boolean       @default(false)
   ip                       String?
   userAgent                String?       @map("user_agent")
   createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)

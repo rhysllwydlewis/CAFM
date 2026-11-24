@@ -11,8 +11,8 @@ import {
   type OrganisationOption,
 } from '@cafm/shared';
 import { PrismaService } from '../../core/prisma.service';
-import { readSecurity } from '../../core/security-settings';
-import { type AuthContext, hashToken, LONG_SESSION_MS, newSessionToken, SHORT_SESSION_MS } from '../../core/session';
+import { sessionLifetimeMs } from '../../core/security-settings';
+import { type AuthContext, hashToken, newSessionToken } from '../../core/session';
 import { LoginRateLimiter } from './login-rate-limiter';
 
 const MAX_FAILURES = 5;
@@ -102,7 +102,7 @@ export class AuthService {
   async selectOrganisation(auth: AuthContext, membershipId: string, client: ClientInfo) {
     const chosen = (await this.organisations(auth.account.id)).find((o) => o.membershipId === membershipId);
     if (!chosen) throw new UnauthorizedException();
-    const persistent = auth.session.expiresAt.getTime() - auth.session.createdAt.getTime() > SHORT_SESSION_MS;
+    const persistent = auth.session.persistent;
     await this.db.session.delete({ where: { id: auth.session.id } });
     const session = await this.issueSession(auth.account.id, chosen.membershipId, chosen.tenantId, persistent, client);
     await this.event('organisation_selected', { accountId: auth.account.id, tenantId: chosen.tenantId, ip: client.ip });
@@ -173,13 +173,7 @@ export class AuthService {
     client: ClientInfo,
   ): Promise<SessionIssued> {
     const { token, tokenHash } = newSessionToken();
-    let lifetime = persistent ? LONG_SESSION_MS : SHORT_SESSION_MS;
-    // The organisation's sign-in length can shorten a session, never lengthen it.
-    if (tenantId) {
-      const { sessionTimeoutHours } = await readSecurity(this.db, tenantId);
-      if (sessionTimeoutHours) lifetime = Math.min(lifetime, sessionTimeoutHours * 60 * 60 * 1000);
-    }
-    const expiresAt = new Date(Date.now() + lifetime);
+    const expiresAt = new Date(Date.now() + (await sessionLifetimeMs(this.db, tenantId, persistent)));
     await this.db.session.create({
       data: {
         tokenHash,
@@ -187,6 +181,7 @@ export class AuthService {
         membershipId,
         tenantId,
         expiresAt,
+        persistent,
         ip: client.ip,
         userAgent: client.userAgent?.slice(0, 512),
       },
