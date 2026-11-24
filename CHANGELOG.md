@@ -63,6 +63,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- The side menu has a slimmer, rounded scrollbar in the navigation colours. It is quiet at rest, brightens when you hover over the menu and takes the petrol accent as you drag it.
+
 - A new homepage: one day at Cardiff HQ, with scroll as the clock. The day plays on the building from 05:00, with what CAFM did at each time (a request logged by QR code, planned visits raised, a boiler fault at 17:45), then at 18:00 the floors slide apart and the evening follows the fix through the plant room to midnight, ending on the links to try the demo or sign in. With reduced motion the film steps between still frames, and without WebGL the stills cross-fade.
 
 - Fix a site whose opening hours end at 24:00 (the way overnight opening is entered) being unable to receive Helpdesk requests, because the response deadline couldn't be worked out.

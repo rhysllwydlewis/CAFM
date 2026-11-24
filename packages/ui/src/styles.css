@@ -585,6 +585,55 @@ button.tb-icon:hover {
   }
 }
 
+/* Side menu scrollbar: a slim rounded thumb on a clear track, built from the nav tokens only.
+   It rests quiet, picks up the petrol accent on hover and while dragged, and keeps ≥ 3:1 against
+   the rail so it stays easy to find. Firefox and Safari get the standard properties; Chromium
+   uses the pseudo-elements so it can have the pill shape and the hover state. */
+.nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--nav-text) 45%, transparent) transparent;
+}
+.nav-scroll:hover {
+  scrollbar-color: var(--nav-text) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  .nav-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  .nav-scroll:hover {
+    scrollbar-color: auto;
+  }
+  .nav-scroll::-webkit-scrollbar {
+    width: 10px;
+  }
+  .nav-scroll::-webkit-scrollbar-track,
+  .nav-scroll::-webkit-scrollbar-button,
+  .nav-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+    display: none;
+  }
+  .nav-scroll::-webkit-scrollbar-track {
+    display: block;
+  }
+  .nav-scroll::-webkit-scrollbar-thumb {
+    /* A transparent border insets the thumb so it floats in a 10px gutter as a 4px pill. */
+    background-color: color-mix(in srgb, var(--nav-text) 45%, transparent);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+    border-radius: var(--radius-full);
+    min-height: 40px;
+    transition: background-color var(--duration-fast) var(--ease);
+  }
+  .nav-scroll:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--nav-text) 70%, transparent);
+  }
+  .nav-scroll::-webkit-scrollbar-thumb:hover,
+  .nav-scroll::-webkit-scrollbar-thumb:active {
+    background-color: var(--nav-active-bar);
+  }
+}
+
 .nav .btn.ghost.shell-nav-close {
   color: var(--nav-text-strong);
 }
