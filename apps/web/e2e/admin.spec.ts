@@ -181,7 +181,7 @@ test('a Super User renames a module and a term, and the menu follows', async ({ 
     await page.getByRole('link', { name: 'Service levels' }).click();
     await expect(page.getByRole('heading', { name: 'Service levels', level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Request categories', level: 2 })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Priority 1/ }).first()).toBeVisible();
+    await expect(page.getByRole('row', { name: /High High Priority 1/ })).toBeVisible();
     await assertAccessible(page);
   } finally {
     const account = await db.account.findUnique({ where: { email } });

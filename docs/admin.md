@@ -83,7 +83,7 @@ Not built yet on this screen: editing a pick list's options, reordering, bringin
 
 ## Service levels and categories
 
-`/app/admin/service-levels` (`settings.manage`, plan feature `helpdesk`) shows the priority matrix (impact against urgency), the response, attendance and fix targets for each priority with their clock (business hours or 24/7), and the request types grouped by category. It reads `GET /api/helpdesk/settings`. To change anything use the request catalogue (`/app/helpdesk/settings`), which writes the targets and types and audits every change.
+`/app/admin/service-levels` (`settings.manage`, plan feature `helpdesk`) shows the priority matrix (impact against urgency), the response, attendance and fix targets for each impact and urgency pair with their clock (business hours or 24/7), and the request types grouped by category. It reads `GET /api/helpdesk/settings`. To change anything use the request catalogue (`/app/helpdesk/settings`), which writes the targets and types and audits every change.
 
 Not built yet: configurable work order and request statuses (the lifecycle is fixed), and a separate business calendar screen (calendars are set per site on the site's page).
 

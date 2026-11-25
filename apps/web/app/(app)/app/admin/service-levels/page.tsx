@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { can, feature, type RequestPriorityInput } from '@cafm/shared';
+import { can, defaultRequestPriority, feature, type RequestPriorityInput } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
 import { readHelpdesk } from '@/lib/helpdesk';
 import styles from '../admin.module.css';
@@ -39,10 +39,11 @@ export default async function AdminServiceLevelsPage() {
     );
   }
   const { types, matrix } = await readHelpdesk<Settings>('/settings');
+  // Each impact and urgency pair has its own targets; pairs not saved yet use the defaults, as triage does.
   const rule = (impact: number, urgency: number) =>
-    matrix.find((row) => row.impact === impact && row.urgency === urgency);
-  const targets = [...new Map(matrix.map((row) => [row.priority, row])).values()].sort(
-    (a, b) => a.priority - b.priority,
+    matrix.find((row) => row.impact === impact && row.urgency === urgency) ?? defaultRequestPriority(impact, urgency);
+  const targets = LEVELS.flatMap((impact, i) =>
+    LEVELS.map((urgency, j) => ({ impactName: impact, urgencyName: urgency, ...rule(i + 1, j + 1) })),
   );
   const categories = new Map<string, Settings['types']>();
   for (const type of types) categories.set(type.category, [...(categories.get(type.category) ?? []), type]);
@@ -80,7 +81,7 @@ export default async function AdminServiceLevelsPage() {
                   <tr key={level}>
                     <th scope="row">{level}</th>
                     {LEVELS.map((urgency, j) => (
-                      <td key={urgency}>Priority {rule(i + 1, j + 1)?.priority ?? '–'}</td>
+                      <td key={urgency}>Priority {rule(i + 1, j + 1).priority}</td>
                     ))}
                   </tr>
                 ))}
@@ -89,9 +90,11 @@ export default async function AdminServiceLevelsPage() {
           </div>
           <div className={styles.tableWrap} role="region" aria-label="Targets" tabIndex={0}>
             <table className="tbl">
-              <caption className="sr-only">Targets by priority</caption>
+              <caption className="sr-only">Targets by impact and urgency</caption>
               <thead>
                 <tr>
+                  <th scope="col">Impact</th>
+                  <th scope="col">Urgency</th>
                   <th scope="col">Priority</th>
                   <th scope="col">Respond</th>
                   <th scope="col">Attend</th>
@@ -101,8 +104,10 @@ export default async function AdminServiceLevelsPage() {
               </thead>
               <tbody>
                 {targets.map((row) => (
-                  <tr key={row.priority}>
-                    <th scope="row">Priority {row.priority}</th>
+                  <tr key={row.impact + ':' + row.urgency}>
+                    <th scope="row">{row.impactName}</th>
+                    <td>{row.urgencyName}</td>
+                    <td>Priority {row.priority}</td>
                     <td>{duration(row.responseMinutes)}</td>
                     <td>{duration(row.attendMinutes)}</td>
                     <td>{duration(row.fixMinutes)}</td>
