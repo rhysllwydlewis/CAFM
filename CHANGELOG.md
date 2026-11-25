@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Import: locations can be imported from a CSV file through the API, with a template, a check that lists every problem by line and column (and an error report file), an all-or-nothing import, and a rollback while the new locations are untouched. See [import and export](docs/import-export.md#importing-locations). The screens come next.
 - Import and export: CSV exports of locations (`GET /api/locations/export`), assets (`/api/assets/export`), people (`/api/people/export`) and PPM schedules (`/api/ppm/schedules/export`), each limited to what you can already see (the first part of import and export). Spreadsheet formulas in cells are defused, and each export is recorded in the audit log.
 - Administration: the audit log can be filtered by person, record id and date range, and exported as a CSV file (up to 5,000 events). Each export is itself recorded in the log. See [Audit log](docs/admin.md#audit-log).
 - Reports: a Satisfaction report (average and spread of the ratings requesters gave) for people who triage requests, and a Cost analysis report (labour, parts, sub-contract and expense cost per currency) for people who can see costs, both for the chosen period. See [Reports](docs/reports.md).

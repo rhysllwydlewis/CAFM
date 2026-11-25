@@ -12,6 +12,7 @@ model Tenant {
   createdAt                  DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
   memberships                Membership[]
   teams                      Team[]
+  importBatches              ImportBatch[]
   moduleSettings             ModuleSetting[]
   termOverrides              TermOverride[]
   branding                   TenantBranding?

@@ -55,7 +55,7 @@ type LocationFields = ReadonlyMap<string, FieldDefinition>;
 /** Exports stop here so one request cannot read an unbounded estate. */
 const EXPORT_LIMIT = 5000;
 
-async function activeFields(tx: Tx, tenantId: string): Promise<LocationFields> {
+export async function activeFields(tx: Tx, tenantId: string): Promise<LocationFields> {
   const rows = await tx.fieldDefinition.findMany({
     where: { tenantId, entityType: 'location', active: true },
     orderBy: [{ position: 'asc' }, { label: 'asc' }],
