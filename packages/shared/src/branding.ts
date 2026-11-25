@@ -35,3 +35,8 @@ export const updateBrandingSchema = z.object({
   loginMessage: z.string().trim().max(200, 'Keep the message to 200 characters or fewer.').nullable(),
 });
 export type UpdateBrandingInput = z.infer<typeof updateBrandingSchema>;
+
+/** What the public sign-in page may know about an organisation: its message, or nothing. */
+export interface PublicSignInMessage {
+  message: string | null;
+}
