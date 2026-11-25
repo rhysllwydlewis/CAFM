@@ -1,6 +1,10 @@
 # Import and export
 
-Estate data can be downloaded as CSV files. Locations, assets and people can be imported from CSV (below). PPM schedules and the import screens come in later batches of P1-11.
+Estate data can be downloaded as CSV files. Locations, assets and people can be imported from CSV (below). PPM schedules can be imported too. Everything is on one screen, below.
+
+## The screen
+
+Administration, **Import and export** (`/app/admin/import`) holds all of it. Pick what to import, download the template, choose your file and it is checked straight away. Problems are listed by line and column, with a button for the full error report as a file. The **Import** button works only when the file has no problems. **Recent imports** lists the last imports of each kind with an **Undo** button. **Export to CSV** downloads the files described next. You see only the kinds you have permission for (and your plan includes).
 
 ## Exports
 
@@ -21,7 +25,6 @@ Rules that apply to every export:
 
 ## Importing locations
 
-The API is ready. The screens come in a later batch.
 
 | Step | Endpoint | What it does |
 |---|---|---|
@@ -46,7 +49,7 @@ Rules:
 
 ## Importing assets
 
-Same flow as locations. The API is ready and the screens come in a later batch.
+Same flow as locations.
 
 | Step | Endpoint | What it does |
 |---|---|---|
@@ -72,7 +75,7 @@ Columns: `ref`, `name`, `location_code`, `parent`, `class`, `status`, `make`, `m
 
 ## Importing people
 
-People are imported as invitations. Nobody gets an account until they accept, and they choose their own name and password then. The API is ready and the screens come in a later batch.
+People are imported as invitations. Nobody gets an account until they accept, and they choose their own name and password then.
 
 | Step | Endpoint | What it does |
 |---|---|---|
@@ -93,7 +96,7 @@ All of them need `people.invite` across the whole organisation, as the invite fo
 
 ## Importing PPM schedules
 
-Schedules are imported as new schedules. The API is ready and the screens come in a later batch.
+Schedules are imported as new schedules.
 
 | Step | Endpoint | What it does |
 |---|---|---|
