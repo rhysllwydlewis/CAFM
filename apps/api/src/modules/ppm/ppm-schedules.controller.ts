@@ -119,7 +119,7 @@ async function checkTemplateAndAssignee(tx: Tx, tenantId: string, templateId?: s
   }
 }
 
-const frequencyData = (frequency: z.infer<typeof createPpmScheduleSchema>['frequency']) =>
+export const frequencyData = (frequency: z.infer<typeof createPpmScheduleSchema>['frequency']) =>
   frequency.type === 'calendar'
     ? {
         freqType: 'calendar',
@@ -137,7 +137,12 @@ const frequencyData = (frequency: z.infer<typeof createPpmScheduleSchema>['frequ
       };
 
 /** Where each asset on a schedule starts, written as rows. */
-async function startRow(tx: Tx, tenantId: string, schedule: Prisma.PpmScheduleGetPayload<object>, input: AssetInput) {
+export async function startRow(
+  tx: Tx,
+  tenantId: string,
+  schedule: Prisma.PpmScheduleGetPayload<object>,
+  input: AssetInput,
+) {
   const point = await startingPoint(tx, tenantId, schedule, { id: input.assetId }, today(), input.lastDoneOn ?? null);
   return {
     nextDueOn: point.nextDueOn,
