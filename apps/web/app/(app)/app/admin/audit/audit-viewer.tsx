@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Button, TextInput } from '@cafm/ui';
-import type { AuditEventView, AuditPage } from '@cafm/shared';
+import { useId, useState } from 'react';
+import { Button, Field, TextInput } from '@cafm/ui';
+import type { AuditActor, AuditEventView, AuditPage } from '@cafm/shared';
 import styles from '../admin.module.css';
 
 const when = (iso: string) =>
@@ -14,29 +14,50 @@ const when = (iso: string) =>
     second: '2-digit',
   });
 
-/** The audit log (admin-09-audit): newest first, searchable by event, 50 at a time. */
-export function AuditViewer({ first }: { first: AuditPage }) {
+interface Filters {
+  action: string;
+  actor: string;
+  entityId: string;
+  from: string;
+  to: string;
+}
+const NO_FILTERS: Filters = { action: '', actor: '', entityId: '', from: '', to: '' };
+
+/** The query string for a set of filters. Dates are whole local days, sent as UTC times. */
+function queryFor(f: Filters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (f.action) params.set('action', f.action);
+  if (f.actor) params.set('actor', f.actor);
+  if (f.entityId) params.set('entityId', f.entityId);
+  if (f.from) params.set('from', new Date(f.from + 'T00:00:00').toISOString());
+  if (f.to) params.set('to', new Date(f.to + 'T23:59:59.999').toISOString());
+  return params;
+}
+
+/** The audit log (admin-09-audit): newest first, filtered by event, person, record and date, 50 at a time. */
+export function AuditViewer({ first, actors }: { first: AuditPage; actors: AuditActor[] }) {
   const [items, setItems] = useState<AuditEventView[]>(first.items);
   const [next, setNext] = useState<string | null>(first.nextCursor);
-  const [action, setAction] = useState('');
-  // The search that produced the rows on screen. "Show older events" pages through this, not the text being edited.
-  const [applied, setApplied] = useState('');
+  const [draft, setDraft] = useState<Filters>(NO_FILTERS);
+  // The filters that produced the rows on screen. "Show older events" and the export use these, not the form being edited.
+  const [applied, setApplied] = useState<Filters>(NO_FILTERS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const ids = useId();
+  const set = (key: keyof Filters) => (value: string) => setDraft((d) => ({ ...d, [key]: value }));
 
-  async function load(search: string, cursor: string | null, replace: boolean) {
+  async function load(filters: Filters, cursor: string | null, replace: boolean) {
     setBusy(true);
     setError(undefined);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set('action', search);
+      const params = queryFor(filters);
       if (cursor) params.set('cursor', cursor);
       const res = await fetch('/api/admin/audit?' + params.toString());
       if (!res.ok) throw new Error('Could not load the audit log.');
       const page = (await res.json()) as AuditPage;
       setItems((old) => (replace ? page.items : [...old, ...page.items]));
       setNext(page.nextCursor);
-      if (replace) setApplied(search);
+      if (replace) setApplied(filters);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the audit log.');
     } finally {
@@ -44,32 +65,81 @@ export function AuditViewer({ first }: { first: AuditPage }) {
     }
   }
 
+  const rangeBackwards = draft.from !== '' && draft.to !== '' && draft.from > draft.to;
+  const exportHref = '/api/admin/audit/export?' + queryFor(applied).toString();
+
   return (
     <section className="card" aria-labelledby="audit-title">
       <div className="card-h">
         <h2 className="card-t" id="audit-title">
           Audit log
         </h2>
+        <a className="btn" href={exportHref} download="audit-log.csv">
+          Export CSV
+        </a>
       </div>
       <form
         className="card-b row g2"
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          void load(action.trim(), null, true);
+          if (rangeBackwards) return;
+          void load({ ...draft, action: draft.action.trim(), entityId: draft.entityId.trim() }, null, true);
         }}
       >
-        <label className="sr-only" htmlFor="audit-search">
-          Search events
-        </label>
-        <TextInput
-          id="audit-search"
-          value={action}
-          placeholder="Search events, such as role or branding"
-          onChange={(e) => setAction(e.target.value)}
-        />
-        <Button type="submit" disabled={busy}>
+        <Field label="Event" htmlFor={ids + 'action'}>
+          <TextInput
+            id={ids + 'action'}
+            value={draft.action}
+            placeholder="Such as role or branding"
+            onChange={(e) => set('action')(e.target.value)}
+          />
+        </Field>
+        <Field label="Who" htmlFor={ids + 'actor'}>
+          <select
+            className={styles.control}
+            id={ids + 'actor'}
+            value={draft.actor}
+            onChange={(e) => set('actor')(e.target.value)}
+          >
+            <option value="">Anyone</option>
+            {actors.map((a) => (
+              <option key={a.membershipId} value={a.membershipId}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Record id" htmlFor={ids + 'record'}>
+          <TextInput
+            id={ids + 'record'}
+            value={draft.entityId}
+            placeholder="The id of the record"
+            onChange={(e) => set('entityId')(e.target.value)}
+          />
+        </Field>
+        <Field label="From" htmlFor={ids + 'from'}>
+          <TextInput id={ids + 'from'} type="date" value={draft.from} onChange={(e) => set('from')(e.target.value)} />
+        </Field>
+        <Field
+          label="To"
+          htmlFor={ids + 'to'}
+          error={rangeBackwards ? 'The start date must be before the end date.' : undefined}
+        >
+          <TextInput id={ids + 'to'} type="date" value={draft.to} onChange={(e) => set('to')(e.target.value)} />
+        </Field>
+        <Button type="submit" disabled={busy || rangeBackwards}>
           Search
+        </Button>
+        <Button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setDraft(NO_FILTERS);
+            void load(NO_FILTERS, null, true);
+          }}
+        >
+          Clear
         </Button>
       </form>
       <div className={'card-b flush ' + styles.tableWrap}>

@@ -55,3 +55,9 @@ export interface AuditPage {
   items: AuditEventView[];
   nextCursor: string | null;
 }
+
+/** A person who appears in the audit log, for the "Who" filter. */
+export interface AuditActor {
+  membershipId: string;
+  name: string;
+}
