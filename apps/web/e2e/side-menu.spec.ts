@@ -54,10 +54,29 @@ test.describe('side menu on a desktop', () => {
 
     await page.getByRole('button', { name: 'Collapse side menu' }).click();
     await expect.poll(widthOf).toBeLessThan(80);
-    // The link is still named by its label, and shows it as a tooltip.
+    // The link is still named by its label, and shows it beside the rail on hover and on keyboard focus.
     const home = menu.getByRole('link', { name: 'Home', exact: true });
-    await expect(home).toHaveAttribute('title', 'Home');
+    await expect(home).toHaveAttribute('data-label', 'Home');
     await expect(home).toBeVisible();
+    const tip = () => home.evaluate((el) => getComputedStyle(el, '::after').content);
+    expect(await tip()).toBe('none');
+    await home.hover();
+    await expect.poll(tip).toBe('"Home"');
+    await page.mouse.move(700, 400);
+    await expect.poll(tip).toBe('none');
+    await home.focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(home).toBeFocused();
+    expect(await tip()).toBe('"Home"');
+    // Generated text counts towards a link's name, so while the tooltip shows the name must still be just "Home".
+    await expect(menu.getByRole('link', { name: 'Home', exact: true })).toHaveCount(1);
+    // Fixed, not absolute, so the menu's own scroll area cannot clip it, and just to the right of the 64px rail.
+    const box = await home.evaluate((el) => {
+      const style = getComputedStyle(el, '::after');
+      return { position: style.position, left: style.left };
+    });
+    expect(box).toEqual({ position: 'fixed', left: '72px' });
     await expect(menu.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
     await assertAccessible(page);
 

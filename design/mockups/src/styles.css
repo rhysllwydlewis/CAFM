@@ -89,6 +89,10 @@ svg.i.s24 { width: 24px; height: 24px; } svg.i.s32 { width: 32px; height: 32px; 
   .nav-collapsed .nav-label { height: 1px; padding: 0; margin: 0 8px 10px; background: var(--nav-border); font-size: 0; overflow: hidden; }
   .nav-collapsed .nav-item { justify-content: center; gap: 0; padding: 0; }
   .nav-collapsed .nav-foot { flex-direction: column; padding: 10px 0; gap: 8px; }
+  /* An icon's name, beside the rail, on hover and on keyboard focus. Fixed rather than absolute, with no top set, so it sits level with its icon and the menu's scroll area cannot clip it. */
+  .nav-collapsed .nav-item:hover::after, .nav-collapsed .nav-item:focus-visible::after, .nav-collapsed .nav-item.tip::after {
+    content: attr(data-label); position: fixed; left: calc(var(--nav-width-collapsed) + 8px); z-index: 40; padding: 5px 10px; border: 1px solid var(--nav-border); border-radius: var(--radius-sm); background: var(--nav-bg-elevated); color: var(--nav-text-strong); box-shadow: var(--shadow-md); font-size: 12.5px; font-weight: 500; line-height: 16px; white-space: nowrap; pointer-events: none;
+  }
   .nav-collapsed .brand span, .nav-collapsed .tenant .grow, .nav-collapsed .tenant > svg.i, .nav-collapsed .nav-item > span, .nav-collapsed .nav-foot > .grow:not(.user-menu), .nav-collapsed .nav-foot > svg.i {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
   }

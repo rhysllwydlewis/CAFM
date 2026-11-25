@@ -6,6 +6,8 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- With the side menu collapsed, each icon shows its name beside the menu when you hover over it or move to it with the keyboard. Before, only a mouse hover showed anything. A locked module says so in the same label.
+
 - The side menu shows a soft glow along its lower edge when there is more menu below, and along its upper edge once you have scrolled down. The glow disappears at each end. It helps because the scrollbar stays hidden until you hover the menu.
 
 - The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is saved on your account, so it follows you to another browser or device, and the phone menu is unchanged. (While an administrator is viewing as someone else, the choice lasts only for that visit.)

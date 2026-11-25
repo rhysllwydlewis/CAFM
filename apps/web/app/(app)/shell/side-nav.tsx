@@ -21,6 +21,11 @@ interface Props {
   onToggleCollapsed: () => void;
 }
 
+/** What an icon-only menu item is called: its label, and that it is locked when the plan does not include it. */
+function navLabel(item: { label: string; locked: boolean }): string {
+  return item.locked ? `${item.label} (${t('shell.locked')})` : item.label;
+}
+
 /**
  * The side menu. On a phone it is a drawer opened from the top bar (mockup shell-04). On a desktop a button beside
  * the logo collapses it to a slim icon rail and back (mockups shell-05 and shell-06).
@@ -92,7 +97,10 @@ export function SideNav({
                     className={`nav-item ${active ? 'active' : ''}`}
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    title={collapsed ? (item.locked ? `${item.label} (${t('shell.locked')})` : item.label) : undefined}
+                    // The tooltip is generated text, and generated text counts towards a link's name, so name it outright:
+                    // otherwise a screen reader says "Helpdesk Helpdesk" while the tooltip shows.
+                    aria-label={collapsed ? navLabel(item) : undefined}
+                    data-label={collapsed ? navLabel(item) : undefined}
                   >
                     <Icon name={item.icon} />
                     <span>{item.label}</span>

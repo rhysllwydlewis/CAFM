@@ -953,7 +953,7 @@
     "id": "shell-06-nav-collapsed",
     "group": "App shell",
     "title": "Side menu collapsed",
-    "desc": "A 64px rail of icons that leaves more room for the page. Hover or focus an icon to see its name; the button under the logo opens the menu again. The choice is remembered.",
+    "desc": "A 64px rail of icons that leaves more room for the page. Hover or focus an icon to see its name beside the rail (shown here on Helpdesk); the button under the logo opens the menu again. The choice is remembered.",
     "viewport": "desktop",
     "theme": "light",
     "file": "14-shell.js"
