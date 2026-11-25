@@ -210,6 +210,107 @@ test('a Super User renames a module and a term, and the menu follows', async ({ 
   }
 });
 
+test('business calendars say what a missing calendar means and page through a large estate', async ({ page }) => {
+  test.setTimeout(60_000);
+  // Its own organisation, with more sites than one page holds and half of them without a calendar.
+  const suffix = randomUUID().slice(0, 8);
+  const email = 'calendars-' + suffix + '@test.example';
+  const password = 'Pw-' + randomUUID();
+  const db = new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
+  });
+  const tenant = await createTenant(db, {
+    name: 'Calendars test estate',
+    slug: 'calendars-' + suffix,
+    plan: 'professional',
+    adminEmail: email,
+    appUrl: 'http://localhost:3000',
+  });
+  const where = { tenantId: tenant.tenantId };
+  try {
+    const token = tenant.inviteUrl.split('/').at(-1);
+    expect(
+      (
+        await page.request.post('/api/auth/invites/' + token + '/accept', {
+          data: { name: 'Test administrator', password, acceptTerms: true },
+        })
+      ).ok(),
+    ).toBe(true);
+    const hasCalendar = (i: number) => i % 2 === 0;
+    await db.location.createMany({
+      data: Array.from({ length: 120 }, (_, i) => ({
+        ...where,
+        name: 'Site ' + String(i).padStart(3, '0'),
+        code: 'S' + i,
+        kind: 'site',
+        ...(hasCalendar(i)
+          ? {
+              siteCalendar: {
+                jurisdiction: 'england',
+                timeZone: 'Europe/London',
+                observeBankHolidays: true,
+                closures: [],
+                hours: [1, 2, 3, 4, 5].map((day) => ({ day, opens: '08:00', closes: '18:00' })),
+              },
+            }
+          : {}),
+      })),
+    });
+
+    await page.goto('/app/admin/calendars');
+    await expect(page.getByRole('heading', { name: 'Business calendars', level: 2 })).toBeVisible();
+
+    // The warning counts every site, not just this page, and says what those sites really run on.
+    const warning = page.getByRole('status').filter({ hasText: 'have no business calendar' });
+    await expect(warning).toContainText('60 sites have no business calendar.');
+    await expect(warning).toContainText('default hours, Mon to Fri, 09:00 to 17:00 (Europe/London)');
+    await expect(warning).toContainText('Priorities that run around the clock are not affected.');
+    await expect(warning).not.toContainText('around the clock until');
+    await expect(page.getByRole('row', { name: /Site 001/ })).toContainText('Default: Mon to Fri, 09:00 to 17:00');
+    await expect(page.getByRole('row', { name: /Site 000/ })).toContainText('Mon to Fri, 08:00 to 18:00');
+
+    // 100 sites on the first page (plus the header row), and a way to the rest.
+    await expect(page.getByRole('row')).toHaveCount(101);
+    await expect(page.getByText('Showing 1 to 100 of 120 sites')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Previous page' })).toHaveCount(0);
+    await assertAccessible(page);
+
+    // Pressed by keyboard, as the other admin tests do: on a phone the administration menu can cover a pointer click.
+    await page.getByRole('link', { name: 'Next page' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/page=2/);
+    await expect(page.getByText('Showing 101 to 120 of 120 sites')).toBeVisible();
+    await expect(page.getByRole('row')).toHaveCount(21);
+    await expect(page.getByRole('row', { name: /Site 119/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Next page' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Previous page' })).toBeVisible();
+    // Still 60 across the whole estate, although this page holds 10 of them.
+    await expect(page.getByRole('status').filter({ hasText: 'have no business calendar' })).toContainText(
+      '60 sites have no business calendar.',
+    );
+    await assertAccessible(page);
+
+    // A page number past the end shows the last page rather than an empty one.
+    await page.goto('/app/admin/calendars?page=99');
+    await expect(page.getByText('Showing 101 to 120 of 120 sites')).toBeVisible();
+  } finally {
+    const account = await db.account.findUnique({ where: { email } });
+    await db.$transaction(async (tx) => {
+      await tx.session.deleteMany({ where });
+      await tx.location.deleteMany({ where });
+      await tx.auditEvent.deleteMany({ where });
+      await tx.invite.deleteMany({ where });
+      await tx.outboxMessage.deleteMany({ where });
+      await tx.membership.deleteMany({ where });
+      await tx.role.deleteMany({ where });
+      await tx.authEvent.deleteMany({ where: account ? { accountId: account.id } : where });
+      if (account) await tx.account.delete({ where: { id: account.id } });
+      await tx.tenant.delete({ where: { id: where.tenantId } });
+    });
+    await db.$disconnect();
+  }
+});
+
 test('a Super User views the app as a technician and then stops', async ({ page }) => {
   await signInAs(page, 'superuser');
   await page.goto('/app/admin/users');
@@ -407,7 +508,7 @@ test('a Super User sees every site with its business calendar', async ({ page })
   await page.goto('/app/admin/calendars');
   await expect(page.getByRole('heading', { name: 'Business calendars', level: 2 })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Opening hours' })).toBeVisible();
-  await expect(page.getByRole('row').nth(1)).toContainText(/\d\d:\d\d to \d\d:\d\d|Around the clock/);
+  await expect(page.getByRole('row').nth(1)).toContainText(/\d\d:\d\d to \d\d:\d\d/);
   await expect(page.getByRole('link', { name: /calendar for/ }).first()).toBeVisible();
   await assertAccessible(page);
 });

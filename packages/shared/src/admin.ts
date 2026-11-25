@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { SiteCalendar } from './site-calendar';
 
 /** Read models for the admin console (P1-09). */
@@ -54,4 +55,20 @@ export type AdminCalendarSite = {
   code: string;
   calendar: SiteCalendar | null;
 };
-export type AdminCalendars = { sites: AdminCalendarSite[] };
+/** How many sites the calendars screen shows at a time. */
+export const ADMIN_CALENDARS_PAGE_SIZE = 100;
+export const adminCalendarsQuerySchema = z.object({ page: z.coerce.number().int().min(1).max(100_000).default(1) });
+
+/**
+ * One page of sites, in name order. `total` and `missing` count every open site the person can see, not just this
+ * page, so the warning and the paging are true however many sites there are. `page` is the page actually returned: a
+ * page past the end gives the last one.
+ */
+export type AdminCalendars = {
+  sites: AdminCalendarSite[];
+  page: number;
+  pageSize: number;
+  total: number;
+  /** Sites with no calendar, or whose stored calendar no longer validates, across all pages. */
+  missing: number;
+};
