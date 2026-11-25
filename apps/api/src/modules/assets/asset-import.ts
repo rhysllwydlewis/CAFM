@@ -301,17 +301,20 @@ export async function planAssetImport(
   // Parents: a ref in this file first, then the number of an asset that already exists.
   const inFile = new Map(planned.filter(({ ref }) => ref).map((item) => [item.ref.toLowerCase(), item]));
   const numbers = [
-    ...new Set(
-      planned.flatMap(({ parent }) => (parent && !inFile.has(parent.toLowerCase()) ? [parent.toUpperCase()] : [])),
-    ),
+    ...new Set(planned.flatMap(({ parent }) => (parent && !inFile.has(parent.toLowerCase()) ? [parent] : []))),
   ];
   const existing = new Map(
     (
       await tx.asset.findMany({
-        where: { AND: [assetScope(auth), { number: { in: numbers } }] },
+        where: {
+          AND: [
+            assetScope(auth),
+            { OR: numbers.map((number) => ({ number: { equals: number, mode: 'insensitive' as const } })) },
+          ],
+        },
         select: { id: true, number: true, locationId: true },
       })
-    ).map((row) => [row.number, row]),
+    ).map((row) => [row.number.toLowerCase(), row]),
   );
   const existingSites = new Map(
     (
@@ -356,7 +359,7 @@ export async function planAssetImport(
       else valid.push(item);
       continue;
     }
-    const found = existing.get(item.parent.toUpperCase());
+    const found = existing.get(item.parent.toLowerCase());
     if (!found)
       issues.push({
         row: item.row,
@@ -366,7 +369,7 @@ export async function planAssetImport(
     else if (existingSites.get(found.locationId) !== item.siteId)
       issues.push({ row: item.row, column: 'parent', message: 'A component must be in the same site as its parent.' });
     else {
-      existingParents.set(found.number, found.id);
+      existingParents.set(found.number.toLowerCase(), found.id);
       valid.push(item);
     }
   }

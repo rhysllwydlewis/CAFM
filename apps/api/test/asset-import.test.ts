@@ -257,3 +257,22 @@ it('rejects a parent in another site and a loop of parents', async () => {
     await cleanup();
   }
 });
+
+it('finds an existing parent whatever the case of its number', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    await agent
+      .post(`${assets}/import`)
+      .send({ csv: `${header}\np,Pump,HQ,,,,,,,,,,,,,` })
+      .expect(201);
+    const pump = await withTenant(db, tenant.id, (tx) => tx.asset.findFirstOrThrow({ where: { name: 'Pump' } }));
+    await agent
+      .post(`${assets}/import`)
+      .send({ csv: `${header}\n,Seal,HQ,${pump.number.toLowerCase()},,,,,,,,,,,,` })
+      .expect(201);
+    const seal = await withTenant(db, tenant.id, (tx) => tx.asset.findFirstOrThrow({ where: { name: 'Seal' } }));
+    expect(seal.parentId).toBe(pump.id);
+  } finally {
+    await cleanup();
+  }
+});

@@ -23,6 +23,7 @@ import { activeCustomFields, nextNumber } from '../../core/config';
 import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { allLocations } from '../locations/location-tree';
 import { assetScope, withAssetWrite } from './asset-scope';
 import { assetTemplate, planAssetImport, type AssetPlan } from './asset-import';
 
@@ -124,7 +125,7 @@ export class AssetImportController {
       const created: string[] = [];
       for (const item of result.ordered) {
         const parentId = item.parent
-          ? (ids.get(item.parent.toLowerCase()) ?? result.existingParents.get(item.parent.toUpperCase()) ?? null)
+          ? (ids.get(item.parent.toLowerCase()) ?? result.existingParents.get(item.parent.toLowerCase()) ?? null)
           : null;
         const { installedOn, replacementCostMinor, ...data } = item.data;
         const row = await tx.asset.create({
@@ -170,14 +171,28 @@ export class AssetImportController {
     });
   }
 
+  /** A member limited to some sites sees only imports whose assets are all inside their sites. */
   @Get('import/batches')
   @RequirePermission('assets.manage')
   async batches(@Req() req: Request): Promise<ImportBatchRecord[]> {
-    return withTenant(this.db, req.auth!.membership!.tenantId, async (tx) =>
-      (await tx.importBatch.findMany({ where: { entityType: 'asset' }, orderBy: { createdAt: 'desc' }, take: 20 })).map(
-        batchRecord,
-      ),
-    );
+    const auth = req.auth!;
+    return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
+      const rows = await tx.importBatch.findMany({
+        where: { entityType: 'asset' },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      if (allLocations(auth)) return rows.map(batchRecord);
+      const visible: typeof rows = [];
+      for (const row of rows) {
+        const ids = row.createdIds as string[];
+        // A rolled-back import has no assets left to check, so it stays with whole-estate managers.
+        if (row.status !== 'applied') continue;
+        if ((await tx.asset.count({ where: { AND: [assetScope(auth), { id: { in: ids } }] } })) === ids.length)
+          visible.push(row);
+      }
+      return visible.map(batchRecord);
+    });
   }
 
   /** Removes what an import made, if none of it has been used or edited since. */
