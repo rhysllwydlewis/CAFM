@@ -49,10 +49,12 @@ export function AppShell({
   // Close the phone menu when the page changes.
   useEffect(() => setNavOpen(false), [pathname]);
 
+  const viewingAs = impersonation !== null;
   const toggleNav = useCallback(() => {
     setNavCollapsed(!navCollapsed);
-    saveNavCollapsed(!navCollapsed);
-  }, [navCollapsed]);
+    // "View as" is read-only and the choice would be saved on the other person's account, so it only lasts the visit.
+    if (!viewingAs) saveNavCollapsed(!navCollapsed);
+  }, [navCollapsed, viewingAs]);
 
   const onKey = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {

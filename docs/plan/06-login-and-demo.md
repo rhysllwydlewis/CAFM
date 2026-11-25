@@ -109,7 +109,7 @@ The same persona names are used throughout the screen mockups ([doc 12](12-scree
 
 ### Demo operations and guard rails
 Many prospects will be signed in as the same demo Super User at once, so the demo must stay usable:
-- **Nightly reset** at 03:00 UK time (worker job) restores the seed snapshot and rolls dates forward so data always looks current. A banner warns signed-in users 10 minutes before reset.
+- **Nightly reset** at 03:00 UK time (worker job) restores the seed snapshot and rolls dates forward so data always looks current. It also clears the demo personas' display choices (such as a collapsed side menu), which are saved on the account and would otherwise be shared by every visitor. A banner warns signed-in users 10 minutes before reset.
 - Demo accounts cannot change their password, email, MFA or SSO settings, cannot delete the tenant, cannot create API keys or webhooks to external URLs, and cannot remove the demo users. Other configuration changes are allowed and are undone by the reset.
 - **All outbound email and SMS from demo tenants is captured, never sent** (so invites and notifications can't be used to spam real addresses). Password reset is disabled in demo.
 - Uploads in demo are limited (5 MB per file, images/PDF only) and purged at reset.

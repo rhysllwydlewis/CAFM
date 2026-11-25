@@ -5,13 +5,20 @@ import {
   Get,
   HttpCode,
   NotFoundException,
+  Patch,
   Post,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { DEMO_PASSWORD, DEMO_PERSONAS, loginRequestSchema, selectOrganisationSchema } from '@cafm/shared';
+import {
+  DEMO_PASSWORD,
+  DEMO_PERSONAS,
+  loginRequestSchema,
+  selectOrganisationSchema,
+  updatePreferencesSchema,
+} from '@cafm/shared';
 import { SessionGuard } from '../../core/auth.guards';
 import { parse } from '../../core/validation';
 import { clientInfo as client, cookieOptions, sessionToken, setSessionCookie } from '../../core/cookies';
@@ -64,6 +71,16 @@ export class AuthController {
     const user = this.auth.currentUser(req.auth!);
     if (!user) throw new ForbiddenException({ code: 'organisation_required' });
     return user;
+  }
+
+  /**
+   * Saves the signed-in person's own display choices. Only ever their own account, so it needs a session but no
+   * permission. "View as" is refused by the session guard, so it can't change the viewed person's choices.
+   */
+  @Patch('preferences')
+  @UseGuards(SessionGuard)
+  updatePreferences(@Req() req: Request, @Body() body: unknown) {
+    return this.auth.updatePreferences(req.auth!.account.id, parse(updatePreferencesSchema, body));
   }
 
   /** Demo credentials for the login page. Only exists when DEMO_MODE=true (doc 06, risk R11). */
