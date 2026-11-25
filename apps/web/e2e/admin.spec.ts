@@ -366,12 +366,15 @@ test('a Super User checks, imports and undoes a locations file', async ({ page }
 
   await choose(`${code}.csv`, 'code,name,kind\n' + `${code},Import test site,site\n`);
   await expect(page.getByText('The file is ready.')).toBeVisible();
-  await page.getByRole('button', { name: 'Import 1 locations' }).click();
+  // By keyboard, as in the other admin tests: it also proves the button is reachable without a pointer.
+  await page.getByRole('button', { name: 'Import 1 locations' }).focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByText('Imported 1 locations.')).toBeVisible();
 
   const history = page.getByRole('row').filter({ hasText: `${code}.csv` });
   await expect(history.getByText('Imported')).toBeVisible();
-  await page.getByRole('button', { name: `Undo the import of ${code}.csv` }).click();
+  await page.getByRole('button', { name: `Undo the import of ${code}.csv` }).focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByText(`Undid the import of ${code}.csv.`)).toBeVisible();
   await expect(history.getByText('Undone')).toBeVisible();
 });
