@@ -1,6 +1,6 @@
 # Import and export
 
-Estate data can be downloaded as CSV files. Locations and assets can be imported from CSV (below). People and PPM schedules, and the import screens, come in later batches of P1-11.
+Estate data can be downloaded as CSV files. Locations, assets and people can be imported from CSV (below). PPM schedules and the import screens come in later batches of P1-11.
 
 ## Exports
 
@@ -69,3 +69,24 @@ Columns: `ref`, `name`, `location_code`, `parent`, `class`, `status`, `make`, `m
 - An exported file imports into another organisation once its first columns are renamed: `number` to `ref` and `parent_number` to `parent`.
 - Roll back works only while the import's assets are untouched: none edited, and none has requests, work orders, PPM schedules, links, tags, meters, warranties, files or components outside the import. A manager who cannot see all of the assets cannot roll the import back.
 - The import and the rollback are each one audit event (`asset.imported`, `asset.import_rolled_back`) with the number of rows.
+
+## Importing people
+
+People are imported as invitations. Nobody gets an account until they accept, and they choose their own name and password then. The API is ready and the screens come in a later batch.
+
+| Step | Endpoint | What it does |
+|---|---|---|
+| Template | `GET /api/people/import/template` | The header row: `email,role`. |
+| Check | `POST /api/people/import/preview` | Lists every problem with its line and column. Saves and sends nothing. Add `?format=csv` for the error report. |
+| Import | `POST /api/people/import` | Sends the invitations. All or nothing. |
+| Recent imports | `GET /api/people/import/batches` | The last 20 people imports. |
+| Withdraw | `POST /api/people/import/<id>/rollback` | Withdraws the invitations nobody has used yet. |
+
+All of them need `people.invite` across the whole organisation, as the invite form does.
+
+- `email` and `role` (the role's key, such as `technician`) are needed. Other columns are reported. An exported people file needs its `name` and `status` columns removed first.
+- The same rules as the invite form apply to every row: you cannot give a role beyond what you hold, an address that is already a member is a problem, and full-licence roles must fit the seats your plan has left (counted across the whole file).
+- A new invitation replaces an earlier pending one to the same address. The same address twice in a file is a problem.
+- Each person gets the usual invitation email, which works for 7 days.
+- Withdrawing works only while nobody from the import has accepted. Emails already sent cannot be unsent, but their links stop working.
+- The import and the withdrawal are each one audit event (`people.imported`, `people.import_rolled_back`) with the number of rows.
