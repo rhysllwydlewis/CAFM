@@ -7,7 +7,8 @@ const FORMULA_START = /^[=+\-@\t\r]/;
 export function csvCell(value: unknown): string {
   if (value === null || value === undefined) return '';
   let text = typeof value === 'string' ? value : typeof value === 'object' ? JSON.stringify(value) : String(value);
-  if (FORMULA_START.test(text)) text = `'${text}`;
+  // Only text is at risk: a number such as -5 is never read as a formula.
+  if (typeof value === 'string' && FORMULA_START.test(text)) text = `'${text}`;
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
