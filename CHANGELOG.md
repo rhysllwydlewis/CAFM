@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration: the sign-in message saved under Branding now shows on the organisation's own sign-in page. Nothing is revealed about organisations that have no message, or that don't exist.
 - Import: PPM schedules can be imported from a CSV file through the API, with a template, a check that lists every problem by line and column (and an error report file), an all-or-nothing import, and an undo while the new schedules are untouched. See [import and export](docs/import-export.md#importing-ppm-schedules). The screens come next.
 - You can import people from a CSV file as invitations, with a check first, an error report and a way to withdraw the invitations. The screens come later.
 - Import: assets can be imported from a CSV file through the API, with the same template, check, error report, all-or-nothing import and rollback as locations. A file can add a system and its components together, and class attributes and custom fields are checked. See [import and export](docs/import-export.md#importing-assets).
