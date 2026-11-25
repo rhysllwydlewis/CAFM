@@ -27,6 +27,7 @@ export function AdminMenu({
     canManageSettings && { href: '/app/admin/terminology', label: 'Terminology' },
     canManageSettings && { href: '/app/admin/branding', label: 'Branding' },
     canManageSettings && { href: '/app/admin/fields', label: 'Custom fields' },
+    canManageSettings && { href: '/app/admin/service-levels', label: 'Service levels' },
     canManageSettings && { href: '/app/admin/security', label: 'Security and sign-in' },
     canReadAudit && { href: '/app/admin/audit', label: 'Audit log' },
   ].filter((item): item is { href: string; label: string } => !!item);
