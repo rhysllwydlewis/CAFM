@@ -361,3 +361,24 @@ it('totals cost by type and currency for the period, and needs permission to see
     await f.cleanup();
   }
 });
+
+it('keeps the satisfaction and cost reports to the permissions behind their data', async () => {
+  const f = await fixture();
+  try {
+    const agent = async (role: string) => {
+      const account = await createTestAccount(db, [f.tenant.id], undefined, role);
+      return (await signIn(app, account.email, account.password)).agent;
+    };
+    // A client viewer can read reports but has neither costs.read nor requests.manage.
+    const viewer = await agent('client_viewer');
+    await viewer.get(`${base}/work-mix`).expect(200);
+    await viewer.get(`${base}/satisfaction`).expect(403);
+    await viewer.get(`${base}/cost-analysis`).expect(403);
+    // Finance can see costs but does not triage requests.
+    const finance = await agent('finance');
+    await finance.get(`${base}/cost-analysis`).expect(200);
+    await finance.get(`${base}/satisfaction`).expect(403);
+  } finally {
+    await f.cleanup();
+  }
+});
