@@ -333,7 +333,18 @@ export class AssetsController {
         }),
         activeCustomFields(tx, tenantId, 'asset'),
       ]);
+      // A parent can sit beyond the row cap, so check it against the member's scope directly.
       const visible = new Set(rows.map(({ id }) => id));
+      const missing = [
+        ...new Set(rows.flatMap(({ parentId }) => (parentId && !visible.has(parentId) ? [parentId] : []))),
+      ];
+      if (missing.length) {
+        const found = await tx.asset.findMany({
+          where: { AND: [assetScope(auth), { id: { in: missing } }] },
+          select: { id: true },
+        });
+        for (const { id } of found) visible.add(id);
+      }
       const keys = [...fields.keys()];
       const out = toCsv(
         [

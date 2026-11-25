@@ -206,7 +206,18 @@ export class LocationsController {
         }),
         activeFields(tx, tenantId),
       ]);
+      // A parent can sit beyond the row cap, so check it against the member's scope directly.
       const visible = new Set(rows.map(({ id }) => id));
+      const missing = [
+        ...new Set(rows.flatMap(({ parentId }) => (parentId && !visible.has(parentId) ? [parentId] : []))),
+      ];
+      if (missing.length) {
+        const found = await tx.location.findMany({
+          where: { AND: [locationScope(auth), { id: { in: missing } }] },
+          select: { id: true },
+        });
+        for (const { id } of found) visible.add(id);
+      }
       const keys = [...fields.keys()];
       const out = toCsv(
         [
