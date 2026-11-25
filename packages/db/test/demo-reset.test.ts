@@ -100,6 +100,55 @@ describe('demo reset', () => {
     }
   });
 
+  it('puts the display choices of the shared demo personas back, and leaves other people’s alone', async () => {
+    const stamp = Date.now();
+    const tenant = await db.tenant.create({
+      data: { slug: `reset-prefs-${stamp}`, name: 'Reset Preferences', plan: 'starter', demo: true },
+    });
+    const other = await db.tenant.create({
+      data: { slug: `reset-prefs-other-${stamp}`, name: 'Other Demo', plan: 'starter', demo: true },
+    });
+    const persona = await db.account.create({
+      data: {
+        email: `persona-${stamp}@test.example`,
+        name: 'Persona',
+        passwordHash: 'x',
+        isDemo: true,
+        preferences: { navCollapsed: true },
+      },
+    });
+    const elsewhere = await db.account.create({
+      data: {
+        email: `elsewhere-${stamp}@test.example`,
+        name: 'Elsewhere',
+        passwordHash: 'x',
+        isDemo: true,
+        preferences: { navCollapsed: true },
+      },
+    });
+    try {
+      await db.membership.create({
+        data: { tenantId: tenant.id, accountId: persona.id, role: 'helpdesk', licence: 'full' },
+      });
+      await db.membership.create({
+        data: { tenantId: other.id, accountId: elsewhere.id, role: 'helpdesk', licence: 'full' },
+      });
+
+      await resetDemo(db, { tenantIds: [tenant.id], reseed: false });
+
+      expect((await db.account.findUniqueOrThrow({ where: { id: persona.id } })).preferences).toEqual({});
+      // A demo account in a tenant that was not reset keeps its choices until that tenant is.
+      expect((await db.account.findUniqueOrThrow({ where: { id: elsewhere.id } })).preferences).toEqual({
+        navCollapsed: true,
+      });
+    } finally {
+      await db.membership.deleteMany({ where: { tenantId: { in: [tenant.id, other.id] } } });
+      await db.account.deleteMany({ where: { id: { in: [persona.id, elsewhere.id] } } });
+      await db.role.deleteMany({ where: { tenantId: { in: [tenant.id, other.id] } } });
+      await db.tenant.deleteMany({ where: { id: { in: [tenant.id, other.id] } } });
+    }
+  });
+
   it('never touches a tenant that isn’t a demo', async () => {
     const tenant = await db.tenant.create({
       data: { slug: `real-${Date.now()}`, name: 'Real Customer', plan: 'starter' },

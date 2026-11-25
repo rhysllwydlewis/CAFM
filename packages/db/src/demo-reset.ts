@@ -63,6 +63,12 @@ export async function resetDemo(
     db.configVersion.deleteMany({ where }),
     db.fieldDefinition.deleteMany({ where }),
     db.numberSequence.deleteMany({ where }),
+    // Visitors share the demo personas, so a display choice one made (a collapsed side menu) would otherwise stay for
+    // everyone after them. Only demo accounts in these tenants: a real person's choices are theirs to keep.
+    db.account.updateMany({
+      where: { isDemo: true, memberships: { some: where } },
+      data: { preferences: {} },
+    }),
   ]);
   const orphans = await db.account.findMany({
     where: { id: { in: visitorAccounts }, memberships: { none: {} } },
