@@ -110,16 +110,15 @@ export function ImportManager({
           error: true,
         });
       }
+    } catch {
+      setFeedback({ text: 'Could not import the file. Check your connection and try again.', error: true });
     } finally {
       setBusy(false);
     }
   }
 
-  async function undo(batch: ImportBatchRecord) {
-    const target = IMPORT_KINDS.find(
-      (k) => k.key === Object.keys(batches).find((key) => batches[key]?.includes(batch)),
-    );
-    if (!target) return;
+  async function undo(key: ImportKind['key'], batch: ImportBatchRecord) {
+    const target = kindOf(key);
     setBusy(true);
     setFeedback(undefined);
     try {
@@ -142,8 +141,8 @@ export function ImportManager({
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ csv: file.text, fileName: file.name }),
-    });
-    if (!res.ok) return setFeedback({ text: 'Could not make the error report.', error: true });
+    }).catch(() => null);
+    if (!res?.ok) return setFeedback({ text: 'Could not make the error report.', error: true });
     const url = URL.createObjectURL(await res.blob());
     const link = document.createElement('a');
     link.href = url;
@@ -323,7 +322,7 @@ export function ImportManager({
                           <Button
                             size="sm"
                             icon="undo"
-                            onClick={() => void undo(batch)}
+                            onClick={() => void undo(key, batch)}
                             disabled={busy}
                             aria-label={`Undo the import of ${batch.fileName ?? 'the file'}`}
                           >
