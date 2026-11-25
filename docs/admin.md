@@ -75,6 +75,18 @@ Not built yet: the organisation setting "Allow view as user" (the mockup `admin-
 
 `/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is stored but not yet shown on the sign-in screen. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). The logo, custom domain and email sender in the mockup are not built yet.
 
+## Custom fields
+
+`/app/admin/fields` (`settings.manage`, plan feature `custom_fields`) lists every custom field grouped by record type, with its type, whether it is required and whether it is active. Add a field by choosing the record type, a label, a type and, for pick lists, the options one per line. The key is made from the label unless you give one, and can't be changed afterwards. Edit changes the label, help text and whether it is required; Deactivate hides the field and keeps the saved values. The screen shows how many active fields the plan allows (5 Free, 25 Starter, unlimited above). `GET /api/config/fields/all` returns every field including deactivated ones, and every change is versioned and audited (`field.created`, `field.updated`, `field.deactivated`).
+
+Not built yet on this screen: editing a pick list's options, reordering, bringing a deactivated field back (the API can roll it back), and showing the fields on every record's form.
+
+## Service levels and categories
+
+`/app/admin/service-levels` (`settings.manage`, plan feature `helpdesk`) shows the priority matrix (impact against urgency), the response, attendance and fix targets for each impact and urgency pair with their clock (business hours or 24/7), and the request types grouped by category. It reads `GET /api/helpdesk/settings`. To change anything use the request catalogue (`/app/helpdesk/settings`), which writes the targets and types and audits every change.
+
+Not built yet: configurable work order and request statuses (the lifecycle is fixed), and a separate business calendar screen (calendars are set per site on the site's page).
+
 ## Security and sign-in
 
 Administration > Security and sign-in (needs the "Change organisation settings" permission). Screen: `admin-08-security`.

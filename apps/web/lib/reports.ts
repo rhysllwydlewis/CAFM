@@ -1,6 +1,8 @@
 import 'server-only';
 import type {
   BusiestSitesReport,
+  CostAnalysisReport,
+  SatisfactionReport,
   HomeSummary,
   OpenJobsByAgeReport,
   PpmComplianceReport,
@@ -24,6 +26,11 @@ export const ppmCompliance = (period: { from?: string; to?: string }) =>
 export const workMix = (period: { from?: string; to?: string }) => read<WorkMixReport>('work-mix', period);
 export const busiestSites = (period: { from?: string; to?: string }) =>
   read<BusiestSitesReport>('busiest-sites', period);
+
+export const satisfaction = (period: { from?: string; to?: string }) =>
+  read<SatisfactionReport>('satisfaction', period);
+export const costAnalysis = (period: { from?: string; to?: string }) =>
+  read<CostAnalysisReport>('cost-analysis', period);
 
 export async function homeSummary(): Promise<HomeSummary> {
   const response = await apiGet('/home/summary');

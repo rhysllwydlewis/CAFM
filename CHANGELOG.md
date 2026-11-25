@@ -6,11 +6,18 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Reports: a Satisfaction report (average and spread of the ratings requesters gave) for people who triage requests, and a Cost analysis report (labour, parts, sub-contract and expense cost per currency) for people who can see costs, both for the chosen period. See [Reports](docs/reports.md).
+
+- Administration: a Service levels screen showing the priority matrix, the response, attendance and fix targets for each impact and urgency pair, and the request categories, with a link to edit them in the request catalogue. See [Service levels and categories](docs/admin.md#service-levels-and-categories).
+
+- Administration: a Custom fields screen. A Super User adds fields to requests, work orders, assets, locations and other records, renames them, makes them required, and deactivates them without losing saved values. It shows how many fields the plan allows. See [Custom fields](docs/admin.md#custom-fields).
+
 - With the side menu collapsed, each icon shows its name beside the menu when you hover over it or move to it with the keyboard. Before, only a mouse hover showed anything. A locked module says so in the same label.
 
 - The side menu shows a soft glow along its lower edge when there is more menu below, and along its upper edge once you have scrolled down. The glow disappears at each end. It helps because the scrollbar stays hidden until you hover the menu.
 
 - The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is saved on your account, so it follows you to another browser or device, and the phone menu is unchanged. (While an administrator is viewing as someone else, the choice lasts only for that visit.)
+
 - Home: the key figures now suit the role. A technician or contractor sees their own open, overdue and due-today jobs; the helpdesk sees new requests and unassigned jobs; finance and managers see cost over the last 30 days. See [Reports](docs/reports.md).
 - Administration: accounts with a username only, for staff without an email address. An administrator creates one on the Users screen (name, username, role) and is shown a generated password once. The person signs in with just the username at the organisation's own address, `/t/<organisation>/login`, and an administrator resets the password there too. Every creation and reset is audited.
 - Reports: an Executive overview screen (key figures and the busiest sites for the last 30 days), plus two new standard reports, reactive against planned work and the busiest sites. See [Reports](docs/reports.md).

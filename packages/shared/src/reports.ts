@@ -7,6 +7,8 @@ export const REPORT_KEYS = [
   'ppm_compliance',
   'work_mix',
   'busiest_sites',
+  'satisfaction',
+  'cost_analysis',
 ] as const;
 export type ReportKey = (typeof REPORT_KEYS)[number];
 
@@ -99,6 +101,33 @@ export interface BusiestSitesReport {
   from: string;
   to: string;
   sites: { locationId: string; name: string; jobs: number }[];
+}
+
+/** Requester ratings (1 to 5) given in the period. Needs the Helpdesk and `requests.manage`. */
+export interface SatisfactionReport {
+  key: 'satisfaction';
+  generatedAt: string;
+  from: string;
+  to: string;
+  rated: number;
+  /** Mean rating to one decimal place, or null when nothing was rated. */
+  average: number | null;
+  /** How many requests got each rating, from 1 to 5. */
+  byRating: { rating: number; count: number }[];
+}
+
+/** Cost entered on jobs in the period (by the day it was incurred), per currency. Needs `costs.read`. */
+export interface CostAnalysisReport {
+  key: 'cost_analysis';
+  generatedAt: string;
+  from: string;
+  to: string;
+  /** Whole minor units. Currencies are never added together. */
+  currencies: {
+    currency: string;
+    totalMinor: number;
+    byKind: { kind: string; amountMinor: number }[];
+  }[];
 }
 
 /** One money total on the home page: whole minor units plus the currency they are in. */

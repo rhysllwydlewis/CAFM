@@ -38,6 +38,10 @@
   min-width: 720px;
 }
 
+.tableCaption {
+  text-align: left;
+}
+
 .control {
   width: 100%;
   min-width: 0;
