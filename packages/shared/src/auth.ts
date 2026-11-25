@@ -63,6 +63,8 @@ export interface CurrentUser {
   impersonation: { by: string; expiresAt: string } | null;
   /** The person's own display choices, saved on their account. */
   preferences: AccountPreferences;
+  /** True for a shared demo persona: no choices are kept for them, so they last only until the page is reloaded. */
+  preferencesLocked: boolean;
 }
 
 export const startImpersonationSchema = z.object({

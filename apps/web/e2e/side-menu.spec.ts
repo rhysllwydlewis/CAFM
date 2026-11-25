@@ -4,7 +4,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { createTenant, PrismaClient } from '@cafm/db';
 
 // The collapsed choice is saved on a real person's account (the shared demo personas save none), so these tests sign in
-// as a throwaway administrator in an organisation of their own. Each Playwright project gets its own, so the desktop
+// as a throwaway administrator in an organisation of their own, which is a demo organisation so they also prove a real
+// person there saves their choice. Each Playwright project gets its own, so the desktop
 // and phone runs never share a choice with each other or with another spec, and every test starts and ends with the
 // menu open.
 const password = 'Pw-' + randomUUID();
@@ -21,6 +22,8 @@ test.beforeAll(async ({ playwright }) => {
     name: 'Side menu test estate',
     slug: `menu-${test.info().project.name}-${suffix}`,
     plan: 'professional',
+    // A demo organisation: a real person in one still saves their choice (only the shared demo personas do not).
+    demo: true,
     adminEmail: email,
     appUrl: 'http://localhost:3000',
   });

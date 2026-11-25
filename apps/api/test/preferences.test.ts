@@ -122,7 +122,8 @@ describe('saving a person’s own display choices', () => {
       const person = await demoPerson();
       await withDemoMode('true', async () => {
         const { agent } = await signIn(app, person.email, person.password);
-        expect((await agent.get('/api/auth/me').expect(200)).body.preferences).toEqual({});
+        const me = (await agent.get('/api/auth/me').expect(200)).body;
+        expect(me).toMatchObject({ preferences: {}, preferencesLocked: true });
         const refused = await agent.patch('/api/auth/preferences').send({ navCollapsed: false }).expect(403);
         expect(refused.body.code).toBe('demo_locked');
         // Not changed either: the stored value is left exactly as it was.
@@ -134,7 +135,8 @@ describe('saving a person’s own display choices', () => {
       const person = await demoPerson();
       await withDemoMode('false', async () => {
         const { agent } = await signIn(app, person.email, person.password);
-        expect((await agent.get('/api/auth/me').expect(200)).body.preferences).toEqual({ navCollapsed: true });
+        const me = (await agent.get('/api/auth/me').expect(200)).body;
+        expect(me).toMatchObject({ preferences: { navCollapsed: true }, preferencesLocked: false });
         await agent.patch('/api/auth/preferences').send({ navCollapsed: false }).expect(200);
         expect(await stored(person.account.id)).toEqual({ navCollapsed: false });
       });
@@ -145,7 +147,10 @@ describe('saving a person’s own display choices', () => {
       await withDemoMode('true', async () => {
         const { agent } = await signIn(app, person.email, person.password);
         await agent.patch('/api/auth/preferences').send({ navCollapsed: true }).expect(200);
-        expect((await agent.get('/api/auth/me').expect(200)).body.preferences).toEqual({ navCollapsed: true });
+        const me = (await agent.get('/api/auth/me').expect(200)).body;
+        // The lock follows the account, not the organisation: this person is in the demo organisation.
+        expect(me).toMatchObject({ preferences: { navCollapsed: true }, preferencesLocked: false });
+        expect(me.tenant.demo).toBe(true);
       });
     });
   });

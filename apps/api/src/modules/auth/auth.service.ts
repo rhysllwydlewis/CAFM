@@ -154,6 +154,7 @@ export class AuthService {
       // A shared demo persona never has saved choices: visitors would hand them on to each other. Anything stored
       // there (from before this rule) is ignored too.
       preferences: demoLocked(auth.account.isDemo) ? {} : readPreferences(auth.account.preferences),
+      preferencesLocked: demoLocked(auth.account.isDemo),
     };
   }
 
