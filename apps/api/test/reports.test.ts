@@ -246,3 +246,118 @@ it('does not name a site the reader has no access to', async () => {
     await f.cleanup();
   }
 });
+
+it('averages the ratings given in the period and keeps the report to the Helpdesk', async () => {
+  const f = await fixture();
+  try {
+    const root = await createTestAccount(db, [f.tenant.id], undefined, 'super_user');
+    const admin = (await signIn(app, root.email, root.password)).agent;
+    const type = (
+      await admin
+        .post('/api/helpdesk/settings/types')
+        .send({ name: 'Water leak', category: 'Plumbing', problemCode: 'Leak', questions: [] })
+        .expect(201)
+    ).body;
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      ids.push(
+        (
+          await f.r
+            .post('/api/helpdesk/requests')
+            .send({
+              submissionId: randomUUID(),
+              title: `Leak ${i}`,
+              description: 'Water near a socket.',
+              locationId: f.site.id,
+              typeId: type.id,
+              answers: {},
+            })
+            .expect(201)
+        ).body.id,
+      );
+    }
+    const now = new Date();
+    await withTenant(db, f.tenant.id, async (tx) => {
+      await tx.serviceRequest.update({ where: { id: ids[0]! }, data: { rating: 5, ratedAt: now } });
+      await tx.serviceRequest.update({ where: { id: ids[1]! }, data: { rating: 4, ratedAt: now } });
+      // Rated long before the period, so it is left out.
+      await tx.serviceRequest.update({
+        where: { id: ids[2]! },
+        data: { rating: 1, ratedAt: new Date(now.getTime() - 90 * 86_400_000) },
+      });
+    });
+    const res = await f.m.get(`${base}/satisfaction`).expect(200);
+    expect(res.body).toMatchObject({ rated: 2, average: 4.5 });
+    expect(res.body.byRating).toEqual([
+      { rating: 1, count: 0 },
+      { rating: 2, count: 0 },
+      { rating: 3, count: 0 },
+      { rating: 4, count: 1 },
+      { rating: 5, count: 1 },
+    ]);
+    await f.m.get(`${base}/satisfaction?from=2026-02-01&to=2026-01-01`).expect(422);
+    await f.r.get(`${base}/satisfaction`).expect(403);
+    await request(app.getHttpServer()).get(`${base}/satisfaction`).expect(401);
+    // Another organisation sees none of it.
+    const other = await fixture();
+    try {
+      expect((await other.m.get(`${base}/satisfaction`).expect(200)).body).toMatchObject({ rated: 0, average: null });
+    } finally {
+      await other.cleanup();
+    }
+  } finally {
+    await f.cleanup();
+  }
+});
+
+it('totals cost by type and currency for the period, and needs permission to see costs', async () => {
+  const f = await fixture();
+  try {
+    const job = await f.makeJob();
+    const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00Z');
+    const old = new Date(today.getTime() - 90 * 86_400_000);
+    const entry = (kind: string, amountMinor: number, incurredOn: Date) => ({
+      labourType: kind === 'labour' ? 'on_site' : null,
+      workOrderId: job.id,
+      kind,
+      description: kind,
+      quantityMilli: 1000,
+      unitCostMinor: amountMinor,
+      amountMinor,
+      incurredOn,
+    });
+    await withTenant(db, f.tenant.id, async (tx) => {
+      await tx.workOrderCost.createMany({
+        data: [
+          { tenantId: f.tenant.id, ...entry('labour', 4600, today) },
+          { tenantId: f.tenant.id, ...entry('parts', 1250, today) },
+          { tenantId: f.tenant.id, ...entry('parts', 5000, old) },
+        ],
+      });
+    });
+    const res = await f.m.get(`${base}/cost-analysis`).expect(200);
+    expect(res.body.currencies).toEqual([
+      {
+        currency: 'GBP',
+        totalMinor: 5850,
+        byKind: [
+          { kind: 'labour', amountMinor: 4600 },
+          { kind: 'parts', amountMinor: 1250 },
+          { kind: 'subcontract', amountMinor: 0 },
+          { kind: 'expense', amountMinor: 0 },
+        ],
+      },
+    ]);
+    await f.m.get(`${base}/cost-analysis?to=2026-02-31`).expect(400);
+    await f.r.get(`${base}/cost-analysis`).expect(403);
+    await request(app.getHttpServer()).get(`${base}/cost-analysis`).expect(401);
+    const other = await fixture();
+    try {
+      expect((await other.m.get(`${base}/cost-analysis`).expect(200)).body.currencies).toEqual([]);
+    } finally {
+      await other.cleanup();
+    }
+  } finally {
+    await f.cleanup();
+  }
+});
