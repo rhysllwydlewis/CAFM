@@ -17,6 +17,8 @@ interface Props {
   tenantName: string;
   planLabel: string;
   demo: boolean;
+  /** The account keeps no display choices (a shared demo persona), so they last only until the page is reloaded. */
+  preferencesLocked: boolean;
   user: { name: string; email: string | null; roleLabel: string };
   organisations: ShellOrganisation[];
   impersonation: { by: string; expiresAt: string } | null;
@@ -31,6 +33,7 @@ export function AppShell({
   tenantName,
   planLabel,
   demo,
+  preferencesLocked,
   user,
   organisations,
   impersonation,
@@ -52,9 +55,11 @@ export function AppShell({
   const viewingAs = impersonation !== null;
   const toggleNav = useCallback(() => {
     setNavCollapsed(!navCollapsed);
-    // "View as" is read-only and the choice would be saved on the other person's account, so it only lasts the visit.
-    if (!viewingAs) saveNavCollapsed(!navCollapsed);
-  }, [navCollapsed, viewingAs]);
+    // "View as" is read-only and would save on the other person's account, and the demo's shared people save no choices
+    // (visitors would hand them on to each other). Either way it lasts only until the page is reloaded. A real person
+    // in a demo organisation is neither, so they save as usual: this follows the account, not the organisation.
+    if (!viewingAs && !preferencesLocked) saveNavCollapsed(!navCollapsed);
+  }, [navCollapsed, viewingAs, preferencesLocked]);
 
   const onKey = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {

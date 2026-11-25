@@ -93,7 +93,7 @@ export async function seed(db: PrismaClient): Promise<void> {
     await db.account.upsert({
       where: { id: accountId },
       create: { id: accountId, email: p.email, name: p.name, passwordHash, isDemo: true },
-      update: { email: p.email, name: p.name, passwordHash, failedAttempts: 0, lockedUntil: null },
+      update: { email: p.email, name: p.name, passwordHash, failedAttempts: 0, lockedUntil: null, preferences: {} },
     });
     const membershipId = seedId(`membership:${p.tenant}:${p.key}`);
     const data = { role: p.role, licence: p.licence, title: p.description, landingPage: p.landingPage };

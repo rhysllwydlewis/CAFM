@@ -96,6 +96,65 @@ describe('saving a person’s own display choices', () => {
     expect((await agent.get('/api/auth/me').expect(200)).body.preferences).toEqual({ navCollapsed: true });
   });
 
+  describe('the shared demo personas', () => {
+    /** A throwaway account that counts as a demo persona, with a choice already stored on it. */
+    async function demoPerson() {
+      const person = await newPerson();
+      await owner.account.update({
+        where: { id: person.account.id },
+        data: { isDemo: true, preferences: { navCollapsed: true } },
+      });
+      return person;
+    }
+    const withDemoMode = async (value: string | undefined, run: () => Promise<void>) => {
+      const original = process.env.DEMO_MODE;
+      if (value === undefined) delete process.env.DEMO_MODE;
+      else process.env.DEMO_MODE = value;
+      try {
+        await run();
+      } finally {
+        if (original === undefined) delete process.env.DEMO_MODE;
+        else process.env.DEMO_MODE = original;
+      }
+    };
+
+    it('save nothing, and show nothing that was stored, so visitors never hand choices on', async () => {
+      const person = await demoPerson();
+      await withDemoMode('true', async () => {
+        const { agent } = await signIn(app, person.email, person.password);
+        const me = (await agent.get('/api/auth/me').expect(200)).body;
+        expect(me).toMatchObject({ preferences: {}, preferencesLocked: true });
+        const refused = await agent.patch('/api/auth/preferences').send({ navCollapsed: false }).expect(403);
+        expect(refused.body.code).toBe('demo_locked');
+        // Not changed either: the stored value is left exactly as it was.
+        expect(await stored(person.account.id)).toEqual({ navCollapsed: true });
+      });
+    });
+
+    it('are ordinary accounts when the demo mode is off', async () => {
+      const person = await demoPerson();
+      await withDemoMode('false', async () => {
+        const { agent } = await signIn(app, person.email, person.password);
+        const me = (await agent.get('/api/auth/me').expect(200)).body;
+        expect(me).toMatchObject({ preferences: { navCollapsed: true }, preferencesLocked: false });
+        await agent.patch('/api/auth/preferences').send({ navCollapsed: false }).expect(200);
+        expect(await stored(person.account.id)).toEqual({ navCollapsed: false });
+      });
+    });
+
+    it('do not stop a real person in the demo organisation saving theirs', async () => {
+      const person = await newPerson();
+      await withDemoMode('true', async () => {
+        const { agent } = await signIn(app, person.email, person.password);
+        await agent.patch('/api/auth/preferences').send({ navCollapsed: true }).expect(200);
+        const me = (await agent.get('/api/auth/me').expect(200)).body;
+        // The lock follows the account, not the organisation: this person is in the demo organisation.
+        expect(me).toMatchObject({ preferences: { navCollapsed: true }, preferencesLocked: false });
+        expect(me.tenant.demo).toBe(true);
+      });
+    });
+  });
+
   it('is refused while viewing as someone else, so their choices are not changed', async () => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     const tom = await withTenant(db, DEMO_TENANT, (tx) =>

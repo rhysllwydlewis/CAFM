@@ -1,10 +1,57 @@
+import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { createTenant, PrismaClient } from '@cafm/db';
 
-// The collapsed choice is saved on the person's account, so these tests must not share one with other specs, or with
-// each other while the desktop and phone projects run side by side. Each project gets its own demo person that no
-// other spec signs in as, and every test starts and ends with the menu open.
-const persona = () => (test.info().project.name === 'mobile' ? 'stores' : 'compliance');
+// The collapsed choice is saved on a real person's account (the shared demo personas save none), so these tests sign in
+// as a throwaway administrator in an organisation of their own, which is a demo organisation so they also prove a real
+// person there saves their choice. Each Playwright project gets its own, so the desktop
+// and phone runs never share a choice with each other or with another spec, and every test starts and ends with the
+// menu open.
+const password = 'Pw-' + randomUUID();
+const suffix = randomUUID().slice(0, 8);
+let email = '';
+let tenantId = '';
+const db = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
+});
+
+test.beforeAll(async ({ playwright }) => {
+  email = `menu-${test.info().project.name}-${suffix}@test.example`;
+  const tenant = await createTenant(db, {
+    name: 'Side menu test estate',
+    slug: `menu-${test.info().project.name}-${suffix}`,
+    plan: 'professional',
+    // A demo organisation: a real person in one still saves their choice (only the shared demo personas do not).
+    demo: true,
+    adminEmail: email,
+    appUrl: 'http://localhost:3000',
+  });
+  tenantId = tenant.tenantId;
+  const api = await playwright.request.newContext({ baseURL: test.info().project.use.baseURL });
+  const accepted = await api.post('/api/auth/invites/' + tenant.inviteUrl.split('/').at(-1) + '/accept', {
+    data: { name: 'Test administrator', password, acceptTerms: true },
+  });
+  expect(accepted.ok()).toBe(true);
+  await api.dispose();
+});
+
+test.afterAll(async () => {
+  const where = { tenantId };
+  const account = await db.account.findUnique({ where: { email } });
+  await db.$transaction(async (tx) => {
+    await tx.session.deleteMany({ where });
+    await tx.auditEvent.deleteMany({ where });
+    await tx.invite.deleteMany({ where });
+    await tx.outboxMessage.deleteMany({ where });
+    await tx.membership.deleteMany({ where });
+    await tx.role.deleteMany({ where });
+    await tx.authEvent.deleteMany({ where: account ? { accountId: account.id } : where });
+    if (account) await tx.account.delete({ where: { id: account.id } });
+    await tx.tenant.delete({ where: { id: tenantId } });
+  });
+  await db.$disconnect();
+});
 
 async function setCollapsed(page: Page, collapsed: boolean) {
   const res = await page.request.patch('/api/auth/preferences', { data: { navCollapsed: collapsed } });
@@ -15,17 +62,17 @@ async function savedChoice(page: Page) {
   return (await (await page.request.get('/api/auth/me')).json()).preferences;
 }
 
-let signedInAsPersona = false;
+let signedInAsPerson = false;
 test.beforeEach(() => {
-  signedInAsPersona = false;
+  signedInAsPerson = false;
 });
 
 /** Signs in and starts from an open menu, unless the test is about what a sign-in brings with it. */
 async function signIn(page: Page, { reset = true } = {}) {
-  signedInAsPersona = true;
+  signedInAsPerson = true;
   await page.goto('/login');
-  await page.getByLabel('Email or username').fill(`${persona()}@demo.example`);
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Email or username').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   if (reset) await setCollapsed(page, false);
@@ -38,7 +85,7 @@ async function assertAccessible(page: Page) {
 
 test.afterEach(async ({ page }) => {
   // Leave the person's menu open for the next run, whatever the test did.
-  if (!signedInAsPersona) return;
+  if (!signedInAsPerson) return;
   await page.request.patch('/api/auth/preferences', { data: { navCollapsed: false } }).catch(() => undefined);
 });
 
@@ -202,6 +249,32 @@ test.describe('side menu on a phone', () => {
     await page.reload();
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
     await expect(page.getByRole('complementary', { name: 'Main' }).getByText('Home', { exact: true })).toBeVisible();
+  });
+});
+
+test.describe('side menu in the demo', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('the shared demo people save no choice, so it lasts only until the page is reloaded', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel('Email or username').fill('executive@demo.example');
+    await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).not.toHaveURL(/\/login/);
+    await page.goto('/app');
+
+    const saves: string[] = [];
+    page.on('request', (req) => req.url().includes('/auth/preferences') && saves.push(req.method()));
+    await page.getByRole('button', { name: 'Collapse side menu' }).click();
+    await expect(page.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
+    // Nothing is sent, and the API holds nothing for them, however many visitors have collapsed it before.
+    expect(saves).toEqual([]);
+    expect(await savedChoice(page)).toEqual({});
+    // The direct API route is refused too, so a script cannot save one either.
+    expect((await page.request.patch('/api/auth/preferences', { data: { navCollapsed: true } })).status()).toBe(403);
+
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Collapse side menu' })).toBeVisible();
   });
 });
 

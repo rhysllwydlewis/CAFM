@@ -73,6 +73,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         tenantName={user.tenant.name}
         planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
         demo={user.tenant.demo}
+        preferencesLocked={user.preferencesLocked}
         user={{ name: user.name, email: user.email, roleLabel: user.roleLabel }}
         impersonation={user.impersonation}
         organisations={orgs.map((o) => ({ ...o, current: o.membershipId === user.membershipId }))}

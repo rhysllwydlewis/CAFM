@@ -63,8 +63,8 @@ export async function resetDemo(
     db.configVersion.deleteMany({ where }),
     db.fieldDefinition.deleteMany({ where }),
     db.numberSequence.deleteMany({ where }),
-    // Visitors share the demo personas, so a display choice one made (a collapsed side menu) would otherwise stay for
-    // everyone after them. Only demo accounts in these tenants: a real person's choices are theirs to keep.
+    // The demo personas save no display choices now (visitors would hand them on to each other), so this only clears
+    // any left from before that. Only demo accounts in these tenants: a real person's choices are theirs to keep.
     db.account.updateMany({
       where: { isDemo: true, memberships: { some: where } },
       data: { preferences: {} },
