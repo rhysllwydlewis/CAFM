@@ -14,7 +14,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dir = (p) => path.join(root, 'mockups', p);
 const filter = process.argv[2] || '';
 
-const VIEWPORTS = { desktop: [1440, 960], wide: [1600, 1000], board: [1440, 960], tablet: [1280, 900], a4: [860, 1180], sheet: [1440, 900] };
+const VIEWPORTS = { desktop: [1440, 960], wide: [1600, 1000], board: [1440, 960], tablet: [1280, 900], a4: [860, 1180], sheet: [1440, 900], short: [1440, 560] };
 
 const files = fs.readdirSync(dir('screens')).filter((f) => f.endsWith('.js')).sort();
 const screens = [];

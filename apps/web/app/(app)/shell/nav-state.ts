@@ -1,7 +1,13 @@
-/** The cookie that remembers whether the person collapsed the side menu on a desktop. */
-export const NAV_COOKIE = 'cafm_nav';
+import { patchJson } from '@/lib/client';
 
-/** Remember the choice for a year. It holds no personal data, and the server reads it so the page paints right. */
+// Saves are sent one at a time, in the order they were made. Two quick clicks would otherwise be two requests that
+// could arrive the wrong way round and leave the opposite choice saved.
+let queue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Saves whether the person collapsed the side menu, on their account, so it follows them to another browser or
+ * device. A failed save is not worth interrupting anyone for: the menu is already how they want it for now.
+ */
 export function saveNavCollapsed(collapsed: boolean): void {
-  document.cookie = `${NAV_COOKIE}=${collapsed ? 'collapsed' : 'open'}; path=/; max-age=31536000; samesite=lax`;
+  queue = queue.then(() => patchJson('/auth/preferences', { navCollapsed: collapsed })).catch(() => undefined);
 }

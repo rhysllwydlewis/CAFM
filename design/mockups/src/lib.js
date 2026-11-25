@@ -195,8 +195,8 @@ const NAV = [
 ];
 const EXTRA = { projects: ['Projects', 'projects'], leases: ['Real estate', 'real-estate'], capital: ['Capital planning', 'capital-planning'], iot: ['IoT & sensors', 'iot'], fleet: ['Fleet', 'fleet'], keys: ['Keys', 'keys'], moves: ['Moves', 'moves'], soft: ['Soft services', 'soft-services'], continuity: ['Business continuity', 'continuity'], housing: ['Housing', 'housing'], ai: ['Ask the estate', 'ai-assistant'], admin: ['Administration', 'admin'], platform: ['Platform admin', 'globe'] };
 
-export function nav(active, { tenant = 'Demo Estates Ltd', plan = 'Enterprise', user = 'Morgan Ellis', role = 'FM Manager', collapsed = false, toggle = collapsed } = {}) {
-  const item = ([key, label, icon, count, alert]) => `<div class="nav-item ${key === active ? 'active' : ''}">${I(icon)}<span>${label}</span>${count ? `<span class="count ${alert ? 'alert' : ''}">${count}</span>` : ''}</div>`;
+export function nav(active, { tenant = 'Demo Estates Ltd', plan = 'Enterprise', user = 'Morgan Ellis', role = 'FM Manager', collapsed = false, toggle = collapsed, tipFor = '' } = {}) {
+  const item = ([key, label, icon, count, alert]) => `<div class="nav-item ${key === active ? 'active' : ''}${key === tipFor ? ' tip' : ''}"${collapsed ? ` data-label="${label}"` : ''}>${I(icon)}<span>${label}</span>${count ? `<span class="count ${alert ? 'alert' : ''}">${count}</span>` : ''}</div>`;
   const inBase = NAV.some(([, items]) => items.some(([k]) => k === active));
   let html = NAV.map(([label, items]) => `<div class="nav-sec">${label ? `<div class="nav-label">${label}</div>` : ''}${items.map(item).join('')}</div>`).join('');
   const more = !inBase && EXTRA[active] && active !== 'admin' && active !== 'platform' ? item([active, ...EXTRA[active]]) : '';
@@ -210,8 +210,8 @@ export function topbar(crumbs = []) {
 export function pageHead(title, { sub = '', acts = '', eyebrow = '' } = {}) {
   return `<div class="page-head"><div>${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ''}<h1 class="page-title">${title}</h1>${sub ? `<div class="page-sub">${sub}</div>` : ''}</div><div class="page-actions">${join(acts)}</div></div>`;
 }
-export function shell({ active, crumbs, title, sub, acts, eyebrow, body, tight, user, overlay = '', collapsed = false, toggle = collapsed }) {
-  return `<div class="app${collapsed ? ' nav-collapsed' : ''}">${nav(active, { ...user, collapsed, toggle })}<main class="main">${topbar(crumbs)}<div class="page ${tight ? 'tight' : ''}">${title ? pageHead(title, { sub, acts, eyebrow }) : ''}${join(body)}</div></main></div>${overlay}`;
+export function shell({ active, crumbs, title, sub, acts, eyebrow, body, tight, user, overlay = '', collapsed = false, toggle = collapsed, tipFor = '' }) {
+  return `<div class="app${collapsed ? ' nav-collapsed' : ''}">${nav(active, { ...user, collapsed, toggle, tipFor })}<main class="main">${topbar(crumbs)}<div class="page ${tight ? 'tight' : ''}">${title ? pageHead(title, { sub, acts, eyebrow }) : ''}${join(body)}</div></main></div>${overlay}`;
 }
 
 // ── Devices ───────────────────────────────────────────────

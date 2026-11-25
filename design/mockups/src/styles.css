@@ -52,6 +52,14 @@ svg.i.s24 { width: 24px; height: 24px; } svg.i.s32 { width: 32px; height: 32px; 
 .tenant .t-name { color: var(--nav-text-strong); font-size: 13px; font-weight: 500; line-height: 16px; }
 .tenant .t-sub { font-size: 11px; line-height: 14px; }
 .nav-scroll { flex: 1; overflow: hidden; padding: 4px 10px 12px; }
+/* Scroll hint (shell-07): a soft glow on an edge with more menu beyond it. The solid covers scroll with the content and hide each glow when that end is reached, so the glow only shows where there is more to see. */
+.nav-scroll {
+  background:
+    linear-gradient(var(--nav-bg) 30%, transparent) 0 0 / 100% 36px no-repeat local,
+    linear-gradient(transparent, var(--nav-bg) 70%) 0 100% / 100% 36px no-repeat local,
+    linear-gradient(color-mix(in srgb, var(--nav-text) 20%, transparent), transparent) 0 0 / 100% 20px no-repeat scroll,
+    linear-gradient(transparent, color-mix(in srgb, var(--nav-text) 20%, transparent)) 0 100% / 100% 20px no-repeat scroll;
+}
 .nav-sec { margin-top: 14px; }
 .nav-label { font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #8A94A0; padding: 0 10px 6px; }
 .nav-item { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-sm); font-size: 13.5px; color: var(--nav-text); position: relative; }
@@ -81,6 +89,10 @@ svg.i.s24 { width: 24px; height: 24px; } svg.i.s32 { width: 32px; height: 32px; 
   .nav-collapsed .nav-label { height: 1px; padding: 0; margin: 0 8px 10px; background: var(--nav-border); font-size: 0; overflow: hidden; }
   .nav-collapsed .nav-item { justify-content: center; gap: 0; padding: 0; }
   .nav-collapsed .nav-foot { flex-direction: column; padding: 10px 0; gap: 8px; }
+  /* An icon's name, beside the rail, on hover and on keyboard focus. Fixed rather than absolute, with no top set, so it sits level with its icon and the menu's scroll area cannot clip it. */
+  .nav-collapsed .nav-item:hover::after, .nav-collapsed .nav-item:focus-visible::after, .nav-collapsed .nav-item.tip::after {
+    content: attr(data-label); position: fixed; left: calc(var(--nav-width-collapsed) + 8px); z-index: 40; padding: 5px 10px; border: 1px solid var(--nav-border); border-radius: var(--radius-sm); background: var(--nav-bg-elevated); color: var(--nav-text-strong); box-shadow: var(--shadow-md); font-size: 12.5px; font-weight: 500; line-height: 16px; white-space: nowrap; pointer-events: none;
+  }
   .nav-collapsed .brand span, .nav-collapsed .tenant .grow, .nav-collapsed .tenant > svg.i, .nav-collapsed .nav-item > span, .nav-collapsed .nav-foot > .grow:not(.user-menu), .nav-collapsed .nav-foot > svg.i {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
   }

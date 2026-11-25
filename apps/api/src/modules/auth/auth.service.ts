@@ -2,10 +2,12 @@ import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@n
 import argon2 from 'argon2';
 import { withAccount, type Account } from '@cafm/db';
 import {
+  readPreferences,
   roleLabel,
   scopedUsername,
   SIGN_IN_FAILED,
   TOO_MANY_ATTEMPTS,
+  type AccountPreferences,
   type CurrentUser,
   type LoginRequest,
   type LoginResponse,
@@ -148,7 +150,17 @@ export class AuthService {
       impersonation: auth.impersonator
         ? { by: auth.impersonator.name, expiresAt: auth.session.expiresAt.toISOString() }
         : null,
+      preferences: readPreferences(auth.account.preferences),
     };
+  }
+
+  /** Merges a change into the person's own saved choices and returns them all. */
+  async updatePreferences(accountId: string, change: AccountPreferences): Promise<AccountPreferences> {
+    // One statement, so two quick changes from two tabs can't overwrite each other's keys.
+    const rows = await this.db.$queryRaw<{ preferences: unknown }[]>`
+      UPDATE account SET preferences = preferences || ${JSON.stringify(change)}::jsonb
+      WHERE id = ${accountId}::uuid RETURNING preferences`;
+    return readPreferences(rows[0]?.preferences);
   }
 
   private async organisations(accountId: string) {
