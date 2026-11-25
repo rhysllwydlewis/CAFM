@@ -197,6 +197,7 @@ export function ImportManager({
                     type="file"
                     accept=".csv,text/csv"
                     className="sr-only"
+                    disabled={busy}
                     onChange={(e) => void choose(e.target.files?.[0])}
                   />
                   <label htmlFor={fileId} className="btn secondary">
@@ -290,7 +291,7 @@ export function ImportManager({
           {history.length === 0 ? (
             <div className="card-b muted">No imports yet.</div>
           ) : (
-            <div className={styles.tableWrap}>
+            <div className={styles.tableWrap} role="region" aria-label="Recent imports" tabIndex={0}>
               <table className="tbl">
                 <thead>
                   <tr>

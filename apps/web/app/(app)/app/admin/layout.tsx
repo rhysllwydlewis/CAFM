@@ -13,7 +13,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     !can(user, 'people.manage') &&
     !can(user, 'people.read') &&
     !can(user, 'audit.read') &&
-    importable(user).length === 0
+    importable(user).length === 0 &&
+    exportable(user).length === 0
   )
     redirect('/app');
   return (
