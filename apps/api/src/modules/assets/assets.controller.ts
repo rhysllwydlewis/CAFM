@@ -47,7 +47,7 @@ type Row = Prisma.AssetGetPayload<{ include: { class: true } }>;
 type Fields = ReadonlyMap<string, FieldDefinition>;
 
 /** The class's attribute template, in the form the validator takes. */
-function templateOf(cls: { attributes: Prisma.JsonValue } | null): FieldDefinition[] {
+export function templateOf(cls: { attributes: Prisma.JsonValue } | null): FieldDefinition[] {
   return ((cls?.attributes ?? []) as unknown as AssetAttribute[]).map((a) => ({
     key: a.key,
     label: a.unit ? `${a.label} (${a.unit})` : a.label,
