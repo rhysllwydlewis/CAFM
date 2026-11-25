@@ -10,10 +10,11 @@ import {
   Put,
   Query,
   Req,
+  Res,
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { eligibleTechnician, generatePpm, nextNumber, Prisma, startingPoint, withTenant, type Tx } from '@cafm/db';
 import {
@@ -36,6 +37,7 @@ import {
   SessionGuard,
   TenantGuard,
 } from '../../core/auth.guards';
+import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
@@ -117,7 +119,7 @@ async function checkTemplateAndAssignee(tx: Tx, tenantId: string, templateId?: s
   }
 }
 
-const frequencyData = (frequency: z.infer<typeof createPpmScheduleSchema>['frequency']) =>
+export const frequencyData = (frequency: z.infer<typeof createPpmScheduleSchema>['frequency']) =>
   frequency.type === 'calendar'
     ? {
         freqType: 'calendar',
@@ -135,7 +137,12 @@ const frequencyData = (frequency: z.infer<typeof createPpmScheduleSchema>['frequ
       };
 
 /** Where each asset on a schedule starts, written as rows. */
-async function startRow(tx: Tx, tenantId: string, schedule: Prisma.PpmScheduleGetPayload<object>, input: AssetInput) {
+export async function startRow(
+  tx: Tx,
+  tenantId: string,
+  schedule: Prisma.PpmScheduleGetPayload<object>,
+  input: AssetInput,
+) {
   const point = await startingPoint(tx, tenantId, schedule, { id: input.assetId }, today(), input.lastDoneOn ?? null);
   return {
     nextDueOn: point.nextDueOn,
@@ -170,6 +177,67 @@ export class PpmSchedulesController {
         { sort: input.sort, dir: input.dir },
       ),
     );
+  }
+
+  /**
+   * Schedules as a CSV file: the same ones, and only the ones, that the list shows this person,
+   * active and archived, up to 5,000. Audited.
+   */
+  @Get('export')
+  @RequirePermission('ppm.read')
+  async exportCsv(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const auth = req.auth!;
+    const csv = await withTenant(this.db, auth.membership!.tenantId, async (tx) => {
+      const { items } = await listSchedules(tx, auth, {}, 5000, 0);
+      const out = toCsv(
+        [
+          'number',
+          'title',
+          'discipline',
+          'criticality',
+          'frequency_type',
+          'interval',
+          'unit_or_meter',
+          'mode',
+          'active',
+          'assets',
+          'next_due_on',
+          'assignee',
+        ],
+        items.map((s) => [
+          s.number,
+          s.title,
+          s.discipline,
+          s.criticality,
+          s.frequency.type,
+          s.frequency.interval,
+          s.frequency.type === 'calendar' ? s.frequency.unit : s.frequency.meterName,
+          s.mode,
+          s.active ? 'yes' : 'no',
+          s.assets,
+          s.nextDueOn,
+          s.assigneeName,
+        ]),
+      );
+      await audit(
+        tx,
+        auth,
+        {
+          action: 'ppm.schedule.exported',
+          entityType: 'ppm_schedule',
+          entityId: auth.membership!.tenantId,
+          changes: { rows: items.length },
+        },
+        req.ip,
+      );
+      return out;
+    });
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="ppm-schedules.csv"',
+      'Cache-Control': 'no-store',
+    });
+    return csv;
   }
 
   @Get(':id')

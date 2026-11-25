@@ -6,6 +6,14 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Import and export screen in Administration: choose locations, assets, people or PPM schedules, download the template, check your CSV file (problems are listed by line and column, with an error report to download), import it, and undo a recent import. Exports are on the same page. See [import and export](docs/import-export.md#the-screen).
+- Administration: the sign-in message saved under Branding now shows on the organisation's own sign-in page. Nothing is revealed about organisations that have no message, or that don't exist.
+- Import: PPM schedules can be imported from a CSV file through the API, with a template, a check that lists every problem by line and column (and an error report file), an all-or-nothing import, and an undo while the new schedules are untouched. See [import and export](docs/import-export.md#importing-ppm-schedules). The screens come next.
+- You can import people from a CSV file as invitations, with a check first, an error report and a way to withdraw the invitations. The screens come later.
+- Import: assets can be imported from a CSV file through the API, with the same template, check, error report, all-or-nothing import and rollback as locations. A file can add a system and its components together, and class attributes and custom fields are checked. See [import and export](docs/import-export.md#importing-assets).
+- Import: locations can be imported from a CSV file through the API, with a template, a check that lists every problem by line and column (and an error report file), an all-or-nothing import, and a rollback while the new locations are untouched. See [import and export](docs/import-export.md#importing-locations). The screens come next.
+- Import and export: CSV exports of locations (`GET /api/locations/export`), assets (`/api/assets/export`), people (`/api/people/export`) and PPM schedules (`/api/ppm/schedules/export`), each limited to what you can already see (the first part of import and export). Spreadsheet formulas in cells are defused, and each export is recorded in the audit log.
+- Administration: the audit log can be filtered by person, record id and date range, and exported as a CSV file (up to 5,000 events). Each export is itself recorded in the log. See [Audit log](docs/admin.md#audit-log).
 - Reports: a Satisfaction report (average and spread of the ratings requesters gave) for people who triage requests, and a Cost analysis report (labour, parts, sub-contract and expense cost per currency) for people who can see costs, both for the chosen period. See [Reports](docs/reports.md).
 
 - Administration: a Service levels screen showing the priority matrix, the response, attendance and fix targets for each impact and urgency pair, and the request categories, with a link to edit them in the request catalogue. See [Service levels and categories](docs/admin.md#service-levels-and-categories).

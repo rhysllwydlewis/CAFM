@@ -236,6 +236,7 @@ test('an Administrator has no view as user card', async ({ page }) => {
 
 test('a Super User checks the contrast of an accent colour, saves it and puts the standard look back', async ({
   page,
+  browser,
 }) => {
   await signInAs(page, 'superuser');
   await page.goto('/app/admin/branding');
@@ -253,6 +254,17 @@ test('a Super User checks the contrast of an accent colour, saves it and puts th
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText(/Branding saved/)).toBeVisible();
     await assertAccessible(page);
+
+    // The message shows on the organisation's own sign-in page, to someone who is not signed in.
+    const anonymous = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+    try {
+      const signIn = await anonymous.newPage();
+      await signIn.goto('/t/demo-estates/login');
+      await expect(signIn.getByText('Welcome to Demo Estates facilities.')).toBeVisible();
+      await assertAccessible(signIn);
+    } finally {
+      await anonymous.close();
+    }
   } finally {
     // Leave the demo organisation as it was seeded.
     await accent.fill('');
@@ -278,10 +290,24 @@ test('a Super User saves security settings and finds the change in the audit log
 
   await page.getByRole('link', { name: 'Audit log' }).click();
   await expect(page).toHaveURL(/\/app\/admin\/audit$/);
-  await page.getByLabel('Search events').fill('security_updated');
+  await page.getByLabel('Event').fill('security_updated');
+  await page.getByLabel('Who').selectOption({ label: 'Sam Sutton' });
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'settings.security_updated' }).first()).toBeVisible();
   await assertAccessible(page);
+
+  await page.getByLabel('From').fill('2026-02-01');
+  await page.getByLabel('To').fill('2026-01-01');
+  await expect(page.getByText('The start date must be before the end date.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Clear' }).click();
+  await expect(page.getByLabel('Event')).toHaveValue('');
+  const csv = await page.request.get(
+    await page.getByRole('link', { name: 'Export CSV' }).evaluate((a) => (a as HTMLAnchorElement).href),
+  );
+  expect(csv.headers()['content-type']).toContain('text/csv');
+  expect(await csv.text()).toContain('"When (UTC)"');
 });
 
 test('someone without audit access cannot open the audit log', async ({ page }) => {
@@ -330,4 +356,43 @@ test('a Super User makes a username-only account, which signs in on the organisa
     await db.account.deleteMany({ where: { id: { in: ids } } });
     await db.$disconnect();
   }
+});
+
+test('a Super User checks, imports and undoes a locations file', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin');
+  await page.getByRole('link', { name: 'Import and export' }).click();
+  await expect(page).toHaveURL(/\/app\/admin\/import$/);
+  await expect(page.getByRole('heading', { name: 'Import from CSV' })).toBeVisible();
+  await assertAccessible(page);
+
+  const code = 'IMP-' + randomUUID().slice(0, 8).toUpperCase();
+  const choose = (name: string, text: string) =>
+    page.getByLabel('Choose file').setInputFiles({ name, mimeType: 'text/csv', buffer: Buffer.from(text) });
+
+  await choose('bad.csv', 'code,name,kind\n' + `${code},Import test site,spaceship\n`);
+  await expect(page.getByText('1 problem found.')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Problems found in the file' }).getByText('kind')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Import', exact: true })).toBeDisabled();
+  await assertAccessible(page);
+
+  await choose(`${code}.csv`, 'code,name,kind\n' + `${code},Import test site,site\n`);
+  await expect(page.getByText('The file is ready.')).toBeVisible();
+  // By keyboard, as in the other admin tests: it also proves the button is reachable without a pointer.
+  await page.getByRole('button', { name: 'Import 1 locations' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Imported 1 locations.')).toBeVisible();
+
+  const history = page.getByRole('row').filter({ hasText: `${code}.csv` });
+  await expect(history.getByText('Imported')).toBeVisible();
+  await page.getByRole('button', { name: `Undo the import of ${code}.csv` }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(`Undid the import of ${code}.csv.`)).toBeVisible();
+  await expect(history.getByText('Undone')).toBeVisible();
+});
+
+test('import and export is closed to a requester', async ({ page }) => {
+  await signInAs(page, 'requester');
+  await page.goto('/app/admin/import');
+  await expect(page).not.toHaveURL(/\/admin\/import/);
 });

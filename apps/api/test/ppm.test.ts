@@ -1107,3 +1107,26 @@ it('changes several schedules at once and reports what happened to each', async 
     await cleanup();
   }
 });
+
+it('exports PPM schedules as CSV for the signed-in organisation only, and audits the export', async () => {
+  const { admin, reporter, schedule, tenant, cleanup } = await fixture();
+  const stranger = await fixture();
+  try {
+    await schedule({ title: '=Pump annual service' });
+    await stranger.schedule({ title: 'Their schedule' });
+    const res = await admin.get(`${schedules}/export`).expect(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+    expect(res.headers['content-disposition']).toContain('ppm-schedules.csv');
+    expect(res.text).toContain('number,title,discipline,criticality');
+    expect(res.text).toContain("'=Pump annual service");
+    expect(res.text).not.toContain('Their schedule');
+    await reporter.get(`${schedules}/export`).expect(403);
+    const events = await withTenant(db, tenant.id, (tx) =>
+      tx.auditEvent.findMany({ where: { action: 'ppm.schedule.exported' } }),
+    );
+    expect(events).toHaveLength(1);
+  } finally {
+    await cleanup();
+    await stranger.cleanup();
+  }
+});

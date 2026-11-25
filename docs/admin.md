@@ -73,7 +73,7 @@ Not built yet: the organisation setting "Allow view as user" (the mockup `admin-
 
 ## Branding
 
-`/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is stored but not yet shown on the sign-in screen. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). The logo, custom domain and email sender in the mockup are not built yet.
+`/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is shown on the organisation's own sign-in page (`/t/<organisation>/login`), read without a session from `GET /api/public/sign-in-message/<organisation>`. That answer is `{ "message": null }` for an unknown or suspended organisation, one without the branding feature and one with no message, so the page can't be used to find out which organisations exist. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). The logo, custom domain and email sender in the mockup are not built yet.
 
 ## Custom fields
 
@@ -99,7 +99,11 @@ Not built yet: single sign-on, IP allow-lists, breached-password checks, separat
 
 ## Audit log
 
-Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`. Events are listed newest first, 50 at a time, with a search on the event name. Each row can show the recorded before and after values. Not built yet: filters by person, record and date range, and export. API: `GET /api/admin/audit` with `action`, `entityType`, `from`, `to` and `cursor`.
+Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`. Events are listed newest first, 50 at a time. Filter by event name, by the person who acted, by the record's id and by a date range (whole days, in your browser's time zone), then **Clear** to start again. Each row can show the recorded before and after values.
+
+**Export CSV** downloads the events that match the filters you last searched for: up to 5,000, newest first, with times in UTC and the changes as JSON. Cells that start with `=`, `+`, `-` or `@` are prefixed with an apostrophe so a spreadsheet won't run them. Each export is itself recorded as `audit.exported`, with the filters and the number of rows.
+
+API (all need `audit.read`, and only ever show your own organisation): `GET /api/admin/audit` with `action`, `entityType`, `entityId`, `actor` (a membership id), `from`, `to` and `cursor`; `GET /api/admin/audit/actors` (the people who appear in the log); `GET /api/admin/audit/export` (the same filters, as CSV). A start date after the end date answers `400`. Not built yet: MFA enforced at sign-in (with P1-12).
 
 ## Username-only accounts
 

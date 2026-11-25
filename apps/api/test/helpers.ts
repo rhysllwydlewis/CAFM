@@ -67,6 +67,7 @@ export async function createTestTenant(db: PrismaClient, plan = 'starter') {
       await owner.session.deleteMany({ where });
       await owner.auditEvent.deleteMany({ where });
       await owner.outboxMessage.deleteMany({ where });
+      await owner.tenantBranding.deleteMany({ where });
       await owner.tenantEntitlement.deleteMany({ where });
       await owner.invite.deleteMany({ where });
       await owner.configVersion.deleteMany({ where });
@@ -90,6 +91,7 @@ export async function createTestTenant(db: PrismaClient, plan = 'starter') {
       await owner.assetClass.deleteMany({ where });
       await owner.location.deleteMany({ where });
       await owner.team.deleteMany({ where });
+      await owner.importBatch.deleteMany({ where });
       const accounts = (await owner.membership.findMany({ where, select: { accountId: true } })).map(
         (m) => m.accountId,
       );

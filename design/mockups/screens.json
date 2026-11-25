@@ -752,6 +752,14 @@
     "file": "09-insights-admin.js"
   },
   {
+    "id": "admin-14-import",
+    "group": "Super User administration",
+    "title": "Import & export",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "09-insights-admin.js"
+  },
+  {
     "id": "admin-12-subscription",
     "group": "Super User administration",
     "title": "Subscription & billing",

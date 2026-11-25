@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import request from 'supertest';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
@@ -587,6 +588,41 @@ it('changes the status of several assets at once and reports what happened to ea
     const auditor = await createTestAccount(db, [first.tenant.id], undefined, 'auditor');
     const audit = (await signIn(app, auditor.email, auditor.password)).agent;
     await bulk(audit, { action: 'status', status: 'spare', items: [{ id: a.id, version: 1 }] }).expect(403);
+  } finally {
+    await first.cleanup();
+    await second.cleanup();
+  }
+});
+
+it('exports assets as CSV for the signed-in organisation only, safely, and audits the export', async () => {
+  const first = await estate();
+  const second = await estate();
+  try {
+    const { floor } = await tree(first.agent);
+    await create(first.agent, {
+      name: '=Boiler, "main"',
+      locationId: floor.id,
+      installedOn: '2014-03-14',
+      replacementCost: { amountMinor: 1_850_000, currency: 'GBP' },
+    }).expect(201);
+    const other = await tree(second.agent);
+    await create(second.agent, { name: 'Other estate asset', locationId: other.floor.id }).expect(201);
+    const member = await createTestAccount(db, [first.tenant.id]);
+    const requester = (await signIn(app, member.email, member.password)).agent;
+    const res = await first.agent.get(`${assets}/export`).expect(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+    expect(res.headers['content-disposition']).toContain('assets.csv');
+    expect(res.text).toContain('number,name,status,location_code,parent_number');
+    expect(res.text).toContain(`"'=Boiler, ""main"""`);
+    expect(res.text).toContain('2014-03-14');
+    expect(res.text).toContain('1850000,GBP');
+    expect(res.text).not.toContain('Other estate asset');
+    await requester.get(`${assets}/export`).expect(403);
+    await request(app.getHttpServer()).get(`${assets}/export`).expect(401);
+    const events = await withTenant(db, first.tenant.id, (tx) =>
+      tx.auditEvent.findMany({ where: { action: 'asset.exported' } }),
+    );
+    expect(events).toHaveLength(1);
   } finally {
     await first.cleanup();
     await second.cleanup();

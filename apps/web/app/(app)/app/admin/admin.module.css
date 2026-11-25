@@ -109,3 +109,9 @@
   border: 0;
   min-width: 0;
 }
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}

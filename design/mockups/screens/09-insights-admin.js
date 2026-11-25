@@ -2,7 +2,7 @@ import { I, logo, btn, badge, status, prio, av, avs, who, cell2, card, kpi, tabl
 import { sites, months } from '../src/data.js';
 
 const SU = { user: 'Sam Sutton', role: 'Super User' };
-const adminNav = (on) => card('', `<div class="stack g1 sm">${[['Overview', 'dashboard'], ['Users & licences', 'users'], ['Roles & permissions', 'role'], ['Teams', 'team'], ['Modules & navigation', 'layers'], ['Terminology', 'edit'], ['Fields & forms', 'files'], ['Workflows & automation', 'workflow'], ['SLAs & priorities', 'sla'], ['Request catalogue', 'helpdesk'], ['Templates', 'documents'], ['Branding', 'image'], ['Security & sign-in', 'security'], ['Data & retention', 'database'], ['Integrations & API', 'api'], ['Audit log', 'audit-log'], ['Subscription & billing', 'billing']].map(([n, i]) => `<div class="row" style="padding:7px 10px;border-radius:6px;${n === on ? 'background:var(--primary-soft);color:var(--primary-text);font-weight:500' : 'color:var(--text-muted)'}">${I(i, 's14')}${n}</div>`).join('')}</div>`, { style: 'align-self:start' });
+const adminNav = (on) => card('', `<div class="stack g1 sm">${[['Overview', 'dashboard'], ['Users & licences', 'users'], ['Roles & permissions', 'role'], ['Teams', 'team'], ['Modules & navigation', 'layers'], ['Terminology', 'edit'], ['Fields & forms', 'files'], ['Workflows & automation', 'workflow'], ['SLAs & priorities', 'sla'], ['Request catalogue', 'helpdesk'], ['Templates', 'documents'], ['Branding', 'image'], ['Security & sign-in', 'security'], ['Data & retention', 'database'], ['Import & export', 'upload'], ['Integrations & API', 'api'], ['Audit log', 'audit-log'], ['Subscription & billing', 'billing']].map(([n, i]) => `<div class="row" style="padding:7px 10px;border-radius:6px;${n === on ? 'background:var(--primary-soft);color:var(--primary-text);font-weight:500' : 'color:var(--text-muted)'}">${I(i, 's14')}${n}</div>`).join('')}</div>`, { style: 'align-self:start' });
 const admin = (on, title, sub, acts, body) => shell({ active: 'admin', user: SU, crumbs: ['Administration', on], title, sub, acts, body: [`<div class="grid" style="grid-template-columns:240px minmax(0,1fr)">${adminNav(on)}<div class="stack">${[].concat(body).join('')}</div></div>`] });
 
 // ── Report builder ──
@@ -133,6 +133,22 @@ const platform = shell({ active: 'platform', user: { tenant: 'Platform', plan: '
   callout('Platform staff cannot see tenant data. "Request access" asks the tenant\'s Super Users for a time-limited support session, and every action in it is logged in their audit log.', { icon: 'locked' }),
 ] });
 
+// ── Import & export ──
+const importExport = admin('Import & export', 'Import & export', 'Bring estate data in from a spreadsheet, or take a copy out', [], [
+  card('Import from CSV', `<div class="stack g3">
+    ${seg([['Locations', 'site'], ['Assets', 'asset'], ['People', 'users'], ['PPM schedules', 'calendar']], 0)}
+    <div class="grid g-2">
+      <div class="stack g2"><span class="medium">1. Get the template</span><span class="sm muted">The header row, with a column for each of your custom fields.</span><div>${btn('Download template', { icon: 'download' })}</div></div>
+      <div class="stack g2"><span class="medium">2. Choose your file</span><span class="sm muted">CSV, up to 1,000 rows. Nothing is saved until you import.</span><div class="row g2">${btn('Choose file', { icon: 'upload' })}<span class="row sm"><span class="mono">estate-sites.csv</span><span class="faint">42 rows</span></span></div></div>
+    </div>
+    ${callout('<b>3 problems found.</b> Nothing was imported. Fix the file and check it again.', { tone: 'danger', icon: 'error' })}
+    ${table(['Line', 'Column', 'Problem'], [['4', '<span class="mono">parent_code</span>', 'No location with code CDF-HQ-9 in this file or in your estate.'], ['11', '<span class="mono">kind</span>', 'Kind must be one of site, building, floor, room or area.'], ['27', '<span class="mono">code</span>', 'Code BRS-01 is already used.']], { dense: true })}
+    <div class="row g2">${btn('Download error report', { icon: 'download' })}<span class="grow"></span>${btn('Check file', { icon: 'refresh' })}${btn('Import 42 locations', { v: 'primary' })}</div>
+  </div>`),
+  card('Recent imports', table(['File', 'What', ['Rows', { num: 1 }], 'When', 'Status', ''], [['<span class="mono">cardiff-sites.csv</span>', 'Locations', '38', 'Today 09:14', badge('Imported', 'success', { dot: true }), btn('Undo', { sm: true, icon: 'undo' })], ['<span class="mono">boilers.csv</span>', 'Assets', '112', 'Yesterday 16:40', badge('Imported', 'success', { dot: true }), btn('Undo', { sm: true, icon: 'undo' })], ['<span class="mono">new-starters.csv</span>', 'People', '9', '20 Nov 11:02', badge('Undone', '', { dot: true }), '']]), { flush: true }),
+  card('Export to CSV', `<div class="row wrap g2">${btn('Locations', { icon: 'download' })}${btn('Assets', { icon: 'download' })}${btn('People', { icon: 'download' })}${btn('PPM schedules', { icon: 'download' })}</div><div class="xs faint" style="margin-top:8px">Exports hold only what you can already see, up to 5,000 rows, and are recorded in the audit log.</div>`),
+]);
+
 export default [
   { id: 'reports-01-builder', group: 'Reports & AI', title: 'Report builder', html: reportBuilder },
   { id: 'ai-01-ask-the-estate', group: 'Reports & AI', title: 'Ask the estate (AI assistant)', html: ai },
@@ -148,6 +164,7 @@ export default [
   { id: 'admin-10-integrations', group: 'Super User administration', title: 'Integrations & API', html: integ },
   { id: 'admin-11-modules', group: 'Super User administration', title: 'Modules & terminology', html: modules },
   { id: 'admin-13-site-access', group: 'Super User administration', title: 'Site access (delegated admin)', html: siteAccess },
+  { id: 'admin-14-import', group: 'Super User administration', title: 'Import & export', html: importExport },
   { id: 'admin-12-subscription', group: 'Super User administration', title: 'Subscription & billing', html: sub },
   { id: 'platform-01-tenants', group: 'Platform (vendor) admin', title: 'Tenant management', html: platform },
 ];

@@ -12,10 +12,11 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
 import { withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
@@ -33,17 +34,20 @@ import {
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { activeCustomFields, mergeCustom, nextNumber, visibleCustom } from '../../core/config';
+import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
 import { locationScope } from '../locations/location-tree';
 import { assertNoAssetCycle, assetScope, fromSite, locationPaths, siteOf, withAssetWrite } from './asset-scope';
 
+const EXPORT_LIMIT = 5000;
+
 type Row = Prisma.AssetGetPayload<{ include: { class: true } }>;
 type Fields = ReadonlyMap<string, FieldDefinition>;
 
 /** The class's attribute template, in the form the validator takes. */
-function templateOf(cls: { attributes: Prisma.JsonValue } | null): FieldDefinition[] {
+export function templateOf(cls: { attributes: Prisma.JsonValue } | null): FieldDefinition[] {
   return ((cls?.attributes ?? []) as unknown as AssetAttribute[]).map((a) => ({
     key: a.key,
     label: a.unit ? `${a.label} (${a.unit})` : a.label,
@@ -312,6 +316,93 @@ export class AssetsController {
         groups: [...counts].map(([group, count]) => ({ group, count })).sort((a, b) => a.group.localeCompare(b.group)),
       };
     });
+  }
+
+  @Get('export')
+  @RequirePermission('assets.read')
+  async exportCsv(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const auth = req.auth!;
+    const tenantId = auth.membership!.tenantId;
+    const csv = await withTenant(this.db, tenantId, async (tx) => {
+      const [rows, fields] = await Promise.all([
+        tx.asset.findMany({
+          where: assetScope(auth),
+          orderBy: [{ number: 'asc' }, { id: 'asc' }],
+          take: EXPORT_LIMIT,
+          include: { class: true, location: { select: { code: true } }, parent: { select: { number: true } } },
+        }),
+        activeCustomFields(tx, tenantId, 'asset'),
+      ]);
+      // A parent can sit beyond the row cap, so check it against the member's scope directly.
+      const visible = new Set(rows.map(({ id }) => id));
+      const missing = [
+        ...new Set(rows.flatMap(({ parentId }) => (parentId && !visible.has(parentId) ? [parentId] : []))),
+      ];
+      if (missing.length) {
+        const found = await tx.asset.findMany({
+          where: { AND: [assetScope(auth), { id: { in: missing } }] },
+          select: { id: true },
+        });
+        for (const { id } of found) visible.add(id);
+      }
+      const keys = [...fields.keys()];
+      const out = toCsv(
+        [
+          'number',
+          'name',
+          'status',
+          'location_code',
+          'parent_number',
+          'class',
+          'make',
+          'model',
+          'serial',
+          'installed_on',
+          'supplier',
+          'expected_life_years',
+          'replacement_cost_minor',
+          'currency',
+          'criticality',
+          'condition',
+          ...keys.map((key) => `custom.${key}`),
+        ],
+        rows.map((row) => {
+          const custom = visibleCustom(row.custom, fields) as Record<string, unknown>;
+          return [
+            row.number,
+            row.name,
+            row.status,
+            row.location.code,
+            row.parentId && visible.has(row.parentId) ? row.parent?.number : '',
+            row.class?.name,
+            row.make,
+            row.model,
+            row.serial,
+            day(row.installedOn),
+            row.supplier,
+            row.expectedLifeYears,
+            row.replacementCostMinor,
+            row.replacementCostMinor === null ? '' : row.currency,
+            row.criticality,
+            row.condition,
+            ...keys.map((key) => custom[key]),
+          ];
+        }),
+      );
+      await audit(
+        tx,
+        auth,
+        { action: 'asset.exported', entityType: 'asset', entityId: tenantId, changes: { rows: rows.length } },
+        req.ip,
+      );
+      return out;
+    });
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="assets.csv"',
+      'Cache-Control': 'no-store',
+    });
+    return csv;
   }
 
   @Get('custom-fields')

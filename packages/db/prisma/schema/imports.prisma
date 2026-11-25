@@ -1,0 +1,21 @@
+// Bulk import (P1-11): one row per applied CSV file, so a whole import can be rolled back.
+
+/// A CSV import that was applied. `createdIds` lists the records it made, in creation order. Tenant-owned (RLS).
+model ImportBatch {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  entityType   String    @map("entity_type")
+  fileName     String?   @map("file_name")
+  status       String    @default("applied")
+  rowCount     Int       @map("row_count")
+  createdIds   Json      @default("[]") @map("created_ids")
+  createdBy    String    @map("created_by") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  rolledBackAt DateTime? @map("rolled_back_at") @db.Timestamptz(3)
+  rolledBackBy String?   @map("rolled_back_by") @db.Uuid
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, entityType, createdAt])
+  @@map("import_batch")
+}
