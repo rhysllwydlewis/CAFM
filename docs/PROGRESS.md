@@ -150,7 +150,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
     - [x] Password minimum length, longest sign-in and the MFA-required setting, with the screen. ([guide](admin.md#security-and-sign-in))
     - [x] Audit log viewer: newest first, search by event, details. ([guide](admin.md#audit-log))
-    - [ ] Audit log filters by person, record and date range, and export; MFA enforced at sign-in (with P1-12).
+    - [x] Audit log filters by person, record and date range, and CSV export. ([guide](admin.md#audit-log))
+    - [ ] MFA enforced at sign-in (with P1-12).
   - [x] **P1-09f** Username-only accounts. ([guide](admin.md#username-only-accounts))
     - Known gap: a person can't change their own password yet (an administrator resets it); no forced change at first sign-in.
 - [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
