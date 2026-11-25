@@ -41,7 +41,7 @@ it('previews every problem, sends nothing, and returns an error report', async (
       ',requester',
     ].join('\n');
     const res = await agent.post(`${people}/import/preview`).send({ csv }).expect(201);
-    expect(res.body).toMatchObject({ rows: 6, creates: 0 });
+    expect(res.body).toMatchObject({ rows: 7, creates: 0 });
     expect(res.body.issues.map((i: { row: number; column: string }) => `${i.row}:${i.column}`)).toEqual([
       '3:email',
       '4:email',

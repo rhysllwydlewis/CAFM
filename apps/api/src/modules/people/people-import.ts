@@ -16,6 +16,8 @@ export interface PlannedInvite {
 }
 
 export interface PeoplePlan {
+  /** Data rows in the file, whether or not they have problems. */
+  rows: number;
   ordered: PlannedInvite[];
   issues: ImportIssue[];
 }
@@ -29,7 +31,7 @@ export const peopleTemplate = (): string => PEOPLE_COLUMNS.join(',');
 export async function planPeopleImport(tx: Tx, auth: AuthContext, csv: string): Promise<PeoplePlan> {
   const membership = auth.membership!;
   const tenantId = membership.tenantId;
-  const fail = (issues: ImportIssue[]): PeoplePlan => ({ ordered: [], issues });
+  const fail = (issues: ImportIssue[], rows = 0): PeoplePlan => ({ rows, ordered: [], issues });
   let parsed;
   try {
     parsed = parseCsv(csv, IMPORT_MAX_ROWS);
@@ -128,5 +130,5 @@ export async function planPeopleImport(tx: Tx, auth: AuthContext, csv: string): 
         message: `Your plan includes ${limit} full users and has room for ${free} more, but the file adds ${full.length}. Use roles with a lighter licence, or ask your Super User about upgrading.`,
       });
   }
-  return issues.length ? fail(issues) : { ordered, issues };
+  return issues.length ? fail(issues, rows.length) : { rows: rows.length, ordered, issues };
 }

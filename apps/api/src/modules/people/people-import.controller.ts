@@ -28,9 +28,9 @@ import { peopleTemplate, planPeopleImport, type PeoplePlan } from './people-impo
 
 const SHOWN_ISSUES = 200;
 
-function preview(rows: number, result: PeoplePlan): ImportPreview {
+function preview(result: PeoplePlan): ImportPreview {
   return {
-    rows,
+    rows: result.rows,
     creates: result.issues.length ? 0 : result.ordered.length,
     issueCount: result.issues.length,
     issues: result.issues.slice(0, SHOWN_ISSUES),
@@ -98,7 +98,7 @@ export class PeopleImportController {
         result.issues.map(({ row, column, message }) => [row, column, message]),
       );
     }
-    return preview(result.ordered.length + result.issues.length, result);
+    return preview(result);
   }
 
   /** All or nothing: a file with any problem sends no invitations. */
