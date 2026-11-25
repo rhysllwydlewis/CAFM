@@ -10,12 +10,14 @@ export function AdminMenu({
   canReadRoles,
   canReadPeople,
   canReadAudit,
+  canImport,
 }: {
   canManageSettings: boolean;
   canManagePeople: boolean;
   canReadRoles: boolean;
   canReadPeople: boolean;
   canReadAudit: boolean;
+  canImport: boolean;
 }) {
   const path = usePathname();
   const items = [
@@ -29,6 +31,7 @@ export function AdminMenu({
     canManageSettings && { href: '/app/admin/fields', label: 'Custom fields' },
     canManageSettings && { href: '/app/admin/service-levels', label: 'Service levels' },
     canManageSettings && { href: '/app/admin/security', label: 'Security and sign-in' },
+    canImport && { href: '/app/admin/import', label: 'Import and export' },
     canReadAudit && { href: '/app/admin/audit', label: 'Audit log' },
   ].filter((item): item is { href: string; label: string } => !!item);
   return (

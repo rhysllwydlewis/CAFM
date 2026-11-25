@@ -2,12 +2,19 @@ import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { can } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
+import { exportable, importable } from './import/kinds';
 import { AdminMenu } from './admin-menu';
 import styles from './admin.module.css';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
-  if (!can(user, 'roles.read') && !can(user, 'people.manage') && !can(user, 'people.read') && !can(user, 'audit.read'))
+  if (
+    !can(user, 'roles.read') &&
+    !can(user, 'people.manage') &&
+    !can(user, 'people.read') &&
+    !can(user, 'audit.read') &&
+    importable(user).length === 0
+  )
     redirect('/app');
   return (
     <div className="page stack g4">
@@ -24,6 +31,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           canReadRoles={can(user, 'roles.read')}
           canReadPeople={can(user, 'people.read')}
           canReadAudit={can(user, 'audit.read')}
+          canImport={importable(user).length + exportable(user).length > 0}
         />
         <div className="stack g4">{children}</div>
       </div>

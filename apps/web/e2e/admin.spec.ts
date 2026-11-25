@@ -345,3 +345,39 @@ test('a Super User makes a username-only account, which signs in on the organisa
     await db.$disconnect();
   }
 });
+
+test('a Super User checks, imports and undoes a locations file', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin');
+  await page.getByRole('link', { name: 'Import and export' }).click();
+  await expect(page).toHaveURL(/\/app\/admin\/import$/);
+  await expect(page.getByRole('heading', { name: 'Import from CSV' })).toBeVisible();
+  await assertAccessible(page);
+
+  const code = 'IMP-' + randomUUID().slice(0, 8).toUpperCase();
+  const choose = (name: string, text: string) =>
+    page.getByLabel('Choose file').setInputFiles({ name, mimeType: 'text/csv', buffer: Buffer.from(text) });
+
+  await choose('bad.csv', 'code,name,kind\n' + `${code},Import test site,spaceship\n`);
+  await expect(page.getByText('1 problem found.')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Problems found in the file' }).getByText('kind')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Import', exact: true })).toBeDisabled();
+  await assertAccessible(page);
+
+  await choose(`${code}.csv`, 'code,name,kind\n' + `${code},Import test site,site\n`);
+  await expect(page.getByText('The file is ready.')).toBeVisible();
+  await page.getByRole('button', { name: 'Import 1 locations' }).click();
+  await expect(page.getByText('Imported 1 locations.')).toBeVisible();
+
+  const history = page.getByRole('row').filter({ hasText: `${code}.csv` });
+  await expect(history.getByText('Imported')).toBeVisible();
+  await page.getByRole('button', { name: `Undo the import of ${code}.csv` }).click();
+  await expect(page.getByText(`Undid the import of ${code}.csv.`)).toBeVisible();
+  await expect(history.getByText('Undone')).toBeVisible();
+});
+
+test('import and export is closed to a requester', async ({ page }) => {
+  await signInAs(page, 'requester');
+  await page.goto('/app/admin/import');
+  await expect(page).not.toHaveURL(/\/admin\/import/);
+});

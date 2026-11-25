@@ -9,7 +9,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 16%** of the planned build (23 of 83 top-level roadmap items) |
+| **Overall progress** | **About 17%** of the planned build (24 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
 | **Next up** | Phase 1 admin console (P1-09) |
@@ -19,7 +19,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 9 / 13 | In progress |
+| 1 · Core CAFM MVP | 10 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -55,7 +55,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
 | P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. Batch 7 (`claude/build-p1-09-security-settings`, draft PR): P1-09e security settings (password policy, session timeout, MFA enforcement setting, audit log viewer) in progress. Batch 7 merged (P1-09e). Batch 8 (`claude/build-p1-09-username-accounts`, draft PR): P1-09f username-only accounts built. Batch 8 merged. Batch 9 (`claude/build-p1-09-custom-fields-screen`, draft PR): custom fields screen built. Batch 9 merged. Batch 10 (`claude/build-p1-09-service-levels`, draft PR): service levels and categories screen in the admin console (reads the helpdesk priority matrix and request types). Batch 10 merged. Batch 11 (`claude/build-p1-09-audit-filters`, draft PR): audit log filters by person, record and date range, and CSV export. After it: statuses and a business calendar screen. Team scope (P1-09b) is later. |
-| P1-11 | Claude (Builder routine) | claude/build-p1-11-* | 25 Nov 2026 | Batch 1 (`claude/build-p1-11-import-export`, draft PR): shared CSV writer and the locations, assets, people and PPM schedule CSV exports built. Batch 1 merged. Batch 2 (`claude/build-p1-11-import-api`, draft PR): import API for locations (template, validation preview, error report, apply, rollback) with the batch table. Batch 2 merged. Batch 3 (`claude/build-p1-11-asset-import`, draft PR): asset import API built (P1-11c). Batch 3 merged. Batch 4 (`claude/build-p1-11-people-import`, draft PR): people import (as invitations) built (API, tests, guide). Batch 4 merged. Batch 5 (`claude/build-p1-11-ppm-import`, draft PR): PPM schedule import API built (P1-11d done). Batch 5 merged. Batch 6 (`claude/build-p1-11-import-screens`, draft PR): import screens (P1-11e), mockup first. |
 
 ## Phase checklists
 
@@ -156,12 +155,12 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - Known gap: a person can't change their own password yet (an administrator resets it); no forced change at first sign-in.
 - [x] **P1-10** Standard reports + role default dashboards (fixed widgets). ([guide](reports.md))
   - Reports for contractor performance, compliance status and asset history arrive with the modules that hold their data.
-- [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.
+- [x] **P1-11** Import/export for locations, assets, users, PPM schedules.
   - [x] **P1-11a** CSV exports for locations, assets, people and PPM schedules. ([guide](import-export.md#exports))
   - [x] **P1-11b** Location import: template, validation preview, error report, apply and rollback. ([guide](import-export.md#importing-locations))
   - [x] **P1-11c** Asset import (same flow). ([guide](import-export.md#importing-assets))
   - [x] **P1-11d** People and PPM schedule imports. ([people](import-export.md#importing-people), [PPM schedules](import-export.md#importing-ppm-schedules))
-  - [ ] **P1-11e** Import screens with their mockup (upload, preview, error report, recent imports and rollback).
+  - [x] **P1-11e** Import screens with their mockup (`admin-14-import`): upload, check, error report, recent imports and undo. ([guide](import-export.md#the-screen))
 - [ ] **P1-12** MFA (TOTP).
 - [ ] **P1-13** First design-partner tenants live, invoiced manually.
 
