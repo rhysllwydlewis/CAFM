@@ -6,7 +6,9 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
-- The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is remembered, and the phone menu is unchanged.
+- The side menu shows a soft glow along its lower edge when there is more menu below, and along its upper edge once you have scrolled down. The glow disappears at each end. It helps because the scrollbar stays hidden until you hover the menu.
+
+- The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is saved on your account, so it follows you to another browser or device, and the phone menu is unchanged. (While an administrator is viewing as someone else, the choice lasts only for that visit.)
 - Home: the key figures now suit the role. A technician or contractor sees their own open, overdue and due-today jobs; the helpdesk sees new requests and unassigned jobs; finance and managers see cost over the last 30 days. See [Reports](docs/reports.md).
 - Administration: accounts with a username only, for staff without an email address. An administrator creates one on the Users screen (name, username, role) and is shown a generated password once. The person signs in with just the username at the organisation's own address, `/t/<organisation>/login`, and an administrator resets the password there too. Every creation and reset is audited.
 - Reports: an Executive overview screen (key figures and the busiest sites for the last 30 days), plus two new standard reports, reactive against planned work and the busiest sites. See [Reports](docs/reports.md).
