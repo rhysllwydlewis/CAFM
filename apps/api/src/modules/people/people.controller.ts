@@ -8,9 +8,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { withTenant } from '@cafm/db';
 import { licenceForRole, updateMemberSchema } from '@cafm/shared';
 import {
@@ -22,6 +23,7 @@ import {
 import { administrableMembers, assertAdministrable } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
+import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 
@@ -63,6 +65,44 @@ export class PeopleController {
         status: m.status,
       }));
     });
+  }
+
+  /**
+   * The same people as the list, as a CSV file. It needs people.read and applies the
+   * same limits, so nobody sees more here than on the users screen. Audited.
+   */
+  @Get('export')
+  @RequirePermission('people.read')
+  async exportCsv(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const auth = req.auth!;
+    const tenantId = auth.membership!.tenantId;
+    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
+    const csv = await withTenant(this.db, tenantId, async (tx) => {
+      const allowed = await administrableMembers(tx, auth);
+      const rows = await tx.membership.findMany({
+        where: { tenantId, AND: [own, allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {}] },
+        include: { account: true },
+        orderBy: [{ account: { name: 'asc' } }, { id: 'asc' }],
+        take: 5000,
+      });
+      const out = toCsv(
+        ['name', 'email', 'role', 'status'],
+        rows.map((m) => [m.account.name, m.account.email, m.role, m.status]),
+      );
+      await audit(
+        tx,
+        auth,
+        { action: 'people.exported', entityType: 'membership', entityId: tenantId, changes: { rows: rows.length } },
+        req.ip,
+      );
+      return out;
+    });
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="people.csv"',
+      'Cache-Control': 'no-store',
+    });
+    return csv;
   }
 
   /**
