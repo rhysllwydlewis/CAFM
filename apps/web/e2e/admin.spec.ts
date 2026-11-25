@@ -278,10 +278,24 @@ test('a Super User saves security settings and finds the change in the audit log
 
   await page.getByRole('link', { name: 'Audit log' }).click();
   await expect(page).toHaveURL(/\/app\/admin\/audit$/);
-  await page.getByLabel('Search events').fill('security_updated');
+  await page.getByLabel('Event').fill('security_updated');
+  await page.getByLabel('Who').selectOption({ label: 'Sam Sutton' });
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'settings.security_updated' }).first()).toBeVisible();
   await assertAccessible(page);
+
+  await page.getByLabel('From').fill('2026-02-01');
+  await page.getByLabel('To').fill('2026-01-01');
+  await expect(page.getByText('The start date must be before the end date.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Clear' }).click();
+  await expect(page.getByLabel('Event')).toHaveValue('');
+  const csv = await page.request.get(
+    await page.getByRole('link', { name: 'Export CSV' }).evaluate((a) => (a as HTMLAnchorElement).href),
+  );
+  expect(csv.headers()['content-type']).toContain('text/csv');
+  expect(await csv.text()).toContain('"When (UTC)"');
 });
 
 test('someone without audit access cannot open the audit log', async ({ page }) => {
