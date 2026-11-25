@@ -77,6 +77,8 @@ model Account {
   /// Version of the terms of service accepted, and when (doc 06: accept-invite).
   termsVersion    String?         @map("terms_version")
   termsAcceptedAt DateTime?       @map("terms_accepted_at") @db.Timestamptz(3)
+  /// The person's own display choices, such as a collapsed side menu. Validated with accountPreferencesSchema.
+  preferences     Json            @default("{}")
   createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   memberships     Membership[]
   sessions        Session[]

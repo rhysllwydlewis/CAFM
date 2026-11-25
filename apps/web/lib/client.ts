@@ -6,3 +6,12 @@ export async function postJson(path: string, body: unknown = {}): Promise<Respon
     body: JSON.stringify(body),
   });
 }
+
+/** JSON PATCH from the browser, for changing part of something that already exists. */
+export async function patchJson(path: string, body: unknown): Promise<Response> {
+  return fetch(`/api${path}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}

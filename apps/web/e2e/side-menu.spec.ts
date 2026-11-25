@@ -1,18 +1,46 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-async function signIn(page: Page) {
+// The collapsed choice is saved on the person's account, so these tests must not share one with other specs, or with
+// each other while the desktop and phone projects run side by side. Each project gets its own demo person that no
+// other spec signs in as, and every test starts and ends with the menu open.
+const persona = () => (test.info().project.name === 'mobile' ? 'stores' : 'compliance');
+
+async function setCollapsed(page: Page, collapsed: boolean) {
+  const res = await page.request.patch('/api/auth/preferences', { data: { navCollapsed: collapsed } });
+  expect(res.ok()).toBe(true);
+}
+
+async function savedChoice(page: Page) {
+  return (await (await page.request.get('/api/auth/me')).json()).preferences;
+}
+
+let signedInAsPersona = false;
+test.beforeEach(() => {
+  signedInAsPersona = false;
+});
+
+/** Signs in and starts from an open menu, unless the test is about what a sign-in brings with it. */
+async function signIn(page: Page, { reset = true } = {}) {
+  signedInAsPersona = true;
   await page.goto('/login');
-  await page.getByLabel('Email or username').fill('superuser@demo.example');
+  await page.getByLabel('Email or username').fill(`${persona()}@demo.example`);
   await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  if (reset) await setCollapsed(page, false);
 }
 
 async function assertAccessible(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.map((violation) => [violation.id, violation.nodes.map((node) => node.target)])).toEqual([]);
 }
+
+test.afterEach(async ({ page }) => {
+  // Leave the person's menu open for the next run, whatever the test did.
+  if (!signedInAsPersona) return;
+  await page.request.patch('/api/auth/preferences', { data: { navCollapsed: false } }).catch(() => undefined);
+});
 
 test.describe('side menu on a desktop', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
@@ -27,20 +55,49 @@ test.describe('side menu on a desktop', () => {
     await page.getByRole('button', { name: 'Collapse side menu' }).click();
     await expect.poll(widthOf).toBeLessThan(80);
     // The link is still named by its label, and shows it as a tooltip.
-    const helpdesk = menu.getByRole('link', { name: 'Helpdesk' });
-    await expect(helpdesk).toHaveAttribute('title', 'Helpdesk');
-    await expect(helpdesk).toBeVisible();
+    const home = menu.getByRole('link', { name: 'Home', exact: true });
+    await expect(home).toHaveAttribute('title', 'Home');
+    await expect(home).toBeVisible();
     await expect(menu.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
     await assertAccessible(page);
 
-    // Still collapsed after a reload, with no flash of the full menu: the server reads the cookie.
+    // Still collapsed after a reload, with no flash of the full menu: the server reads the saved choice. The save is
+    // sent in the background, so wait for it first.
+    await expect.poll(() => savedChoice(page)).toEqual({ navCollapsed: true });
     await page.reload();
     await expect.poll(widthOf).toBeLessThan(80);
 
     await page.getByRole('button', { name: 'Expand side menu' }).click();
     await expect.poll(widthOf).toBeGreaterThan(240);
+    await expect.poll(() => savedChoice(page)).toEqual({ navCollapsed: false });
     await page.reload();
     await expect.poll(widthOf).toBeGreaterThan(240);
+  });
+
+  test('the choice follows the person to another browser', async ({ page, browser, baseURL }) => {
+    await signIn(page);
+    await page.goto('/app');
+    await page.getByRole('button', { name: 'Collapse side menu' }).click();
+    await expect.poll(() => savedChoice(page)).toEqual({ navCollapsed: true });
+
+    // A brand new browser with no cookies: the saved choice comes from the account.
+    const other = await browser.newContext({ baseURL, viewport: { width: 1440, height: 900 } });
+    try {
+      const second = await other.newPage();
+      await signIn(second, { reset: false });
+      await second.goto('/app');
+      const width = async () => (await second.getByRole('complementary', { name: 'Main' }).boundingBox())?.width ?? 0;
+      await expect.poll(width).toBeLessThan(80);
+      await expect(second.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
+
+      // Opening it there is saved too, and the first browser sees that on its next load.
+      await second.getByRole('button', { name: 'Expand side menu' }).click();
+      await expect.poll(() => savedChoice(second)).toEqual({ navCollapsed: false });
+      await page.reload();
+      await expect(page.getByRole('button', { name: 'Collapse side menu' })).toBeVisible();
+    } finally {
+      await other.close();
+    }
   });
 
   test('the account menu still opens from the collapsed rail', async ({ page }) => {
@@ -50,6 +107,21 @@ test.describe('side menu on a desktop', () => {
     await page.getByRole('button', { name: /Account and settings/ }).click();
     await expect(page.getByRole('radiogroup', { name: 'Theme' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
+  });
+
+  test('a menu longer than the window shows a glow on the edge with more beyond it', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 420 });
+    await signIn(page);
+    await page.goto('/app');
+    const list = page.getByRole('navigation', { name: 'Modules' });
+    expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    // Two covers that move with the content hide each glow at its own end; the glows stay put.
+    await expect(list).toHaveCSS('background-attachment', 'local, local, scroll, scroll');
+    await expect(list).toHaveCSS('background-repeat', 'no-repeat, no-repeat, no-repeat, no-repeat');
+    // The same still holds after scrolling to the bottom and in the collapsed rail.
+    await list.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await page.getByRole('button', { name: 'Collapse side menu' }).click();
+    await expect(list).toHaveCSS('background-attachment', 'local, local, scroll, scroll');
   });
 
   test('a failed sign-out shows its message beside the rail, where it can be read', async ({ page }) => {
@@ -99,13 +171,47 @@ test.describe('side menu on a phone', () => {
     await expect(page.getByRole('button', { name: 'Close menu' })).toBeFocused();
   });
 
-  test('a menu collapsed on a desktop still opens in full on a phone', async ({ page, context }) => {
+  test('a menu collapsed on a desktop still opens in full on a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await signIn(page);
-    await context.addCookies([{ name: 'cafm_nav', value: 'collapsed', url: 'http://localhost:3000' }]);
     await page.goto('/app');
+    await page.getByRole('button', { name: 'Collapse side menu' }).click();
+    await expect(page.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
+    await expect.poll(() => savedChoice(page)).toEqual({ navCollapsed: true });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    await expect(
-      page.getByRole('complementary', { name: 'Main' }).getByText('Helpdesk', { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole('complementary', { name: 'Main' }).getByText('Home', { exact: true })).toBeVisible();
+  });
+});
+
+test.describe('side menu while viewing as someone else', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('can be collapsed for the visit, but nothing is saved on the other person’s account', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel('Email or username').fill('superuser@demo.example');
+    await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).not.toHaveURL(/\/login/);
+    await page.goto('/app/admin/users');
+    const card = page.getByRole('region', { name: 'View as user' });
+    await card.getByLabel('Person').selectOption({ label: 'Tom Price (Technician)' });
+    await card.getByLabel('Reason').fill('Checking the side menu choice is not saved');
+    await card.getByRole('button', { name: 'View as this person' }).focus();
+    await page.keyboard.press('Enter');
+    const banner = page.getByRole('status').filter({ hasText: 'You are viewing as Tom Price' });
+    await expect(banner).toBeVisible();
+
+    const saves: string[] = [];
+    page.on('request', (req) => req.url().includes('/auth/preferences') && saves.push(req.method()));
+    await page.getByRole('button', { name: 'Collapse side menu' }).click();
+    await expect(page.getByRole('button', { name: 'Expand side menu' })).toBeVisible();
+    // Read-only means no attempt is made, rather than an attempt that is refused.
+    expect(saves).toEqual([]);
+
+    await banner.getByRole('button', { name: 'Stop viewing' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'You are viewing as' })).toHaveCount(0);
   });
 });

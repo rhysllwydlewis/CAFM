@@ -21,6 +21,30 @@ export interface OrganisationOption {
 export type LoginResponse =
   { status: 'signed_in'; landingPage: string } | { status: 'choose_organisation'; organisations: OrganisationOption[] };
 
+/** A person's own display choices. Every key is optional: an unset one means "use the default". */
+export const accountPreferencesSchema = z
+  .object({
+    /** The desktop side menu is collapsed to an icon rail. */
+    navCollapsed: z.boolean(),
+  })
+  .partial()
+  .strict();
+export type AccountPreferences = z.infer<typeof accountPreferencesSchema>;
+
+export const updatePreferencesSchema = accountPreferencesSchema.refine((v) => Object.keys(v).length > 0, {
+  message: 'Nothing to change',
+});
+
+/** Stored preferences made safe to use: unknown or malformed values are dropped, never trusted. */
+export function readPreferences(stored: unknown): AccountPreferences {
+  const parsed = accountPreferencesSchema.safeParse(stored);
+  if (parsed.success) return parsed.data;
+  const known = accountPreferencesSchema.shape.navCollapsed.safeParse(
+    (stored as { navCollapsed?: unknown } | null)?.navCollapsed,
+  );
+  return known.success && known.data !== undefined ? { navCollapsed: known.data } : {};
+}
+
 export interface CurrentUser {
   accountId: string;
   name: string;
@@ -37,6 +61,8 @@ export interface CurrentUser {
   entitlements: { plan: string; features: string[]; limits: Record<string, number | null> };
   /** Set while a Super User is viewing the app as this person (P1-09c). */
   impersonation: { by: string; expiresAt: string } | null;
+  /** The person's own display choices, saved on their account. */
+  preferences: AccountPreferences;
 }
 
 export const startImpersonationSchema = z.object({

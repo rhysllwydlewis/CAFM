@@ -13,7 +13,7 @@ The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma
 | `tenant` | name, slug, status (trial/active/suspended), plan, region, branding, settings |
 | `plan`, `entitlement`, `tenant_entitlement_override`, `addon_subscription` | feature keys and limits |
 | `usage_meter` | tenant, meter key, period, quantity |
-| `account` | **global (not tenant-scoped)**: email (globally unique, nullable for username-only accounts), name, password hash, MFA factors, locale |
+| `account` | **global (not tenant-scoped)**: email (globally unique, nullable for username-only accounts), name, password hash, MFA factors, locale, display preferences (a JSON object of the person's own choices, such as a collapsed side menu, so they follow them across devices and organisations) |
 | `membership` | account × tenant: status, licence_type, username (unique per tenant, optional), default site, time zone, landing page. Most "user" references in other tables point at `membership` |
 | `session`, `oauth_token`, `mfa_factor`, `password_reset`, `sso_connection`, `terms_acceptance` | auth |
 | `role`, `permission`, `role_permission`, `membership_role` (with scope) | RBAC + scope |
