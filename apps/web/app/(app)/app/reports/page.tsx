@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature } from '@cafm/shared';
+import { can, feature, formatMinor } from '@cafm/shared';
 import { currentUser } from '@/lib/session';
-import { openJobsByAge, ppmCompliance, slaPerformance, workMix } from '@/lib/reports';
+import { costAnalysis, openJobsByAge, ppmCompliance, satisfaction, slaPerformance, workMix } from '@/lib/reports';
 import ModulePage from '../[module]/page';
 import styles from './reports.module.css';
 
@@ -31,11 +31,15 @@ export default async function ReportsPage({
   const to = DAY.test(one(input.to) ?? '') ? one(input.to) : undefined;
   const invalid = Boolean(from && to && from > to);
   const period = invalid ? {} : { from, to };
-  const [age, sla, ppm, mix] = await Promise.all([
+  const seesSatisfaction = feature(user.entitlements, 'helpdesk') && can(user, 'requests.manage');
+  const seesCosts = feature(user.entitlements, 'work_orders') && can(user, 'costs.read');
+  const [age, sla, ppm, mix, rated, costs] = await Promise.all([
     openJobsByAge(),
     slaPerformance(period),
     ppmCompliance(period),
     workMix(period),
+    seesSatisfaction ? satisfaction(period) : null,
+    seesCosts ? costAnalysis(period) : null,
   ]);
 
   return (
@@ -169,6 +173,73 @@ export default async function ReportsPage({
           </p>
         </div>
       </section>
+      {rated && (
+        <section className="card stack g3" aria-labelledby="r-csat">
+          <div className="card-b stack g3">
+            <h2 id="r-csat" className="h3">
+              Satisfaction
+            </h2>
+            <p className="sm muted">
+              {rated.rated === 0
+                ? 'No requests were rated in this period.'
+                : `Requests rated in the period: ${rated.average} out of 5 on average (${rated.rated} ${rated.rated === 1 ? 'rating' : 'ratings'}).`}
+            </p>
+            <div className={styles.metrics}>
+              {rated.byRating.map((row) => (
+                <div className="stack g1" key={row.rating}>
+                  <span className="sm muted">{row.rating === 1 ? '1 star' : `${row.rating} stars`}</span>
+                  <strong className="page-title">{row.count}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {costs && (
+        <section className="card stack g3" aria-labelledby="r-cost">
+          <div className="card-b stack g3">
+            <h2 id="r-cost" className="h3">
+              Cost analysis
+            </h2>
+            <p className="sm muted">Cost entered on jobs in the period, by the day it was incurred.</p>
+            {costs.currencies.length > 0 ? (
+              <div className={styles.tableWrap} role="region" aria-label="Cost by type" tabIndex={0}>
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th scope="col">Currency</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {costs.currencies.flatMap((c) => [
+                      ...c.byKind.map((row) => (
+                        <tr key={c.currency + row.kind}>
+                          <th scope="row">{c.currency}</th>
+                          <td>{row.kind.charAt(0).toUpperCase() + row.kind.slice(1)}</td>
+                          <td>{formatMinor(row.amountMinor, c.currency)}</td>
+                        </tr>
+                      )),
+                      <tr key={c.currency + 'total'}>
+                        <th scope="row">{c.currency}</th>
+                        <td>
+                          <strong>Total</strong>
+                        </td>
+                        <td>
+                          <strong>{formatMinor(c.totalMinor, c.currency)}</strong>
+                        </td>
+                      </tr>,
+                    ])}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="muted">No cost was entered in this period.</p>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

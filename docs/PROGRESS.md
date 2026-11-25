@@ -9,7 +9,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 15%** of the planned build (23 of 83 top-level roadmap items) |
+| **Overall progress** | **About 16%** of the planned build (23 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
 | **Next up** | Phase 1 admin console (P1-09) |
@@ -19,7 +19,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 8 / 13 | In progress |
+| 1 · Core CAFM MVP | 9 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -55,7 +55,6 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
 | P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. Batch 7 (`claude/build-p1-09-security-settings`, draft PR): P1-09e security settings (password policy, session timeout, MFA enforcement setting, audit log viewer) in progress. Batch 7 merged (P1-09e). Batch 8 (`claude/build-p1-09-username-accounts`, draft PR): P1-09f username-only accounts built. Batch 8 merged. Batch 9 (`claude/build-p1-09-custom-fields-screen`, draft PR): custom fields screen built. Batch 9 merged. Batch 10 (`claude/build-p1-09-service-levels`, draft PR): service levels and categories screen in the admin console (reads the helpdesk priority matrix and request types). Batch 10 merged. Batch 11 (`claude/build-p1-09-audit-filters`, draft PR): audit log filters by person, record and date range, and CSV export. After it: statuses and a business calendar screen. Team scope (P1-09b) is later. |
-| P1-10 | Claude (Builder routine) | claude/build-p1-10-* | 24 Nov 2026 | Batch 1 (reports API, Reports screen, home key-figure tiles) merged. Batch 2 (executive overview, reactive-vs-planned and busiest-sites reports) merged. Batch 3 (`claude/build-p1-10-role-dashboards`, draft PR): role-specific home key figures (technician, contractor, helpdesk, finance) from `GET /api/home/summary` built and in review. After it: any remaining standard reports (contractor performance and cost analysis wait on later modules). |
 
 ## Phase checklists
 
@@ -154,7 +153,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [ ] MFA enforced at sign-in (with P1-12).
   - [x] **P1-09f** Username-only accounts. ([guide](admin.md#username-only-accounts))
     - Known gap: a person can't change their own password yet (an administrator resets it); no forced change at first sign-in.
-- [ ] **P1-10** Standard reports + role default dashboards (fixed widgets).
+- [x] **P1-10** Standard reports + role default dashboards (fixed widgets). ([guide](reports.md))
+  - Reports for contractor performance, compliance status and asset history arrive with the modules that hold their data.
 - [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.
 - [ ] **P1-12** MFA (TOTP).
 - [ ] **P1-13** First design-partner tenants live, invoiced manually.

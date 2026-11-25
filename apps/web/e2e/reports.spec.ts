@@ -19,7 +19,14 @@ test('shows the standard reports and lets the period change', async ({ page }) =
   await signInAs(page, 'manager');
   await page.goto('/app/reports');
   await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
-  for (const name of ['Open jobs by age', 'SLA performance', 'PPM compliance', 'Reactive and planned work']) {
+  for (const name of [
+    'Open jobs by age',
+    'SLA performance',
+    'PPM compliance',
+    'Reactive and planned work',
+    'Satisfaction',
+    'Cost analysis',
+  ]) {
     await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
   }
   await assertAccessible(page);

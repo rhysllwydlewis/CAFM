@@ -9,6 +9,8 @@ Standard reports are fixed queries over the jobs a person may already see (their
 | PPM compliance | `GET /api/reports/ppm-compliance` | Planned visits due in the period: done on time, done late (completed on a later UK day than due), overdue, still to come. Cancelled visits are left out. |
 | Reactive and planned work | `GET /api/reports/work-mix` | Jobs raised in the period (default the last 30 UK days), reactive against planned (PPM), and the reactive share. |
 | Busiest sites | `GET /api/reports/busiest-sites` | The five sites with the most jobs raised in the period, counting jobs at places below each site. |
+| Satisfaction | `GET /api/reports/satisfaction` | Ratings (1 to 5) requesters gave in the period: how many, the average to one decimal place, and how many of each rating. Needs the Helpdesk and `requests.manage` as well as `reports.read`. |
+| Cost analysis | `GET /api/reports/cost-analysis` | Cost entered on jobs, by the day it was incurred, per currency and type (labour, parts, sub-contract, expense), in whole minor units. Needs `costs.read` and work orders as well as `reports.read`. Currencies are never added together. |
 
 The **Executive overview** (Reports, then Executive overview) puts the key figures and the busiest sites on one page for the last 30 days. Cost, satisfaction and carbon figures from the mockup arrive with those modules.
 
@@ -24,4 +26,4 @@ The home page shows fixed key figures that suit the role, from `GET /api/home/su
 | Cost, last 30 days | `costs.read` and `work_orders.read` | Cost entered in the last 30 days per currency (whole minor units, shown as money) and jobs that went over their limit. |
 | SLA met, PPM on time | `reports.read` | The two report figures, each linking to Reports. |
 
-Not built yet: configurable dashboards and the report builder (Phase 4).
+Not built yet: a contractor performance report (it waits on the contractor module), configurable dashboards and the report builder (Phase 4).

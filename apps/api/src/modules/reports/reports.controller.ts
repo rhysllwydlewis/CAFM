@@ -1,12 +1,25 @@
-import { Controller, Get, Query, Req, UnprocessableEntityException, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Query,
+  Req,
+  UnprocessableEntityException,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { Temporal } from '@js-temporal/polyfill';
 import { withTenant, type Prisma } from '@cafm/db';
 import {
   AGE_BANDS,
+  COST_KINDS,
   reportQuerySchema,
   WORK_ORDER_FINISHED,
   type BusiestSitesReport,
+  type CostAnalysisReport,
+  type Feature,
+  type Permission,
+  type SatisfactionReport,
   type OpenJobsByAgeReport,
   type PpmComplianceReport,
   type SlaPerformanceReport,
@@ -15,6 +28,7 @@ import {
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { requestScope } from '../helpdesk/request-scope';
 import { locationScope } from '../locations/location-tree';
 import { workOrderScope } from '../work-orders/work-order-scope';
 
@@ -233,6 +247,106 @@ export class ReportsController {
         .slice(0, 5);
       return { key: 'busiest_sites', generatedAt: new Date().toISOString(), from, to, sites };
     });
+  }
+
+  /** Ratings requesters gave in the period (UK days, default the last 30). Needs the Helpdesk and `requests.manage` too. */
+  @Get('satisfaction')
+  satisfaction(@Req() req: Request, @Query() query: unknown): Promise<SatisfactionReport> {
+    const auth = req.auth!;
+    this.require(auth, 'helpdesk', 'requests.manage');
+    const input = parse(reportQuerySchema, query);
+    const { from, to } = this.period(input);
+    return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<SatisfactionReport> => {
+      const groups = await tx.serviceRequest.groupBy({
+        by: ['rating'],
+        _count: { _all: true },
+        where: {
+          AND: [
+            requestScope(auth, false),
+            { rating: { not: null } },
+            {
+              ratedAt: {
+                gte: startOfDay(from),
+                lt: startOfDay(Temporal.PlainDate.from(to).add({ days: 1 }).toString()),
+              },
+            },
+            ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
+          ],
+        },
+      });
+      const counts = new Map(groups.map((g) => [g.rating, g._count._all]));
+      const byRating = [1, 2, 3, 4, 5].map((rating) => ({ rating, count: counts.get(rating) ?? 0 }));
+      const rated = byRating.reduce((sum, r) => sum + r.count, 0);
+      const points = byRating.reduce((sum, r) => sum + r.rating * r.count, 0);
+      return {
+        key: 'satisfaction',
+        generatedAt: new Date().toISOString(),
+        from,
+        to,
+        rated,
+        average: rated ? Math.round((points / rated) * 10) / 10 : null,
+        byRating,
+      };
+    });
+  }
+
+  /** Cost entered in the period by the day it was incurred, per currency and kind. Needs `costs.read` and work orders. */
+  @Get('cost-analysis')
+  costAnalysis(@Req() req: Request, @Query() query: unknown): Promise<CostAnalysisReport> {
+    const auth = req.auth!;
+    this.require(auth, 'work_orders', 'costs.read');
+    const input = parse(reportQuerySchema, query);
+    const { from, to } = this.period(input);
+    return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<CostAnalysisReport> => {
+      const groups = await tx.workOrderCost.groupBy({
+        by: ['kind', 'workOrderId'],
+        _sum: { amountMinor: true },
+        where: {
+          incurredOn: { gte: new Date(`${from}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) },
+          workOrder: {
+            AND: [
+              workOrderScope(auth),
+              ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
+            ],
+          },
+        },
+      });
+      const jobs = groups.length
+        ? await tx.workOrder.findMany({
+            where: { id: { in: [...new Set(groups.map((g) => g.workOrderId))] } },
+            select: { id: true, currency: true },
+          })
+        : [];
+      const currencyOf = new Map(jobs.map((j) => [j.id, j.currency]));
+      const perCurrency = new Map<string, Map<string, number>>();
+      for (const g of groups) {
+        const currency = currencyOf.get(g.workOrderId);
+        if (!currency) continue;
+        const kinds = perCurrency.get(currency) ?? new Map<string, number>();
+        kinds.set(g.kind, (kinds.get(g.kind) ?? 0) + (g._sum.amountMinor ?? 0));
+        perCurrency.set(currency, kinds);
+      }
+      const currencies = [...perCurrency.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([currency, kinds]) => {
+          const byKind = [
+            ...COST_KINDS,
+            ...[...kinds.keys()].filter((k) => !(COST_KINDS as readonly string[]).includes(k)),
+          ]
+            .map((kind) => ({ kind, amountMinor: kinds.get(kind) ?? 0 }))
+            .filter((row) => COST_KINDS.includes(row.kind as (typeof COST_KINDS)[number]) || row.amountMinor !== 0);
+          return { currency, totalMinor: byKind.reduce((sum, r) => sum + r.amountMinor, 0), byKind };
+        });
+      return { key: 'cost_analysis', generatedAt: new Date().toISOString(), from, to, currencies };
+    });
+  }
+
+  /** The person's role and plan must allow this report's data as well as `reports.read`. */
+  private require(auth: NonNullable<Request['auth']>, feature: Feature, permission: Permission) {
+    const access = auth.access;
+    if (!access?.entitlements.features.includes(feature) || !access.permissions.has(permission)) {
+      throw new ForbiddenException({ code: 'forbidden', message: 'Your role cannot see this report.' });
+    }
   }
 
   /** The period as UK days: the query's own, or the last 30 days. */
