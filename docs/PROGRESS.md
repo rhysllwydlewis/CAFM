@@ -157,6 +157,11 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 - [x] **P1-10** Standard reports + role default dashboards (fixed widgets). ([guide](reports.md))
   - Reports for contractor performance, compliance status and asset history arrive with the modules that hold their data.
 - [ ] **P1-11** Import/export for locations, assets, users, PPM schedules.
+  - [x] **P1-11a** CSV exports for locations, assets, people and PPM schedules. ([guide](import-export.md#exports))
+  - [x] **P1-11b** Location import: template, validation preview, error report, apply and rollback. ([guide](import-export.md#importing-locations))
+  - [ ] **P1-11c** Asset import (same flow).
+  - [ ] **P1-11d** People and PPM schedule imports.
+  - [ ] **P1-11e** Import screens with their mockup (upload, preview, error report, recent imports and rollback).
 - [ ] **P1-12** MFA (TOTP).
 - [ ] **P1-13** First design-partner tenants live, invoiced manually.
 

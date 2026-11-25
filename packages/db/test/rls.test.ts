@@ -884,6 +884,28 @@ it('isolates teams and their members, and rejects a cross-tenant member', async 
   ).rejects.toThrow(/Foreign key constraint/);
 });
 
+it('isolates import batches and refuses a cross-tenant write', async () => {
+  expect(await db.importBatch.count()).toBe(0);
+  const row = { entityType: 'location', rowCount: 1, createdBy: randomUUID() };
+  const batch = await withTenant(db, demo, (tx) => tx.importBatch.create({ data: { tenantId: demo, ...row } }));
+  try {
+    const seen = await withTenant(db, starter, async (tx) => ({
+      all: await tx.importBatch.count(),
+      one: await tx.importBatch.findUnique({ where: { id: batch.id } }),
+      changed: (await tx.importBatch.updateMany({ where: { id: batch.id }, data: { status: 'rolled_back' } })).count,
+    }));
+    expect(seen).toEqual({ all: 0, one: null, changed: 0 });
+    await expect(
+      withTenant(db, starter, (tx) => tx.importBatch.create({ data: { tenantId: demo, ...row } })),
+    ).rejects.toThrow();
+    expect((await withTenant(db, demo, (tx) => tx.importBatch.findUnique({ where: { id: batch.id } })))?.status).toBe(
+      'applied',
+    );
+  } finally {
+    await withTenant(db, demo, (tx) => tx.importBatch.deleteMany({ where: { id: batch.id } }));
+  }
+});
+
 it('isolates module settings and terminology between organisations', async () => {
   expect(await db.moduleSetting.count()).toBe(0);
   expect(await db.termOverride.count()).toBe(0);
