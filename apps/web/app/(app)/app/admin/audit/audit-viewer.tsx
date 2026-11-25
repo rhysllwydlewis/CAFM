@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, TextInput } from '@cafm/ui';
-import type { AuditEventView, AuditPage } from '@cafm/shared';
+import { Button, Field, TextInput } from '@cafm/ui';
+import type { AuditEventView, AuditFilterOptions, AuditPage } from '@cafm/shared';
 import styles from '../admin.module.css';
 
 const when = (iso: string) =>
@@ -14,29 +14,52 @@ const when = (iso: string) =>
     second: '2-digit',
   });
 
-/** The audit log (admin-09-audit): newest first, searchable by event, 50 at a time. */
-export function AuditViewer({ first }: { first: AuditPage }) {
+interface Filters {
+  action: string;
+  actorId: string;
+  entityType: string;
+  entityId: string;
+  from: string;
+  to: string;
+}
+
+const NO_FILTERS: Filters = { action: '', actorId: '', entityType: '', entityId: '', from: '', to: '' };
+
+/** The query string for a set of filters. Dates cover whole days, in UTC. */
+function queryFor(filters: Filters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.action) params.set('action', filters.action);
+  if (filters.actorId) params.set('actorId', filters.actorId);
+  if (filters.entityType) params.set('entityType', filters.entityType);
+  if (filters.entityId) params.set('entityId', filters.entityId);
+  if (filters.from) params.set('from', filters.from + 'T00:00:00.000Z');
+  if (filters.to) params.set('to', filters.to + 'T23:59:59.999Z');
+  return params;
+}
+
+/** The audit log (admin-09-audit): newest first, filtered by event, person, record and dates, 50 at a time. */
+export function AuditViewer({ first, options }: { first: AuditPage; options: AuditFilterOptions }) {
   const [items, setItems] = useState<AuditEventView[]>(first.items);
   const [next, setNext] = useState<string | null>(first.nextCursor);
-  const [action, setAction] = useState('');
-  // The search that produced the rows on screen. "Show older events" pages through this, not the text being edited.
-  const [applied, setApplied] = useState('');
+  const [draft, setDraft] = useState<Filters>(NO_FILTERS);
+  // The filters that produced the rows on screen. "Show older events" and the export use these, not the form being edited.
+  const [applied, setApplied] = useState<Filters>(NO_FILTERS);
+  const change = (patch: Partial<Filters>) => setDraft((old) => ({ ...old, ...patch }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
-  async function load(search: string, cursor: string | null, replace: boolean) {
+  async function load(filters: Filters, cursor: string | null, replace: boolean) {
     setBusy(true);
     setError(undefined);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set('action', search);
+      const params = queryFor(filters);
       if (cursor) params.set('cursor', cursor);
       const res = await fetch('/api/admin/audit?' + params.toString());
       if (!res.ok) throw new Error('Could not load the audit log.');
       const page = (await res.json()) as AuditPage;
       setItems((old) => (replace ? page.items : [...old, ...page.items]));
       setNext(page.nextCursor);
-      if (replace) setApplied(search);
+      if (replace) setApplied(filters);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the audit log.');
     } finally {
@@ -56,21 +79,77 @@ export function AuditViewer({ first }: { first: AuditPage }) {
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          void load(action.trim(), null, true);
+          void load({ ...draft, action: draft.action.trim(), entityId: draft.entityId.trim() }, null, true);
         }}
       >
-        <label className="sr-only" htmlFor="audit-search">
-          Search events
-        </label>
-        <TextInput
-          id="audit-search"
-          value={action}
-          placeholder="Search events, such as role or branding"
-          onChange={(e) => setAction(e.target.value)}
-        />
+        <Field label="Event" htmlFor="audit-search">
+          <TextInput
+            id="audit-search"
+            value={draft.action}
+            placeholder="Such as role or branding"
+            onChange={(e) => change({ action: e.target.value })}
+          />
+        </Field>
+        <Field label="Person" htmlFor="audit-person">
+          <select
+            className={styles.control}
+            id="audit-person"
+            value={draft.actorId}
+            onChange={(e) => change({ actorId: e.target.value })}
+          >
+            <option value="">Anyone</option>
+            {options.people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Record type" htmlFor="audit-type">
+          <select
+            className={styles.control}
+            id="audit-type"
+            value={draft.entityType}
+            onChange={(e) => change({ entityType: e.target.value })}
+          >
+            <option value="">Any record</option>
+            {options.entityTypes.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Record id" htmlFor="audit-record">
+          <TextInput id="audit-record" value={draft.entityId} onChange={(e) => change({ entityId: e.target.value })} />
+        </Field>
+        <Field label="From" htmlFor="audit-from">
+          <TextInput
+            id="audit-from"
+            type="date"
+            value={draft.from}
+            onChange={(e) => change({ from: e.target.value })}
+          />
+        </Field>
+        <Field label="To" htmlFor="audit-to">
+          <TextInput id="audit-to" type="date" value={draft.to} onChange={(e) => change({ to: e.target.value })} />
+        </Field>
         <Button type="submit" disabled={busy}>
           Search
         </Button>
+        <Button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setDraft(NO_FILTERS);
+            void load(NO_FILTERS, null, true);
+          }}
+        >
+          Clear
+        </Button>
+        <a className="btn" href={'/api/admin/audit/export?' + queryFor(applied).toString()} download>
+          Export CSV
+        </a>
       </form>
       <div className={'card-b flush ' + styles.tableWrap}>
         <table className="tbl" aria-labelledby="audit-title">

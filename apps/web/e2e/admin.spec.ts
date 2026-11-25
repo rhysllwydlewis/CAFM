@@ -278,8 +278,15 @@ test('a Super User saves security settings and finds the change in the audit log
 
   await page.getByRole('link', { name: 'Audit log' }).click();
   await expect(page).toHaveURL(/\/app\/admin\/audit$/);
-  await page.getByLabel('Search events').fill('security_updated');
+  await page.getByLabel('Event', { exact: true }).fill('security_updated');
+  await page.getByLabel('From').fill('2020-01-01');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByRole('cell', { name: 'settings.security_updated' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Export CSV' })).toHaveAttribute('href', /action=security_updated/);
+  await page.getByLabel('To').fill('2020-01-02');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByText('No events match.')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear' }).click();
   await expect(page.getByRole('cell', { name: 'settings.security_updated' }).first()).toBeVisible();
   await assertAccessible(page);
 });

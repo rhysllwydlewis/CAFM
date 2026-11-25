@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- Administration: the audit log can be filtered by person, record type, record id and date range, and downloaded as a CSV file. Each export is itself recorded in the audit log. See [Audit log](docs/admin.md#audit-log).
 - Administration: a Service levels screen showing the priority matrix, the response, attendance and fix targets for each impact and urgency pair, and the request categories, with a link to edit them in the request catalogue. See [Service levels and categories](docs/admin.md#service-levels-and-categories).
 - Administration: a Custom fields screen. A Super User adds fields to requests, work orders, assets, locations and other records, renames them, makes them required, and deactivates them without losing saved values. It shows how many fields the plan allows. See [Custom fields](docs/admin.md#custom-fields).
 - The side menu can be collapsed to a slim icon rail with the button beside the logo, and opened again with the same button. Hover an icon to see its name. The choice is remembered, and the phone menu is unchanged.

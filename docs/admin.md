@@ -99,7 +99,7 @@ Not built yet: single sign-on, IP allow-lists, breached-password checks, separat
 
 ## Audit log
 
-Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`. Events are listed newest first, 50 at a time, with a search on the event name. Each row can show the recorded before and after values. Not built yet: filters by person, record and date range, and export. API: `GET /api/admin/audit` with `action`, `entityType`, `from`, `to` and `cursor`.
+Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`. Events are listed newest first, 50 at a time. Filter by event name, person, record type, record id and a date range (whole days, UTC), and clear the filters in one click. Each row can show the recorded before and after values. **Export CSV** downloads the filtered log (newest first, at most 5,000 rows, times in UTC); cells that start like a spreadsheet formula are prefixed with an apostrophe, and each export is audited as `audit.exported` with the row count and filters. API (all need `audit.read`): `GET /api/admin/audit` with `action`, `entityType`, `entityId`, `actorId`, `from`, `to` and `cursor`; `GET /api/admin/audit/filters` (the people and record types the filters offer); `GET /api/admin/audit/export` (same filters, returns CSV).
 
 ## Username-only accounts
 

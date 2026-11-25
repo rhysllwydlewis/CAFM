@@ -55,3 +55,9 @@ export interface AuditPage {
   items: AuditEventView[];
   nextCursor: string | null;
 }
+
+/** What the audit log filters offer: the people in the organisation and the record types seen in the log. */
+export interface AuditFilterOptions {
+  people: { id: string; name: string }[];
+  entityTypes: string[];
+}
