@@ -236,6 +236,7 @@ test('an Administrator has no view as user card', async ({ page }) => {
 
 test('a Super User checks the contrast of an accent colour, saves it and puts the standard look back', async ({
   page,
+  browser,
 }) => {
   await signInAs(page, 'superuser');
   await page.goto('/app/admin/branding');
@@ -253,6 +254,17 @@ test('a Super User checks the contrast of an accent colour, saves it and puts th
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText(/Branding saved/)).toBeVisible();
     await assertAccessible(page);
+
+    // The message shows on the organisation's own sign-in page, to someone who is not signed in.
+    const anonymous = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+    try {
+      const signIn = await anonymous.newPage();
+      await signIn.goto('/t/demo-estates/login');
+      await expect(signIn.getByText('Welcome to Demo Estates facilities.')).toBeVisible();
+      await assertAccessible(signIn);
+    } finally {
+      await anonymous.close();
+    }
   } finally {
     // Leave the demo organisation as it was seeded.
     await accent.fill('');
