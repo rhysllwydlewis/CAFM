@@ -1,7 +1,9 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { scopedLocations, withTenant } from '@cafm/db';
 import {
+  ADMIN_CALENDARS_PAGE_SIZE,
+  adminCalendarsQuerySchema,
   shortUsername,
   siteCalendarSchema,
   type AdminCalendars,
@@ -12,6 +14,7 @@ import {
 import { administrableMembers, isDelegated } from '../../core/delegation';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
+import { parse } from '../../core/validation';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -158,23 +161,55 @@ export class AdminController {
     });
   }
 
-  /** Every site with its business calendar, for the calendars screen. A calendar that no longer validates shows as none. */
+  /**
+   * The sites with their business calendars, for the calendars screen, one page at a time. A calendar that no longer
+   * validates shows as none. The counts cover every site the person can see, so nothing is silently left out.
+   */
   @Get('calendars')
   @RequirePermission('settings.manage')
-  async calendars(@Req() req: Request): Promise<AdminCalendars> {
+  async calendars(@Req() req: Request, @Query() query: unknown): Promise<AdminCalendars> {
     const auth = req.auth!;
+    const { page: requested } = parse(adminCalendarsQuerySchema, query);
     return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
-      const sites = await tx.location.findMany({
-        where: { ...scopedLocations(auth.membership!, auth.access?.scope), kind: 'site', status: { not: 'closed' } },
+      const where = {
+        ...scopedLocations(auth.membership!, auth.access?.scope),
+        kind: 'site',
+        status: { not: 'closed' },
+      };
+      const total = await tx.location.count({ where });
+      const page = Math.min(requested, Math.max(1, Math.ceil(total / ADMIN_CALENDARS_PAGE_SIZE)));
+      const rows = await tx.location.findMany({
+        where,
         select: { id: true, name: true, code: true, siteCalendar: true },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
-        take: 500,
+        skip: (page - 1) * ADMIN_CALENDARS_PAGE_SIZE,
+        take: ADMIN_CALENDARS_PAGE_SIZE,
       });
+      // Counted in batches so a very large estate never has every calendar in memory at once.
+      let missing = 0;
+      for (let after: string | undefined; ;) {
+        const batch = await tx.location.findMany({
+          where,
+          select: { id: true, siteCalendar: true },
+          orderBy: { id: 'asc' },
+          take: 1000,
+          ...(after ? { cursor: { id: after }, skip: 1 } : {}),
+        });
+        for (const { siteCalendar } of batch) {
+          if (!siteCalendar || !siteCalendarSchema.safeParse(siteCalendar).success) missing += 1;
+        }
+        if (batch.length < 1000) break;
+        after = batch.at(-1)!.id;
+      }
       return {
-        sites: sites.map(({ id, name, code, siteCalendar }) => {
+        sites: rows.map(({ id, name, code, siteCalendar }) => {
           const parsed = siteCalendar ? siteCalendarSchema.safeParse(siteCalendar) : null;
           return { id, name, code, calendar: parsed?.success ? parsed.data : null };
         }),
+        page,
+        pageSize: ADMIN_CALENDARS_PAGE_SIZE,
+        total,
+        missing,
       };
     });
   }

@@ -135,10 +135,10 @@ const platform = shell({ active: 'platform', user: { tenant: 'Platform', plan: '
 
 // ── Business calendars ──
 const calRow = (site, nation, hours, closures, note) => [`<span class="medium">${site}</span>`, nation, hours, closures, note, btn('Edit', { sm: true, icon: 'edit' })];
-const calendars = admin('Business calendars', 'Business calendars', 'When each site is open, which bank holidays it observes and when it closes. Service level clocks run on these hours.', [], [
+const calendars = admin('Business calendars', 'Business calendars', 'When each site is open, which bank holidays it observes and when it closes. Service level clocks for business-hours priorities run on these hours.', [], [
   card('Sites', `<div class="stack g3">
-    ${callout('<b>1 site has no business calendar.</b> Its service level clock runs around the clock until you set one.', { tone: 'warning', icon: 'warning' })}
-    ${table(['Site', 'Bank holidays', 'Opening hours', 'Closures', 'Time zone', ''], [calRow('Cardiff HQ', 'Wales', 'Mon to Fri, 08:00 to 18:00', '2 closures', 'Europe/London'), calRow('Bristol Office', 'England', 'Mon to Fri, 08:30 to 17:30', 'None', 'Europe/London'), calRow('Glasgow Depot', 'Scotland', 'Mon to Sat, 07:00 to 19:00', '1 closure', 'Europe/London'), calRow('Leeds Annexe', '<span class="faint">No calendar</span>', '<span class="faint">Around the clock</span>', '', '')])}
+    ${callout('<b>1 site has no business calendar.</b> Its service level clock uses the default hours, Mon to Fri, 09:00 to 17:00 (Europe/London), until you set one. Priorities that run around the clock are not affected.', { tone: 'warning', icon: 'warning' })}
+    ${table(['Site', 'Bank holidays', 'Opening hours', 'Closures', 'Time zone', ''], [calRow('Cardiff HQ', 'Wales', 'Mon to Fri, 08:00 to 18:00', '2 closures', 'Europe/London'), calRow('Bristol Office', 'England', 'Mon to Fri, 08:30 to 17:30', 'None', 'Europe/London'), calRow('Glasgow Depot', 'Scotland', 'Mon to Sat, 07:00 to 19:00', '1 closure', 'Europe/London'), calRow('Leeds Annexe', '<span class="faint">No calendar</span>', '<span class="faint">Default: Mon to Fri, 09:00 to 17:00</span>', '', '<span class="faint">Europe/London</span>')])}
     <div class="xs faint">Edit a site's calendar on its location page. Bank holidays come from the UK government list for the site's nation.</div>
   </div>`),
 ]);

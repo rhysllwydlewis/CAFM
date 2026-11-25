@@ -1,7 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { bankHolidays, can, SITE_JURISDICTIONS, WEEKDAYS, type AdminCalendars, type SiteCalendar } from '@cafm/shared';
+import {
+  bankHolidays,
+  can,
+  DEFAULT_SITE_CALENDAR,
+  SITE_JURISDICTIONS,
+  WEEKDAYS,
+  type AdminCalendars,
+  type SiteCalendar,
+} from '@cafm/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import styles from '../admin.module.css';
@@ -26,11 +34,20 @@ function describeHours(hours: SiteCalendar['hours']): string {
   return days.map((day) => `${short(day)} ${windows(day)}`).join(', ');
 }
 
-export default async function AdminCalendarsPage() {
-  const user = await currentUser();
+const pageHref = (page: number) => (page === 1 ? '/app/admin/calendars' : `/app/admin/calendars?page=${page}`);
+
+export default async function AdminCalendarsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const [{ page: requested }, user] = await Promise.all([searchParams, currentUser()]);
   if (!can(user, 'settings.manage')) redirect('/app');
-  const { sites } = await readAdmin<AdminCalendars>('/admin/calendars');
-  const missing = sites.filter((site) => !site.calendar).length;
+  const asked = Number.parseInt(requested ?? '1', 10);
+  const data = await readAdmin<AdminCalendars>(
+    `/admin/calendars?page=${Number.isInteger(asked) && asked > 0 ? asked : 1}`,
+  );
+  // The counts cover every site the person can see, and `page` is the page the server really returned.
+  const { sites, page, pageSize, total, missing } = data;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  // What a site without a calendar of its own runs on for business-hours priorities (see slaSchedule in the API).
+  const defaultHours = describeHours(DEFAULT_SITE_CALENDAR.hours);
   return (
     <section className="card" aria-labelledby="calendars-title">
       <div className="card-h">
@@ -40,14 +57,15 @@ export default async function AdminCalendarsPage() {
       </div>
       <div className="card-b stack g3">
         <p className="muted">
-          When each site is open, which bank holidays it observes and when it closes. Service level clocks run on these
-          hours.
+          When each site is open, which bank holidays it observes and when it closes. Service level clocks for
+          business-hours priorities run on these hours.
         </p>
         {missing > 0 && (
           <div className="callout warning" role="status">
             <b>{missing === 1 ? '1 site has no business calendar.' : `${missing} sites have no business calendar.`}</b>{' '}
-            {missing === 1 ? 'Its service level clock runs' : 'Their service level clocks run'} around the clock until
-            you set one.
+            {missing === 1 ? 'Its service level clock uses' : 'Their service level clocks use'} the default hours,{' '}
+            {defaultHours} ({DEFAULT_SITE_CALENDAR.timeZone}), until you set one. Priorities that run around the clock
+            are not affected.
           </div>
         )}
         {sites.length === 0 ? (
@@ -90,9 +108,9 @@ export default async function AdminCalendarsPage() {
                     ) : (
                       <>
                         <td className="faint">No calendar</td>
-                        <td className="faint">Around the clock</td>
+                        <td className="faint">Default: {defaultHours}</td>
                         <td />
-                        <td />
+                        <td className="faint">{DEFAULT_SITE_CALENDAR.timeZone}</td>
                       </>
                     )}
                     <td>
@@ -106,6 +124,25 @@ export default async function AdminCalendarsPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {pages > 1 && (
+          <footer className="row between wrap g2">
+            <span className="muted" aria-live="polite">
+              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} sites
+            </span>
+            <span className="row g2">
+              {page > 1 && (
+                <Link className="btn sm" href={pageHref(page - 1)}>
+                  Previous page
+                </Link>
+              )}
+              {page < pages && (
+                <Link className="btn sm" href={pageHref(page + 1)}>
+                  Next page
+                </Link>
+              )}
+            </span>
+          </footer>
         )}
         <p className="xs faint">
           Edit a site&apos;s calendar on its location page. Bank holidays come from the UK government list for the
