@@ -2,7 +2,7 @@ import { I, logo, btn, badge, status, prio, av, avs, who, cell2, card, kpi, tabl
 import { sites, months } from '../src/data.js';
 
 const SU = { user: 'Sam Sutton', role: 'Super User' };
-const adminNav = (on) => card('', `<div class="stack g1 sm">${[['Overview', 'dashboard'], ['Users & licences', 'users'], ['Roles & permissions', 'role'], ['Teams', 'team'], ['Modules & navigation', 'layers'], ['Terminology', 'edit'], ['Fields & forms', 'files'], ['Workflows & automation', 'workflow'], ['SLAs & priorities', 'sla'], ['Request catalogue', 'helpdesk'], ['Templates', 'documents'], ['Branding', 'image'], ['Security & sign-in', 'security'], ['Data & retention', 'database'], ['Import & export', 'upload'], ['Integrations & API', 'api'], ['Audit log', 'audit-log'], ['Subscription & billing', 'billing']].map(([n, i]) => `<div class="row" style="padding:7px 10px;border-radius:6px;${n === on ? 'background:var(--primary-soft);color:var(--primary-text);font-weight:500' : 'color:var(--text-muted)'}">${I(i, 's14')}${n}</div>`).join('')}</div>`, { style: 'align-self:start' });
+const adminNav = (on) => card('', `<div class="stack g1 sm">${[['Overview', 'dashboard'], ['Users & licences', 'users'], ['Roles & permissions', 'role'], ['Teams', 'team'], ['Modules & navigation', 'layers'], ['Terminology', 'edit'], ['Fields & forms', 'files'], ['Workflows & automation', 'workflow'], ['SLAs & priorities', 'sla'], ['Business calendars', 'calendar'], ['Request catalogue', 'helpdesk'], ['Templates', 'documents'], ['Branding', 'image'], ['Security & sign-in', 'security'], ['Data & retention', 'database'], ['Import & export', 'upload'], ['Integrations & API', 'api'], ['Audit log', 'audit-log'], ['Subscription & billing', 'billing']].map(([n, i]) => `<div class="row" style="padding:7px 10px;border-radius:6px;${n === on ? 'background:var(--primary-soft);color:var(--primary-text);font-weight:500' : 'color:var(--text-muted)'}">${I(i, 's14')}${n}</div>`).join('')}</div>`, { style: 'align-self:start' });
 const admin = (on, title, sub, acts, body) => shell({ active: 'admin', user: SU, crumbs: ['Administration', on], title, sub, acts, body: [`<div class="grid" style="grid-template-columns:240px minmax(0,1fr)">${adminNav(on)}<div class="stack">${[].concat(body).join('')}</div></div>`] });
 
 // ── Report builder ──
@@ -133,6 +133,16 @@ const platform = shell({ active: 'platform', user: { tenant: 'Platform', plan: '
   callout('Platform staff cannot see tenant data. "Request access" asks the tenant\'s Super Users for a time-limited support session, and every action in it is logged in their audit log.', { icon: 'locked' }),
 ] });
 
+// ── Business calendars ──
+const calRow = (site, nation, hours, closures, note) => [`<span class="medium">${site}</span>`, nation, hours, closures, note, btn('Edit', { sm: true, icon: 'edit' })];
+const calendars = admin('Business calendars', 'Business calendars', 'When each site is open, which bank holidays it observes and when it closes. Service level clocks run on these hours.', [], [
+  card('Sites', `<div class="stack g3">
+    ${callout('<b>1 site has no business calendar.</b> Its service level clock runs around the clock until you set one.', { tone: 'warning', icon: 'warning' })}
+    ${table(['Site', 'Bank holidays', 'Opening hours', 'Closures', 'Time zone', ''], [calRow('Cardiff HQ', 'Wales', 'Mon to Fri, 08:00 to 18:00', '2 closures', 'Europe/London'), calRow('Bristol Office', 'England', 'Mon to Fri, 08:30 to 17:30', 'None', 'Europe/London'), calRow('Glasgow Depot', 'Scotland', 'Mon to Sat, 07:00 to 19:00', '1 closure', 'Europe/London'), calRow('Leeds Annexe', '<span class="faint">No calendar</span>', '<span class="faint">Around the clock</span>', '', '')])}
+    <div class="xs faint">Edit a site's calendar on its location page. Bank holidays come from the UK government list for the site's nation.</div>
+  </div>`),
+]);
+
 // ── Import & export ──
 const importExport = admin('Import & export', 'Import & export', 'Bring estate data in from a spreadsheet, or take a copy out', [], [
   card('Import from CSV', `<div class="stack g3">
@@ -164,6 +174,7 @@ export default [
   { id: 'admin-10-integrations', group: 'Super User administration', title: 'Integrations & API', html: integ },
   { id: 'admin-11-modules', group: 'Super User administration', title: 'Modules & terminology', html: modules },
   { id: 'admin-13-site-access', group: 'Super User administration', title: 'Site access (delegated admin)', html: siteAccess },
+  { id: 'admin-15-calendars', group: 'Super User administration', title: 'Business calendars', html: calendars },
   { id: 'admin-14-import', group: 'Super User administration', title: 'Import & export', html: importExport },
   { id: 'admin-12-subscription', group: 'Super User administration', title: 'Subscription & billing', html: sub },
   { id: 'platform-01-tenants', group: 'Platform (vendor) admin', title: 'Tenant management', html: platform },
