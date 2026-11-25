@@ -1,3 +1,5 @@
+import type { SiteCalendar } from './site-calendar';
+
 /** Read models for the admin console (P1-09). */
 export type AdminChecklistItem = { key: string; label: string; done: boolean; href: string };
 
@@ -44,3 +46,12 @@ export type SiteAccessOverview = {
   areas: { id: string; name: string; code: string; kind: 'region' | 'site' }[];
   members: { membershipId: string; restricted: boolean; locationIds: string[] }[];
 };
+
+/** One site's business calendar for the admin overview (P1-09d). `calendar` is null when none is set. */
+export type AdminCalendarSite = {
+  id: string;
+  name: string;
+  code: string;
+  calendar: SiteCalendar | null;
+};
+export type AdminCalendars = { sites: AdminCalendarSite[] };
