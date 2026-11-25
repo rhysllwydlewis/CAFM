@@ -90,3 +90,24 @@ All of them need `people.invite` across the whole organisation, as the invite fo
 - Each person gets the usual invitation email, which works for 7 days.
 - Withdrawing works only while nobody from the import has accepted. Emails already sent cannot be unsent, but their links stop working.
 - The import and the withdrawal are each one audit event (`people.imported`, `people.import_rolled_back`) with the number of rows.
+
+## Importing PPM schedules
+
+Schedules are imported as new schedules. The API is ready and the screens come in a later batch.
+
+| Step | Endpoint | What it does |
+|---|---|---|
+| Template | `GET /api/ppm/schedules/import/template` | The header row. |
+| Check | `POST /api/ppm/schedules/import/preview` | Lists every problem with its line and column. Saves nothing. Add `?format=csv` for the error report. |
+| Import | `POST /api/ppm/schedules/import` | Makes the schedules. All or nothing. |
+| Recent imports | `GET /api/ppm/schedules/import/batches` | The last 20 schedule imports. |
+| Undo | `POST /api/ppm/schedules/import/<id>/rollback` | Removes what the import made. |
+
+All of them need `ppm.manage`, the planned maintenance feature on your plan, and access to every location, as the schedule form does.
+
+- Columns: `title`, `discipline`, `criticality`, `frequency_type` (`calendar` or `meter`), `interval`, `unit_or_meter` (`day`, `week`, `month` or `year` for a calendar schedule, the meter's name for a meter one), `mode` (`fixed` or `floating`), `starts_on` (`YYYY-MM-DD`), `duration_minutes`, `lead_days`, `priority` (1 to 4) and `assets`. `title`, `frequency_type`, `interval`, `unit_or_meter`, `starts_on` and `duration_minutes` must be filled in. The other columns may be left out, and their cells may be empty. They take the same defaults as the form.
+- `assets` lists asset numbers separated by semicolons. Each must be an asset in service that you can see, and a meter schedule's assets must each have a meter of that name.
+- Every row follows the schedule form's rules, so a meter schedule is always counted from the last visit.
+- Task library links, assignees and estimated costs are not imported. Set them on the schedule afterwards.
+- Undo works only while none of the schedules has been edited and none has raised a job.
+- The import and the undo are each one audit event (`ppm_schedule.imported`, `ppm_schedule.import_rolled_back`) with the number of rows.
