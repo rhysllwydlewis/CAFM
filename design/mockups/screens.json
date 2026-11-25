@@ -957,5 +957,14 @@
     "viewport": "desktop",
     "theme": "light",
     "file": "14-shell.js"
+  },
+  {
+    "id": "shell-07-nav-scroll-hint",
+    "group": "App shell",
+    "title": "Side menu that scrolls",
+    "desc": "When the menu is longer than the window, a soft glow on its lower edge shows there is more below. It moves to the top edge once you have scrolled, and disappears at each end. The scrollbar itself still fades in on hover.",
+    "viewport": "short",
+    "theme": "light",
+    "file": "14-shell.js"
   }
 ]
