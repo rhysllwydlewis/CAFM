@@ -13,10 +13,11 @@ import {
   Put,
   Query,
   Req,
+  Res,
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
 import { withTenant, type Prisma, type Tx } from '@cafm/db';
 import {
@@ -34,6 +35,7 @@ import { assertAdministrable } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { toFieldDefinition } from '../../core/config';
+import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { parse } from '../../core/validation';
@@ -49,6 +51,9 @@ import {
 
 type Location = Prisma.LocationGetPayload<object>;
 type LocationFields = ReadonlyMap<string, FieldDefinition>;
+
+/** Exports stop here so one request cannot read an unbounded estate. */
+const EXPORT_LIMIT = 5000;
 
 async function activeFields(tx: Tx, tenantId: string): Promise<LocationFields> {
   const rows = await tx.fieldDefinition.findMany({
@@ -184,6 +189,80 @@ export class LocationsController {
         nextCursor: rows.length > limit ? page.at(-1)!.id : null,
       };
     });
+  }
+
+  @Get('export')
+  @RequirePermission('locations.read')
+  async exportCsv(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const auth = req.auth!;
+    const tenantId = auth.membership!.tenantId;
+    const csv = await withTenant(this.db, tenantId, async (tx) => {
+      const [rows, fields] = await Promise.all([
+        tx.location.findMany({
+          where: locationScope(auth),
+          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+          take: EXPORT_LIMIT,
+          include: { parent: { select: { code: true } } },
+        }),
+        activeFields(tx, tenantId),
+      ]);
+      // A parent can sit beyond the row cap, so check it against the member's scope directly.
+      const visible = new Set(rows.map(({ id }) => id));
+      const missing = [
+        ...new Set(rows.flatMap(({ parentId }) => (parentId && !visible.has(parentId) ? [parentId] : []))),
+      ];
+      if (missing.length) {
+        const found = await tx.location.findMany({
+          where: { AND: [locationScope(auth), { id: { in: missing } }] },
+          select: { id: true },
+        });
+        for (const { id } of found) visible.add(id);
+      }
+      const keys = [...fields.keys()];
+      const out = toCsv(
+        [
+          'code',
+          'name',
+          'kind',
+          'status',
+          'parent_code',
+          'address',
+          'use_class',
+          'gross_area',
+          'net_area',
+          ...keys.map((key) => `custom.${key}`),
+        ],
+        rows.map((row) => {
+          const detail = (row.details ?? {}) as LocationRecord['details'] & Record<string, unknown>;
+          const custom = activeValues(row.custom, fields) as Record<string, unknown>;
+          return [
+            row.code,
+            row.name,
+            row.kind,
+            row.status,
+            row.parentId && visible.has(row.parentId) ? row.parent?.code : '',
+            detail?.address,
+            detail?.useClass,
+            detail?.grossArea,
+            detail?.netArea,
+            ...keys.map((key) => custom[key]),
+          ];
+        }),
+      );
+      await audit(
+        tx,
+        auth,
+        { action: 'location.exported', entityType: 'location', entityId: tenantId, changes: { rows: rows.length } },
+        req.ip,
+      );
+      return out;
+    });
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="locations.csv"',
+      'Cache-Control': 'no-store',
+    });
+    return csv;
   }
 
   @Get('custom-fields')
