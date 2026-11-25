@@ -1,6 +1,6 @@
 # Import and export
 
-Estate data can be downloaded as CSV files. Locations can be imported from CSV (below). Assets, people and PPM schedules, and the import screens, come in later batches of P1-11.
+Estate data can be downloaded as CSV files. Locations and assets can be imported from CSV (below). People and PPM schedules, and the import screens, come in later batches of P1-11.
 
 ## Exports
 
@@ -43,3 +43,29 @@ Rules:
 - It needs `locations.manage` across the whole organisation. A manager limited to some sites cannot import.
 - Roll back works only while the import's locations are untouched: none edited, and nothing (assets, requests, work orders or other locations) placed in them. Otherwise it is refused and nothing changes.
 - The import and the rollback are each one audit event (`location.imported`, `location.import_rolled_back`) with the number of rows.
+
+## Importing assets
+
+Same flow as locations. The API is ready and the screens come in a later batch.
+
+| Step | Endpoint | What it does |
+|---|---|---|
+| Template | `GET /api/assets/import/template` | The header row, with a `custom.<key>` column for each active custom field. |
+| Check | `POST /api/assets/import/preview` | Lists every problem with its line and column. Saves nothing. Add `?format=csv` for the error report. |
+| Import | `POST /api/assets/import` | Makes the assets. All or nothing. |
+| Recent imports | `GET /api/assets/import/batches` | The last 20 asset imports. |
+| Roll back | `POST /api/assets/import/<id>/rollback` | Removes what an import made. |
+
+All of them need `assets.manage` and the Assets feature.
+
+Columns: `ref`, `name`, `location_code`, `parent`, `class`, `status`, `make`, `model`, `serial`, `installed_on`, `supplier`, `expected_life_years`, `replacement_cost_minor`, `currency`, `criticality`, `condition`, then `custom.<key>` and `attr.<key>` columns.
+
+- `name` and `location_code` are needed. The location must be one you can see and must sit inside a site.
+- Asset numbers are made for you, in the same way as when you add an asset by hand. They are never reused, so a rolled-back import still uses up its numbers.
+- `ref` is a label for the row. Another row's `parent` can name it, which lets a file add a system and its components together. `parent` can also be the number of an asset that already exists (such as AST-00214). A component must be in the same site as its parent. Rows can be in any order; parents are made first.
+- `class` is a class's code or name (for example `BOILER` or `Boilers`). `attr.<key>` columns hold the class's attributes and are checked against that class, including required attributes.
+- Money is whole pence in `replacement_cost_minor` with a three-letter `currency` (GBP if left blank). `installed_on` is `YYYY-MM-DD`. Status, criticality and condition use the same values as the asset form.
+- Your plan's asset limit applies to the whole file. Decommissioned assets do not count.
+- An exported file imports into another organisation once its first columns are renamed: `number` to `ref` and `parent_number` to `parent`.
+- Roll back works only while the import's assets are untouched: none edited, and none has requests, work orders, PPM schedules, links, tags, meters, warranties, files or components outside the import. A manager who cannot see all of the assets cannot roll the import back.
+- The import and the rollback are each one audit event (`asset.imported`, `asset.import_rolled_back`) with the number of rows.
