@@ -85,7 +85,11 @@ Not built yet on this screen: editing a pick list's options, reordering, bringin
 
 `/app/admin/service-levels` (`settings.manage`, plan feature `helpdesk`) shows the priority matrix (impact against urgency), the response, attendance and fix targets for each impact and urgency pair with their clock (business hours or 24/7), and the request types grouped by category. It reads `GET /api/helpdesk/settings`. To change anything use the request catalogue (`/app/helpdesk/settings`), which writes the targets and types and audits every change.
 
-Not built yet: configurable work order and request statuses (the lifecycle is fixed), and a separate business calendar screen (calendars are set per site on the site's page).
+Not built yet: configurable work order and request statuses (the lifecycle is fixed, and comes with the workflow engine).
+
+## Business calendars
+
+`/app/admin/calendars` (`settings.manage`). Screen: `admin-15-calendars`. It lists every open site with its bank holiday nation, opening hours, number of closures and time zone, and warns when sites have no calendar (their service level clocks then run around the clock). It reads `GET /api/admin/calendars`, which is tenant-scoped (row-level security) and limited to the sites the signed-in person can see. The calendar itself is still edited on the site's location page (the **Edit** link opens it); this screen is an overview and changes nothing.
 
 ## Security and sign-in
 

@@ -30,6 +30,7 @@ export function AdminMenu({
     canManageSettings && { href: '/app/admin/branding', label: 'Branding' },
     canManageSettings && { href: '/app/admin/fields', label: 'Custom fields' },
     canManageSettings && { href: '/app/admin/service-levels', label: 'Service levels' },
+    canManageSettings && { href: '/app/admin/calendars', label: 'Business calendars' },
     canManageSettings && { href: '/app/admin/security', label: 'Security and sign-in' },
     canImport && { href: '/app/admin/import', label: 'Import and export' },
     canReadAudit && { href: '/app/admin/audit', label: 'Audit log' },

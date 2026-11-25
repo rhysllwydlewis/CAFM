@@ -15,7 +15,7 @@ afterAll(async () => {
   await db.$disconnect();
 });
 
-describe.each(['overview', 'users'])('GET /api/admin/%s', (path) => {
+describe.each(['overview', 'users', 'calendars'])('GET /api/admin/%s', (path) => {
   it('needs a session', async () => {
     await request(app.getHttpServer()).get(`/api/admin/${path}`).expect(401);
   });
@@ -42,6 +42,26 @@ describe('GET /api/admin/overview', () => {
     const starter = await (await signIn(app, 'starter@demo.example')).agent.get('/api/admin/overview').expect(200);
     expect(starter.body.organisation).not.toBe(demo.body.organisation);
     expect(starter.body.activeUsers).toBeLessThan(demo.body.activeUsers);
+  });
+});
+
+describe('GET /api/admin/calendars', () => {
+  it('lists every site with its business calendar', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    const res = await agent.get('/api/admin/calendars').expect(200);
+    expect(res.body.sites.length).toBeGreaterThan(5);
+    const withCalendar = res.body.sites.filter((s: { calendar: unknown }) => s.calendar);
+    expect(withCalendar.length).toBeGreaterThan(0);
+    expect(withCalendar[0].calendar.hours.length).toBeGreaterThan(0);
+  });
+
+  it('cross-tenant: another organisation sees none of these sites', async () => {
+    const demo = (await (await signIn(app, 'superuser@demo.example')).agent.get('/api/admin/calendars').expect(200))
+      .body;
+    const starter = (await (await signIn(app, 'starter@demo.example')).agent.get('/api/admin/calendars').expect(200))
+      .body;
+    const demoIds = new Set(demo.sites.map((s: { id: string }) => s.id));
+    expect(starter.sites.every((s: { id: string }) => !demoIds.has(s.id))).toBe(true);
   });
 });
 

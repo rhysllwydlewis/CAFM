@@ -184,6 +184,11 @@ test('a Super User renames a module and a term, and the menu follows', async ({ 
     await expect(page.getByRole('heading', { name: 'Request categories', level: 2 })).toBeVisible();
     await expect(page.getByRole('row', { name: /High High Priority 1/ })).toBeVisible();
     await assertAccessible(page);
+
+    await page.getByRole('link', { name: 'Business calendars' }).click();
+    await expect(page.getByRole('heading', { name: 'Business calendars', level: 2 })).toBeVisible();
+    await expect(page.getByText('No sites yet.')).toBeVisible();
+    await assertAccessible(page);
   } finally {
     const account = await db.account.findUnique({ where: { email } });
     await db.$transaction(async (tx) => {
@@ -395,4 +400,20 @@ test('import and export is closed to a requester', async ({ page }) => {
   await signInAs(page, 'requester');
   await page.goto('/app/admin/import');
   await expect(page).not.toHaveURL(/\/admin\/import/);
+});
+
+test('a Super User sees every site with its business calendar', async ({ page }) => {
+  await signInAs(page, 'superuser');
+  await page.goto('/app/admin/calendars');
+  await expect(page.getByRole('heading', { name: 'Business calendars', level: 2 })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Opening hours' })).toBeVisible();
+  await expect(page.getByRole('row').nth(1)).toContainText(/\d\d:\d\d to \d\d:\d\d|Around the clock/);
+  await expect(page.getByRole('link', { name: /calendar for/ }).first()).toBeVisible();
+  await assertAccessible(page);
+});
+
+test('business calendars are closed to a requester', async ({ page }) => {
+  await signInAs(page, 'requester');
+  await page.goto('/app/admin/calendars');
+  await expect(page).not.toHaveURL(/\/admin\/calendars/);
 });

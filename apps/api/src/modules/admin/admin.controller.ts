@@ -1,7 +1,14 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { scopedLocations, withTenant } from '@cafm/db';
-import { shortUsername, type AdminOverview, type AdminUser, type SiteAccessOverview } from '@cafm/shared';
+import {
+  shortUsername,
+  siteCalendarSchema,
+  type AdminCalendars,
+  type AdminOverview,
+  type AdminUser,
+  type SiteAccessOverview,
+} from '@cafm/shared';
 import { administrableMembers, isDelegated } from '../../core/delegation';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -147,6 +154,27 @@ export class AdminController {
           restricted: m.locationScoped && m.role !== 'super_user',
           locationIds: m.locationScoped ? (byMember.get(m.id) ?? []) : [],
         })),
+      };
+    });
+  }
+
+  /** Every site with its business calendar, for the calendars screen. A calendar that no longer validates shows as none. */
+  @Get('calendars')
+  @RequirePermission('settings.manage')
+  async calendars(@Req() req: Request): Promise<AdminCalendars> {
+    const auth = req.auth!;
+    return withTenant(this.db, auth.membership!.tenantId, async (tx) => {
+      const sites = await tx.location.findMany({
+        where: { ...scopedLocations(auth.membership!, auth.access?.scope), kind: 'site', status: { not: 'closed' } },
+        select: { id: true, name: true, code: true, siteCalendar: true },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: 500,
+      });
+      return {
+        sites: sites.map(({ id, name, code, siteCalendar }) => {
+          const parsed = siteCalendar ? siteCalendarSchema.safeParse(siteCalendar) : null;
+          return { id, name, code, calendar: parsed?.success ? parsed.data : null };
+        }),
       };
     });
   }
