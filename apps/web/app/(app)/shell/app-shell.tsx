@@ -52,9 +52,10 @@ export function AppShell({
   const viewingAs = impersonation !== null;
   const toggleNav = useCallback(() => {
     setNavCollapsed(!navCollapsed);
-    // "View as" is read-only and the choice would be saved on the other person's account, so it only lasts the visit.
-    if (!viewingAs) saveNavCollapsed(!navCollapsed);
-  }, [navCollapsed, viewingAs]);
+    // "View as" is read-only and would save on the other person's account, and the demo's shared people save no choices
+    // (visitors would hand them on to each other). Either way it lasts only until the page is reloaded.
+    if (!viewingAs && !demo) saveNavCollapsed(!navCollapsed);
+  }, [navCollapsed, viewingAs, demo]);
 
   const onKey = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {

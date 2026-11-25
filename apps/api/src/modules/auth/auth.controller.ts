@@ -19,6 +19,7 @@ import {
   selectOrganisationSchema,
   updatePreferencesSchema,
 } from '@cafm/shared';
+import { assertNotDemoLocked } from '../../core/access-rules';
 import { SessionGuard } from '../../core/auth.guards';
 import { parse } from '../../core/validation';
 import { clientInfo as client, cookieOptions, sessionToken, setSessionCookie } from '../../core/cookies';
@@ -75,11 +76,13 @@ export class AuthController {
 
   /**
    * Saves the signed-in person's own display choices. Only ever their own account, so it needs a session but no
-   * permission. "View as" is refused by the session guard, so it can't change the viewed person's choices.
+   * permission. "View as" is refused by the session guard, so it can't change the viewed person's choices, and the
+   * shared demo personas can't save any, so one visitor's choices never reach the next.
    */
   @Patch('preferences')
   @UseGuards(SessionGuard)
   updatePreferences(@Req() req: Request, @Body() body: unknown) {
+    assertNotDemoLocked(req.auth!.account.isDemo);
     return this.auth.updatePreferences(req.auth!.account.id, parse(updatePreferencesSchema, body));
   }
 

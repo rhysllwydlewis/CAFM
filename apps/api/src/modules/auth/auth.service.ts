@@ -13,6 +13,7 @@ import {
   type LoginResponse,
   type OrganisationOption,
 } from '@cafm/shared';
+import { demoLocked } from '../../core/access-rules';
 import { PrismaService } from '../../core/prisma.service';
 import { sessionLifetimeMs } from '../../core/security-settings';
 import { type AuthContext, hashToken, newSessionToken } from '../../core/session';
@@ -150,7 +151,9 @@ export class AuthService {
       impersonation: auth.impersonator
         ? { by: auth.impersonator.name, expiresAt: auth.session.expiresAt.toISOString() }
         : null,
-      preferences: readPreferences(auth.account.preferences),
+      // A shared demo persona never has saved choices: visitors would hand them on to each other. Anything stored
+      // there (from before this rule) is ignored too.
+      preferences: demoLocked(auth.account.isDemo) ? {} : readPreferences(auth.account.preferences),
     };
   }
 

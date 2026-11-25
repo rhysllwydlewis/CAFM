@@ -67,9 +67,14 @@ export async function assertFullUserSeat(
   }
 }
 
+/** Whether this is something shared in the demo that must stay as seeded: a demo persona, or a built-in role. */
+export function demoLocked(locked: boolean): boolean {
+  return locked && process.env.DEMO_MODE === 'true';
+}
+
 /** In the demo, the shared demo personas and built-in roles stay as seeded (doc 06 § guard rails). */
 export function assertNotDemoLocked(locked: boolean): void {
-  if (locked && process.env.DEMO_MODE === 'true') {
+  if (demoLocked(locked)) {
     throw new ForbiddenException({
       code: 'demo_locked',
       message: 'This is part of the demo and can’t be changed. The demo resets every night.',
