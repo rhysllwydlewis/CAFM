@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** A CSV file sent for import. The text travels in a JSON body, so the size stays under the 100 kB body limit. */
+/** A CSV file sent for import. The text travels in a JSON body, so the API's JSON body limit (600 kB) covers the 90,000-character cap even after escaping. */
 export const importFileSchema = z
   .object({
     csv: z

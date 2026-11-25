@@ -31,7 +31,7 @@ The API is ready. The screens come in a later batch.
 | Recent imports | `GET /api/locations/import/batches` | The last 20 imports. |
 | Roll back | `POST /api/locations/import/<id>/rollback` | Removes what an import made. |
 
-The body is `{ "csv": "<the file's text>", "fileName": "estate.csv" }`. A file can hold up to 1,000 rows and about 90,000 characters.
+The body is `{ "csv": "<the file's text>", "fileName": "estate.csv" }`. A file can hold up to 1,000 rows and about 90,000 characters (the API reads JSON bodies up to 600 kB, which covers JSON escaping).
 
 Rules:
 

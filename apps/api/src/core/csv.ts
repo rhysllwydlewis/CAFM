@@ -2,7 +2,8 @@
  * CSV writing for exports. Cells that a spreadsheet could read as a formula get a leading
  * apostrophe, and values are quoted when they hold a comma, quote or line break.
  */
-const FORMULA_START = /^[=+\-@\t\r]/;
+// A literal leading apostrophe before such a character is guarded too, so the reader can tell it from a guard.
+const FORMULA_START = /^'*[=+\-@\t\r]/;
 
 export function csvCell(value: unknown): string {
   if (value === null || value === undefined) return '';

@@ -209,15 +209,20 @@ export class LocationImportController {
       if (rows.some(({ version }) => version > 1))
         throw blocked('Some of these locations have been edited since the import.');
       const outside = { parentId: { in: ids }, id: { notIn: ids } };
-      const [children, assets, requests, orders, mailboxes] = await Promise.all([
+      const [children, assets, requests, orders, mailboxes, serves, grants] = await Promise.all([
         tx.location.count({ where: outside }),
         tx.asset.count({ where: { locationId: { in: ids } } }),
         tx.serviceRequest.count({ where: { locationId: { in: ids } } }),
         tx.workOrder.count({ where: { locationId: { in: ids } } }),
         tx.requestMailbox.count({ where: { locationId: { in: ids } } }),
+        // These two cascade on delete, so a rollback would silently erase what was added after the import.
+        tx.assetServes.count({ where: { locationId: { in: ids } } }),
+        tx.membershipSite.count({ where: { locationId: { in: ids } } }),
       ]);
-      if (children || assets || requests || orders || mailboxes)
-        throw blocked('Some of these locations now have assets, requests, work orders or other locations inside them.');
+      if (children || assets || requests || orders || mailboxes || serves || grants)
+        throw blocked(
+          'Some of these locations now have assets, requests, work orders, site access or other locations inside them.',
+        );
       // Children first, because a location cannot be removed while others sit inside it.
       for (const id of [...ids].reverse()) await tx.location.deleteMany({ where: { id } });
       const updated = await tx.importBatch.update({

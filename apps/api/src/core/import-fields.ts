@@ -8,7 +8,7 @@ export interface ImportIssue {
 }
 
 export const IMPORT_MAX_ROWS = 1000;
-/** Express reads JSON bodies up to 100 kB by default, so a file stays below that. */
+/** JSON escaping can multiply this by six, so the API reads JSON bodies up to 600 kB (see app.ts). */
 export const IMPORT_MAX_CHARS = 90_000;
 
 /**

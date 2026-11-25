@@ -31,3 +31,10 @@ it('refuses an empty file, an unclosed quote and too many rows', () => {
   expect(() => parseCsv('a\n1\n2\n3', 2)).toThrow(/more than 2 rows/);
   expect(parseCsv('a\n1\n2', 2).rows).toHaveLength(2);
 });
+
+it('keeps a literal leading apostrophe when it round-trips, and reports source lines', () => {
+  const rows = [["'=Head office", "'plain", "''@x"]];
+  expect(parseCsv(toCsv(['a', 'b', 'c'], rows)).rows).toEqual(rows);
+  const parsed = parseCsv('a,b\n\n1,"x\ny"\n\n2,z\n');
+  expect(parsed.lines).toEqual([3, 6]);
+});

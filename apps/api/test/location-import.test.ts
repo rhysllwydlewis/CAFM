@@ -207,3 +207,45 @@ it('keeps imports and rollbacks inside one organisation', async () => {
     await second.cleanup();
   }
 });
+
+it('reports the line in the file after blank lines, and accepts a large file with many quotes', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const csv = [header, '', 'S1,Main site,site,,,,,,', '', 'S2,Bad kind,castle,,,,,,'].join('\n');
+    const res = await agent.post(`${locations}/import/preview`).send({ csv }).expect(201);
+    expect(res.body.issues).toEqual([expect.objectContaining({ row: 5, column: 'kind' })]);
+    // JSON escaping doubles every quote, so this body is well over 100 kB.
+    const name = '"' + '""'.repeat(110) + '"';
+    const rows = ['Q,Parent,site,,,,,,', ...Array.from({ length: 349 }, (_, i) => `Q${i},${name},space,,Q,,,,`)];
+    const big = await agent
+      .post(`${locations}/import/preview`)
+      .send({ csv: [header, ...rows].join('\n') })
+      .expect(201);
+    expect(JSON.stringify({ csv: [header, ...rows].join('\n') }).length).toBeGreaterThan(100_000);
+    expect(big.body).toMatchObject({ rows: 350, creates: 350 });
+    expect(await count(tenant.id)).toBe(0);
+  } finally {
+    await cleanup();
+  }
+});
+
+it('will not roll back an import once an asset serves it or a person has been given access to it', async () => {
+  const { agent, tenant, cleanup } = await estate();
+  try {
+    const batch = (
+      await agent
+        .post(`${locations}/import`)
+        .send({ csv: `${header}\nA1,Imported site,site,,,,,,` })
+        .expect(201)
+    ).body;
+    const site = await withTenant(db, tenant.id, (tx) => tx.location.findFirstOrThrow({ where: { code: 'A1' } }));
+    const membership = await withTenant(db, tenant.id, (tx) => tx.membership.findFirstOrThrow());
+    await withTenant(db, tenant.id, (tx) =>
+      tx.membershipSite.create({ data: { tenantId: tenant.id, membershipId: membership.id, locationId: site.id } }),
+    );
+    await agent.post(`${locations}/import/${batch.id}/rollback`).send({}).expect(409);
+    expect(await count(tenant.id)).toBe(1);
+  } finally {
+    await cleanup();
+  }
+});

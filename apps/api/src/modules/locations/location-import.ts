@@ -76,7 +76,7 @@ export async function planLocationImport(
       return { ordered: [], existingParents: new Map(), issues: [{ row: 1, column: '', message: error.message }] };
     throw error;
   }
-  const { header, rows } = parsed;
+  const { header, rows, lines } = parsed;
   const known = new Set<string>([...LOCATION_COLUMNS, ...[...fields.keys()].map((key) => `custom.${key}`)]);
   const seen = new Set<string>();
   header.forEach((column) => {
@@ -100,7 +100,7 @@ export async function planLocationImport(
   const planned: PlannedLocation[] = [];
   const codes = new Map<string, number>();
   rows.forEach((cells, index) => {
-    const row = index + 2;
+    const row = lines[index] ?? index + 2;
     const at = (column: string) => (cells[header.indexOf(column)] ?? '').trim();
     if (cells.length > header.length && cells.slice(header.length).some((cell) => cell.trim() !== '')) {
       issues.push({ row, column: '', message: 'This row has more values than the file has columns.' });
