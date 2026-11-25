@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import request from 'supertest';
 import { PrismaClient, withTenant } from '@cafm/db';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
 
@@ -457,5 +458,34 @@ it('returns the path to a location from the ancestors the member can see', async
     expect(await pathOf(scoped, site.id)).toEqual([]);
   } finally {
     await cleanup();
+  }
+});
+
+it('exports locations as CSV for the signed-in organisation only, safely, and audits the export', async () => {
+  const first = await estate();
+  const second = await estate();
+  try {
+    await first.agent
+      .post(locations)
+      .send({ code: 'HQ', name: '=Head office, "North"', kind: 'site', details: { address: '1 High Street' } })
+      .expect(201);
+    await second.agent.post(locations).send({ code: 'X', name: 'Other site', kind: 'site' }).expect(201);
+    const member = await createTestAccount(db, [first.tenant.id]);
+    const requester = (await signIn(app, member.email, member.password)).agent;
+    const res = await first.agent.get(`${locations}/export`).expect(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+    expect(res.headers['content-disposition']).toContain('locations.csv');
+    expect(res.text).toContain('code,name,kind,status,parent_code');
+    expect(res.text).toContain(`HQ,"'=Head office, ""North""",site,open,,1 High Street`);
+    expect(res.text).not.toContain('Other site');
+    await requester.get(`${locations}/export`).expect(403);
+    await request(app.getHttpServer()).get(`${locations}/export`).expect(401);
+    const events = await withTenant(db, first.tenant.id, (tx) =>
+      tx.auditEvent.findMany({ where: { action: 'location.exported' } }),
+    );
+    expect(events).toHaveLength(1);
+  } finally {
+    await first.cleanup();
+    await second.cleanup();
   }
 });
