@@ -145,7 +145,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [x] Branding: accent colour with contrast check, applied across the app. ([guide](admin.md#branding))
     - [ ] Branding: sign-in message shown on the sign-in screen, logo, custom domain and email sender (the message is saved already).
     - [x] Custom fields screen: list, add, edit and deactivate, with the plan limit. ([guide](admin.md#custom-fields))
-    - [ ] Statuses, SLA and calendars, categories.
+    - [x] SLA targets and categories: service levels screen (reads the helpdesk matrix and request types; edit in the request catalogue). ([guide](admin.md#service-levels-and-categories))
+    - [ ] Statuses (not configurable yet) and a business calendar screen.
   - [ ] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
     - [x] Password minimum length, longest sign-in and the MFA-required setting, with the screen. ([guide](admin.md#security-and-sign-in))
     - [x] Audit log viewer: newest first, search by event, details. ([guide](admin.md#audit-log))
