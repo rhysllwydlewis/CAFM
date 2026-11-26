@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { appIcon, fms, wordmark } from '../../tools/logo.js';
 import { I, logo, btn, badge, chip, prio, av, avs, field, input, select, sw, cb, seg, tabs, kpi, spark, callout, status, card, table, ref, bar } from '../src/lib.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -54,12 +55,12 @@ ${card('Module headers', `<div class="grid g-4" style="gap:10px">${[['Helpdesk',
 </div>`);
 
 // ── Logo ──
-const logoSheet = sheet('Logo (placeholder)', 'Three stacked "floors": a building and a work list. Holds the place until the product is named and branded.', `<div class="grid g-3">
-${card('Primary', `<div style="height:200px;display:grid;place-items:center;background:var(--bg-subtle);border-radius:10px"><div class="row" style="gap:14px">${logo(64)}<span style="font-family:var(--font-display);font-size:40px;font-weight:600;letter-spacing:-0.02em">CAFM</span></div></div>`)}
-${card('On dark (navigation)', `<div style="height:200px;display:grid;place-items:center;background:var(--nav-bg);border-radius:10px"><div class="row" style="gap:14px">${logo(64)}<span style="font-family:var(--font-display);font-size:40px;font-weight:600;letter-spacing:-0.02em;color:#F1F3F6">CAFM</span></div></div>`)}
-${card('Inverse', `<div style="height:200px;display:grid;place-items:center;background:var(--primary);border-radius:10px"><div class="row" style="gap:14px">${logo(64, { bg: '#FFFFFF', fg: '#136676' })}<span style="font-family:var(--font-display);font-size:40px;font-weight:600;letter-spacing:-0.02em;color:#fff">CAFM</span></div></div>`)}
-${card('App icon & favicon sizes', `<div class="row" style="gap:28px;align-items:flex-end;height:120px">${[96, 64, 48, 32, 16].map((s) => `<div class="col" style="align-items:center;gap:8px">${logo(s)}<span class="xs faint">${s}</span></div>`).join('')}</div>`, { cls: 'span-2' })}
-${card('Clear space', `<div style="height:120px;display:grid;place-items:center"><div style="padding:16px;border:1px dashed var(--primary-border);border-radius:12px">${logo(56)}</div></div><div class="hint">Keep ¼ of the mark's width clear on all sides.</div>`)}
+const logoSheet = sheet('Logo', 'The name is the logo: a heavy Bodoni serif with "FM" upright and "Stead" in italic Petrol. "FMS" is the short form, and "FM" on a tile is the mark for small sizes.', `<div class="grid g-3">
+${card('Primary', `<div style="height:200px;display:grid;place-items:center;background:var(--bg-subtle);border-radius:10px">${wordmark({ width: 330 })}</div>`)}
+${card('On dark (navigation)', `<div style="height:200px;display:grid;place-items:center;background:var(--nav-bg);border-radius:10px">${wordmark({ inverse: true, width: 330 })}</div>`)}
+${card('Short form', `<div style="height:200px;display:grid;place-items:center;background:var(--bg-subtle);border-radius:10px">${fms({ width: 190 })}</div>`)}
+${card('Mark, favicon and app icon', `<div class="row" style="gap:28px;align-items:flex-end;height:120px">${[96, 64, 48, 32, 16].map((s) => `<div class="col" style="align-items:center;gap:8px">${logo(s)}<span class="xs faint">${s}</span></div>`).join('')}<div class="col" style="align-items:center;gap:8px">${appIcon(96)}<span class="xs faint">App icon</span></div></div>`, { cls: 'span-2' })}
+${card('Clear space', `<div style="height:120px;display:grid;place-items:center"><div style="padding:16px;border:1px dashed var(--primary-border);border-radius:12px">${wordmark({ width: 200 })}</div></div><div class="hint">Keep the height of the "M" clear on all sides. Below 100px wide, use the mark.</div>`)}
 </div>`);
 
 // ── Components ──
@@ -87,7 +88,7 @@ export default [
   { id: 'ds-02-typography', group: 'Design system', title: 'Typography', viewport: 'sheet', html: type },
   { id: 'ds-03-components', group: 'Design system', title: 'Core components', viewport: 'sheet', html: components },
   { id: 'ds-04-layout', group: 'Design system', title: 'Layout, spacing & elevation', viewport: 'sheet', html: spacing },
-  { id: 'ds-05-logo', group: 'Design system', title: 'Logo (placeholder)', viewport: 'sheet', html: logoSheet },
+  { id: 'ds-05-logo', group: 'Design system', title: 'Logo', viewport: 'sheet', html: logoSheet },
   { id: 'ds-06-icons', group: 'Design system', title: 'Icons: full set', viewport: 'sheet', html: iconGrid() },
   dark,
   { id: 'ds-08-icons-custom', group: 'Design system', title: 'Custom CAFM icons', viewport: 'sheet', html: customSheet },

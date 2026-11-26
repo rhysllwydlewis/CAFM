@@ -6,6 +6,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Added
 
+- A new logo: "FM Stead" as a heavy serif wordmark with "FMS" as the short form. The favicon and the mark beside the product name are now an "FM" tile in your accent colour. The product name in the app is unchanged for now.
 - Administration: a Business calendars screen lists every site's opening hours, bank holiday nation, closures and time zone, and flags sites with no calendar. See [business calendars](docs/admin.md#business-calendars).
 - Import and export screen in Administration: choose locations, assets, people or PPM schedules, download the template, check your CSV file (problems are listed by line and column, with an error report to download), import it, and undo a recent import. Exports are on the same page. See [import and export](docs/import-export.md#the-screen).
 - Administration: the sign-in message saved under Branding now shows on the organisation's own sign-in page. Nothing is revealed about organisations that have no message, or that don't exist.

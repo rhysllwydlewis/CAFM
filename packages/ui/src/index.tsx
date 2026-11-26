@@ -20,14 +20,18 @@ export function Icon({ name, size, label }: { name: string; size?: 14 | 18 | 20 
   );
 }
 
-/** The CAFM logomark (design/icons/logo/logomark.svg). */
+/** The "FM" in the logomark: outlines of Bodoni Moda Black (SIL OFL 1.1). Kept in step with design/tools/logo.js. */
+const LOGO_FM =
+  'M29.47 65.41Q28.51 63.26 27.18 61.28Q25.86 59.3 24.13 58.03Q22.4 56.77 20.26 56.77H16.1V55.49H20.26Q22.4 55.49 24.13 54.3Q25.86 53.12 27.18 51.23Q28.51 49.34 29.47 47.2H30.72V65.41ZM39.04 32V45.12H37.76Q36.8 41.7 34.98 39.01Q33.15 36.32 30.5 34.78Q27.84 33.25 24.42 33.25H20.48V78.75H26.88V80H0.93V78.75H6.72V33.25H0.93V32Z M64.54 80.64 46.75 32H60.58L71.36 60.93L81.31 32H82.69L65.95 80.64ZM47.42 32V78.75H52.13V80H41.54V78.75H46.08V33.25H41.18V32ZM100.58 32V33.25H96.06V78.75H100.58V80H77.22V78.75H82.34V32Z';
+
+/** The product logomark ("FM" on a rounded tile, design/icons/logo/logomark.svg). The tile follows the accent colour. */
 export function Logo({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
       <rect width="32" height="32" rx="8" fill="var(--primary)" />
-      <rect x="8" y="8" width="16" height="4" rx="1.5" fill="#FFFFFF" />
-      <rect x="8" y="14" width="12" height="4" rx="1.5" fill="#FFFFFF" fillOpacity="0.78" />
-      <rect x="8" y="20" width="8" height="4" rx="1.5" fill="#FFFFFF" fillOpacity="0.56" />
+      <g transform="translate(16 16) scale(0.2509) translate(-50.75 -56.32)">
+        <path fill="#FFFFFF" d={LOGO_FM} />
+      </g>
     </svg>
   );
 }

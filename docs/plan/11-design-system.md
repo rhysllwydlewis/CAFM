@@ -66,11 +66,13 @@ Tenants can change the accent colour (white-label, [doc 03](03-roles-permissions
 - Use 16px in tables, buttons and menus (1.75 stroke), 18px in the top bar, 20–24px on mobile. Use the muted text colour by default, the primary colour when active, and status colours only when showing status, always with text.
 - Sheets: [full set](../../design/mockups/png/ds-06-icons.png) · [dark](../../design/mockups/png/ds-07-icons-dark.png) · [custom icons at construction size](../../design/mockups/png/ds-08-icons-custom.png) · [usage](../../design/mockups/png/ds-09-icons-usage.png).
 
-## Logo (placeholder)
+## Logo
 
 ![Logo](../../design/mockups/png/ds-05-logo.png)
 
-Three stacked "floors" read as both a building and a work list. This is a placeholder until the product is named (decision D1). Files are in `design/icons/logo/`.
+The name is the logo. "FM" is set upright in graphite and "Stead" in italic Petrol, in Bodoni Moda Black. "FMS" is the short form for tight spaces, and "FM" on a Petrol tile is the mark for the favicon, the side menu and other small sizes. The letters are outlines, so no font is needed to draw them (Bodoni Moda is licensed under the SIL Open Font License 1.1). The colours are tokens only: graphite-900 and petrol-600, and in the dark theme the navigation text colour and the dark primary text colour. The tile in the mark follows the tenant's accent colour.
+
+Files are in `design/icons/logo/`. `npm run icons` generates them from `design/tools/logo.js`, and `Logo` in `packages/ui` draws the same mark. The interface itself stays in Inter. The product name is still open (decision D1), so the app keeps saying "CAFM" next to the mark until it is decided.
 
 ## Components and layout
 

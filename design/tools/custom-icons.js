@@ -59,12 +59,5 @@ export const custom = {
   'carbon': `<path d="${cloud}"/><path d="M10 16.5c0-2.5 1.8-4.5 5-4.5 0 3-1.8 4.8-5 4.5zM10 16.5l2.5-2.5"/>`,
 };
 
-// Placeholder product mark (until the product is named): three stacked
-// "floors" of decreasing width, reading as both a building and a work list.
-export const logomark = (size = 32, { bg = '#136676', fg = '#FFFFFF' } = {}) => `
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="8" fill="${bg}"/>
-  <rect x="8" y="8" width="16" height="4" rx="1.5" fill="${fg}"/>
-  <rect x="8" y="14" width="12" height="4" rx="1.5" fill="${fg}" fill-opacity="0.78"/>
-  <rect x="8" y="20" width="8" height="4" rx="1.5" fill="${fg}" fill-opacity="0.56"/>
-</svg>`.trim();
+// The product mark ("FM" on a rounded tile) lives with the rest of the logo artwork.
+export { logomark } from './logo.js';
