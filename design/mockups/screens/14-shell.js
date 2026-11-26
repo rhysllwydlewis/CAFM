@@ -1,3 +1,4 @@
+import { wordmark } from '../../tools/logo.js';
 import { I, btn, badge, seg, av, shell, card } from '../src/lib.js';
 
 // App shell patterns added in Phase 0 (issue #19): user menu, module placeholders, mobile navigation.
@@ -82,12 +83,12 @@ const locked = placeholder(
 
 const mobileNav = `<div style="width:390px;height:844px;position:relative;overflow:hidden;border-right:1px solid var(--border)">
   <div class="app" style="grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;min-height:844px">
-    <aside class="nav" style="flex-direction:row;align-items:center;border-right:0;border-bottom:1px solid var(--nav-border)"><div class="nav-top" style="flex:1;padding:10px 12px;flex-direction:row;align-items:center">${btn('', { icon: 'more', iconOnly: true, v: 'ghost' })}<div class="brand"><span>CAFM</span></div></div></aside>
+    <aside class="nav" style="flex-direction:row;align-items:center;border-right:0;border-bottom:1px solid var(--nav-border)"><div class="nav-top" style="flex:1;padding:10px 12px;flex-direction:row;align-items:center">${btn('', { icon: 'more', iconOnly: true, v: 'ghost' })}<div class="brand"><span class="brand-word">${wordmark({ inverse: true, width: 102 })}</span></div></div></aside>
     <main class="main"><div class="page" style="padding:20px 16px"><h1 class="page-title">Good morning, Sam</h1></div></main>
   </div>
   <div class="scrim"></div>
   <aside class="nav" style="position:absolute;top:0;left:0;bottom:0;width:300px">
-    <div class="nav-top"><div class="row between"><div class="brand"><span>CAFM</span></div>${btn('Close', { sm: true, v: 'ghost' })}</div>
+    <div class="nav-top"><div class="row between"><div class="brand"><span class="brand-word">${wordmark({ inverse: true, width: 102 })}</span></div>${btn('Close', { sm: true, v: 'ghost' })}</div>
       <div class="tenant"><span class="t-logo">DE</span><div class="grow"><div class="t-name">Demo Estates Ltd</div><div class="t-sub">Enterprise</div></div></div></div>
     <div class="nav-scroll"><div class="nav-sec"><div class="nav-item active">${I('dashboard')}<span>Home</span></div><div class="nav-item">${I('helpdesk')}<span>Helpdesk</span></div><div class="nav-item">${I('work-order')}<span>Work orders</span></div></div>
       <div class="nav-sec"><div class="nav-label">Compliance</div><div class="nav-item">${I('compliance')}<span>Compliance</span></div></div></div>

@@ -771,11 +771,11 @@ These mockups are the visual target for the build. Data shown is demo data from 
 
 [![Pricing page](../../design/mockups/png/marketing-01-pricing.png)](../../design/mockups/png/marketing-01-pricing.png)
 
-### CAFM homepage
+### FM Stead homepage
 
 `marketing-02-homepage` · desktop · [HTML source](../../design/mockups/html/marketing-02-homepage.html)
 
-[![CAFM homepage](../../design/mockups/png/marketing-02-homepage.png)](../../design/mockups/png/marketing-02-homepage.png)
+[![FM Stead homepage](../../design/mockups/png/marketing-02-homepage.png)](../../design/mockups/png/marketing-02-homepage.png)
 
 ## App shell
 
