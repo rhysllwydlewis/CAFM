@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import type { FieldDefinition } from '@cafm/config-engine';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { Button, Checkbox, Field, TextInput } from '@cafm/ui';
+import { Button, Checkbox, Field, TextInput } from '@fmstead/ui';
 import {
   DEFAULT_SITE_CALENDAR,
   LOCATION_KINDS,
@@ -13,7 +13,7 @@ import {
   WEEKDAYS,
   type LocationRecord,
   type SiteCalendar,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import styles from './locations.module.css';
 import { LocationCustomFields, readCustomFields } from './location-custom-fields';
 

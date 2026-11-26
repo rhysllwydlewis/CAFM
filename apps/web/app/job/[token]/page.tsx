@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { ContractorJob } from '@cafm/shared';
+import type { ContractorJob } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { ContractorJobView } from './contractor-job';
 

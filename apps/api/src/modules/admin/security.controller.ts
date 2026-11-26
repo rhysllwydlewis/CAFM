@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { withTenant, type Prisma } from '@cafm/db';
-import { updateSecuritySchema, type AuditActor, type AuditPage, type SecuritySettingsView } from '@cafm/shared';
+import { withTenant, type Prisma } from '@fmstead/db';
+import { updateSecuritySchema, type AuditActor, type AuditPage, type SecuritySettingsView } from '@fmstead/shared';
 import { z } from 'zod';
 import { audit } from '../../core/audit';
 import { auditCsv } from '../../core/audit-csv';

@@ -1,4 +1,4 @@
-import { DEFAULT_SEQUENCES, formatNumber } from '@cafm/config-engine';
+import { DEFAULT_SEQUENCES, formatNumber } from '@fmstead/config-engine';
 import type { Tx } from './index';
 
 /**

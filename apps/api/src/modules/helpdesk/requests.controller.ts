@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Temporal } from '@js-temporal/polyfill';
-import { withTenant, type Prisma, type Tx } from '@cafm/db';
+import { withTenant, type Prisma, type Tx } from '@fmstead/db';
 import {
   acceptsRequestComments,
   bulkRequestSchema,
@@ -33,7 +33,7 @@ import {
   type BulkRequestResult,
   type RequestPage,
   type RequestStatus,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import {
   assertAccess,

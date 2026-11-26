@@ -11,7 +11,7 @@ import {
   type PpmForecast,
   type PpmOverdueItem,
   type PpmScheduleSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { GroupRows } from '@/components/list-display';
 import { SelectAll, SelectRow } from '@/components/bulk-selection';
 import { criticalityBadge, criticalityLabel, hours, longDay, monthName } from '@/lib/ppm-format';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Icon } from '@cafm/ui';
+import { Button, Icon } from '@fmstead/ui';
 import { adminWrite } from '@/lib/admin-client';
 import { t } from '@/lib/i18n';
 

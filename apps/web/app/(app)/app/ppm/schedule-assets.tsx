@@ -2,8 +2,8 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field } from '@cafm/ui';
-import type { AssetPage } from '@cafm/shared';
+import { Button, Field } from '@fmstead/ui';
+import type { AssetPage } from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import styles from './ppm.module.css';
 

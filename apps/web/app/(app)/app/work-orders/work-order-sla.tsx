@@ -1,7 +1,7 @@
 'use client';
 
-import { Icon } from '@cafm/ui';
-import { WORK_ORDER_FINISHED, type WorkOrderRecord } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { WORK_ORDER_FINISHED, type WorkOrderRecord } from '@fmstead/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 import { duration } from './work-order-parts';
 import { useClock } from './work-order-table';

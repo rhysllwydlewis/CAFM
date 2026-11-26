@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { withTenant } from '@cafm/db';
-import { resolveEntitlements, type PublicSignInMessage } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { resolveEntitlements, type PublicSignInMessage } from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
 
 /**

@@ -10,8 +10,8 @@ import {
   parseColumnKeys,
   parseGroup,
   type WorkOrderView,
-} from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+} from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
 import ModulePage from '../[module]/page';

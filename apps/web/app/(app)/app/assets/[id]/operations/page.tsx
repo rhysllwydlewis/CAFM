@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Icon } from '@cafm/ui';
-import { can, feature, type AssetOperations } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { can, feature, type AssetOperations } from '@fmstead/shared';
 import { AttachmentPanel } from '@/components/attachment-panel';
 import { apiGet } from '@/lib/api';
 import { attachmentList } from '@/lib/attachments';

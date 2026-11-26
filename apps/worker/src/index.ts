@@ -1,5 +1,5 @@
 import { type Job, Queue, Worker } from 'bullmq';
-import type { PrismaClient } from '@cafm/db';
+import type { PrismaClient } from '@fmstead/db';
 import { handlers, type JobContext } from './handlers';
 import { redisConnection } from './redis';
 
@@ -9,7 +9,7 @@ import './jobs/email';
 import './jobs/notifications';
 export type { Handler, JobContext } from './handlers';
 
-export const QUEUE = 'cafm';
+export const QUEUE = 'fmstead';
 
 interface OutboxRow {
   id: string;

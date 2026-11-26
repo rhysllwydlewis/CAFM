@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Put, Req, UnprocessableEntityException, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { DEFAULT_SEQUENCES, formatNumber, validateFormat } from '@cafm/config-engine';
-import { withTenant } from '@cafm/db';
+import { DEFAULT_SEQUENCES, formatNumber, validateFormat } from '@fmstead/config-engine';
+import { withTenant } from '@fmstead/db';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { recordVersion } from '../../core/config';

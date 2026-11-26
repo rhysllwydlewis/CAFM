@@ -3,13 +3,13 @@
 import { useId, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import {
   WORK_ORDER_STATUS_LABELS,
   workOrderNextStatuses,
   type WorkOrderStatus,
   type WorkOrderSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { FixSla, PriorityBadge } from './work-order-parts';
 import { useClock } from './work-order-table';

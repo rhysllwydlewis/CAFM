@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { can, feature } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { catalogue, reportAsset, reportLocation } from '@/lib/helpdesk';
 import { RequestForm } from '../../(app)/app/helpdesk/request-form';

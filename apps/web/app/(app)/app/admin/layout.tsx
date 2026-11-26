@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { can } from '@cafm/shared';
+import { can } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { exportable, importable } from './import/kinds';
 import { AdminMenu } from './admin-menu';

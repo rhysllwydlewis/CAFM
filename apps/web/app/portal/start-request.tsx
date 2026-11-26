@@ -2,7 +2,7 @@
 
 import { type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { TextInput } from '@cafm/ui';
+import { TextInput } from '@fmstead/ui';
 import styles from '../(app)/app/helpdesk/helpdesk.module.css';
 
 export function StartRequest() {
@@ -13,7 +13,7 @@ export function StartRequest() {
     if (!text) return router.push('/portal/new');
     const draft = crypto.randomUUID();
     try {
-      sessionStorage.setItem('cafm-request-' + draft, text);
+      sessionStorage.setItem('fmstead-request-' + draft, text);
     } catch {
       return router.push('/portal/new');
     }

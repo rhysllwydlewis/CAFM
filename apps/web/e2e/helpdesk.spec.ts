@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { PrismaClient, seedId } from '@cafm/db';
-import { DEMO_PASSWORD } from '@cafm/shared';
+import { PrismaClient, seedId } from '@fmstead/db';
+import { DEMO_PASSWORD } from '@fmstead/shared';
 
 const cardiff = seedId('location:demo-estates:CDF');
 const tenantId = seedId('tenant:demo-estates');

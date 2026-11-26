@@ -18,8 +18,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
-import { withTenant, type Prisma, type Tx } from '@cafm/db';
+import { validateCustom, type FieldDefinition } from '@fmstead/config-engine';
+import { withTenant, type Prisma, type Tx } from '@fmstead/db';
 import {
   createLocationSchema,
   listLocationsSchema,
@@ -29,7 +29,7 @@ import {
   type LocationDetail,
   type LocationRecord,
   type LocationPage,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
 import { assertAdministrable } from '../../core/delegation';
 import { audit } from '../../core/audit';

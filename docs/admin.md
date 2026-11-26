@@ -53,7 +53,7 @@ Switching a module off hides it from the menu. It does not block the module's AP
 
 `/app/admin/terminology` lets you use your own word for a few standard terms: work order, request, site, asset and contractor, each with a singular and a plural. Leave both empty to keep the standard words. `GET` and `PUT /api/admin/terminology` (`settings.manage`) read and save them, audited as `settings.terminology_updated`, stored in `term_override` (row-level security).
 
-For now your words show in the menu: the Work orders, Assets, Locations and Contractors items use the plural of their term unless you have also named the module yourself. Screens, emails and reports pick them up as each is built, through `termLabel()` in `@cafm/shared`.
+For now your words show in the menu: the Work orders, Assets, Locations and Contractors items use the plural of their term unless you have also named the module yourself. Screens, emails and reports pick them up as each is built, through `termLabel()` in `@fmstead/shared`.
 
 ## View as user
 

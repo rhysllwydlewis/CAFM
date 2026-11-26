@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Checkbox, Field, TextInput } from '@cafm/ui';
+import { Button, Checkbox, Field, TextInput } from '@fmstead/ui';
 import {
   ENTITY_TYPES,
   FIELD_TYPES,
@@ -10,7 +10,7 @@ import {
   keyFromLabel,
   optionsFromLabels,
   type FieldType,
-} from '@cafm/config-engine';
+} from '@fmstead/config-engine';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 import type { AdminField } from './page';

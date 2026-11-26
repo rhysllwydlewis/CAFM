@@ -1,11 +1,11 @@
 /**
  * Platform tenant CLI (issue #16). Runs as the owner role (DATABASE_URL).
  *
- *   pnpm cafm tenant:list
- *   pnpm cafm tenant:create --name "Riverside Academy Trust" --slug riverside --plan professional --admin-email head@example.org [--demo]
- *   pnpm cafm tenant:set-plan --slug riverside --plan enterprise
- *   pnpm cafm tenant:suspend --slug riverside
- *   pnpm cafm tenant:activate --slug riverside
+ *   pnpm fmstead tenant:list
+ *   pnpm fmstead tenant:create --name "Riverside Academy Trust" --slug riverside --plan professional --admin-email head@example.org [--demo]
+ *   pnpm fmstead tenant:set-plan --slug riverside --plan enterprise
+ *   pnpm fmstead tenant:suspend --slug riverside
+ *   pnpm fmstead tenant:activate --slug riverside
  */
 import { PrismaClient } from '@prisma/client';
 import { createTenant, listTenants, setTenantPlan, setTenantStatus } from './tenants';

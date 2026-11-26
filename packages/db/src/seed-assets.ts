@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
-import type { AssetAttribute } from '@cafm/shared';
+import type { AssetAttribute } from '@fmstead/shared';
 import { seedId } from './ids';
 
 type Attribute = Pick<AssetAttribute, 'key' | 'label' | 'type'> &

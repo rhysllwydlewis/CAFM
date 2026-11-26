@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createTenant, PrismaClient, seedId } from '@cafm/db';
+import { createTenant, PrismaClient, seedId } from '@fmstead/db';
 
 const cardiffId = seedId('location:demo-estates:CDF');
 const plantRoomId = seedId('location:demo-estates:CDF-PLANT');
@@ -10,7 +10,7 @@ const cardiffRoute = locationRoute + '?id=' + cardiffId;
 
 async function signIn(page: Page, persona = 'superuser') {
   await page.getByLabel('Email or username').fill(persona + '@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import { t } from '@/lib/i18n';
 import { CommandPalette } from './command-palette';
 import { DemoResetBanner } from './demo-banner';

@@ -18,7 +18,7 @@ import {
   loginRequestSchema,
   selectOrganisationSchema,
   updatePreferencesSchema,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { assertNotDemoLocked } from '../../core/access-rules';
 import { SessionGuard } from '../../core/auth.guards';
 import { parse } from '../../core/validation';

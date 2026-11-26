@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { MOBILE_CLIENT_ID } from '@cafm/shared';
+import { MOBILE_CLIENT_ID } from '@fmstead/shared';
 import { signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;

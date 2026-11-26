@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import {
   WARRANTY_CLAIM_STATUSES,
   type WarrantyClaimItem,
@@ -12,7 +12,7 @@ import {
   type AssetTagItem,
   type AssetTagKind,
   type AssetWarrantyItem,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { formatDate } from '../../asset-labels';
 import styles from '../../assets.module.css';

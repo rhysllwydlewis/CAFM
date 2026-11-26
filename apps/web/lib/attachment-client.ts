@@ -1,4 +1,4 @@
-import { ASSET_ATTACHMENT_MEDIA_TYPES, ATTACHMENT_MAX_BYTES, PHOTO_MEDIA_TYPES } from '@cafm/shared';
+import { ASSET_ATTACHMENT_MEDIA_TYPES, ATTACHMENT_MAX_BYTES, PHOTO_MEDIA_TYPES } from '@fmstead/shared';
 
 export async function uploadFile(path: string, file: File, photosOnly: boolean) {
   const types: readonly string[] = photosOnly ? PHOTO_MEDIA_TYPES : ASSET_ATTACHMENT_MEDIA_TYPES;

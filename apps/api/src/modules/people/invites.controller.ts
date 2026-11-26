@@ -13,8 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { newToken, withTenant } from '@cafm/db';
-import { inviteCreateSchema, licenceForRole } from '@cafm/shared';
+import { newToken, withTenant } from '@fmstead/db';
+import { inviteCreateSchema, licenceForRole } from '@fmstead/shared';
 import { assertCanGrant, assertFullUserSeat } from '../../core/access-rules';
 import { assertNotDelegated } from '../../core/delegation';
 import { audit } from '../../core/audit';

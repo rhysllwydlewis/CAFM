@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { nextNumber } from '../src/core/config';
 import { createTestAccount, createTestTenant, DEMO_TENANT, seedId, signIn, startApp } from './helpers';
 

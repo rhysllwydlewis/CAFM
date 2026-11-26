@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import Link from 'next/link';
-import { Button, Icon } from '@cafm/ui';
-import type { NotificationItem } from '@cafm/shared';
+import { Button, Icon } from '@fmstead/ui';
+import type { NotificationItem } from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { t } from '@/lib/i18n';
 

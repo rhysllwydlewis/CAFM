@@ -1,5 +1,5 @@
 import { UnprocessableEntityException } from '@nestjs/common';
-import { Prisma } from '@cafm/db';
+import { Prisma } from '@fmstead/db';
 
 type Decimal = Prisma.Decimal;
 const MeterDecimal = Prisma.Decimal.clone({ precision: 32 });

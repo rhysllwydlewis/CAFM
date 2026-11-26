@@ -14,7 +14,7 @@ import {
 import argon2 from 'argon2';
 import { randomInt } from 'node:crypto';
 import type { Request } from 'express';
-import { withTenant } from '@cafm/db';
+import { withTenant } from '@fmstead/db';
 import {
   licenceForRole,
   passwordProblem,
@@ -22,7 +22,7 @@ import {
   shortUsername,
   usernameAccountCreateSchema,
   type UsernameAccountCredentials,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { assertCanGrant, assertFullUserSeat, assertNotDemoLocked } from '../../core/access-rules';
 import { assertAdministrable, assertNotDelegated } from '../../core/delegation';
 import { audit } from '../../core/audit';

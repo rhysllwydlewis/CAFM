@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { DEMO_PASSWORD, passwordProblem } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { DEMO_PASSWORD, passwordProblem } from '@fmstead/shared';
 import { DEMO_TENANT, STARTER_TENANT, ownerDb, signIn, startApp } from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });

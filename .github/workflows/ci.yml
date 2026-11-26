@@ -57,7 +57,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      - run: pnpm --filter @cafm/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @fmstead/web exec playwright install --with-deps chromium
       - run: pnpm e2e
 
   design:
@@ -90,6 +90,6 @@ jobs:
         with:
           context: .
           push: false
-          tags: cafm:ci
+          tags: fmstead:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max

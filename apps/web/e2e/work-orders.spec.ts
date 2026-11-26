@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { PrismaClient, seedId } from '@cafm/db';
+import { PrismaClient, seedId } from '@fmstead/db';
 
 async function signIn(page: Page, persona: string) {
   await page.getByLabel('Email or username').fill(persona + '@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 

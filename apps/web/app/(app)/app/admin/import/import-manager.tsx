@@ -2,8 +2,8 @@
 
 import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Icon } from '@cafm/ui';
-import type { ImportBatchRecord, ImportIssueRecord, ImportPreview } from '@cafm/shared';
+import { Button, Icon } from '@fmstead/ui';
+import type { ImportBatchRecord, ImportIssueRecord, ImportPreview } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 import { IMPORT_KINDS, type ImportKind } from './kinds';

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createTenant, PrismaClient } from '@cafm/db';
+import { createTenant, PrismaClient } from '@fmstead/db';
 
 // The collapsed choice is saved on a real person's account (the shared demo personas save none), so these tests sign in
 // as a throwaway administrator in an organisation of their own, which is a demo organisation so they also prove a real
@@ -258,7 +258,7 @@ test.describe('side menu in the demo', () => {
   test('the shared demo people save no choice, so it lasts only until the page is reloaded', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel('Email or username').fill('executive@demo.example');
-    await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+    await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).not.toHaveURL(/\/login/);
     await page.goto('/app');
@@ -284,7 +284,7 @@ test.describe('side menu while viewing as someone else', () => {
   test('can be collapsed for the visit, but nothing is saved on the other person’s account', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel('Email or username').fill('superuser@demo.example');
-    await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+    await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).not.toHaveURL(/\/login/);
     await page.goto('/app/admin/users');

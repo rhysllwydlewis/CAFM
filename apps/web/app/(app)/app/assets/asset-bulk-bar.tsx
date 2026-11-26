@@ -1,8 +1,8 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { Button } from '@cafm/ui';
-import { ASSET_STATUSES } from '@cafm/shared';
+import { Button } from '@fmstead/ui';
+import { ASSET_STATUSES } from '@fmstead/shared';
 import { BulkOutcome, useBulk } from '@/components/bulk-selection';
 import { STATUS_LABELS } from './asset-labels';
 import styles from './assets.module.css';

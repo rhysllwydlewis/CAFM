@@ -10,7 +10,7 @@ test.describe('sign in with a demo account', () => {
 
     await page.getByRole('button', { name: /^Technician\W+Tom Price/ }).click();
     await expect(page.getByLabel('Email or username')).toHaveValue('technician@demo.example');
-    await expect(page.getByLabel('Password', { exact: true })).toHaveValue('CafmDemo!2026');
+    await expect(page.getByLabel('Password', { exact: true })).toHaveValue('FmsDemo!2026');
     await expect(page.getByRole('button', { name: /^Technician\W+Tom Price/ })).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByRole('button', { name: 'Sign in' }).click();

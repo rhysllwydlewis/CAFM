@@ -1,5 +1,5 @@
 import 'server-only';
-import type { FieldDefinition } from '@cafm/config-engine';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import type {
   Checklist,
   ChecklistTemplateItem,
@@ -9,7 +9,7 @@ import type {
   WorkOrderRecord,
   WorkOrderSignature,
   WorkOrderSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { apiGet } from './api';
 
 export async function workOrderPage(params = ''): Promise<WorkOrderPage> {

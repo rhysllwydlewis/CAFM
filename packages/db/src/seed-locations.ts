@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { DEFAULT_SITE_CALENDAR, type LocationDetails, type SiteCalendar } from '@cafm/shared';
+import { DEFAULT_SITE_CALENDAR, type LocationDetails, type SiteCalendar } from '@fmstead/shared';
 import { seedId } from './ids';
 
 type SeedLocation = readonly [

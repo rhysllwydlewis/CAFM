@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GeoJSONSource, GeoJSONSourceSpecification, LngLatBoundsLike, Map } from 'maplibre-gl';
-import { Field, TextInput } from '@cafm/ui';
-import { LOCATION_STATUSES, type LocationRecord } from '@cafm/shared';
+import { Field, TextInput } from '@fmstead/ui';
+import { LOCATION_STATUSES, type LocationRecord } from '@fmstead/shared';
 import styles from './locations.module.css';
 
 const route = '/app/locations';

@@ -1,6 +1,13 @@
 import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
-import { hasAllLocationAccess, scopedLocations, withTenant, type Prisma, type PrismaClient, type Tx } from '@cafm/db';
-import { canContain, type LocationCrumb, type LocationKind, type Permission } from '@cafm/shared';
+import {
+  hasAllLocationAccess,
+  scopedLocations,
+  withTenant,
+  type Prisma,
+  type PrismaClient,
+  type Tx,
+} from '@fmstead/db';
+import { canContain, type LocationCrumb, type LocationKind, type Permission } from '@fmstead/shared';
 import { loadAccess } from '../../core/access';
 import { assertAccess } from '../../core/auth.guards';
 import type { AuthContext } from '../../core/session';

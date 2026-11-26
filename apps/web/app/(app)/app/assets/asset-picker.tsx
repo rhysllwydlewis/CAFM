@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { Button, Field, TextInput } from '@cafm/ui';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import styles from './assets.module.css';
 
 export interface PickerOption {

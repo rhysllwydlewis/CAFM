@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { AssetForm } from '../asset-form';
 import { assetClasses, assetCustomFields, assetDetail } from '../asset-data';

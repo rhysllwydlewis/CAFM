@@ -7,7 +7,7 @@ import {
   PASS_FAIL_LABELS,
   type Checklist,
   type ChecklistItem,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 
 type Answer = (list: Checklist, item: ChecklistItem, answer: string | null, note: string | null) => Promise<void>;
 

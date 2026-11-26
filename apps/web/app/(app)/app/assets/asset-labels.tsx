@@ -1,4 +1,4 @@
-import type { AssetRecord } from '@cafm/shared';
+import type { AssetRecord } from '@fmstead/shared';
 
 export const route = '/app/assets';
 export const validAssetId = (value: unknown): value is string =>

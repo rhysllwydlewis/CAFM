@@ -1,5 +1,5 @@
-import type { Tx } from '@cafm/db';
-import { inviteCreateSchema, licenceForRole } from '@cafm/shared';
+import type { Tx } from '@fmstead/db';
+import { inviteCreateSchema, licenceForRole } from '@fmstead/shared';
 import { assertCanGrant } from '../../core/access-rules';
 import { CsvError, parseCsv } from '../../core/csv-parse';
 import { IMPORT_MAX_ROWS, type ImportIssue } from '../../core/import-fields';

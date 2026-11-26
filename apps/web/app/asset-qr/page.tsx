@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button, Field, TextInput } from '@cafm/ui';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import { ScanResult } from './scan-result';
 
 export const metadata = { title: 'Find asset by tag', robots: { index: false } };

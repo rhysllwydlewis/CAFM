@@ -1,6 +1,6 @@
 /* Service worker for the technician app (/m). It keeps the app shell so the app opens without signal.
    Job data is never cached here: it lives in the app's own IndexedDB store and is cleared on sign out. */
-const SHELL = 'cafm-mobile-shell-v1';
+const SHELL = 'fmstead-mobile-shell-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 

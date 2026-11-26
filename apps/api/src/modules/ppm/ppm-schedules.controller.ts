@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { eligibleTechnician, generatePpm, nextNumber, Prisma, startingPoint, withTenant, type Tx } from '@cafm/db';
+import { eligibleTechnician, generatePpm, nextNumber, Prisma, startingPoint, withTenant, type Tx } from '@fmstead/db';
 import {
   bulkScheduleSchema,
   createPpmScheduleSchema,
@@ -27,7 +27,7 @@ import {
   setScheduleAssetsSchema,
   updatePpmScheduleSchema,
   WORK_ORDER_FINISHED,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import {
   assertAccess,

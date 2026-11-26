@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/jetbrains-mono';
-import '@cafm/ui/styles.css';
+import '@fmstead/ui/styles.css';
 import { parseTheme, SYSTEM_THEME_SCRIPT, THEME_COOKIE } from '@/lib/theme';
 
 export const metadata: Metadata = {

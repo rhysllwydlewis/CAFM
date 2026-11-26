@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { MobilePackJob } from '@cafm/shared';
+import type { MobilePackJob } from '@fmstead/shared';
 import { clearIfNotOwner, clearStore, readJobs, readSync } from '@/lib/mobile-store';
 import { useMembershipId } from './mobile-shell';
 import { flushOutbox, syncJobs, type SyncResult } from '@/lib/mobile-sync-client';

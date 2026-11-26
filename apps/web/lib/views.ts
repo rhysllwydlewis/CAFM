@@ -1,5 +1,5 @@
 import 'server-only';
-import type { SavedView, ViewEntity } from '@cafm/shared';
+import type { SavedView, ViewEntity } from '@fmstead/shared';
 import { apiGet } from './api';
 
 /** Params that describe where you are in a list, not what it is filtered by. They are never saved in a view. */

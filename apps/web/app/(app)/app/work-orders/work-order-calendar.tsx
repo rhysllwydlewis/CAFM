@@ -1,4 +1,4 @@
-import { WORK_ORDER_FINISHED, type WorkOrderSummary } from '@cafm/shared';
+import { WORK_ORDER_FINISHED, type WorkOrderSummary } from '@fmstead/shared';
 import { DAY_MS, MonthCalendar, ukDay, type CalendarEvent } from '@/components/month-calendar';
 
 /** A job due within this long is shown as due soon. */

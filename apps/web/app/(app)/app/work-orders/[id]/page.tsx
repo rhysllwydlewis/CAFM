@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { can, feature } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { workOrderCosts, workOrderForms, workOrderRecord } from '@/lib/work-orders';
 import { WorkOrderDetail } from '../work-order-detail';

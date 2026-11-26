@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { siteBusinessHoursOn, type SiteCalendar } from '@cafm/shared';
+import { siteBusinessHoursOn, type SiteCalendar } from '@fmstead/shared';
 
 /** The clock runs only in real instants inside the site's local opening windows. */
 export function requestDeadline(start: Date, minutes: number, calendar: SiteCalendar | null): Date | null {

@@ -1,5 +1,5 @@
-import { Field, TextInput } from '@cafm/ui';
-import type { FieldDefinition } from '@cafm/config-engine';
+import { Field, TextInput } from '@fmstead/ui';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import styles from './locations.module.css';
 
 const fieldName = (field: FieldDefinition) => 'custom-' + field.key;

@@ -17,8 +17,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
-import { withTenant, type Prisma, type Tx } from '@cafm/db';
+import { validateCustom, type FieldDefinition } from '@fmstead/config-engine';
+import { withTenant, type Prisma, type Tx } from '@fmstead/db';
 import {
   bulkAssetSchema,
   createAssetSchema,
@@ -30,7 +30,7 @@ import {
   type AssetPage,
   type AssetRecord,
   type AssetSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { activeCustomFields, mergeCustom, nextNumber, visibleCustom } from '../../core/config';

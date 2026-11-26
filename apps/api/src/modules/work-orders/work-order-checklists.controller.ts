@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Prisma } from '@cafm/db';
+import { withTenant, type Prisma } from '@fmstead/db';
 import {
   addChecklistSchema,
   answerChecklistItemSchema,
@@ -23,7 +23,7 @@ import {
   type ChecklistGate,
   type ChecklistItemInput,
   type ChecklistTemplateItem,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

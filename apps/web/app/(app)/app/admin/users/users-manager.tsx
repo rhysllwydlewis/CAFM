@@ -2,8 +2,8 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
-import type { AdminUser, SiteAccessOverview } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import type { AdminUser, SiteAccessOverview } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 import { SiteAccessCard } from './site-access';

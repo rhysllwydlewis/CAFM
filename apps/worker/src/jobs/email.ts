@@ -42,7 +42,7 @@ export async function sendEmail(email: EmailPayload, ctx: JobContext) {
     return;
   }
   await server.sendMail({
-    from: process.env.MAIL_FROM ?? 'FM Stead <no-reply@cafm.invalid>',
+    from: process.env.MAIL_FROM ?? 'FM Stead <no-reply@fmstead.invalid>',
     to: email.to,
     subject: email.subject,
     text: email.text,

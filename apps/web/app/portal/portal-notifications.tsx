@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Button } from '@cafm/ui';
+import { Button } from '@fmstead/ui';
 import { NotificationsDrawer } from '../(app)/shell/notifications';
 
 export function PortalNotifications() {

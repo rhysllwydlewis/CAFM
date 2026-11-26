@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { can } from '@cafm/shared';
-import type { FieldDefinition } from '@cafm/config-engine';
+import { can } from '@fmstead/shared';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { FieldsManager } from './fields-manager';

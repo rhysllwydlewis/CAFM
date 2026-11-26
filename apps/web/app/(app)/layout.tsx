@@ -8,7 +8,7 @@ import {
   type DisplaySettings,
   type OrganisationOption,
   type Plan,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { NAV } from '@/lib/nav';
 import { currentUser } from '@/lib/session';

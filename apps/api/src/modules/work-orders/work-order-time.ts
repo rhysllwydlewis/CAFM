@@ -1,5 +1,5 @@
-import type { Tx } from '@cafm/db';
-import { LABOUR_TYPES, timeCostMinor, type LabourType, type TimeEntry } from '@cafm/shared';
+import type { Tx } from '@fmstead/db';
+import { LABOUR_TYPES, timeCostMinor, type LabourType, type TimeEntry } from '@fmstead/shared';
 
 /**
  * The hourly rate for a kind of labour: the rate set for the person's role, or else the one for everyone.

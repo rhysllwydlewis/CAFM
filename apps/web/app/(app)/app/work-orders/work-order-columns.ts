@@ -1,4 +1,4 @@
-import type { GroupOption, ListColumn } from '@cafm/shared';
+import type { GroupOption, ListColumn } from '@fmstead/shared';
 
 export const WORK_ORDER_COLUMNS: ListColumn[] = [
   { key: 'ref', label: 'Ref', locked: true },

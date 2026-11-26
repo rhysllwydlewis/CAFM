@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Icon } from '@cafm/ui';
-import { can, feature } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { can, feature } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import {
   allLocations,

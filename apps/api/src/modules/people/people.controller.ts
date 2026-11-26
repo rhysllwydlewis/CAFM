@@ -12,8 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { withTenant } from '@cafm/db';
-import { licenceForRole, updateMemberSchema } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { licenceForRole, updateMemberSchema } from '@fmstead/shared';
 import {
   assertCanGrant,
   assertFullUserSeat,

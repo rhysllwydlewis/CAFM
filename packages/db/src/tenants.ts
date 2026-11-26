@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { PLANS } from '@cafm/shared';
+import { PLANS } from '@fmstead/shared';
 import { seedRoles } from './seed';
 import { newToken } from './tokens';
 

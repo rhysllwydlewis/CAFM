@@ -15,8 +15,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant } from '@cafm/db';
-import { createRoleSchema, updateRoleSchema } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { createRoleSchema, updateRoleSchema } from '@fmstead/shared';
 import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';

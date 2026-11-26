@@ -31,7 +31,7 @@ const login = (sel = -1) => `<div class="auth">
       ${btn('Sign in', { v: 'primary', lg: true, block: true })}
     </div>
     <div class="row" style="gap:12px;color:var(--text-faint);font-size:12px"><span class="grow" style="height:1px;background:var(--border)"></span>DEMO ACCOUNTS<span class="grow" style="height:1px;background:var(--border)"></span></div>
-    <div class="col" style="gap:10px"><span class="sm muted">Click a role to fill in its details. Password for all: <span class="code">CafmDemo!2026</span></span>
+    <div class="col" style="gap:10px"><span class="sm muted">Click a role to fill in its details. Password for all: <span class="code">FmsDemo!2026</span></span>
       <div class="grid g-2" style="gap:8px">${demoRoles.map(([r, u, ic, d], i) => `<div class="demo-card ${i === sel ? 'on' : ''}"><span class="row between"><span class="r"><span style="color:var(--primary)">${I(ic, 's14')}</span>${r}</span><span class="u">${u}@demo.example</span></span><span class="xs faint">${d}</span></div>`).join('')}</div>
       <a class="sm medium">Show all 16 demo roles ▾</a>
     </div>

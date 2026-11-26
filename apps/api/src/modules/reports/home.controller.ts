@@ -1,8 +1,8 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { Temporal } from '@js-temporal/polyfill';
-import { withTenant } from '@cafm/db';
-import { WORK_ORDER_FINISHED, type Feature, type HomeSummary, type Permission } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { WORK_ORDER_FINISHED, type Feature, type HomeSummary, type Permission } from '@fmstead/shared';
 import type { Access } from '../../core/session';
 import { PermissionGuard, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

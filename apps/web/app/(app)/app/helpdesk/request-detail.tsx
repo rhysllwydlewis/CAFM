@@ -1,15 +1,15 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
-import type { FieldDefinition } from '@cafm/config-engine';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import { customFieldValue } from '../locations/location-custom-fields';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import {
   acceptsRequestComments,
   REQUEST_CHANNEL_LABELS,
   type RequestRecord,
   type RequestTypeChoice,
   type WorkOrderSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { AttachmentPanel } from '@/components/attachment-panel';
 import { attachmentList } from '@/lib/attachments';
 import { requestTime } from '@/lib/helpdesk-format';

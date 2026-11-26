@@ -9,7 +9,7 @@ import {
   nextOccurrenceAfter,
   type ChecklistGate,
   type PpmCalendarUnit,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import type { Tx } from './index';
 import { eligibleTechnician } from './eligibility';
 import { nextNumber } from './numbering';

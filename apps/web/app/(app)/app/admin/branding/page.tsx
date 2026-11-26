@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { can, feature, type BrandingView } from '@cafm/shared';
+import { can, feature, type BrandingView } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { BrandingManager } from './branding-manager';

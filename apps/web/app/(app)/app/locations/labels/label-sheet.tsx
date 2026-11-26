@@ -2,8 +2,8 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Button, Checkbox } from '@cafm/ui';
-import type { LocationRecord } from '@cafm/shared';
+import { Button, Checkbox } from '@fmstead/ui';
+import type { LocationRecord } from '@fmstead/shared';
 import styles from '../locations.module.css';
 
 const subscribe = () => () => undefined;

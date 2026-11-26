@@ -7,8 +7,8 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Tx } from '@cafm/db';
-import { acceptsRequestComments, ATTACHMENT_LIMIT, type AttachmentItem } from '@cafm/shared';
+import { withTenant, type Tx } from '@fmstead/db';
+import { acceptsRequestComments, ATTACHMENT_LIMIT, type AttachmentItem } from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';

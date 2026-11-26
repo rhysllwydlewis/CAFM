@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { InviteDetails } from '@cafm/shared';
+import type { InviteDetails } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { AuthCard } from '../../auth-card';
 import { AcceptForm } from './accept-form';

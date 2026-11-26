@@ -15,7 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Prisma, type Tx } from '@cafm/db';
+import { withTenant, type Prisma, type Tx } from '@fmstead/db';
 import {
   defaultRequestPriority,
   NOTIFICATION_EVENTS,
@@ -26,7 +26,7 @@ import {
   updateRequestMailboxSchema,
   updateRequestTypeSchema,
   type RequestNotificationEvent,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { recordVersion } from '../../core/config';

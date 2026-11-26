@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Checkbox, Field, TextInput } from '@cafm/ui';
+import { Button, Checkbox, Field, TextInput } from '@fmstead/ui';
 import {
   WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_PAUSE_REASONS,
@@ -13,7 +13,7 @@ import {
   type WorkOrderPauseReason,
   type WorkOrderRecord,
   type WorkOrderStatus,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { requestTime } from '@/lib/helpdesk-format';
 import { RecordPicker } from '../helpdesk/record-picker';

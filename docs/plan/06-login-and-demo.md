@@ -71,7 +71,7 @@ The sign-in page remains the entry point to the authenticated app. The public ho
 
 The demo tenant runs on **Enterprise with every add-on and the FM-provider edition enabled**, so every feature is visible. A second, smaller demo tenant on the **Starter** plan shows prospects what the entry tier looks like (locked features with upgrade prompts).
 
-All demo accounts share the password **`CafmDemo!2026`** (demo environment only; seeded directly, so exempt from the breached-password check, but meets the 12-character rule).
+All demo accounts share the password **`FmsDemo!2026`** (demo environment only; seeded directly, so exempt from the breached-password check, but meets the 12-character rule).
 
 | Demo persona | Username | Role | Lands on |
 |-----------|----------|------|----------|

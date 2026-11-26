@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
-import type { Tx } from '@cafm/db';
-import { escalations, isAdminPermission, isPermission } from '@cafm/shared';
+import type { Tx } from '@fmstead/db';
+import { escalations, isAdminPermission, isPermission } from '@fmstead/shared';
 import type { Access } from './session';
 
 /**

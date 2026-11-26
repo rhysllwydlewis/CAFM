@@ -1,7 +1,7 @@
 import { Controller, Get, NotFoundException, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Prisma } from '@cafm/db';
-import { assetScanSchema, type AssetScan, type PrintableAssetTag } from '@cafm/shared';
+import { withTenant, type Prisma } from '@fmstead/db';
+import { assetScanSchema, type AssetScan, type PrintableAssetTag } from '@fmstead/shared';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';

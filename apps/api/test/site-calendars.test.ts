@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SITE_CALENDAR, bankHolidays, siteBusinessHoursOn, siteCalendarSchema } from '@cafm/shared';
+import { DEFAULT_SITE_CALENDAR, bankHolidays, siteBusinessHoursOn, siteCalendarSchema } from '@fmstead/shared';
 
 describe('site business calendars', () => {
   it('uses the bank holiday division for the site jurisdiction and honours opt-outs', () => {

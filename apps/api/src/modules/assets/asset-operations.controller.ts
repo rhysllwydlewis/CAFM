@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { Prisma, withTenant } from '@cafm/db';
+import { Prisma, withTenant } from '@fmstead/db';
 import {
   createAssetMeterSchema,
   createAssetTagSchema,
@@ -28,7 +28,7 @@ import {
   type AssetWarrantyItem,
   type WarrantyInput,
   type WarrantyClaimItem,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

@@ -1,6 +1,6 @@
 import type { Queue } from 'bullmq';
-import { generatePpm, PPM_TIME_ZONE, withTenant, type PrismaClient } from '@cafm/db';
-import { localDate, resolveEntitlements } from '@cafm/shared';
+import { generatePpm, PPM_TIME_ZONE, withTenant, type PrismaClient } from '@fmstead/db';
+import { localDate, resolveEntitlements } from '@fmstead/shared';
 import { register } from '../handlers';
 import type { JobData } from '../index';
 

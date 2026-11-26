@@ -1,8 +1,8 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { Button } from '@cafm/ui';
-import { PPM_PRIORITY_NAMES, type PpmAssigneeOption } from '@cafm/shared';
+import { Button } from '@fmstead/ui';
+import { PPM_PRIORITY_NAMES, type PpmAssigneeOption } from '@fmstead/shared';
 import { BulkOutcome, useBulk } from '@/components/bulk-selection';
 import styles from './ppm.module.css';
 

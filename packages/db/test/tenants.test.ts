@@ -29,9 +29,9 @@ describe('tenant CLI operations', () => {
       slug,
       plan: 'professional',
       adminEmail: 'Head@CLI-test.example',
-      appUrl: 'https://cafm.example/',
+      appUrl: 'https://fmstead.example/',
     });
-    expect(inviteUrl).toMatch(/^https:\/\/cafm\.example\/accept-invite\/[A-Za-z0-9_-]+$/);
+    expect(inviteUrl).toMatch(/^https:\/\/fmstead\.example\/accept-invite\/[A-Za-z0-9_-]+$/);
     expect(await db.role.count({ where: { tenantId } })).toBe(15);
     expect(await db.invite.findFirst({ where: { tenantId } })).toMatchObject({
       email: 'head@cli-test.example',

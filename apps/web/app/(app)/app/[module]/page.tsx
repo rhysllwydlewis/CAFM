@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Icon } from '@cafm/ui';
-import { can, feature, FEATURES, PLAN_LABELS, planFor, type Plan } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { can, feature, FEATURES, PLAN_LABELS, planFor, type Plan } from '@fmstead/shared';
 import { findNavItem } from '@/lib/nav';
 import { currentUser } from '@/lib/session';
 

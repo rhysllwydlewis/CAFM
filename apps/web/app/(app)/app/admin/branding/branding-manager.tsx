@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
-import { contrastWithWhite, type BrandingView } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import { contrastWithWhite, type BrandingView } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 
 /** Branding: the accent colour for buttons, and the message on the sign-in screen. */

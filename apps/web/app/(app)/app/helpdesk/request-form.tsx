@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Field, Icon, TextInput } from '@cafm/ui';
-import type { FieldDefinition } from '@cafm/config-engine';
+import { Button, Field, Icon, TextInput } from '@fmstead/ui';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import {
   ATTACHMENT_MAX_BYTES,
   PHOTO_MEDIA_TYPES,
@@ -12,7 +12,7 @@ import {
   type ReportLocation,
   type RequestCatalogue,
   type RequestSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { uploadFile } from '@/lib/attachment-client';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { LocationCustomFields, readCustomFields } from '../locations/location-custom-fields';
@@ -68,8 +68,8 @@ export function RequestForm({
     const field = descriptionField.current;
     if (!draftId || !field || field.value) return;
     try {
-      field.value = sessionStorage.getItem('cafm-request-' + draftId) ?? '';
-      sessionStorage.removeItem('cafm-request-' + draftId);
+      field.value = sessionStorage.getItem('fmstead-request-' + draftId) ?? '';
+      sessionStorage.removeItem('fmstead-request-' + draftId);
     } catch {
       // The form is still usable when storage is disabled.
     }

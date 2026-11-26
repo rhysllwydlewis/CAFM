@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { can, feature } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
 import { ppmTemplates } from '@/lib/ppm';
 import { currentUser } from '@/lib/session';
 import { TaskForm } from '../../task-form';

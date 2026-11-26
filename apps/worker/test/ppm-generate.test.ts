@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, expect, it } from 'vitest';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { addDays } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { addDays } from '@fmstead/shared';
 import { generatePpmForTenant } from '../src/jobs/ppm-generate';
 
 const owner = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });

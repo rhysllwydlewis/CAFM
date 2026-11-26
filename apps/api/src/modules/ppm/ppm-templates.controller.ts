@@ -14,8 +14,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Prisma } from '@cafm/db';
-import { ppmTaskTemplateSchema, updatePpmTaskTemplateSchema } from '@cafm/shared';
+import { withTenant, type Prisma } from '@fmstead/db';
+import { ppmTaskTemplateSchema, updatePpmTaskTemplateSchema } from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

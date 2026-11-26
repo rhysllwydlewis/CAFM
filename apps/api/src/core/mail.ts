@@ -1,4 +1,4 @@
-import type { PrismaClient, Tx } from '@cafm/db';
+import type { PrismaClient, Tx } from '@fmstead/db';
 import { enqueue } from './audit';
 
 /** An email for the worker to send (topic email.send, apps/worker/src/jobs/email.ts). */

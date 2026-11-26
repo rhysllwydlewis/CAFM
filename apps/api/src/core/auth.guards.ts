@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { withTenant } from '@cafm/db';
-import { type Feature, type Permission, planFor } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { type Feature, type Permission, planFor } from '@fmstead/shared';
 import { loadAccess } from './access';
 import { PrismaService } from './prisma.service';
 import { hashToken, SESSION_COOKIE, type Access } from './session';
@@ -100,8 +100,8 @@ export class TenantGuard implements CanActivate {
   }
 }
 
-const PERMISSION_KEY = 'cafm:permission';
-const FEATURE_KEY = 'cafm:feature';
+const PERMISSION_KEY = 'fmstead:permission';
+const FEATURE_KEY = 'fmstead:feature';
 /** The member's role must grant this permission (doc 03). */
 export const RequirePermission = (permission: Permission) => SetMetadata(PERMISSION_KEY, permission);
 /** The tenant's plan or add-ons must include this feature (ADR 0006). */

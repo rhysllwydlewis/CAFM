@@ -1,7 +1,7 @@
 'use client';
 
-import { describeOutboxEntry } from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+import { describeOutboxEntry } from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { removeFromOutbox, retryOutboxEntry } from '@/lib/mobile-store';
 import { syncedText, useJobs } from '../use-jobs';
 import { useOutbox } from '../use-outbox';

@@ -1,5 +1,5 @@
-import type { Tx } from '@cafm/db';
-import type { RequestStatus } from '@cafm/shared';
+import type { Tx } from '@fmstead/db';
+import type { RequestStatus } from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
 import { notifyLinkedRequesters, notifyRequester } from '../helpdesk/request-notifications';

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, expect, it } from 'vitest';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 import { notifyExpiringWarranties } from '../src/jobs/warranty-alerts';
 
 const owner = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });

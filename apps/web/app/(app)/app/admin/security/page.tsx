@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { can, type SecuritySettingsView } from '@cafm/shared';
+import { can, type SecuritySettingsView } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { SecurityManager } from './security-manager';

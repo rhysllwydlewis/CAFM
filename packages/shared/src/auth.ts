@@ -109,6 +109,7 @@ const COMMON_PASSWORDS = new Set([
   'passw0rd1234',
   'changeme1234',
   'cafmdemo2026',
+  'fmsdemo2026',
 ]);
 
 /**
@@ -152,7 +153,7 @@ export interface InviteDetails {
 }
 
 /** The mobile PWA's OAuth 2.0 client (P1-06a). There is one first-party public client; PKCE protects it. */
-export const MOBILE_CLIENT_ID = 'cafm-pwa';
+export const MOBILE_CLIENT_ID = 'fmstead-pwa';
 /** Access tokens are short; the refresh token rotates on every use. */
 export const MOBILE_ACCESS_TOKEN_SECONDS = 15 * 60;
 export const MOBILE_AUTH_CODE_SECONDS = 60;

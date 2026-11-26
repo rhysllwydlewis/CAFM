@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { LoginResponse } from '@cafm/shared';
-import { Button, Checkbox, Field, Icon, TextInput } from '@cafm/ui';
+import type { LoginResponse } from '@fmstead/shared';
+import { Button, Checkbox, Field, Icon, TextInput } from '@fmstead/ui';
 import { postJson } from '@/lib/client';
 import { NewPasswordFields } from '../../new-password-fields';
 

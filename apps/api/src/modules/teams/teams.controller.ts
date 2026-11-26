@@ -15,8 +15,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Tx } from '@cafm/db';
-import { createTeamSchema, updateTeamSchema, type Team } from '@cafm/shared';
+import { withTenant, type Tx } from '@fmstead/db';
+import { createTeamSchema, updateTeamSchema, type Team } from '@fmstead/shared';
 import { assertNotSiteLimited } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
