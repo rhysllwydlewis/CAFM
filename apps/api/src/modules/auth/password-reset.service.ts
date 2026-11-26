@@ -56,11 +56,11 @@ export class PasswordResetService {
       });
       await queuePlatformEmail(tx, {
         to: account.email!,
-        subject: 'Reset your CAFM password',
+        subject: 'Reset your FM Stead password',
         text: [
           `Hello ${account.name},`,
           '',
-          'Someone asked to reset the password for your CAFM account. If it was you, open this link within 30 minutes:',
+          'Someone asked to reset the password for your FM Stead account. If it was you, open this link within 30 minutes:',
           '',
           `${appUrl()}/reset-password/${token}`,
           '',

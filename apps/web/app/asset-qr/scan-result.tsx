@@ -41,7 +41,7 @@ export async function ScanResult({ query }: { query: { id: string } | { code?: s
             Try another tag code
           </Link>
           <Link className="btn" href="/app">
-            Go to CAFM
+            Go to FM Stead
           </Link>
         </div>
       </section>

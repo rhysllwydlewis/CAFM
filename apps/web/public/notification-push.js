@@ -12,9 +12,9 @@ self.addEventListener('push', (event) => {
   const path = asset || job || /^\/portal\/requests\/[a-f0-9-]{36}$/i.test(payload.path) ? payload.path : '/app';
   event.waitUntil(
     self.registration.showNotification(
-      asset ? 'CAFM asset update' : job ? 'CAFM work order alert' : 'CAFM request update',
+      asset ? 'FM Stead asset update' : job ? 'FM Stead work order alert' : 'FM Stead request update',
       {
-        body: 'Open CAFM to see your latest update.',
+        body: 'Open FM Stead to see your latest update.',
         tag: 'cafm-' + payload.id,
         data: { path },
       },

@@ -15,7 +15,7 @@ export default async function LocationQrPage({ params }: { params: Promise<{ id:
   const response = await apiGet('/auth/me');
   if (response.status === 401) redirect('/login?next=' + next);
   if (response.status === 403) redirect('/select-organisation?next=' + next);
-  if (!response.ok) throw new Error('Could not load your CAFM session.');
+  if (!response.ok) throw new Error('Could not load your FM Stead session.');
   const user = (await response.json()) as CurrentUser;
 
   if (can(user, 'requests.create') && feature(user.entitlements, 'helpdesk') && (await reportLocation(id))) {
@@ -37,7 +37,7 @@ export default async function LocationQrPage({ params }: { params: Promise<{ id:
             Switch organisation
           </Link>
           <Link href="/app" className="btn">
-            Go to CAFM
+            Go to FM Stead
           </Link>
         </div>
       </div>

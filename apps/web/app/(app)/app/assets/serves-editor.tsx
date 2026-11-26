@@ -44,7 +44,7 @@ export function ServesEditor({
       router.replace(`${route}/${asset.id}`);
       router.refresh();
     } catch {
-      setError('Could not reach CAFM. Try saving again.');
+      setError('Could not reach FM Stead. Try saving again.');
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,6 @@
 {
-  "name": "CAFM technician app",
-  "short_name": "CAFM",
+  "name": "FM Stead technician app",
+  "short_name": "FMS",
   "description": "Your jobs, with or without signal.",
   "start_url": "/m",
   "scope": "/m",

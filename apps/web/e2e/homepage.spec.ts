@@ -13,11 +13,11 @@ async function scrollFilm(page: Page, screens: number) {
 const caption = (page: Page, id: string) => page.locator(`[data-caption="${id}"]`);
 const stage = (page: Page) => page.locator('[data-film-stage]');
 
-test('the opening says what CAFM is and offers the demo and sign in', async ({ page }) => {
+test('the opening says what FM Stead is and offers the demo and sign in', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'One day at Cardiff HQ.' })).toBeVisible();
   const intro = page.locator('[data-intro]');
-  await expect(intro.getByText('CAFM runs the helpdesk, work orders, planned maintenance')).toBeVisible();
+  await expect(intro.getByText('FM Stead runs the helpdesk, work orders, planned maintenance')).toBeVisible();
   await expect(intro.getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/login#demo-heading');
   await expect(intro.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login');
   await expect(page.locator('[data-time]')).toHaveText('05:00');
@@ -80,7 +80,7 @@ test('the film ends on paper with the demo and sign-in links', async ({ page }) 
   await expect(page.locator('main')).toHaveAttribute('data-world', 'paper');
   await expect(final.getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/login#demo-heading');
   await expect(final.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login');
-  await expect(final.getByRole('list', { name: 'In CAFM' }).getByRole('listitem')).toHaveCount(5);
+  await expect(final.getByRole('list', { name: 'In FM Stead' }).getByRole('listitem')).toHaveCount(5);
 });
 
 test('with reduced motion at 320px the film steps between frames and fits the screen', async ({ page }) => {

@@ -56,8 +56,8 @@ export async function createTenant(
         topic: 'email.send',
         payload: {
           to: email,
-          subject: `Your CAFM organisation ${input.name} is ready`,
-          text: `Hello,\n\n${input.name} has been set up on CAFM and you are its Super User.\n\nAccept the invitation (the link works for 7 days): ${inviteUrl}`,
+          subject: `Your FM Stead organisation ${input.name} is ready`,
+          text: `Hello,\n\n${input.name} has been set up on FM Stead and you are its Super User.\n\nAccept the invitation (the link works for 7 days): ${inviteUrl}`,
           capture: input.demo ?? false,
         },
       },
