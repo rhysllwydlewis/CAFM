@@ -583,6 +583,13 @@ button.tb-icon:hover {
     flex: 1;
     min-width: 0;
   }
+  /* Closed: the tile mark stands for the name, so the account name keeps its room beside Sign out. */
+  .app > .nav:not(.shell-nav-open) .brand .brand-mark {
+    display: block;
+  }
+  .app > .nav:not(.shell-nav-open) .brand .brand-word {
+    display: none;
+  }
   .user-menu {
     min-width: 0;
   }
