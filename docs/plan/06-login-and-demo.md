@@ -1,6 +1,6 @@
 # 06 · Login Page & Demo Environment
 
-The sign-in page remains the entry point to the authenticated app. The public homepage introduces CAFM and includes an interactive sample work order. The wider marketing and onboarding plan remains in Phase 5.
+The sign-in page remains the entry point to the authenticated app. The public homepage introduces FM Stead and includes an interactive sample work order. The wider marketing and onboarding plan remains in Phase 5.
 
 ## Routes
 

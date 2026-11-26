@@ -10,11 +10,11 @@ Duplicate candidates share a category and location within the request type’s t
 
 ## Email intake
 
-Create an inbound mailbox with a recipient address, default reportable location and a request type. The trusted mail connector posts normalised JSON to `POST /api/helpdesk/inbound/{organisation-slug}/{mailbox-id}` with an `Authorization: Bearer …` header. Set the connector and CAFM to the same `HELPDESK_INBOUND_TOKEN` of at least 32 characters.
+Create an inbound mailbox with a recipient address, default reportable location and a request type. The trusted mail connector posts normalised JSON to `POST /api/helpdesk/inbound/{organisation-slug}/{mailbox-id}` with an `Authorization: Bearer …` header. Set the connector and FM Stead to the same `HELPDESK_INBOUND_TOKEN` of at least 32 characters.
 
-The connector passes `to`, `from`, `messageId`, optional `inReplyTo`, `subject` and plain `text`. Configure the connector to pass authenticated inbound sender identities. CAFM routes to the matching enabled mailbox, deduplicates delivery by mailbox, sender and message ID, and threads a matching sender’s reply while the request accepts comments. Incoming messages go to triage. Outbound email uses the existing SMTP settings and demo email is captured.
+The connector passes `to`, `from`, `messageId`, optional `inReplyTo`, `subject` and plain `text`. Configure the connector to pass authenticated inbound sender identities. FM Stead routes to the matching enabled mailbox, deduplicates delivery by mailbox, sender and message ID, and threads a matching sender’s reply while the request accepts comments. Incoming messages go to triage. Outbound email uses the existing SMTP settings and demo email is captured.
 
-The connector should also set `autoSubmitted: true` on auto-replies and bounces (any `Auto-Submitted` header other than `no`, or a message with an empty return path). CAFM ignores those, and mail sent from the mailbox’s own address, so two systems can’t answer each other in a loop. Email sent by CAFM carries `Auto-Submitted: auto-generated` so well-behaved auto-responders leave it alone.
+The connector should also set `autoSubmitted: true` on auto-replies and bounces (any `Auto-Submitted` header other than `no`, or a message with an empty return path). FM Stead ignores those, and mail sent from the mailbox’s own address, so two systems can’t answer each other in a loop. Email sent by FM Stead carries `Auto-Submitted: auto-generated` so well-behaved auto-responders leave it alone.
 
 ## Notifications
 

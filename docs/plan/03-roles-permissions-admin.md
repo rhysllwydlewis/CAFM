@@ -7,7 +7,7 @@ The word "super user" covers two different people, and we keep them separate:
 | Level | Who | Scope | Can |
 |-------|-----|-------|-----|
 | **Platform Admin** (vendor staff) | Us | All tenants | Create/suspend tenants, manage plans and billing, publish global templates, and (with the tenant's consent, time-boxed and audited) access a tenant for support. **Cannot** browse tenant data without that consent. |
-| **Super User** (a.k.a. Tenant Owner) | The customer's lead administrator | Their tenant (their "version of CAFM") | **Everything inside their tenant**: configure every module, create and manage all users and roles, control branding, security, integrations, data and subscription. Cannot be locked out by other admins, and each tenant must always have at least one. |
+| **Super User** (a.k.a. Tenant Owner) | The customer's lead administrator | Their tenant (their "version of FM Stead") | **Everything inside their tenant**: configure every module, create and manage all users and roles, control branding, security, integrations, data and subscription. Cannot be locked out by other admins, and each tenant must always have at least one. |
 
 A tenant can have several Super Users. Ownership transfer requires the current owner's confirmation and a re-authentication step.
 

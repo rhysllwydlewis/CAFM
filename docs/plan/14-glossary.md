@@ -6,6 +6,7 @@ Terms used across the plan, screens and code. When a term appears in the UI it u
 
 | Term | Meaning |
 |------|---------|
+| **FM Stead** | The product's name. **FMS** is its short form, for tight spaces such as a collapsed menu or an app icon |
 | **CAFM** | Computer-Aided Facilities Management: software to run buildings, assets and services |
 | **IWMS** | Integrated Workplace Management System: CAFM plus real estate, space and projects |
 | **CMMS** | Computerised Maintenance Management System: maintenance-focused subset of CAFM |

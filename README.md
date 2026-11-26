@@ -1,4 +1,4 @@
-# CAFM
+# FM Stead
 
 A cloud-based, multi-tenant Computer-Aided Facilities Management platform: helpdesk, reactive and planned maintenance, assets, statutory compliance, contractors, inventory, purchasing, finance, space, workplace booking, visitors, energy, real estate, capital planning, H&S, IoT, analytics and AI.
 
