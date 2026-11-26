@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import type { OrganisationOption } from '@cafm/shared';
-import { Logo } from '@cafm/ui';
+import { Wordmark } from '@cafm/ui';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/next-path';
 import { OrganisationList, SignOutLink } from './organisation-list';
@@ -19,9 +19,8 @@ export default async function SelectOrganisationPage({ searchParams }: { searchP
     <div className="center-screen">
       <div className="card" style={{ width: 460, maxWidth: '100%', boxShadow: 'var(--shadow-md)' }}>
         <div className="card-b" style={{ padding: 28 }}>
-          <div className="row" style={{ gap: 10, marginBottom: 18 }}>
-            <Logo size={28} />
-            <b>CAFM</b>
+          <div style={{ marginBottom: 18 }}>
+            <Wordmark height={26} />
           </div>
           <h1 className="dialog-title">Choose an organisation</h1>
           <div className="muted sm" style={{ margin: '4px 0 18px' }}>

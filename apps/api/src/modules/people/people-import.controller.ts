@@ -142,11 +142,11 @@ export class PeopleImportController {
         created.push(invite.id);
         await queueTenantEmail(tx, tenantId, {
           to: item.email,
-          subject: `${auth.account.name} invited you to ${membership.tenant.name} on CAFM`,
+          subject: `${auth.account.name} invited you to ${membership.tenant.name} on FM Stead`,
           text: [
             'Hello,',
             '',
-            `${auth.account.name} has invited you to join ${membership.tenant.name} on CAFM as ${item.roleName}.`,
+            `${auth.account.name} has invited you to join ${membership.tenant.name} on FM Stead as ${item.roleName}.`,
             '',
             `Accept the invitation (the link works for 7 days): ${appUrl()}/accept-invite/${token}`,
           ].join('\n'),

@@ -1,4 +1,4 @@
-# CAFM Platform: Master Plan
+# FM Stead: Master Plan
 
 > Status: **Draft v1**, 21 Nov 2026. Working title: "the Platform" until the product is named.
 
@@ -27,7 +27,7 @@ Also: [build progress](../PROGRESS.md) (where the build is, a checklist per phas
 
 ## Executive summary
 
-**What:** A cloud-based, multi-tenant CAFM (Computer-Aided Facilities Management) platform delivered through the browser and a mobile app. It covers the whole facilities lifecycle: helpdesk, reactive and planned maintenance, assets, statutory compliance, contractors, inventory, purchasing, finance, space, workplace booking, visitors, energy and sustainability, real estate, capital planning, health & safety, soft services, IoT, analytics and AI.
+**What:** FM Stead is a cloud-based, multi-tenant CAFM (Computer-Aided Facilities Management) platform delivered through the browser and a mobile app. It covers the whole facilities lifecycle: helpdesk, reactive and planned maintenance, assets, statutory compliance, contractors, inventory, purchasing, finance, space, workplace booking, visitors, energy and sustainability, real estate, capital planning, health & safety, soft services, IoT, analytics and AI.
 
 **Who:** UK mid-market and enterprise organisations to start with: in-house estates teams (education/MATs, healthcare, housing, retail, commercial property, local government) and **FM service providers** who manage many client estates from one system. Sector packs (housing, healthcare, education and others) tailor the product to each.
 

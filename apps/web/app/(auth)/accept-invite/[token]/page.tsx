@@ -48,7 +48,7 @@ export default async function AcceptInvitePage({ params }: { params: Promise<{ t
       </p>
       {invite.accountExists && !signedIn ? (
         <>
-          <p style={{ margin: 0 }}>You already have a CAFM account. Sign in as {invite.email} to accept.</p>
+          <p style={{ margin: 0 }}>You already have an FM Stead account. Sign in as {invite.email} to accept.</p>
           <Link className="btn primary lg block" href={`/login?next=${encodeURIComponent(`/accept-invite/${token}`)}`}>
             Sign in to accept
           </Link>

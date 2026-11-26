@@ -1,6 +1,6 @@
 # Changelog
 
-What changed for people using CAFM, newest first. Each pull request that changes behaviour adds a line under "Unreleased".
+What changed for people using FM Stead, newest first. Each pull request that changes behaviour adds a line under "Unreleased".
 
 ## Unreleased
 
@@ -88,6 +88,7 @@ What changed for people using CAFM, newest first. Each pull request that changes
 
 ### Changed
 
+- The product is now called FM Stead (short form FMS). The name replaces "CAFM" in the side menu, the sign-in pages, the homepage, page titles, the phone app name, emails, notifications and job sheets, and the logo is the new FM Stead wordmark. Sign-in details, saved settings and the demo password are not affected.
 - The Light, Dark and System theme buttons in the account menu now look like the rest of the interface (a soft track with a raised chip for the chosen one) instead of plain browser buttons.
 
 - The side menu has a rounded scrollbar in the navigation colours. It is wide enough to grab easily, fades out until you hover over the menu, and takes the petrol accent as you drag it.

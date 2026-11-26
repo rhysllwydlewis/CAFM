@@ -88,11 +88,11 @@ export class InvitesController {
       });
       await queueTenantEmail(tx, tenantId, {
         to: input.email,
-        subject: `${auth.account.name} invited you to ${membership.tenant.name} on CAFM`,
+        subject: `${auth.account.name} invited you to ${membership.tenant.name} on FM Stead`,
         text: [
           'Hello,',
           '',
-          `${auth.account.name} has invited you to join ${membership.tenant.name} on CAFM as ${role.name}.`,
+          `${auth.account.name} has invited you to join ${membership.tenant.name} on FM Stead as ${role.name}.`,
           '',
           `Accept the invitation (the link works for 7 days): ${appUrl()}/accept-invite/${token}`,
         ].join('\n'),

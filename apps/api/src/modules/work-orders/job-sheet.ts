@@ -84,7 +84,7 @@ export function renderJobSheet(data: JobSheetData): Promise<Buffer> {
     size: 'A4',
     margin: 40,
     bufferPages: true,
-    info: { Title: pdfText(`Job sheet ${data.number}`), Author: pdfText(data.organisation), Creator: 'CAFM' },
+    info: { Title: pdfText(`Job sheet ${data.number}`), Author: pdfText(data.organisation), Creator: 'FM Stead' },
   });
   const chunks: Buffer[] = [];
   doc.on('data', (chunk: Buffer) => chunks.push(chunk));

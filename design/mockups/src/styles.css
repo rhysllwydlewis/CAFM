@@ -1,4 +1,4 @@
-/* Component styles for the CAFM mockups. These map 1:1 to the components the
+/* Component styles for the FM Stead mockups. These map 1:1 to the components the
    web app will implement (shadcn/ui + Tailwind themed from tokens.css). */
 @import url("../../tokens/tokens.css");
 
@@ -46,7 +46,12 @@ svg.i.s24 { width: 24px; height: 24px; } svg.i.s32 { width: 32px; height: 32px; 
 .nav { background: var(--nav-bg); color: var(--nav-text); display: flex; flex-direction: column; border-right: 1px solid var(--nav-border); }
 .nav-top { padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--nav-text-strong); font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: -0.01em; padding: 2px 4px; }
-.brand svg { width: 28px; height: 28px; }
+/* The name when the menu is open, and the tile mark when it is collapsed to a rail. */
+.brand .brand-mark { display: none; width: 28px; height: 28px; }
+.brand .brand-mark svg { display: block; width: 28px; height: 28px; }
+.brand .brand-word { display: block; line-height: 0; }
+.nav-collapsed .brand .brand-mark { display: block; }
+.nav-collapsed .brand .brand-word { display: none; }
 .tenant { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-md); background: var(--nav-bg-elevated); border: 1px solid var(--nav-border); }
 .tenant .t-logo { width: 26px; height: 26px; border-radius: 6px; background: #2A3340; color: #E7EBEF; display: grid; place-items: center; font-size: 11px; font-weight: 600; }
 .tenant .t-name { color: var(--nav-text-strong); font-size: 13px; font-weight: 500; line-height: 16px; }
@@ -93,7 +98,7 @@ svg.i.s24 { width: 24px; height: 24px; } svg.i.s32 { width: 32px; height: 32px; 
   .nav-collapsed .nav-item:hover::after, .nav-collapsed .nav-item:focus-visible::after, .nav-collapsed .nav-item.tip::after {
     content: attr(data-label); position: fixed; left: calc(var(--nav-width-collapsed) + 8px); z-index: 40; padding: 5px 10px; border: 1px solid var(--nav-border); border-radius: var(--radius-sm); background: var(--nav-bg-elevated); color: var(--nav-text-strong); box-shadow: var(--shadow-md); font-size: 12.5px; font-weight: 500; line-height: 16px; white-space: nowrap; pointer-events: none;
   }
-  .nav-collapsed .brand span, .nav-collapsed .tenant .grow, .nav-collapsed .tenant > svg.i, .nav-collapsed .nav-item > span, .nav-collapsed .nav-foot > .grow:not(.user-menu), .nav-collapsed .nav-foot > svg.i {
+  .nav-collapsed .tenant .grow, .nav-collapsed .tenant > svg.i, .nav-collapsed .nav-item > span, .nav-collapsed .nav-foot > .grow:not(.user-menu), .nav-collapsed .nav-foot > svg.i {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
   }
 }

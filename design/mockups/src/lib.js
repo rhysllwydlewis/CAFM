@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { logomark } from '../../tools/custom-icons.js';
+import { wordmark } from '../../tools/logo.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const iconCache = {};
@@ -201,7 +202,7 @@ export function nav(active, { tenant = 'Demo Estates Ltd', plan = 'Enterprise', 
   let html = NAV.map(([label, items]) => `<div class="nav-sec">${label ? `<div class="nav-label">${label}</div>` : ''}${items.map(item).join('')}</div>`).join('');
   const more = !inBase && EXTRA[active] && active !== 'admin' && active !== 'platform' ? item([active, ...EXTRA[active]]) : '';
   html += `<div class="nav-sec"><div class="nav-label">More</div>${more}<div class="nav-item">${I('more')}<span>All modules</span></div>${item(['admin', 'Administration', 'admin'])}</div>`;
-  return `<aside class="nav"><div class="nav-top">${toggle ? `<div class="row between"><div class="brand">${logo(28)}<span>CAFM</span></div><span class="nav-toggle">${I(collapsed ? 'panel-left-open' : 'panel-left-close')}</span></div>` : `<div class="brand">${logo(28)}<span>CAFM</span></div>`}<div class="tenant"><span class="t-logo">DE</span><div class="grow"><div class="t-name">${tenant}</div><div class="t-sub">${plan}</div></div>${I('chevron-down', 's14')}</div></div><div class="nav-scroll">${html}</div><div class="nav-foot"><span class="av s28" style="background:#1D3A40;color:#A8DCE3">${initials(user)}</span><div class="grow"><div class="who">${user}</div><div class="xs">${role}</div></div>${I('settings', 's14')}</div></aside>`;
+  return `<aside class="nav"><div class="nav-top">${toggle ? `<div class="row between"><div class="brand"><span class="brand-mark">${logo(28)}</span><span class="brand-word">${wordmark({ inverse: true, width: 102 })}</span></div><span class="nav-toggle">${I(collapsed ? 'panel-left-open' : 'panel-left-close')}</span></div>` : `<div class="brand"><span class="brand-mark">${logo(28)}</span><span class="brand-word">${wordmark({ inverse: true, width: 102 })}</span></div>`}<div class="tenant"><span class="t-logo">DE</span><div class="grow"><div class="t-name">${tenant}</div><div class="t-sub">${plan}</div></div>${I('chevron-down', 's14')}</div></div><div class="nav-scroll">${html}</div><div class="nav-foot"><span class="av s28" style="background:#1D3A40;color:#A8DCE3">${initials(user)}</span><div class="grow"><div class="who">${user}</div><div class="xs">${role}</div></div>${I('settings', 's14')}</div></aside>`;
 }
 export function topbar(crumbs = []) {
   const c = crumbs.map((x, i) => (i === crumbs.length - 1 ? `<b>${x}</b>` : `<span>${x}</span>${I('chevron-right')}`)).join('');

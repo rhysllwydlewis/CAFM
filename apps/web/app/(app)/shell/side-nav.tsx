@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Icon, Logo, initials } from '@cafm/ui';
+import { Icon, Logo, Wordmark, initials } from '@cafm/ui';
 import { t } from '@/lib/i18n';
 import { UserMenu } from './user-menu';
 import type { ShellNavSection, ShellOrganisation } from './types';
@@ -61,8 +61,9 @@ export function SideNav({
         <div className="nav-top">
           <div className="row between">
             <div className="brand">
-              <Logo size={28} />
-              <span>CAFM</span>
+              {/* The name when the menu is open, and the tile mark when it is collapsed to a rail. */}
+              <Logo size={28} className="brand-mark" />
+              <Wordmark height={22} tone="inverse" className="brand-word" />
             </div>
             <button
               type="button"

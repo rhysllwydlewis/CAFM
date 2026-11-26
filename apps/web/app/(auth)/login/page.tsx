@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { Logo } from '@cafm/ui';
+import { Wordmark } from '@cafm/ui';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/next-path';
 import { LoginForm, type DemoAccounts } from './login-form';
@@ -38,19 +38,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="auth">
       <aside className="auth-side">
-        <div className="row" style={{ gap: 12 }}>
-          <Logo size={34} />
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 20,
-              fontWeight: 600,
-              color: 'var(--nav-text-strong)',
-            }}
-          >
-            CAFM
-          </span>
-        </div>
+        <Wordmark height={32} tone="inverse" />
         <div style={{ marginTop: 'auto', maxWidth: 560 }}>
           <p className="auth-headline">Every building safe, compliant and running well.</p>
           <p className="auth-lede">

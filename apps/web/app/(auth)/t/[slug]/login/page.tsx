@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { Logo } from '@cafm/ui';
+import { Wordmark } from '@cafm/ui';
 import type { PublicSignInMessage } from '@cafm/shared';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/next-path';
@@ -47,10 +47,7 @@ export default async function OrganisationLoginPage({
     <div className="center-screen">
       <main className="card" style={{ width: 440, maxWidth: '100%', boxShadow: 'var(--shadow-md)' }}>
         <div className="card-b stack g3" style={{ padding: 28 }}>
-          <div className="row" style={{ gap: 10 }}>
-            <Logo size={28} />
-            <b>CAFM</b>
-          </div>
+          <Wordmark height={26} />
           {message ? <div className="callout">{message}</div> : null}
           <LoginForm demo={null} next={next} organisation={slug} />
         </div>

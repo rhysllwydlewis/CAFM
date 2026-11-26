@@ -7,7 +7,7 @@ import { MobileShell } from './m/mobile-shell';
 export const metadata: Metadata = {
   title: 'My jobs',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, title: 'CAFM', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'FM Stead', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = { themeColor: '#136B7A', width: 'device-width', initialScale: 1 };

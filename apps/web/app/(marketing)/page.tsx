@@ -3,7 +3,7 @@ import { Homepage } from './homepage';
 import styles from './home.module.css';
 
 export const metadata: Metadata = {
-  title: { absolute: 'CAFM | Facilities management software' },
+  title: { absolute: 'FM Stead | Facilities management software' },
   description: 'Run every building: helpdesk, work orders, planned maintenance, assets and locations in one place.',
 };
 

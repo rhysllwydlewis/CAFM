@@ -4,7 +4,7 @@ Guidance for anyone (human or AI agent) working in this repository. Read this fi
 
 ## What this is
 
-A cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`.
+FM Stead is a cloud, multi-tenant CAFM (Computer-Aided Facilities Management) platform for UK estates teams and FM service providers. The product is defined in `docs/plan/` and drawn in `design/`.
 
 **Where the build is:** [`docs/PROGRESS.md`](docs/PROGRESS.md) has the current and approved phases, a checklist for every phase, what's in progress and what's waiting on the product owner.
 

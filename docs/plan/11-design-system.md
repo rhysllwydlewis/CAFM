@@ -72,7 +72,7 @@ Tenants can change the accent colour (white-label, [doc 03](03-roles-permissions
 
 The name is the logo. "FM" is set upright in graphite and "Stead" in italic Petrol, in Bodoni Moda Black. "FMS" is the short form for tight spaces, and "FM" on a Petrol tile is the mark for the favicon, the side menu and other small sizes. The letters are outlines, so no font is needed to draw them (Bodoni Moda is licensed under the SIL Open Font License 1.1). The colours are tokens only: graphite-900 and petrol-600, and in the dark theme the navigation text colour and the dark primary text colour. The tile in the mark follows the tenant's accent colour.
 
-Files are in `design/icons/logo/`. `npm run icons` generates them from `design/tools/logo.js`, and `Logo` in `packages/ui` draws the same mark. The interface itself stays in Inter. The product name is still open (decision D1), so the app keeps saying "CAFM" next to the mark until it is decided.
+Files are in `design/icons/logo/`. `npm run icons` generates them from `design/tools/logo.js`, and `Logo` in `packages/ui` draws the same mark. The interface itself stays in Inter. The side menu and the sign-in pages show the wordmark (`Wordmark` in `packages/ui`), and the collapsed menu rail shows the "FM" tile.
 
 ## Components and layout
 

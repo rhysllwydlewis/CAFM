@@ -195,7 +195,7 @@ export function WorkOrderDetail({
             {record.entries.map((entry) => (
               <li key={entry.id} className="stack g2">
                 <div className="row wrap between g2">
-                  <strong>{entry.author ?? 'CAFM'}</strong>
+                  <strong>{entry.author ?? 'FM Stead'}</strong>
                   <time className="muted sm" dateTime={entry.createdAt}>
                     {requestTime(entry.createdAt)}
                   </time>

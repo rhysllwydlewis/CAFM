@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Icon, Logo } from '@cafm/ui';
+import { Icon, Wordmark } from '@cafm/ui';
 import '@fontsource-variable/inter/wght-italic.css';
 import { startFilm } from './film';
 import styles from './home.module.css';
@@ -10,7 +10,7 @@ import styles from './home.module.css';
 const media = '/homepage';
 /** The evening's scenes, in order. */
 const stills = ['building', 'exploded', 'plant', 'window'] as const;
-/** What CAFM did at Cardiff HQ today (demo data). */
+/** What FM Stead did at Cardiff HQ today (demo data). */
 const day = [
   { hour: 6, time: '06:00', what: 'Site opens', detail: 'Business hours · SLA clocks start' },
   { hour: 7.5, time: '07:30', what: "Today's planned visits raised", detail: 'PPM generator · work orders' },
@@ -50,8 +50,8 @@ export function Homepage({ demo }: { demo: boolean }) {
   return (
     <>
       <header className={styles.masthead}>
-        <a className={styles.mark} href="#top" aria-label="CAFM, back to the top">
-          <Logo size={26} /> CAFM
+        <a className={styles.mark} href="#top" aria-label="FM Stead, back to the top">
+          <Wordmark height={22} tone="current" />
         </a>
         {demo && (
           <Link className={styles.link} href="/login">
@@ -85,7 +85,7 @@ export function Homepage({ demo }: { demo: boolean }) {
               One day at <em>Cardiff HQ.</em>
             </h1>
             <p className={styles.lede}>
-              CAFM runs the helpdesk, work orders, planned maintenance, assets and locations for UK estates teams.
+              FM Stead runs the helpdesk, work orders, planned maintenance, assets and locations for UK estates teams.
             </p>
             <div className={styles.actions} data-hero-actions>
               {primary(true)}
@@ -177,13 +177,13 @@ export function Homepage({ demo }: { demo: boolean }) {
             </Link>
           )}
         </div>
-        <ul className={styles.modules} aria-label="In CAFM">
+        <ul className={styles.modules} aria-label="In FM Stead">
           {modules.map((name) => (
             <li key={name}>{name}</li>
           ))}
         </ul>
         <footer className={styles.footer}>
-          <span>© 2026 CAFM</span>
+          <span>© 2026 FM Stead</span>
           <span>{demo ? 'Demo data only' : 'Facilities management software'}</span>
         </footer>
       </section>

@@ -22,7 +22,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
         <span className="grow" />
         <nav aria-label="Requester portal" className={styles.actions}>
           <Link href="/portal#my-requests">My requests</Link>
-          <Link href="/app">Go to CAFM</Link>
+          <Link href="/app">Go to FM Stead</Link>
           {allowed && <PortalNotifications />}
         </nav>
       </header>

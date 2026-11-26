@@ -369,7 +369,7 @@ async function seedBoilerRecords(tx: Prisma.TransactionClient, tenantId: string,
 
   const id = seedId('asset-attachment:demo-estates:boiler-2');
   if (!(await tx.recordAttachment.findUnique({ where: { id } }))) {
-    const contents = 'BT /F1 14 Tf 72 720 Td (CAFM demo - Boiler 2 maintenance record) Tj ET';
+    const contents = 'BT /F1 14 Tf 72 720 Td (FM Stead demo - Boiler 2 maintenance record) Tj ET';
     const objects = [
       '<< /Type /Catalog /Pages 2 0 R >>',
       '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',

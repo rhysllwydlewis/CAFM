@@ -7,7 +7,7 @@ import '@cafm/ui/styles.css';
 import { parseTheme, SYSTEM_THEME_SCRIPT, THEME_COOKIE } from '@/lib/theme';
 
 export const metadata: Metadata = {
-  title: { default: 'CAFM', template: '%s · CAFM' },
+  title: { default: 'FM Stead', template: '%s · FM Stead' },
   icons: { icon: '/favicon.svg' },
 };
 
