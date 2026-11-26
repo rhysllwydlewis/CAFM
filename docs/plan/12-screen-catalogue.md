@@ -63,11 +63,11 @@ These mockups are the visual target for the build. Data shown is demo data from 
 
 [![Layout, spacing & elevation](../../design/mockups/png/ds-04-layout.png)](../../design/mockups/png/ds-04-layout.png)
 
-### Logo (placeholder)
+### Logo
 
 `ds-05-logo` · sheet · [HTML source](../../design/mockups/html/ds-05-logo.html)
 
-[![Logo (placeholder)](../../design/mockups/png/ds-05-logo.png)](../../design/mockups/png/ds-05-logo.png)
+[![Logo](../../design/mockups/png/ds-05-logo.png)](../../design/mockups/png/ds-05-logo.png)
 
 ### Icons: full set
 

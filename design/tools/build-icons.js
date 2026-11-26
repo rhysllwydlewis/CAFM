@@ -2,13 +2,14 @@
 //   icons/svg/<name>.svg   one normalised SVG per icon (currentColor)
 //   icons/sprite.svg       <symbol> sprite for the web app
 //   icons/icons.json       manifest: name, category, source
-//   icons/logo/*.svg       placeholder logomark variants
+//   icons/logo/*.svg       logomark, wordmark, FMS and app icon
 //   tokens/tokens.json     tokens exported from tokens.css
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { catalogue } from './icon-catalogue.js';
 import { custom, logomark } from './custom-icons.js';
+import { appIcon, fms, wordmark } from './logo.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lucideDir = path.join(root, 'node_modules/lucide-static/icons');
@@ -52,6 +53,11 @@ fs.mkdirSync(logoDir, { recursive: true });
 fs.writeFileSync(path.join(logoDir, 'logomark.svg'), logomark(32) + '\n');
 fs.writeFileSync(path.join(logoDir, 'logomark-inverse.svg'), logomark(32, { bg: '#FFFFFF', fg: '#136676' }) + '\n');
 fs.writeFileSync(path.join(logoDir, 'logomark-dark.svg'), logomark(32, { bg: '#2A8090', fg: '#FFFFFF' }) + '\n');
+fs.writeFileSync(path.join(logoDir, 'wordmark.svg'), wordmark() + '\n');
+fs.writeFileSync(path.join(logoDir, 'wordmark-inverse.svg'), wordmark({ inverse: true }) + '\n');
+fs.writeFileSync(path.join(logoDir, 'fms.svg'), fms() + '\n');
+fs.writeFileSync(path.join(logoDir, 'fms-inverse.svg'), fms({ inverse: true }) + '\n');
+fs.writeFileSync(path.join(logoDir, 'app-icon.svg'), appIcon() + '\n');
 
 // Lucide licence notice
 fs.copyFileSync(path.join(root, 'node_modules/lucide-static/LICENSE'), path.join(root, 'icons/LICENSE-lucide.txt'));
