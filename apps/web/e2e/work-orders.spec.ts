@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { PrismaClient, seedId } from '@cafm/db';
 
 async function signIn(page: Page, persona: string) {
@@ -20,6 +20,20 @@ async function assertAccessible(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.map((violation) => [violation.id, violation.nodes.map((node) => node.target)])).toEqual([]);
 }
+
+/**
+ * The month calendar draws whole weeks, so its first and last rows show days that belong to the neighbouring months,
+ * and an entry on one of those days shows in both months. A cell is named after its day ("Tuesday 1 December, 1 job ..."),
+ * so this finds the entry only on a day of the given month ("2026-12") and not on a day that fills out the week.
+ */
+function onDayOfMonth(calendar: Locator, month: string, text: string) {
+  const name = new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
+  return calendar.getByRole('cell', { name: new RegExp(`${name}.*${text}`) });
+}
+
+/** The month after "2026-11", as the calendar address writes it. */
+const monthAfter = (month: string) =>
+  new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 1)).toISOString().slice(0, 7);
 
 /** The status badge at the top of the job, which changes only once the update has been saved. */
 async function expectStatus(page: Page, text: string) {
@@ -686,14 +700,16 @@ test('shows a job on the calendar on the day its fix is due', async ({ page }) =
   const calendar = page.getByRole('table', { name: /Work orders by the day their fix is due/ });
   await expect(calendar).toBeVisible();
 
-  // The job sits in the month its fix is due, and nowhere else.
+  // The job sits on a day of the month its fix is due, and on no day of the next month. The first row of the next
+  // month's grid can still show the job, when it is due in the last days of this month, so look at the day's month.
   await page.goto('/app/work-orders?view=all&layout=calendar&month=' + month + '&q=' + suffix);
   const link = calendar.getByRole('link', { name: new RegExp(suffix) });
   await expect(link).toBeVisible();
+  await expect(onDayOfMonth(calendar, month, suffix)).toHaveCount(1);
   await assertAccessible(page);
   await page.getByRole('link', { name: 'Next month' }).click();
-  await expect(page).toHaveURL(/month=\d{4}-\d{2}/);
-  await expect(calendar.getByRole('link', { name: new RegExp(suffix) })).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp('month=' + monthAfter(month)));
+  await expect(onDayOfMonth(calendar, monthAfter(month), suffix)).toHaveCount(0);
   await page.getByRole('link', { name: 'Previous month' }).click();
   await expect(link).toBeVisible();
 
