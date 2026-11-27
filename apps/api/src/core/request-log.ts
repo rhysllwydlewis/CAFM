@@ -4,13 +4,21 @@ import type { NextFunction, Request, Response } from 'express';
 /** A caller-supplied request ID is kept only if it is short and plain, so it can't forge log lines. */
 const SAFE_REQUEST_ID = /^[A-Za-z0-9._-]{8,64}$/;
 
+/** Routes that carry a secret link token as a path segment: the token is replaced so it never reaches the logs. */
+const TOKEN_PATHS = /^(\/api\/(?:auth\/password-reset|auth\/invites|contractor-jobs)\/)[^/]+/;
+
+/** The path without its query string and without any link token. */
+export function loggedPath(originalUrl: string): string {
+  return (originalUrl.split('?')[0] ?? '').replace(TOKEN_PATHS, '$1:token');
+}
+
 export interface RequestLogLine {
   time: string;
   level: 'info' | 'warn' | 'error';
   msg: 'request';
   requestId: string;
   method: string;
-  /** The path only. The query string is left out because it can carry tokens. */
+  /** The path only. The query string is left out and link tokens in the path are replaced with `:token`. */
   path: string;
   status: number;
   durationMs: number;
@@ -44,7 +52,7 @@ export function requestLogger(write: (line: string) => void = (line) => console.
         msg: 'request',
         requestId,
         method: req.method,
-        path: req.originalUrl.split('?')[0] ?? '',
+        path: loggedPath(req.originalUrl),
         status,
         durationMs: Math.round(Number(process.hrtime.bigint() - started) / 1e5) / 10,
         tenantId: req.auth?.membership?.tenantId ?? null,

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, it } from 'vitest';
 import type { Request, Response } from 'express';
-import { requestLogEnabled, requestLogger, type RequestLogLine } from '../src/core/request-log';
+import { loggedPath, requestLogEnabled, requestLogger, type RequestLogLine } from '../src/core/request-log';
 
 function run(headers: Record<string, string>, url: string, auth: unknown, status: number) {
   const lines: string[] = [];
@@ -48,6 +48,13 @@ describe('request log', () => {
     expect(line.requestId).not.toContain('forged');
     expect(res.headers['x-request-id']).toBe(line.requestId);
     expect(line).toMatchObject({ tenantId: null, level: 'error' });
+  });
+
+  it('keeps link tokens out of the logged path', () => {
+    expect(loggedPath('/api/auth/password-reset/abc123secret')).toBe('/api/auth/password-reset/:token');
+    expect(loggedPath('/api/auth/invites/abc123secret/accept')).toBe('/api/auth/invites/:token/accept');
+    expect(loggedPath('/api/contractor-jobs/abc123secret/status?x=1')).toBe('/api/contractor-jobs/:token/status');
+    expect(loggedPath('/api/work-orders/wo1')).toBe('/api/work-orders/wo1');
   });
 
   it('is off under test unless switched on', () => {
