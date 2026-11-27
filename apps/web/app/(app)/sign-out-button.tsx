@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@cafm/ui';
+import { Button } from '@fmstead/ui';
 import { postJson } from '@/lib/client';
 
 export function SignOutButton() {

@@ -1,10 +1,10 @@
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import {
   WORK_ORDER_FINISHED,
   WORK_ORDER_PAUSE_LABELS,
   WORK_ORDER_STATUS_LABELS,
   type WorkOrderSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 
 export const PRIORITY_LABELS = ['Emergency', 'Urgent', 'Routine', 'Planned'];

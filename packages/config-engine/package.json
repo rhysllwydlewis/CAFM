@@ -1,5 +1,5 @@
 {
-  "name": "@cafm/config-engine",
+  "name": "@fmstead/config-engine",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",

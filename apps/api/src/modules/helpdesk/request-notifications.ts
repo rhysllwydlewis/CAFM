@@ -1,5 +1,5 @@
-import type { Tx } from '@cafm/db';
-import { REQUEST_STATUS_LABELS, type RequestNotificationEvent, type RequestStatus } from '@cafm/shared';
+import type { Tx } from '@fmstead/db';
+import { REQUEST_STATUS_LABELS, type RequestNotificationEvent, type RequestStatus } from '@fmstead/shared';
 
 const defaults: Record<RequestNotificationEvent, { title: string; body: string }> = {
   'request.received': { title: 'Request {number} received', body: 'We’ve received your request about {title}.' },

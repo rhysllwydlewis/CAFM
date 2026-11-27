@@ -8,7 +8,7 @@ import type {
   PpmComplianceReport,
   SlaPerformanceReport,
   WorkMixReport,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { apiGet } from './api';
 
 async function read<T>(path: string, params: Record<string, string | undefined> = {}): Promise<T> {

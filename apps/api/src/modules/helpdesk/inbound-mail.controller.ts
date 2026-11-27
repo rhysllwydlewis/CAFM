@@ -2,8 +2,8 @@ import { Body, Controller, NotFoundException, Param, ParseUUIDPipe, Post, Unauth
 import type { Request } from 'express';
 import { Req } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { withTenant } from '@cafm/db';
-import { acceptsRequestComments, incomingRequestSchema, resolveEntitlements } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { acceptsRequestComments, incomingRequestSchema, resolveEntitlements } from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { createRequest } from './request-records';
@@ -57,8 +57,9 @@ export class InboundMailController {
           select: { requestId: true },
         });
         requestId = referencedMail?.requestId;
+        // Acknowledgements sent before the rename carry the old cafm prefix and domain, so replies to them still thread.
         const notificationId = mail.inReplyTo.match(
-          /^<cafm-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})@cafm\.invalid>$/i,
+          /^<(?:fmstead|cafm)-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})@(?:fmstead|cafm)\.invalid>$/i,
         )?.[1];
         if (!requestId && notificationId) {
           const notification = await tx.notification.findFirst({

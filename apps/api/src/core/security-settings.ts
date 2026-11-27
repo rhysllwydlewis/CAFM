@@ -1,5 +1,5 @@
-import { withAccount, withTenant } from '@cafm/db';
-import { DEFAULT_SECURITY_SETTINGS, type SecuritySettingsView } from '@cafm/shared';
+import { withAccount, withTenant } from '@fmstead/db';
+import { DEFAULT_SECURITY_SETTINGS, type SecuritySettingsView } from '@fmstead/shared';
 import type { PrismaService } from './prisma.service';
 import { LONG_SESSION_MS, SHORT_SESSION_MS } from './session';
 

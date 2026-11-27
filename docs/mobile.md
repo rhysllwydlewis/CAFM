@@ -4,7 +4,7 @@ The technician, contractor and requester app is an offline-first PWA (ADR 0005).
 
 ## Signing in a device
 
-The app uses the OAuth 2.0 authorisation-code flow with PKCE (S256). There is one first-party public client, `cafm-pwa`.
+The app uses the OAuth 2.0 authorisation-code flow with PKCE (S256). There is one first-party public client, `fmstead-pwa`.
 
 1. The app makes a random **code verifier** (43 to 128 URL-safe characters) and keeps it. It sends the base64url SHA-256 hash of it as the **code challenge**.
 2. A person signed in at a browser (cookie session) calls `POST /api/oauth/authorize` with `client_id`, `code_challenge`, `code_challenge_method: "S256"` and a `device_name`. They get a **code** that works once for 60 seconds. A device token can't approve another device.

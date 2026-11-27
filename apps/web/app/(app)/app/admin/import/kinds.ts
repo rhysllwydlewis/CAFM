@@ -1,4 +1,4 @@
-import { can, feature, type Permission } from '@cafm/shared';
+import { can, feature, type Permission } from '@fmstead/shared';
 
 export interface ImportKind {
   key: 'locations' | 'assets' | 'people' | 'ppm';

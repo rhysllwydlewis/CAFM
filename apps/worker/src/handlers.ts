@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@cafm/db';
+import type { PrismaClient } from '@fmstead/db';
 
 /** What a job handler receives: the outbox message and shared services. */
 export interface JobContext {

@@ -1,5 +1,5 @@
 import 'server-only';
-import type { AttachmentItem } from '@cafm/shared';
+import type { AttachmentItem } from '@fmstead/shared';
 import { apiGet } from './api';
 
 export async function attachmentList(path: string): Promise<AttachmentItem[]> {

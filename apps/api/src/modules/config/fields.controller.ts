@@ -18,8 +18,8 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { ENTITY_TYPES, fieldDefinitionInput, validateCustom } from '@cafm/config-engine';
-import { Prisma, type Tx, withTenant } from '@cafm/db';
+import { ENTITY_TYPES, fieldDefinitionInput, validateCustom } from '@fmstead/config-engine';
+import { Prisma, type Tx, withTenant } from '@fmstead/db';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { recordVersion, toFieldDefinition } from '../../core/config';

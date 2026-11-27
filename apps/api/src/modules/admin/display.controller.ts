@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Tx } from '@cafm/db';
+import { withTenant, type Tx } from '@fmstead/db';
 import {
   MODULES,
   TERMS,
@@ -10,7 +10,7 @@ import {
   type DisplaySettings,
   type ModuleSettingView,
   type TermView,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@cafm/ui';
+import { Button } from '@fmstead/ui';
 
 export default function LocationError({ reset }: { reset: () => void }) {
   return (

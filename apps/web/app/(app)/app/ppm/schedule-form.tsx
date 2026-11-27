@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import {
   formatMinor,
   parseMoneyMinor,
@@ -19,7 +19,7 @@ import {
   type PpmMode,
   type PpmScheduleRecord,
   type PpmTaskTemplate,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import styles from './ppm.module.css';
 

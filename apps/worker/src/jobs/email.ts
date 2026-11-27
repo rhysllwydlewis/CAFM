@@ -1,6 +1,6 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import { withTenant } from '@cafm/db';
-import { feature, resolveEntitlements } from '@cafm/shared';
+import { withTenant } from '@fmstead/db';
+import { feature, resolveEntitlements } from '@fmstead/shared';
 import { register, type JobContext } from '../handlers';
 
 export interface EmailPayload {
@@ -27,7 +27,7 @@ function smtp(): Transporter | null {
  * standard MAIL_FROM. The name is built as an address object, so it can never add headers or recipients.
  */
 async function sender(ctx: JobContext): Promise<string | { name: string; address: string }> {
-  const standard = process.env.MAIL_FROM ?? 'FM Stead <no-reply@cafm.invalid>';
+  const standard = process.env.MAIL_FROM ?? 'FM Stead <no-reply@fmstead.invalid>';
   if (!ctx.tenantId) return standard;
   const tenantId = ctx.tenantId;
   const row = await withTenant(ctx.db, tenantId, async (tx) => {

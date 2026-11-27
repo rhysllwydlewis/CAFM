@@ -2,8 +2,13 @@
 
 import { type FormEvent, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field } from '@cafm/ui';
-import { ASSET_ATTACHMENT_MEDIA_TYPES, ATTACHMENT_LIMIT, PHOTO_MEDIA_TYPES, type AttachmentItem } from '@cafm/shared';
+import { Button, Field } from '@fmstead/ui';
+import {
+  ASSET_ATTACHMENT_MEDIA_TYPES,
+  ATTACHMENT_LIMIT,
+  PHOTO_MEDIA_TYPES,
+  type AttachmentItem,
+} from '@fmstead/shared';
 import { uploadFile } from '@/lib/attachment-client';
 import Link from 'next/link';
 

@@ -29,7 +29,7 @@ export function clientInfo(req: Request): { ip?: string; userAgent?: string } {
 }
 
 /** The short-lived cookie that carries a pending second sign-in step. It never grants access on its own. */
-export const MFA_COOKIE = 'cafm_mfa';
+export const MFA_COOKIE = 'fmstead_mfa';
 
 export function mfaChallengeToken(req: Request): string | undefined {
   const token: unknown = req.cookies?.[MFA_COOKIE];

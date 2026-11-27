@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import type { FieldDefinition } from '@cafm/config-engine';
-import { eligibleTechnician, type Prisma, type Tx } from '@cafm/db';
+import type { FieldDefinition } from '@fmstead/config-engine';
+import { eligibleTechnician, type Prisma, type Tx } from '@fmstead/db';
 import {
   SLA_PAUSING_REASONS,
   WORK_ORDER_PAUSE_LABELS,
@@ -11,7 +11,7 @@ import {
   type WorkOrderRecord,
   type WorkOrderStatus,
   type WorkOrderSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { activeCustomFields, nextNumber, visibleCustom } from '../../core/config';
 import type { AuthContext } from '../../core/session';
 import { missingWorkOrder, workOrderScope } from './work-order-scope';
@@ -19,7 +19,7 @@ import { reportAssetSelect, reportLocationSelect } from '../helpdesk/request-sco
 import { requestTargets, slaSchedule } from '../helpdesk/request-records';
 import { elapsedMinutes, requestDeadline } from '../helpdesk/request-sla';
 
-export { eligibleTechnician, JOB_LICENCES } from '@cafm/db';
+export { eligibleTechnician, JOB_LICENCES } from '@fmstead/db';
 
 const memberLabel = { select: { account: { select: { name: true } } } } as const;
 export const workOrderRelations = {

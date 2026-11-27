@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { BUILTIN_ROLES } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { BUILTIN_ROLES } from '@fmstead/shared';
 import { newSessionToken, SESSION_COOKIE } from '../src/core/session';
 import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp, STARTER_TENANT } from './helpers';
 

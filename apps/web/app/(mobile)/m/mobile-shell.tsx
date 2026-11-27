@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 
 const TABS = [
   { href: '/m', label: 'My jobs', icon: 'work-order' },

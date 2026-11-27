@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
-import { addDays, firstOccurrenceOnOrAfter, localDate, weekStart, type PpmCalendarUnit } from '@cafm/shared';
+import { addDays, firstOccurrenceOnOrAfter, localDate, weekStart, type PpmCalendarUnit } from '@fmstead/shared';
 import { seedId } from './ids';
 import { PPM_TIME_ZONE, startingPoint } from './ppm-generator';
 import type { Tx } from './index';

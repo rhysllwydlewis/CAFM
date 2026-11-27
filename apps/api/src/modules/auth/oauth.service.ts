@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { withAccount } from '@cafm/db';
+import { withAccount } from '@fmstead/db';
 import {
   MOBILE_ACCESS_TOKEN_SECONDS,
   MOBILE_AUTH_CODE_SECONDS,
@@ -8,7 +8,7 @@ import {
   type OauthAuthorizeRequest,
   type OauthTokenRequest,
   type OauthTokenResponse,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
 import { type AuthContext, hashToken, newSessionToken } from '../../core/session';
 import { LoginRateLimiter } from './login-rate-limiter';

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import request from 'supertest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;

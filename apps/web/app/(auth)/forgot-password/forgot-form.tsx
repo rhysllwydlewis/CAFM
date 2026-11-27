@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { Button, Field, Icon, TextInput } from '@cafm/ui';
+import { Button, Field, Icon, TextInput } from '@fmstead/ui';
 import { postJson } from '@/lib/client';
 
 export function ForgotForm() {

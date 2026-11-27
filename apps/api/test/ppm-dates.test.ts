@@ -13,7 +13,7 @@ import {
   occurrence,
   weekStart,
   type PpmCalendarUnit,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 
 describe('PPM dates', () => {
   it('adds days and months without drifting or going through a time zone', () => {

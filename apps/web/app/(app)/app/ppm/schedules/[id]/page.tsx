@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { can, feature, formatMinor, frequencyText, PPM_MODE_LABELS } from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+import { can, feature, formatMinor, frequencyText, PPM_MODE_LABELS } from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { criticalityBadge, criticalityLabel, hours, longDay } from '@/lib/ppm-format';
 import { ppmSchedule } from '@/lib/ppm';
 import { currentUser } from '@/lib/session';

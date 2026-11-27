@@ -9,7 +9,7 @@ import {
   WEEKDAYS,
   type AdminCalendars,
   type SiteCalendar,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import styles from '../admin.module.css';

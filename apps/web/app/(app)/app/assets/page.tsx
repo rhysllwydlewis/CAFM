@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import {
   ASSET_CONDITIONS,
   ASSET_CRITICALITIES,
@@ -16,7 +16,7 @@ import {
   type GroupOption,
   type ListColumn,
   type AssetSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
 import { GroupRows, ListDisplayFields } from '@/components/list-display';

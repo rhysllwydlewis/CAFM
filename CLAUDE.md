@@ -64,8 +64,8 @@ pnpm test              # unit and API tests (needs a migrated, seeded database)
 pnpm build
 pnpm e2e               # Playwright against the built apps
 pnpm dev               # API on :4000, web on :3000 (open http://localhost:3000)
-pnpm --filter @cafm/worker start   # background worker (needs REDIS_URL, after pnpm build)
-pnpm cafm tenant:list   # platform tenant CLI (owner role): tenant:create, tenant:set-plan, tenant:suspend, tenant:activate
+pnpm --filter @fmstead/worker start   # background worker (needs REDIS_URL, after pnpm build)
+pnpm fmstead tenant:list   # platform tenant CLI (owner role): tenant:create, tenant:set-plan, tenant:suspend, tenant:activate
 ```
 
 Copy `.env.example` to `.env` and export its variables (`set -a; . ./.env; set +a`). Local services: `docker compose up -d` (Postgres, Redis, MinIO, Mailpit); set `MINIO_ROOT_PASSWORD` in `.env` first.
@@ -80,11 +80,11 @@ Permissions and plans: add permission keys to `packages/shared/src/permissions.t
 
 Helpdesk mail intake and browser push use optional configuration documented in [docs/helpdesk.md](docs/helpdesk.md).
 
-Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role.
+Two database roles: `cafm` owns the schema and runs migrations and the seed (`DATABASE_URL`); `cafm_app` is what the API connects as (`APP_DATABASE_URL`). It owns nothing and cannot bypass RLS. Never point the API at the owner role. These names, the `cafm_dev` database, the `cafm-mobile` IndexedDB store and the `cafm-demo` seed id prefix keep the old product name on purpose: applied migrations, the live database and saved offline data depend on them. Don't rename them without a migration plan.
 
 Local attachment tests use PostgreSQL for file contents. An API running in production needs a private S3-compatible bucket and a private ClamAV listener for uploads to non-demo organisations. See [Assets](docs/assets.md#attachment-storage) and `.env.example` for configuration.
 
-New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `pnpm --filter @cafm/db -s migrate:diff` (diffs your migrated `DATABASE_URL` against the schema), plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.
+New schema changes: edit `packages/db/prisma/schema/<module>.prisma`, then add a migration folder `packages/db/prisma/schema/migrations/<yyyymmddhhmmss>_<name>/migration.sql` containing the output of `pnpm --filter @fmstead/db -s migrate:diff` (diffs your migrated `DATABASE_URL` against the schema), plus the RLS policies for any new tenant-owned table (separate read and write policies, as for `membership`) and a test in `packages/db/test/rls.test.ts`.
 
 Design tooling (run in `design/`):
 
@@ -119,4 +119,4 @@ See `docs/plan/08-roadmap.md` § Definition of Done. In short:
 
 ## Demo personas
 
-Sam Sutton (Super User) · Alex Rowe (Administrator) · Morgan Ellis (FM Manager) · Hana Patel (Helpdesk) · Priya Shah (Planner) · Tom Price (Technician) · Cara Lloyd (Contractor, Sparks Electrical Ltd) · Riley Morgan (Requester) · Fiona Clarke (Finance) · Colin Baxter (Compliance). Full list in doc 06. Tenant: Demo Estates Ltd, 12 sites. Password in demo only: `CafmDemo!2026`.
+Sam Sutton (Super User) · Alex Rowe (Administrator) · Morgan Ellis (FM Manager) · Hana Patel (Helpdesk) · Priya Shah (Planner) · Tom Price (Technician) · Cara Lloyd (Contractor, Sparks Electrical Ltd) · Riley Morgan (Requester) · Fiona Clarke (Finance) · Colin Baxter (Compliance). Full list in doc 06. Tenant: Demo Estates Ltd, 12 sites. Password in demo only: `FmsDemo!2026`.

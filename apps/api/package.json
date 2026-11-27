@@ -1,5 +1,5 @@
 {
-  "name": "@cafm/api",
+  "name": "@fmstead/api",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1175.0",
-    "@cafm/config-engine": "workspace:*",
-    "@cafm/db": "workspace:*",
-    "@cafm/shared": "workspace:*",
+    "@fmstead/config-engine": "workspace:*",
+    "@fmstead/db": "workspace:*",
+    "@fmstead/shared": "workspace:*",
     "@js-temporal/polyfill": "0.5.1",
     "@nestjs/common": "11.2.8",
     "@nestjs/core": "11.2.8",

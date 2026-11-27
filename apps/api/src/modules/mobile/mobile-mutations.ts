@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, Prisma } from '@cafm/db';
-import type { MobileMutationItem } from '@cafm/shared';
+import { withTenant, Prisma } from '@fmstead/db';
+import type { MobileMutationItem } from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';
 import { AssetOperationsController } from '../assets/asset-operations.controller';

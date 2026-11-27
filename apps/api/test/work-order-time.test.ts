@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { formatMinutes, timeCostMinor } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { formatMinutes, timeCostMinor } from '@fmstead/shared';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;

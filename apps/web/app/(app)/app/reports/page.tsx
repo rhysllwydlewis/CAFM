@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { can, feature, formatMinor } from '@cafm/shared';
+import { can, feature, formatMinor } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { costAnalysis, openJobsByAge, ppmCompliance, satisfaction, slaPerformance, workMix } from '@/lib/reports';
 import ModulePage from '../[module]/page';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupRows, parseColumnKeys, parseGroup, visibleColumns } from '@cafm/shared';
+import { groupRows, parseColumnKeys, parseGroup, visibleColumns } from '@fmstead/shared';
 
 const columns = [
   { key: 'ref', label: 'Ref', locked: true },

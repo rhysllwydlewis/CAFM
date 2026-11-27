@@ -5,7 +5,7 @@ import {
   outboxOutcome,
   type MobileChanges,
   type MobileWorkPack,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import {
   clearIfNotOwner,
   clearStore,

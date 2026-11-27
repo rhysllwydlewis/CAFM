@@ -1,4 +1,4 @@
-import type { FieldDefinition } from '@cafm/config-engine';
+import type { FieldDefinition } from '@fmstead/config-engine';
 
 /** One problem found in an import file. `row` is the line number in the file (the header is line 1). */
 export interface ImportIssue {

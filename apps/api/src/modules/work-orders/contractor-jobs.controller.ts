@@ -10,7 +10,7 @@ import {
   Put,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { hashToken, PPM_TIME_ZONE, recordPpmDone, withTenant, type Tx } from '@cafm/db';
+import { hashToken, PPM_TIME_ZONE, recordPpmDone, withTenant, type Tx } from '@fmstead/db';
 import {
   answerChecklistItemSchema,
   contractorNoteSchema,
@@ -22,7 +22,7 @@ import {
   type WorkOrderPauseReason,
   type WorkOrderStatus,
   localDate,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { syncRequest } from './request-sync';

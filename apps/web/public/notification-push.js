@@ -15,7 +15,7 @@ self.addEventListener('push', (event) => {
       asset ? 'FM Stead asset update' : job ? 'FM Stead work order alert' : 'FM Stead request update',
       {
         body: 'Open FM Stead to see your latest update.',
-        tag: 'cafm-' + payload.id,
+        tag: 'fmstead-' + payload.id,
         data: { path },
       },
     ),

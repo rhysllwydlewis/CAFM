@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { MfaStatus } from '@cafm/shared';
+import type { MfaStatus } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { MfaSetup } from './mfa-setup';

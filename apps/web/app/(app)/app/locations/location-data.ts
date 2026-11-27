@@ -1,7 +1,7 @@
 import 'server-only';
-import type { FieldDefinition } from '@cafm/config-engine';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import { apiGet } from '@/lib/api';
-import type { LocationDetail, LocationPage } from '@cafm/shared';
+import type { LocationDetail, LocationPage } from '@fmstead/shared';
 
 export const route = '/app/locations';
 export const validLocationId = (value: unknown): value is string =>

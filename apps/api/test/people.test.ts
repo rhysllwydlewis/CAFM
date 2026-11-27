@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { DEMO_PERSONAS } from '@cafm/shared';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { DEMO_PERSONAS } from '@fmstead/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;

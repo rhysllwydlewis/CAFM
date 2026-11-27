@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { can, defaultRequestPriority, feature, type RequestPriorityInput } from '@cafm/shared';
+import { can, defaultRequestPriority, feature, type RequestPriorityInput } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readHelpdesk } from '@/lib/helpdesk';
 import styles from '../admin.module.css';

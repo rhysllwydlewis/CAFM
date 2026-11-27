@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import type { ImportBatchRecord } from '@cafm/shared';
+import type { ImportBatchRecord } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { apiGet } from '@/lib/api';
 import { exportable, importable } from './kinds';

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { can, type AdminUser, type Team } from '@cafm/shared';
+import { can, type AdminUser, type Team } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { TeamsManager } from './teams-manager';

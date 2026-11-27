@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Button } from '@cafm/ui';
-import type { AssetServesRecord, ServedAsset, ServedLocation } from '@cafm/shared';
+import { Button } from '@fmstead/ui';
+import type { AssetServesRecord, ServedAsset, ServedLocation } from '@fmstead/shared';
 import { Picker } from './asset-picker';
 import { locationLabel, route } from './asset-labels';
 import styles from './assets.module.css';

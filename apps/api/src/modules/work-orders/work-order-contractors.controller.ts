@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { newToken } from '@cafm/db';
+import { newToken } from '@fmstead/db';
 import {
   assignContractorSchema,
   CONTRACTOR_LINK_DAYS,
@@ -18,7 +18,7 @@ import {
   WORK_ORDER_REASSIGNABLE,
   WORK_ORDER_UNASSIGNABLE,
   type WorkOrderStatus,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { appUrl, queueTenantEmail } from '../../core/mail';

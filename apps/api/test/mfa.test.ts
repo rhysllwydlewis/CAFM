@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { base32Encode, codeFor, stepAt, verifyCode } from '../src/core/totp';
 import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp } from './helpers';
 
@@ -99,7 +99,7 @@ describe('enrolment and sign-in with a second step', () => {
       const res = await login.post('/api/auth/login').send({ identifier: person.email, password: person.password });
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ status: 'mfa_required' });
-      expect(String(res.headers['set-cookie'])).not.toContain('cafm_session=');
+      expect(String(res.headers['set-cookie'])).not.toContain('fmstead_session=');
       await login.get('/api/auth/me').expect(401);
 
       // The step used to confirm can't be used again, so sign in with the next one.

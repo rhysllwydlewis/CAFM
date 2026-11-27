@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { can, feature } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { requestRecord } from '@/lib/helpdesk';
 import { RequestDetail } from '../../../(app)/app/helpdesk/request-detail';

@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
-import type { FieldDefinition } from '@cafm/config-engine';
-import { Icon } from '@cafm/ui';
+import type { FieldDefinition } from '@fmstead/config-engine';
+import { Icon } from '@fmstead/ui';
 import type {
   Checklist,
   ChecklistTemplateItem,
@@ -9,7 +9,7 @@ import type {
   WorkOrderPhoto,
   WorkOrderRecord,
   WorkOrderSignature,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { requestTime } from '@/lib/helpdesk-format';
 import { customFieldValue } from '../locations/location-custom-fields';
 import { WorkOrderActions } from './work-order-actions';

@@ -1,8 +1,8 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { Button, Field, TextInput } from '@cafm/ui';
-import type { AuditActor, AuditEventView, AuditPage } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import type { AuditActor, AuditEventView, AuditPage } from '@fmstead/shared';
 import styles from '../admin.module.css';
 
 const when = (iso: string) =>

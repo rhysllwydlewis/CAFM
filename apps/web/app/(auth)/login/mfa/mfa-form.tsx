@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, Icon, TextInput } from '@cafm/ui';
-import type { LoginResponse } from '@cafm/shared';
+import { Button, Field, Icon, TextInput } from '@fmstead/ui';
+import type { LoginResponse } from '@fmstead/shared';
 import { postJson } from '@/lib/client';
 
 export function MfaForm({ next }: { next: string | null }) {

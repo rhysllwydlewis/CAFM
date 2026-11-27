@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import type { OrganisationOption } from '@cafm/shared';
-import { Wordmark } from '@cafm/ui';
+import type { OrganisationOption } from '@fmstead/shared';
+import { Wordmark } from '@fmstead/ui';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/next-path';
 import { OrganisationList, SignOutLink } from './organisation-list';

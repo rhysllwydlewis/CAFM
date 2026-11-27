@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Checkbox, Field } from '@cafm/ui';
+import { Button, Checkbox, Field } from '@fmstead/ui';
 import {
   acceptsRequestComments,
   REQUEST_STATUS_LABELS,
@@ -10,7 +10,7 @@ import {
   type RequestRecord,
   type RequestStatus,
   type RequestTypeChoice,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import { RecordPicker } from './record-picker';
 import styles from './helpdesk.module.css';

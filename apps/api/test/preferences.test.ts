@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp } from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });

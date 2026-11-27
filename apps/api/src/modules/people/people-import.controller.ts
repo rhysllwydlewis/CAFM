@@ -14,8 +14,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { newToken, withTenant, type Prisma } from '@cafm/db';
-import { importFileSchema, type ImportBatchRecord, type ImportPreview } from '@cafm/shared';
+import { newToken, withTenant, type Prisma } from '@fmstead/db';
+import { importFileSchema, type ImportBatchRecord, type ImportPreview } from '@fmstead/shared';
 import { assertNotDelegated } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';

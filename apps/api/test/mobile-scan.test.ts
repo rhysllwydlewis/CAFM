@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchScan, readScannedCode, type MobilePackJob } from '@cafm/shared';
+import { matchScan, readScannedCode, type MobilePackJob } from '@fmstead/shared';
 
 const TAG = '66666666-6666-4666-8666-666666666666';
 const ASSET = '55555555-5555-4555-8555-555555555555';
@@ -22,8 +22,8 @@ const job = (number: string, assetId: string | null = ASSET) =>
 
 describe('mobile scan', () => {
   it('reads a label link, a code parameter and plain text', () => {
-    expect(readScannedCode('https://cafm.example/asset-qr/' + ASSET)).toBe(ASSET);
-    expect(readScannedCode('https://cafm.example/asset-qr?code=ast-0002')).toBe('ast-0002');
+    expect(readScannedCode('https://fmstead.example/asset-qr/' + ASSET)).toBe(ASSET);
+    expect(readScannedCode('https://fmstead.example/asset-qr?code=ast-0002')).toBe('ast-0002');
     expect(readScannedCode('  AST-0002 ')).toBe('AST-0002');
   });
 

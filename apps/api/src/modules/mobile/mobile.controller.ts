@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Tx } from '@cafm/db';
-import { mobileMutationsSchema } from '@cafm/shared';
+import { withTenant, type Tx } from '@fmstead/db';
+import { mobileMutationsSchema } from '@fmstead/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../../core/session';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';

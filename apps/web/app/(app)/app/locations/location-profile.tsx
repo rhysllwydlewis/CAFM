@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import type { FieldDefinition } from '@cafm/config-engine';
-import { bankHolidays, SITE_JURISDICTIONS, WEEKDAYS, type LocationPage, type LocationRecord } from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+import type { FieldDefinition } from '@fmstead/config-engine';
+import { bankHolidays, SITE_JURISDICTIONS, WEEKDAYS, type LocationPage, type LocationRecord } from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { route } from './location-data';
 import styles from './locations.module.css';
 import { MapCanvas } from './portfolio-map';

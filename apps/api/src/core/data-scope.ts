@@ -1,4 +1,4 @@
-import type { Prisma } from '@cafm/db';
+import type { Prisma } from '@fmstead/db';
 import type { AuthContext } from './session';
 
 /**

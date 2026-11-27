@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
-import { Button, Checkbox } from '@cafm/ui';
-import type { PrintableAssetTag } from '@cafm/shared';
+import { Button, Checkbox } from '@fmstead/ui';
+import type { PrintableAssetTag } from '@fmstead/shared';
 import styles from '../assets.module.css';
 
 const subscribe = () => () => undefined;

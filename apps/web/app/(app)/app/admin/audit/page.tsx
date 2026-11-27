@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { can, type AuditActor, type AuditPage } from '@cafm/shared';
+import { can, type AuditActor, type AuditPage } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { AuditViewer } from './audit-viewer';

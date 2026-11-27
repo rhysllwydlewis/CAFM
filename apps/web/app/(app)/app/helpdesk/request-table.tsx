@@ -8,11 +8,11 @@ import {
   REQUEST_STATUS_LABELS,
   visibleColumns,
   type RequestSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { REQUEST_COLUMNS } from './request-columns';
 import { RequestBulkBar } from './request-bulk-bar';
 import { GroupRows } from '@/components/list-display';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import styles from './helpdesk.module.css';
 
 import { requestTime } from '@/lib/helpdesk-format';

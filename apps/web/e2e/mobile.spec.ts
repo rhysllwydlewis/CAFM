@@ -11,7 +11,7 @@ async function assertAccessible(page: Page) {
 test('a technician sees their jobs, and they stay on the phone without signal', async ({ page, context }) => {
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('technician@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
 
@@ -39,7 +39,7 @@ test('a technician sees their jobs, and they stay on the phone without signal', 
 test('signing out clears the jobs from the phone', async ({ page }) => {
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('technician@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/m');
@@ -65,7 +65,7 @@ test('signing out clears the jobs from the phone', async ({ page }) => {
 test('jobs saved for one person are not shown to the next person on the same browser', async ({ page }) => {
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('technician@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/m');
@@ -75,7 +75,7 @@ test('jobs saved for one person are not shown to the next person on the same bro
   await page.context().clearCookies();
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('requester@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/m');
@@ -86,7 +86,7 @@ test('jobs saved for one person are not shown to the next person on the same bro
 test('changes made without signal wait on the phone, then sync', async ({ page, context }) => {
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('technician@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/m');
@@ -132,7 +132,7 @@ test('changes made without signal wait on the phone, then sync', async ({ page, 
 test('a technician scans an asset and records a meter reading without signal', async ({ page, context }) => {
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('technician@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/m');
@@ -183,7 +183,7 @@ test('a technician raises a quick job from a scan, and sees recent scans, withou
 }) => {
   await page.goto('/login');
   await page.getByLabel('Email or username').fill('technician@demo.example');
-  await page.getByLabel('Password', { exact: true }).fill('CafmDemo!2026');
+  await page.getByLabel('Password', { exact: true }).fill('FmsDemo!2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto('/m');

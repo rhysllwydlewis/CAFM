@@ -1,11 +1,11 @@
-import type { Account, Membership, Session, Tenant } from '@cafm/db';
-import type { Entitlements } from '@cafm/shared';
+import type { Account, Membership, Session, Tenant } from '@fmstead/db';
+import type { Entitlements } from '@fmstead/shared';
 
-export const SESSION_COOKIE = 'cafm_session';
+export const SESSION_COOKIE = 'fmstead_session';
 export const SHORT_SESSION_MS = 12 * 60 * 60 * 1000; // 12 hours
 export const LONG_SESSION_MS = 30 * 24 * 60 * 60 * 1000; // "Keep me signed in": 30 days
 
-export { hashToken, newToken as newSessionToken } from '@cafm/db';
+export { hashToken, newToken as newSessionToken } from '@fmstead/db';
 
 /** The member's effective access inside the current tenant. */
 export interface Access {

@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Tx } from '@cafm/db';
+import { withTenant, type Tx } from '@fmstead/db';
 import {
   addCostSchema,
   COST_KINDS,
@@ -25,7 +25,7 @@ import {
   type CostKind,
   type LabourType,
   type WorkOrderCosts,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import {
   assertAccess,

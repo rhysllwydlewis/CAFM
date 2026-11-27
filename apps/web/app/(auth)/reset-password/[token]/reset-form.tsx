@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { Button, Icon } from '@cafm/ui';
+import { Button, Icon } from '@fmstead/ui';
 import { postJson } from '@/lib/client';
 import { NewPasswordFields } from '../../new-password-fields';
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -371,10 +371,18 @@ it('authenticates inbound mail, deduplicates provider deliveries and threads a v
     const completedReply = {
       ...message,
       messageId: '<completed@example.test>',
-      inReplyTo: `<cafm-${acknowledgement.id}@cafm.invalid>`,
+      inReplyTo: `<fmstead-${acknowledgement.id}@fmstead.invalid>`,
       text: 'The repair is working.',
     };
     expect((await deliver(completedReply)).body).toEqual(created);
+    // Acknowledgements sent before the rename carry the old cafm identifiers and still thread.
+    const legacyReply = {
+      ...message,
+      messageId: '<legacy@example.test>',
+      inReplyTo: `<cafm-${acknowledgement.id}@cafm.invalid>`,
+      text: 'Thanks, all fixed.',
+    };
+    expect((await deliver(legacyReply)).body).toEqual(created);
     const detail = (await admin.get(helpdesk + '/requests/' + created.requestId).expect(200)).body;
     expect(detail.channel).toBe('email');
     expect(detail.entries.map(({ body }: { body: string }) => body)).toEqual([
@@ -383,6 +391,7 @@ it('authenticates inbound mail, deduplicates provider deliveries and threads a v
       'Classification or priority updated',
       'Completed',
       'The repair is working.',
+      'Thanks, all fixed.',
     ]);
   } finally {
     if (old === undefined) delete process.env.HELPDESK_INBOUND_TOKEN;

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { can, feature } from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+import { can, feature } from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { criticalityBadge, criticalityLabel, hours } from '@/lib/ppm-format';
 import { ppmTemplates } from '@/lib/ppm';
 import { currentUser } from '@/lib/session';

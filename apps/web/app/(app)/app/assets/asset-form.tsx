@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import type { FieldDefinition } from '@cafm/config-engine';
-import { Button, Field, TextInput } from '@cafm/ui';
+import type { FieldDefinition } from '@fmstead/config-engine';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import {
   ASSET_CONDITIONS,
   ASSET_CRITICALITIES,
@@ -12,7 +12,7 @@ import {
   type AssetAttribute,
   type AssetClassRecord,
   type AssetRecord,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { LocationCustomFields, readCustomFields } from '../locations/location-custom-fields';
 import type { AssetDetail } from './asset-data';
 import { Picker, type PickerOption } from './asset-picker';

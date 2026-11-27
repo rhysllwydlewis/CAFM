@@ -2,8 +2,8 @@
 
 import { Suspense, useState, type ChangeEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Icon } from '@cafm/ui';
-import { ATTACHMENT_MAX_BYTES, PHOTO_MEDIA_TYPES, WORK_ORDER_STATUS_LABELS } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { ATTACHMENT_MAX_BYTES, PHOTO_MEDIA_TYPES, WORK_ORDER_STATUS_LABELS } from '@fmstead/shared';
 import { FixSla, PriorityBadge, StatusBadge } from '@/app/(app)/app/work-orders/work-order-parts';
 import { ChecklistSteps } from './../checklist-steps';
 import { useJob } from './../use-job';

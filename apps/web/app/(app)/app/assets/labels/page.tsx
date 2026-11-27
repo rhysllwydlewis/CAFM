@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { can, feature, type PrintableAssetTag } from '@cafm/shared';
+import { can, feature, type PrintableAssetTag } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { configuredAppUrl } from '@/lib/public-url';
 import { currentUser } from '@/lib/session';

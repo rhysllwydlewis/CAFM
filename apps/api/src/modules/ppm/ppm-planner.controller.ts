@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { hasAllLocationAccess, JOB_LICENCES, PPM_TIME_ZONE, withTenant, type Prisma, type Tx } from '@cafm/db';
+import { hasAllLocationAccess, JOB_LICENCES, PPM_TIME_ZONE, withTenant, type Prisma, type Tx } from '@fmstead/db';
 import {
   addDays,
   addMonths,
@@ -21,7 +21,7 @@ import {
   type PpmPlannerRow,
   type PpmSummary,
   type PpmWeekCounts,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import type { AuthContext } from '../../core/session';

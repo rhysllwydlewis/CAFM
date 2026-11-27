@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { oauthAuthorizeSchema, oauthRevokeSchema, oauthTokenSchema } from '@cafm/shared';
+import { oauthAuthorizeSchema, oauthRevokeSchema, oauthTokenSchema } from '@fmstead/shared';
 import { SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { clientInfo } from '../../core/cookies';
 import { parse } from '../../core/validation';

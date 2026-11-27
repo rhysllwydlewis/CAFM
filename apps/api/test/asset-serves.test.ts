@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Button, Icon, TextInput } from '@cafm/ui';
-import type { LocationPage } from '@cafm/shared';
+import { Button, Icon, TextInput } from '@fmstead/ui';
+import type { LocationPage } from '@fmstead/shared';
 import styles from './locations.module.css';
 
 const route = '/app/locations';

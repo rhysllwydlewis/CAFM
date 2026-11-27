@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { Wordmark } from '@cafm/ui';
-import type { PublicSignInMessage } from '@cafm/shared';
+import { Wordmark } from '@fmstead/ui';
+import type { PublicSignInMessage } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/next-path';
 import { LoginForm } from '../../../login/login-form';

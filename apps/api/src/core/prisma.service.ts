@@ -1,5 +1,5 @@
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 
 /**
  * The API connects as the application role (APP_DATABASE_URL, e.g. cafm_app),

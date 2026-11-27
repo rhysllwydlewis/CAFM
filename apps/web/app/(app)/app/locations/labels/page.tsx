@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { can, feature } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
 import { configuredAppUrl } from '@/lib/public-url';
 import { currentUser } from '@/lib/session';
 import { allLocations, locationDetail, route, validLocationId } from '../location-data';

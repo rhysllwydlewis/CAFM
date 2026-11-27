@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PrismaClient, seedId, withTenant } from '@cafm/db';
+import { PrismaClient, seedId, withTenant } from '@fmstead/db';
 import { createWorker, register } from '../src';
 
 const appUrl = process.env.APP_DATABASE_URL;

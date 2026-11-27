@@ -2,8 +2,8 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
-import type { Team } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import type { Team } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 

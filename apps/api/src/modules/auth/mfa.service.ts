@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import argon2 from 'argon2';
-import type { Account } from '@cafm/db';
-import { MFA_FAILED, type MfaEnrolment, type MfaStatus, type MfaVerifyInput, SIGN_IN_FAILED } from '@cafm/shared';
+import type { Account } from '@fmstead/db';
+import { MFA_FAILED, type MfaEnrolment, type MfaStatus, type MfaVerifyInput, SIGN_IN_FAILED } from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
 import { hashToken, newSessionToken } from '../../core/session';
 import {

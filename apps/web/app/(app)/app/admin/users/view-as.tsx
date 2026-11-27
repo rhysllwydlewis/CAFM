@@ -1,8 +1,8 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { Button, Field, TextInput } from '@cafm/ui';
-import type { AdminUser } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import type { AdminUser } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 

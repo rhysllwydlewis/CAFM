@@ -10,7 +10,7 @@ import {
   type CostKind,
   type PhotoPhase,
   type SignatureRole,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 
 /** The tokens' ink, muted ink, brand and border colours, as the PDF cannot read CSS. */
 const INK = '#151A22';

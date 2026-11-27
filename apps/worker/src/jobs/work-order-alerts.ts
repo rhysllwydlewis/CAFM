@@ -1,6 +1,6 @@
 import type { Queue } from 'bullmq';
-import { hasAllLocationAccess, withTenant, type PrismaClient, type Tx } from '@cafm/db';
-import { resolveEntitlements, WORK_ORDER_FINISHED, type WorkOrderStatus } from '@cafm/shared';
+import { hasAllLocationAccess, withTenant, type PrismaClient, type Tx } from '@fmstead/db';
+import { resolveEntitlements, WORK_ORDER_FINISHED, type WorkOrderStatus } from '@fmstead/shared';
 import { register } from '../handlers';
 import type { JobData } from '../index';
 

@@ -18,19 +18,19 @@
       "cache": false,
       "persistent": true
     },
-    "@cafm/db#build": {
+    "@fmstead/db#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
       "cache": false
     },
-    "@cafm/db#typecheck": {
+    "@fmstead/db#typecheck": {
       "dependsOn": ["^build", "build"]
     },
-    "@cafm/db#test": {
+    "@fmstead/db#test": {
       "dependsOn": ["build"],
       "cache": false
     },
-    "@cafm/web#build": {
+    "@fmstead/web#build": {
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",

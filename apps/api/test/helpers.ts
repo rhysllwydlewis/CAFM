@@ -3,8 +3,8 @@ import argon2 from 'argon2';
 import request from 'supertest';
 import type { Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, seedId, withTenant } from '@cafm/db';
-import { BUILTIN_ROLES, DEMO_PASSWORD } from '@cafm/shared';
+import { PrismaClient, seedId, withTenant } from '@fmstead/db';
+import { BUILTIN_ROLES, DEMO_PASSWORD } from '@fmstead/shared';
 import { createApp } from '../src/app';
 
 export { seedId };
@@ -28,7 +28,7 @@ export function testPassword(): string {
 /** The session token from a response's Set-Cookie header. */
 export function sessionCookie(res: { headers: Record<string, unknown> }): string {
   const header = ([] as string[]).concat((res.headers['set-cookie'] as string[] | string | undefined) ?? []);
-  const cookie = header.find((c) => c.startsWith('cafm_session='));
+  const cookie = header.find((c) => c.startsWith('fmstead_session='));
   if (!cookie) throw new Error('No session cookie set');
   return cookie.split(';')[0]!;
 }
