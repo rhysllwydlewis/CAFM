@@ -6,6 +6,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
+- Roles: a new data scope, "my team’s records". People with it see their own records and those of the people they share a team with, in people lists, requests and work orders. See [roles and permissions](docs/admin.md#roles-and-permissions).
 - A new logo: "FM Stead" as a heavy serif wordmark with "FMS" as the short form. The favicon and the mark beside the product name are now an "FM" tile in your accent colour. The product name in the app is unchanged for now.
 - Administration: a Business calendars screen lists every site's opening hours, bank holiday nation, closures and time zone, and flags sites with no calendar. See [business calendars](docs/admin.md#business-calendars).
 - Import and export screen in Administration: choose locations, assets, people or PPM schedules, download the template, check your CSV file (problems are listed by line and column, with an error report to download), import it, and undo a recent import. Exports are on the same page. See [import and export](docs/import-export.md#the-screen).

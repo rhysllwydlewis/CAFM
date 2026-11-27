@@ -90,7 +90,7 @@ export const createRoleSchema = z.object({
   name: z.string().trim().min(1, 'Enter a role name').max(80),
   description: z.string().trim().max(300).optional(),
   permissions: permissionList,
-  scope: z.enum(['all', 'own']).default('all'),
+  scope: z.enum(['all', 'team', 'own']).default('all'),
 });
 export const updateRoleSchema = createRoleSchema.partial();
 

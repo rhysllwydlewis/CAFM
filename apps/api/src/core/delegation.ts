@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { hasAllLocationAccess, scopedLocations, type Tx } from '@cafm/db';
 import type { AuthContext } from './session';
+import { dataScope } from './data-scope';
 
 /**
  * Delegated administration (doc 03 § Delegate administration). Someone with
@@ -50,9 +51,14 @@ export function assertNotDelegated(auth: AuthContext): void {
   if (isDelegated(auth)) throw orgWide('Invitations are managed by an organisation-wide administrator.');
 }
 
-/** Teams carry no site, so someone limited to sites cannot change them (reading is allowed). */
+/**
+ * Teams carry no site, so someone limited to sites cannot change them (reading is allowed). Nor can
+ * anyone whose data scope is "team": team membership decides what a team-scoped person sees, so
+ * they could widen their own access by adding themself to a team.
+ */
 export function assertNotSiteLimited(auth: AuthContext): void {
-  if (auth.membership!.locationScoped) throw orgWide('Teams are managed by an organisation-wide administrator.');
+  if (auth.membership!.locationScoped || dataScope(auth) === 'team')
+    throw orgWide('Teams are managed by an organisation-wide administrator.');
 }
 
 function orgWide(message: string): ForbiddenException {

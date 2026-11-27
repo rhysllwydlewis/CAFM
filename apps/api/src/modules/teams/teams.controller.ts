@@ -17,12 +17,13 @@ import {
 import type { Request } from 'express';
 import { withTenant, type Tx } from '@cafm/db';
 import { createTeamSchema, updateTeamSchema, type Team } from '@cafm/shared';
-import { assertNotSiteLimited } from '../../core/delegation';
+import { administrableMembers, assertNotSiteLimited } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { dataScope, visibleMembers } from '../../core/data-scope';
 
 /** Teams and groups inside the current organisation (doc 03), used for assignment and scoping. */
 @Controller('teams')
@@ -31,18 +32,21 @@ export class TeamsController {
   constructor(private readonly db: PrismaService) {}
 
   /**
-   * Teams with their members. A role whose data scope is "own" sees only itself among the members,
-   * as in the people list, so teams are not a way round people visibility.
+   * Teams with their members. A role whose data scope is "own" sees only itself among the members, and "team"
+   * only itself and its teammates, as in the people list, so teams are not a way round people visibility.
    */
   private async load(tx: Tx, auth: AuthContext, id?: string, scoped = true): Promise<Team[]> {
     const tenantId = auth.membership!.tenantId;
-    const ownOnly = scoped && auth.access!.scope === 'own' ? auth.membership!.id : undefined;
+    const limited = scoped && dataScope(auth) !== 'all';
+    // The same site limit as the people lists, so teams are not a way round it.
+    const allowed = scoped ? await administrableMembers(tx, auth) : null;
+    const sites = allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {};
     const [teams, roles] = await Promise.all([
       tx.team.findMany({
         where: { tenantId, ...(id ? { id } : {}) },
         include: {
           members: {
-            where: ownOnly ? { membershipId: ownOnly } : {},
+            where: { membership: { AND: [limited ? visibleMembers(auth) : {}, sites] } },
             include: { membership: { include: { account: true } } },
           },
         },

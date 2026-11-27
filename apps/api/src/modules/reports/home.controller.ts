@@ -8,6 +8,7 @@ import { PermissionGuard, SessionGuard, TenantGuard } from '../../core/auth.guar
 import { PrismaService } from '../../core/prisma.service';
 import { requestScope } from '../helpdesk/request-scope';
 import { workOrderScope } from '../work-orders/work-order-scope';
+import { dataScope } from '../../core/data-scope';
 
 const LONDON = 'Europe/London';
 const startOfDay = (day: string) => new Date(Temporal.PlainDate.from(day).toZonedDateTime(LONDON).epochMilliseconds);
@@ -46,7 +47,7 @@ export class HomeController {
             // Same meaning as the work order list: logged and not yet picked up by a person or a contractor.
             tx.workOrder.count({ where: { AND: [workOrderScope(auth), { status: 'logged' }] } }),
           ]).then(([count, overdue, dueToday, unassigned]) => ({
-            own: auth.access?.scope === 'own',
+            own: dataScope(auth) === 'own',
             open: count,
             overdue,
             dueToday,
