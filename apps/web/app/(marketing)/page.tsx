@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export default function HomePage() {
   const demo = process.env.DEMO_MODE === 'true';
   return (
-    <main id="top" className={styles.home} data-world="film">
+    <main id="top" className={styles.home}>
       <a className={styles.skip} href="#start">
         Skip to {demo ? 'the demo' : 'sign in'}
       </a>

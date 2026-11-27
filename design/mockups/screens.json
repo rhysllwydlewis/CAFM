@@ -939,7 +939,16 @@
     "id": "marketing-02-homepage",
     "group": "Marketing site (Phase 5 draft)",
     "title": "FM Stead homepage",
-    "desc": "Public home: one day at Cardiff HQ, with scroll as the clock, ending on the demo and sign-in links.",
+    "desc": "Public home: the opening of one flight over a demo estate, played by scrolling, with the demo and sign-in links.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "13-marketing.js"
+  },
+  {
+    "id": "marketing-03-homepage-flight",
+    "group": "Marketing site (Phase 5 draft)",
+    "title": "FM Stead homepage, mid-flight",
+    "desc": "Part-way through the flight: on the roof, with a short headline, callouts pinned to the plant, the altitude and the stage rail.",
     "viewport": "desktop",
     "theme": "light",
     "file": "13-marketing.js"
