@@ -219,6 +219,22 @@ describe('an administrator resets someone’s MFA', () => {
   });
 });
 
+describe('resetting the MFA of someone with a higher role', () => {
+  it('is refused for an Administrator resetting a Super User, and kept intact', async () => {
+    const boss = await createTestAccount(db, [DEMO_TENANT], undefined, 'super_user');
+    try {
+      await owner.accountMfa.create({
+        data: { accountId: boss.account.id, secretCipher: 'x.y.z', enabledAt: new Date() },
+      });
+      const admin = await signIn(app, 'admin@demo.example');
+      await admin.agent.post(`/api/people/${boss.memberships[0]}/mfa/reset`).send({}).expect(403);
+      expect(await db.accountMfa.count({ where: { accountId: boss.account.id } })).toBe(1);
+    } finally {
+      await boss.cleanup();
+    }
+  });
+});
+
 describe('an organisation that requires MFA', () => {
   it('holds a person without it to the set-up until they have it, and not another organisation', async () => {
     const required = await createTestTenant(db);

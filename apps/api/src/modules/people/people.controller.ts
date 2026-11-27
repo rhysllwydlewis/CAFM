@@ -204,6 +204,11 @@ export class PeopleController {
       if (!target) throw new NotFoundException();
       await assertAdministrable(tx, auth, target.id);
       assertNotDemoLocked(target.account.isDemo);
+      // Taking away someone's second step is a power over them: not over a role with more than the actor holds.
+      const role = await tx.role.findUnique({
+        where: { tenantId_key: { tenantId: actor.tenantId, key: target.role } },
+      });
+      assertCanGrant(auth.access!, actor.role, role?.permissions ?? []);
       await audit(
         tx,
         auth,

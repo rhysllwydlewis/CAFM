@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { can, feature } from '@cafm/shared';
 import { Logo } from '@cafm/ui';
 import type { CurrentUser } from '@cafm/shared';
@@ -11,6 +12,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   const response = await apiGet('/auth/me');
   if (!response.ok) return children;
   const user = (await response.json()) as CurrentUser;
+  if (user.mfaSetupRequired) redirect('/mfa-setup');
   const allowed = feature(user.entitlements, 'helpdesk') && can(user, 'requests.create');
   return (
     <div>

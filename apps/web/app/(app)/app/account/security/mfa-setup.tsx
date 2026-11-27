@@ -59,7 +59,8 @@ export function MfaSetup({
         setCodes(((await res.json()) as { recoveryCodes: string[] }).recoveryCodes);
         setEnrolment(null);
         setCode('');
-        router.refresh();
+        // On the required set-up page a refresh would send the person on before they have saved the codes.
+        if (!doneHref) router.refresh();
       },
     );
   }

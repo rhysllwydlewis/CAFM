@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { safeNext } from '@/lib/next-path';
 import { AuthCard } from '../../auth-card';
 import { MfaForm } from './mfa-form';
 
@@ -9,7 +10,7 @@ export default async function MfaPage({ searchParams }: { searchParams: Promise<
   const { next } = await searchParams;
   return (
     <AuthCard title="Two-step verification">
-      <MfaForm next={next && next.startsWith('/') && !next.startsWith('//') ? next : null} />
+      <MfaForm next={safeNext(next)} />
       <Link href="/login" className="medium">
         Back to sign in
       </Link>
