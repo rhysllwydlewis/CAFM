@@ -10,7 +10,7 @@ export interface RequestLogLine {
   msg: 'request';
   requestId: string;
   method: string;
-  /** The path only. The query string is left out because it can carry tokens. */
+  /** The matched route template (for example /api/invites/:token), never the real path, because tokens travel in path segments. */
   path: string;
   status: number;
   durationMs: number;
@@ -23,6 +23,12 @@ export function requestLogEnabled(env: NodeJS.ProcessEnv = process.env): boolean
   if (env.LOG_REQUESTS === 'true') return true;
   if (env.LOG_REQUESTS === 'false') return false;
   return env.NODE_ENV !== 'test' && !env.VITEST;
+}
+
+/** The route pattern Express matched. Unmatched requests (404s) are logged as '(unmatched)' since their path is caller-supplied. */
+function routeTemplate(req: Request): string {
+  const route = (req.route as { path?: unknown } | undefined)?.path;
+  return typeof route === 'string' ? `${req.baseUrl}${route}` : '(unmatched)';
 }
 
 /**
@@ -44,7 +50,7 @@ export function requestLogger(write: (line: string) => void = (line) => console.
         msg: 'request',
         requestId,
         method: req.method,
-        path: req.originalUrl.split('?')[0] ?? '',
+        path: routeTemplate(req),
         status,
         durationMs: Math.round(Number(process.hrtime.bigint() - started) / 1e5) / 10,
         tenantId: req.auth?.membership?.tenantId ?? null,
