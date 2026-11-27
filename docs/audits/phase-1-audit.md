@@ -18,7 +18,7 @@ Phase 1 is in better shape than the tracker alone could show. Every ticked item 
 | Row-level security | `rls.test.ts` checks every table in the database and it passes, so no tenant table is missing a policy |
 | Permissions on API endpoints | 252 routes. 205 carry a permission or feature check. Of the other 47, I read the ones that touch tenant data (saved views, the home summary, asset scan, notifications) and each is guarded in its own code. The rest are sign-in, password reset, invitations, the contractor magic links and the person's own account, which are meant to be open to that person only |
 | Ticked items against the plan | For P1-01 to P1-08, P1-10, P1-11 and P1-12 I checked that each has code, API tests, an end-to-end spec where it has screens, and a guide. I did not trace every sub-item to a line of code. P1-09 and P1-13 are rightly left unticked |
-| Merged without a Reviewer sign-off | PR 43, 69, 82 and 106. PR 82 and 106 were reviewed afterwards (issues 92 and 114, both closed). PR 43 (the mobile API) was followed by PR 51, a review of it. PR 69 (group and column chooser) has no review issue of its own. PR 70 and 71 built on it and were signed off, but it was not reviewed on its own |
+| Merged without a Reviewer sign-off | PR 43, 69, 82 and 106. Re-read against current `main` and listed in issue 126. PR 69 changed one tracker row only, so there was nothing to review. PR 82 is clean apart from one cosmetic note. PR 106 had two problems, already fixed by PR 107. PR 43 (the mobile API) has one decision (who sees site access notes on the phone) and a few smaller items, all in issue 126 |
 
 ## Found and fixed in the mop-up PR
 
