@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 test.describe('sign in with a demo account', () => {
   test('a demo card fills the form, and signing in lands on Home', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'One day at Cardiff HQ.' })).toBeVisible();
-    await page.locator('[data-intro]').getByRole('link', { name: 'Try the demo' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Run every building.' })).toBeVisible();
+    await page.locator('[data-hero]').getByRole('link', { name: 'Try the demo' }).click();
     await expect(page).toHaveURL(/\/login#demo-heading$/);
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 

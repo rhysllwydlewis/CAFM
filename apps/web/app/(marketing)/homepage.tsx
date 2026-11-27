@@ -1,51 +1,40 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Icon, Wordmark } from '@fmstead/ui';
-import '@fontsource-variable/inter/wght-italic.css';
 import { startFilm } from './film';
+import { CHAPTERS, FRAMES, STOPS } from './film-content';
 import styles from './home.module.css';
 
-const media = '/homepage';
-/** The evening's scenes, in order. */
-const stills = ['building', 'exploded', 'plant', 'window'] as const;
-/** What FM Stead did at Cardiff HQ today (demo data). */
-const day = [
-  { hour: 6, time: '06:00', what: 'Site opens', detail: 'Business hours · SLA clocks start' },
-  { hour: 7.5, time: '07:30', what: "Today's planned visits raised", detail: 'PPM generator · work orders' },
-  { hour: 9.23, time: '09:14', what: 'Lights flickering at reception', detail: 'REQ-10483 · by QR code' },
-  { hour: 10.05, time: '10:03', what: 'WO-10413 completed', detail: 'Within the 24-hour target' },
-  { hour: 11, time: '11:00', what: 'Fire alarm weekly test', detail: 'PPM-0144 · passed' },
-  { hour: 14.5, time: '14:30', what: 'AHU filter change', detail: 'PPM-0143 · AHU-1' },
-  { hour: 16.17, time: '16:10', what: 'Sunset', detail: 'Lighting on · all floors' },
-  {
-    hour: 17.75,
-    time: '17:45',
-    what: 'Boiler 2 losing pressure',
-    detail: 'WO-10412 · P2 · fix in 8 hours',
-    risk: true,
-  },
-];
-const captions = [
-  { id: '1', lines: ['Floor', 'by floor.'], meta: 'Sites · floors · spaces' },
-  { id: '2', lines: ['Every', 'asset.'], meta: 'Register · history · planned maintenance' },
-  { id: '2b', lines: ['Every job,', 'closed.'], meta: 'Checklist · photos · signature' },
-  { id: '3', lines: ['Every', 'site.'], meta: 'Twelve sites · one login' },
-] as const;
-const hours = Array.from({ length: 39 }, (_, i) => 5 + i / 2);
-const modules = ['Helpdesk', 'Work orders', 'Planned maintenance', 'Assets', 'Locations'];
+/** The calls to action. A demo site offers the demo first. A real one has only sign in. */
+function Actions({ demo, where }: { demo: boolean; where?: 'hero' | 'close' }) {
+  const marker = where === 'hero' ? { 'data-hero-actions': '' } : where === 'close' ? { 'data-close-actions': '' } : {};
+  return (
+    <div className={styles.actions} {...marker}>
+      {demo ? (
+        <>
+          <Link className={`btn primary lg ${styles.big}`} href="/login#demo-heading">
+            Try the demo <Icon name="chevron-right" />
+          </Link>
+          <Link className={`btn lg ${styles.big} ${styles.ghost}`} href="/login">
+            Sign in
+          </Link>
+        </>
+      ) : (
+        <Link className={`btn primary lg ${styles.big}`} href="/login">
+          Sign in <Icon name="chevron-right" />
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export function Homepage({ demo }: { demo: boolean }) {
   const film = useRef<HTMLElement>(null);
   useEffect(() => (film.current ? startFilm(film.current) : undefined), []);
 
   const cta = demo ? { href: '/login#demo-heading', label: 'Try the demo' } : { href: '/login', label: 'Sign in' };
-  const primary = (big?: boolean) => (
-    <Link className={`btn primary lg ${big ? styles.big : ''}`} href={cta.href}>
-      {cta.label} <Icon name="chevron-right" />
-    </Link>
-  );
 
   return (
     <>
@@ -58,133 +47,137 @@ export function Homepage({ demo }: { demo: boolean }) {
             Sign in
           </Link>
         )}
-        {primary()}
+        <Link className="btn primary lg" href={cta.href}>
+          {cta.label} <Icon name="chevron-right" />
+        </Link>
       </header>
 
-      <section ref={film} className={styles.film} aria-label="One day at Cardiff HQ, a demo site">
-        <div className={styles.stage} data-film-stage data-scene="0">
-          {stills.map((name, i) => (
-            <img
-              key={name}
-              className={styles.still}
-              data-still={i}
-              data-on={i === 0}
-              src={`${media}/${name}.webp`}
-              alt=""
-              loading={i === 0 ? undefined : 'lazy'}
-            />
-          ))}
-          {/* 05:00: the dawn frame, darkened as the film shows it, until the film draws */}
-          <img className={styles.predawn} data-daylight="dawn" src={`${media}/dawn.webp`} alt="" fetchPriority="high" />
-          <img className={styles.daylight} data-daylight="noon" src={`${media}/noon.webp`} alt="" loading="lazy" />
-          <canvas className={styles.canvas} aria-hidden="true" />
-          <div className={styles.shade} data-shade aria-hidden="true" />
+      <section ref={film} className={styles.film} data-film-section aria-labelledby="film-title">
+        <div className={styles.stage} data-film-stage>
+          {/* The first frame, until the film draws */}
+          <img className={styles.poster} src={`${FRAMES.path}/f0001.webp`} alt="" fetchPriority="high" />
+          <canvas className={styles.canvas} data-canvas aria-hidden="true" />
+          <div className={styles.shade} data-shade data-mode="opening" aria-hidden="true" />
+          <div className={styles.grain} aria-hidden="true" />
 
-          <div className={styles.intro} data-intro data-state="on">
+          <div className="sr-only">
+            <h2 id="film-title">One flight over a demo estate</h2>
+            <ol>
+              {STOPS.map((stop, i) => {
+                const chapter = CHAPTERS.find((c) => c.stop === i);
+                return (
+                  <li key={stop.name}>
+                    {stop.says}
+                    {chapter ? ` ${chapter.lines.join(' ')}` : ''}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <div className={`${styles.layer} ${styles.hero}`} data-hero data-on="true">
             <h1>
-              One day at <em>Cardiff HQ.</em>
+              Run every <em>building.</em>
             </h1>
-            <p className={styles.lede}>
-              FM Stead runs the helpdesk, work orders, planned maintenance, assets and locations for UK estates teams.
-            </p>
-            <div className={styles.actions} data-hero-actions>
-              {primary(true)}
-              {demo && (
-                <Link className={`btn lg ${styles.big} ${styles.onFilm}`} href="/login">
-                  Sign in
-                </Link>
-              )}
-            </div>
+            <p className={styles.lede}>Facilities management software.</p>
+            <Actions demo={demo} where="hero" />
           </div>
-
-          <ol className={styles.log} data-log aria-label="Cardiff HQ today">
-            {day.map(({ hour, time, what, detail, risk }) => (
-              <li key={time} className={styles.event} data-hour={hour} data-state="off">
-                <time>{time}</time>
-                <span>
-                  {what}
-                  <small className={risk ? styles.risk : undefined}>{detail}</small>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <div className={styles.clock} data-clock aria-hidden="true">
-            <p className={styles.time} data-time>
-              05:00
-            </p>
-            <p className={styles.where}>Cardiff HQ · demo site</p>
-          </div>
-
-          <span className={styles.pin} data-pin="boiler-1" aria-hidden="true">
-            <i />
-            Boiler 1
-          </span>
-          <span className={styles.pin} data-pin="boiler-2" aria-hidden="true">
-            <i />
-            Boiler 2 · WO-10412 · <b>P2</b>
-          </span>
-          <span className={`${styles.pin} ${styles.fixed}`} data-pin="boiler-2-fixed" aria-hidden="true">
-            <i />
-            Boiler 2 · WO-10412 · <b>Fixed</b>
-          </span>
-
-          {captions.map(({ id, lines, meta }) => (
-            <div key={id} className={styles.caption} data-caption={id} data-state="next">
-              <h2>
-                <span className={styles.line}>
-                  <span>{lines[0]}</span>
-                </span>{' '}
-                <span className={styles.line}>
-                  <span>
-                    <em>{lines[1]}</em>
-                  </span>
-                </span>
-              </h2>
-              <p className={styles.meta}>{meta}</p>
-            </div>
-          ))}
-
-          <p className={styles.corner} data-corner aria-hidden="true">
-            18:00
+          <p className={styles.hint} data-hint data-on="true" aria-hidden="true">
+            Scroll
           </p>
-          <div className={styles.ruler} data-ruler aria-hidden="true">
-            {hours.map((h) => (
-              <i
-                key={h}
-                className={Number.isInteger(h) ? styles.hour : undefined}
-                style={{ left: `${((h - 5) / 19) * 100}%` }}
-              />
+
+          <div className={`${styles.layer} ${styles.altitude}`} data-altitude aria-hidden="true">
+            <p>
+              <span data-altitude-number>0</span>
+              <small>m</small>
+            </p>
+          </div>
+          <div className={`${styles.layer} ${styles.rail}`} aria-hidden="true">
+            <b data-rail-fill />
+            {STOPS.map((stop, i) => (
+              <Fragment key={stop.name}>
+                <i
+                  className={styles.railDot}
+                  data-rail-dot
+                  style={{ top: `calc(${(i / (STOPS.length - 1)) * 100}% - 4px)` }}
+                />
+                <span
+                  className={styles.railLabel}
+                  data-rail-label
+                  style={{ top: `${(i / (STOPS.length - 1)) * 100}%` }}
+                >
+                  {stop.name}
+                </span>
+              </Fragment>
             ))}
-            {[6, 9, 12, 15, 18, 21, 24].map((h) => (
-              <span key={h} style={{ left: `${((h - 5) / 19) * 100}%` }}>
-                {String(h % 24).padStart(2, '0')}
-              </span>
+          </div>
+
+          <div aria-hidden="true">
+            {CHAPTERS.map((chapter) => (
+              <div
+                key={chapter.stop}
+                className={`${styles.layer} ${styles.chapter} ${chapter.side === 'right' ? styles.right : styles.left}`}
+                data-chapter
+                data-on="false"
+              >
+                <h2>
+                  <span className={styles.line}>
+                    <span>{chapter.lines[0]}</span>
+                  </span>
+                  <span className={styles.line}>
+                    <span>
+                      <em>{chapter.lines[1]}</em>
+                    </span>
+                  </span>
+                </h2>
+              </div>
             ))}
-            <b data-ruler-mark />
+          </div>
+          <div aria-hidden="true">
+            {CHAPTERS.flatMap((chapter, i) =>
+              (chapter.tags ?? []).map((tag) => (
+                <div
+                  key={tag.title}
+                  className={styles.callout}
+                  data-tag
+                  data-tag-chapter={i}
+                  data-on="false"
+                  data-x={tag.x}
+                  data-y={tag.y}
+                >
+                  <i />
+                  <b>{tag.title}</b>
+                  <span>{tag.detail}</span>
+                </div>
+              )),
+            )}
+          </div>
+
+          <div className={`${styles.layer} ${styles.ending}`} data-close data-on="false">
+            <h2>
+              Every <em>day.</em>
+            </h2>
+            <Actions demo={demo} where="close" />
           </div>
         </div>
+
+        <div className={styles.loader} data-loader role="status" aria-label="Loading the film">
+          <Wordmark height={30} tone="current" />
+          <div className={styles.loadBar} aria-hidden="true">
+            <i data-loader-bar />
+          </div>
+        </div>
+        <noscript>
+          <style>{'[data-loader]{display:none}[data-film-section]{height:100svh!important}'}</style>
+        </noscript>
       </section>
 
       <section className={styles.final} id="start" aria-labelledby="final-title">
-        <h2 id="final-title">
-          Every day. <em>Every building.</em>
-        </h2>
-        <div className={styles.links}>
-          {primary(true)}
-          {demo && (
-            <Link className={`btn lg ${styles.big} ${styles.onPaper}`} href="/login">
-              Sign in
-            </Link>
-          )}
-        </div>
-        <ul className={styles.modules} aria-label="In FM Stead">
-          {modules.map((name) => (
-            <li key={name}>{name}</li>
-          ))}
-        </ul>
+        <h2 id="final-title">One login for every site you look after.</h2>
+        <Actions demo={demo} />
         <footer className={styles.footer}>
-          <span>© 2026 FM Stead</span>
-          <span>{demo ? 'Demo data only' : 'Facilities management software'}</span>
+          <span>© 2026 FM Stead · {demo ? 'Demo data only' : 'Facilities management software'}</span>
+          <a href="#top">Back to the top</a>
         </footer>
       </section>
     </>

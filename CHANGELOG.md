@@ -97,6 +97,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Changed
 
+- The homepage is now one scroll-driven flight over a demo estate: from a city square up a tower, over its roof plant and out across a twelve-site district at night, ending back in the square. Short headlines and callouts pinned to the plant appear as you rise, with an altitude readout and a stage rail. It keeps the demo and sign-in links, uses the FM Stead logo, works without JavaScript, follows reduced motion, and has a written version for screen readers.
 - Internal names now say FM Stead too: the sign-in and theme cookies, the offline phone app's sign-in client, background job queue and email identifiers. You are signed out once and the theme resets to the default, and the demo password is now `FmsDemo!2026`. Replies to earlier request acknowledgement emails still reach the right request.
 - The product is now called FM Stead (short form FMS). The name replaces "CAFM" in the side menu, the sign-in pages, the homepage, page titles, the phone app name, emails, notifications and job sheets, and the logo is the new FM Stead wordmark. Sign-in details, saved settings and the demo password are not affected.
 - The Light, Dark and System theme buttons in the account menu now look like the rest of the interface (a soft track with a raised chip for the chosen one) instead of plain browser buttons.

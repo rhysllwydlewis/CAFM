@@ -1,6 +1,6 @@
 # 06 · Login Page & Demo Environment
 
-The sign-in page remains the entry point to the authenticated app. The public homepage introduces FM Stead and includes an interactive sample work order. The wider marketing and onboarding plan remains in Phase 5.
+The sign-in page remains the entry point to the authenticated app. The public homepage introduces FM Stead with a scroll-driven film of a demo estate and links to sign in and the demo. The wider marketing and onboarding plan remains in Phase 5.
 
 ## Routes
 
@@ -12,7 +12,7 @@ The sign-in page remains the entry point to the authenticated app. The public ho
 | `/logout` | 0 | Ends the session (POST, CSRF-protected) |
 | `/forgot-password`, `/reset-password/:token` | 0 | Password reset by email (single-use token, 30-minute expiry) |
 | `/accept-invite/:token` | 0 | New users set a password and accept terms |
-| `/` | 0+ | Public marketing homepage with a sample workflow and a link to sign in. Demo environments also link to the demo account chooser. |
+| `/` | 0+ | Public marketing homepage: a scroll-driven film of a demo estate, with a link to sign in. Demo environments also link to the demo account chooser. |
 | `/app/...` | 0+ | The authenticated application |
 | `/portal/...` | 1+ | Requester self-service portal (same login) |
 
