@@ -18,6 +18,7 @@ export function SecurityManager({ settings }: { settings: SecuritySettingsView }
   const [length, setLength] = useState(String(settings.passwordMinLength));
   const [hours, setHours] = useState(settings.sessionTimeoutHours === null ? '' : String(settings.sessionTimeoutHours));
   const [mfa, setMfa] = useState(settings.mfaRequired);
+  const [viewAs, setViewAs] = useState(settings.allowViewAsUser);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
 
@@ -44,6 +45,7 @@ export function SecurityManager({ settings }: { settings: SecuritySettingsView }
           passwordMinLength: lengthNumber,
           sessionTimeoutHours: hours.trim() === '' ? null : hoursNumber,
           mfaRequired: mfa,
+          allowViewAsUser: viewAs,
         },
         'PUT',
       );
@@ -110,6 +112,16 @@ export function SecurityManager({ settings }: { settings: SecuritySettingsView }
         <p className="faint sm">
           Saved now. It is enforced when authenticator-app sign-in is released, so nobody is locked out before they can
           set it up.
+        </p>
+        <Checkbox
+          label="Allow view as user"
+          checked={viewAs}
+          onChange={(e) => setViewAs(e.target.checked)}
+          disabled={busy}
+        />
+        <p className="faint sm">
+          Lets Super Users see the app as another person sees it, read-only, to troubleshoot. Each use is recorded in
+          the audit log. Switching it off stops new sessions at once.
         </p>
         <p role="status" className={feedback?.error ? 'field-error' : 'muted'}>
           {feedback?.text}

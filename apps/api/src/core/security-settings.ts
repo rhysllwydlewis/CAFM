@@ -12,6 +12,7 @@ export function readSecurity(db: PrismaService, tenantId: string): Promise<Secur
           passwordMinLength: row.passwordMinLength,
           sessionTimeoutHours: row.sessionTimeoutHours,
           mfaRequired: row.mfaRequired,
+          allowViewAsUser: row.allowViewAsUser,
         }
       : { ...DEFAULT_SECURITY_SETTINGS };
   });

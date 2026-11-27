@@ -19,7 +19,7 @@ import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '.
 import { clientInfo, cookieOptions, setSessionCookie } from '../../core/cookies';
 import { administrableMembers } from '../../core/delegation';
 import { PrismaService } from '../../core/prisma.service';
-import { sessionLifetimeMs } from '../../core/security-settings';
+import { readSecurity, sessionLifetimeMs } from '../../core/security-settings';
 import { newSessionToken, SESSION_COOKIE } from '../../core/session';
 import { parse } from '../../core/validation';
 
@@ -50,6 +50,12 @@ export class ImpersonationController {
     const me = auth.membership!;
     const tenantId = me.tenantId;
     const client = clientInfo(req);
+    if (!(await readSecurity(this.db, tenantId)).allowViewAsUser) {
+      throw new ForbiddenException({
+        code: 'impersonation_disabled',
+        message: 'View as user is switched off for your organisation. Turn it on in Security and sign-in.',
+      });
+    }
     if (auth.impersonator) throw new ForbiddenException({ code: 'already_impersonating' });
     if (input.membershipId === me.id) {
       throw new ForbiddenException({ code: 'impersonation_self', message: 'You are already signed in as yourself.' });

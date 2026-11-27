@@ -69,7 +69,7 @@ The **View as user** card on `/app/admin/users` lets a Super User see the app as
 
 `POST /api/admin/impersonation/end` gives you a fresh session of your own. If you have lost the permission or been deactivated meanwhile, it signs you out instead. The viewing session carries `impersonator_account_id` and `impersonator_membership_id` on the `session` row.
 
-Not built yet: the organisation setting "Allow view as user" (the mockup `admin-08-security`) comes with the security settings in P1-09e.
+Organisations can switch this off with **Allow view as user** on Security and sign-in. It is on by default. When it is off, starting a session is refused with a clear message; sessions already running end at their one-hour limit.
 
 ## Branding
 

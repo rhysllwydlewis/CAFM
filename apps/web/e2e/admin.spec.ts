@@ -417,6 +417,18 @@ test('a Super User saves security settings and finds the change in the audit log
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Security settings saved.' })).toBeVisible();
 
+  // "Allow view as user" is on by default; switching it off sticks, and is put back so other tests are unaffected.
+  const viewAs = page.getByLabel('Allow view as user');
+  await expect(viewAs).toBeChecked();
+  await viewAs.uncheck();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Security settings saved.' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Allow view as user')).not.toBeChecked();
+  await page.getByLabel('Allow view as user').check();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Security settings saved.' })).toBeVisible();
+
   await page.getByRole('link', { name: 'Audit log' }).click();
   await expect(page).toHaveURL(/\/app\/admin\/audit$/);
   await page.getByLabel('Event').fill('security_updated');
