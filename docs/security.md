@@ -14,7 +14,7 @@ Set in `apps/web/next.config.ts` on every page:
 ## API request log
 
 Every API request writes one JSON line to standard output when it finishes:
-`time`, `level`, `requestId`, `method`, `path` (no query string, link tokens replaced by `:token`), `status`, `durationMs`, `tenantId` and `membershipId` (null before sign-in).
+`time`, `level`, `requestId`, `method`, `path` (the matched route, such as `/api/auth/invites/:token`, never the real path, because tokens travel in path segments; unmatched requests show `(unmatched)`), `status`, `durationMs`, `tenantId` and `membershipId` (null before sign-in).
 
 - The ID is the caller's `x-request-id` when it is 8 to 64 letters, digits, `.`, `_` or `-`; otherwise a new UUID. It is returned in the `x-request-id` response header, so a support request can quote it.
 - Bodies, query strings, cookies and headers are never logged.
