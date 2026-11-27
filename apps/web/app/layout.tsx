@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/jetbrains-mono';
 import '@fmstead/ui/styles.css';
@@ -13,9 +13,12 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="en-GB" data-theme={theme === 'system' ? undefined : theme} suppressHydrationWarning>
-      <head>{theme === 'system' && <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />}</head>
+      <head>
+        {theme === 'system' && <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />}
+      </head>
       <body>{children}</body>
     </html>
   );
