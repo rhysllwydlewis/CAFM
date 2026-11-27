@@ -48,7 +48,7 @@ Seven phases (Phase 2 is split into 2A and 2B). Each ends with a deployable, dem
 - Mobile PWA for technicians (offline work packs, mutation queue sync, checklists, photos, signatures, scan) with OAuth tokens.
 - Notifications (in-app, email, push) with templates.
 - List views: filters, saved views, bulk actions, kanban and calendar views.
-- Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
+- Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
 - Standard reports + role default dashboards (fixed widgets).
 - Import/export for locations, assets, users, PPM schedules.
 - MFA (TOTP).
@@ -79,7 +79,7 @@ The product owner approved larger PRs for complete capabilities. The tracker sti
 - Contractor management, accreditations/insurance, auto-suspension, **contractor portal**, quotes/RFQ, contractor site sign-in.
 - **Permit to Work and RAMS** (moved forward from Phase 4: contractor work needs them).
 - Documents module (versions, expiry, previews, external sharing).
-- Workflow builder UI + automation rules + approvals engine; form designer.
+- Workflow builder UI + automation rules + approvals engine; form designer. Includes configurable request and work order statuses, moved here from the Phase 1 admin console because they need the workflow engine.
 - Config history UI with diff and rollback; config export/import.
 - Data retention policies, legal hold, DSAR export/erasure tools.
 - Public REST API v1 + API keys + webhooks.
