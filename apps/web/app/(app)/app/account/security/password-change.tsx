@@ -8,6 +8,7 @@ import { postJson } from '@/lib/client';
 async function problem(res: Response): Promise<string> {
   const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
   const message = Array.isArray(body?.message) ? body.message[0] : body?.message;
+  if (res.status === 401) return 'You have been signed out. Sign in again to change your password.';
   return [422, 429].includes(res.status) && message ? message : 'Something went wrong. Try again in a moment.';
 }
 

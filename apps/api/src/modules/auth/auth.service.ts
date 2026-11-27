@@ -24,6 +24,7 @@ import {
   type PasswordChangeInput,
 } from '@fmstead/shared';
 import { demoLocked } from '../../core/access-rules';
+import { appUrl, queuePlatformEmail } from '../../core/mail';
 import { PrismaService } from '../../core/prisma.service';
 import { sessionLifetimeMs, strictestMinLength } from '../../core/security-settings';
 import { type AuthContext, hashToken, newSessionToken } from '../../core/session';
@@ -328,6 +329,24 @@ export class AuthService {
           OR: [{ accountId: account.id }, { impersonatorAccountId: account.id }],
         },
       });
+      // Tell the person, in case it wasn't them. Accounts with a username only have no email to tell.
+      if (account.email) {
+        await queuePlatformEmail(tx, {
+          to: account.email,
+          subject: 'Your FM Stead password was changed',
+          text: [
+            `Hello ${account.name},`,
+            '',
+            'The password for your FM Stead account was just changed, and any other devices were signed out.',
+            '',
+            'If it was you, there is nothing more to do. If it wasn’t, reset your password now:',
+            '',
+            `${appUrl()}/forgot-password`,
+            '',
+            'Then tell your administrator.',
+          ].join('\n'),
+        });
+      }
     });
     await this.event('password_changed', { accountId: account.id, ip: client.ip });
   }

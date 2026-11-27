@@ -88,13 +88,11 @@ test.describe('changing your own password', () => {
     await expect(page.getByLabel('Current password')).toHaveValue('');
     expect((await page.request.get('/api/auth/me')).status()).toBe(200);
 
-    // The new password signs in; the old one does not.
+    // The new password signs in. (That the old one no longer does is covered by the API test; a failed sign-in
+    // here would count against the IP limit that every end-to-end test shares.)
     await page.context().clearCookies();
     await page.goto('/login');
     await page.getByLabel('Email or username').fill(email);
-    await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/login/);
     await page.getByLabel('Password', { exact: true }).fill(NEXT_PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/app$/);

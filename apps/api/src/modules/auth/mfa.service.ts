@@ -10,7 +10,6 @@ import {
   TOO_MANY_ATTEMPTS,
 } from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
-import { LoginRateLimiter } from './login-rate-limiter';
 import { hashToken, newSessionToken } from '../../core/session';
 import {
   decryptSecret,
@@ -21,6 +20,7 @@ import {
   otpauthUri,
   verifyCode,
 } from '../../core/totp';
+import { LoginRateLimiter } from './login-rate-limiter';
 
 const CHALLENGE_MS = 5 * 60 * 1000;
 const MAX_CHALLENGE_FAILURES = 5;

@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient } from '@fmstead/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { DEMO_PASSWORD } from '@fmstead/shared';
-import { createTestAccount, DEMO_TENANT, ownerDb, signIn, startApp, testPassword } from './helpers';
+import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp, testPassword } from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
 const owner = ownerDb();
@@ -96,6 +96,55 @@ describe('changing your own password', () => {
       );
     } finally {
       await person.cleanup();
+    }
+  });
+
+  it('emails the person to say it changed, and not before it has', async () => {
+    const person = await createTestAccount(db, [DEMO_TENANT]);
+    const sent = () =>
+      owner.outboxMessage.findMany({ where: { topic: 'email.send', payload: { path: ['to'], equals: person.email } } });
+    try {
+      const { agent } = await signIn(app, person.email, person.password);
+      await agent
+        .post('/api/auth/password')
+        .send({ currentPassword: 'not-my-password', newPassword: testPassword() })
+        .expect(422);
+      expect(await sent()).toHaveLength(0);
+
+      await agent
+        .post('/api/auth/password')
+        .send({ currentPassword: person.password, newPassword: testPassword() })
+        .expect(204);
+      const [message] = await sent();
+      expect(message?.payload).toMatchObject({ to: person.email, subject: 'Your FM Stead password was changed' });
+      expect((message?.payload as { text: string }).text).toContain('/forgot-password');
+    } finally {
+      await person.cleanup();
+    }
+  });
+
+  it('applies the longest minimum length among the person’s organisations', async () => {
+    const t = await createTestTenant(db);
+    const person = await createTestAccount(db, [DEMO_TENANT, t.tenant.id]);
+    try {
+      await withTenant(db, t.tenant.id, (tx) =>
+        tx.tenantSecurity.create({ data: { tenantId: t.tenant.id, passwordMinLength: 20 } }),
+      );
+      const { agent } = await signIn(app, person.email, person.password);
+      const twelve = 'Abcdefg-12345';
+      const refused = await agent
+        .post('/api/auth/password')
+        .send({ currentPassword: person.password, newPassword: twelve })
+        .expect(422);
+      expect(refused.body.message).toBe('Use at least 20 characters');
+      await agent
+        .post('/api/auth/password')
+        .send({ currentPassword: person.password, newPassword: testPassword() + 'x' })
+        .expect(204);
+    } finally {
+      await owner.tenantSecurity.deleteMany({ where: { tenantId: t.tenant.id } });
+      await person.cleanup();
+      await t.cleanup();
     }
   });
 
