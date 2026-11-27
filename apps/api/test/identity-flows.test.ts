@@ -9,6 +9,8 @@ import {
   createTestTenant,
   DEMO_TENANT,
   ownerDb,
+  pairDevice,
+  refreshDevice,
   sessionCookie,
   signIn,
   startApp,
@@ -81,6 +83,21 @@ describe('password reset', () => {
       await signIn(app, t.email, NEW_PASSWORD);
       await http().post('/api/auth/password-reset/confirm').send({ token, password: OTHER_PASSWORD }).expect(410);
       expect((await http().get(`/api/auth/password-reset/${token}`).expect(200)).body).toEqual({ valid: false });
+    } finally {
+      await t.cleanup();
+    }
+  });
+
+  it('a reset signs out phones too, so a refresh token cannot get back in', async () => {
+    const t = await createTestAccount(db, [DEMO_TENANT]);
+    try {
+      const paired = await pairDevice(app, t.email, t.password);
+      // Use the current token, not the first one: an old, already-rotated token is refused as a replay.
+      const phone = { refreshToken: (await refreshDevice(app, paired.refreshToken).expect(200)).body.refresh_token };
+      await http().post('/api/auth/password-reset').send({ identifier: t.email }).expect(202);
+      const token = linkToken((await latestEmail(t.email))!.text, 'reset-password');
+      await http().post('/api/auth/password-reset/confirm').send({ token, password: NEW_PASSWORD }).expect(204);
+      await refreshDevice(app, phone.refreshToken).expect(400);
     } finally {
       await t.cleanup();
     }

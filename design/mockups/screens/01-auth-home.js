@@ -72,6 +72,16 @@ const mfaSetup = `<div style="min-height:100vh;display:grid;place-items:center;b
 
 const mfaCodes = `<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg-app)"><div class="card" style="width:520px;box-shadow:var(--shadow-md)"><div class="card-b" style="padding:28px;display:flex;flex-direction:column;gap:16px"><div><div style="font-family:var(--font-display);font-size:20px;font-weight:600">Save your recovery codes</div><div class="muted sm" style="margin-top:4px">Each code works once, if you lose your phone. They are shown only now.</div></div>${callout('Keep them somewhere safe, such as a password manager.', { tone: 'warning', icon: 'warning' })}<div class="grid g-2" style="font-family:var(--font-mono)">${['k3f9-x7qm-2p8d', 'h8tn-4wzc-9ra2', 'p2xe-m6ys-7kdq', 'c5ub-r3jv-8nxe', 'w9fa-2gtd-6mhz'].map((c) => `<div>${c}</div>`).join('')}</div><div class="row">${btn('Download codes', { icon: 'download' })}${btn('Done', { v: 'primary' })}</div></div></div></div>`;
 
+const accountSecurity = shell({
+  active: 'home',
+  user: { user: 'Morgan Ellis', role: 'FM Manager' },
+  crumbs: ['Account', 'Security'],
+  title: 'Account security',
+  sub: 'Your password and two-step verification.',
+  body: [`<div class="stack g4" style="max-width:640px"><section class="card"><div class="card-h"><h2 class="card-t">Change your password</h2></div><div class="card-b stack g3"><p class="muted">You will stay signed in here. Every other device is signed out.</p>${field('Current password', input('', { lg: true }))}${field('New password', input('', { lg: true }), { hint: 'At least 12 characters. Avoid common passwords.' })}${field('Confirm new password', input('', { lg: true }))}<span class="row">${cb(false)}Show passwords</span><div>${btn('Change password', { v: 'primary' })}</div></div></section><section class="card"><div class="card-h"><h2 class="card-t">Two-step verification</h2></div><div class="card-b stack g3"><p class="muted">Off. Turn it on to ask for a code from an authenticator app each time you sign in, so a stolen password is not enough.</p><div>${btn('Set up', { v: 'primary' })}</div></div></section></div>`],
+});
+
+
 export default [
   { id: 'auth-01-login', group: 'Sign in', title: 'Login with demo accounts', html: login(-1) },
   { id: 'auth-02-login-autofill', group: 'Sign in', title: 'Login: demo role selected (autofilled)', html: login(0) },
@@ -79,6 +89,7 @@ export default [
   { id: 'auth-04-mfa', group: 'Sign in', title: 'Two-step verification', html: mfa },
   { id: 'auth-06-mfa-setup', group: 'Sign in', title: 'Set up two-step verification', html: mfaSetup },
   { id: 'auth-07-mfa-recovery-codes', group: 'Sign in', title: 'Recovery codes', html: mfaCodes },
+  { id: 'auth-08-account-security', group: 'Sign in', title: 'Account security: change password', html: accountSecurity },
   { id: 'auth-05-select-org', group: 'Sign in', title: 'Choose organisation', html: selectOrg },
   { id: 'home-01-dashboard', group: 'Home & navigation', title: 'Home dashboard (FM manager)', html: home },
   { id: 'home-02-executive', group: 'Home & navigation', title: 'Executive dashboard', html: exec },

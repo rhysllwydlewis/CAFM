@@ -235,6 +235,15 @@ export const mfaConfirmSchema = z.object({
     .trim()
     .regex(/^\d{6}$/, 'Enter the 6-digit code.'),
 });
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, 'Enter your current password.').max(512),
+  newPassword: z.string().min(1, 'Enter a new password.').max(512),
+});
+export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
+/** What a new password has to meet for this person: the longest minimum among their organisations. */
+export interface PasswordPolicy {
+  minLength: number;
+}
 export const mfaPasswordSchema = z.object({ password: z.string().min(1, 'Enter your password.').max(512) });
 
 export interface MfaStatus {

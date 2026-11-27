@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { clearStore, readOutbox } from '@/lib/mobile-store';
 import { postJson } from '@/lib/client';
@@ -41,6 +42,12 @@ export default function MePage() {
         </h1>
       </div>
       <div className="m-body" style={{ overflow: 'visible' }}>
+        <div className="m-card">
+          <div className="sm faint">Change your password, or set up two-step verification. You need signal.</div>
+          <Link className="m-btn secondary" href="/app/account/security">
+            Account security
+          </Link>
+        </div>
         <div className="m-card">
           <div className="sm faint">Signing out removes the jobs saved on this phone. You need signal to sign out.</div>
           <button type="button" className="m-btn secondary" onClick={signOut} disabled={busy} aria-busy={busy}>

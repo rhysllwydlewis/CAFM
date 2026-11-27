@@ -1,7 +1,14 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import argon2 from 'argon2';
 import { withAccount, type Account } from '@fmstead/db';
 import {
+  passwordProblem,
   readPreferences,
   roleLabel,
   scopedUsername,
@@ -14,10 +21,14 @@ import {
   type LoginResponse,
   type MfaVerifyInput,
   type OrganisationOption,
+  type PasswordChangeInput,
+  type PasswordPolicy,
 } from '@fmstead/shared';
 import { demoLocked } from '../../core/access-rules';
+import { endSignIns } from '../../core/end-sign-ins';
+import { appUrl, queuePlatformEmail } from '../../core/mail';
 import { PrismaService } from '../../core/prisma.service';
-import { sessionLifetimeMs } from '../../core/security-settings';
+import { sessionLifetimeMs, strictestMinLength } from '../../core/security-settings';
 import { type AuthContext, hashToken, newSessionToken } from '../../core/session';
 import { LoginRateLimiter } from './login-rate-limiter';
 import { MfaService } from './mfa.service';
@@ -277,6 +288,68 @@ export class AuthService {
       });
     }
     await this.event(lock ? 'account_locked' : 'sign_in_failed', { accountId: account.id, ip: client.ip });
+  }
+
+  async passwordPolicy(accountId: string): Promise<PasswordPolicy> {
+    return { minLength: Math.max(12, await strictestMinLength(this.db, accountId)) };
+  }
+
+  /**
+   * A signed-in person changes their own password. It needs the current one, so a stolen session can't set a new
+   * one, and wrong guesses count against the same per-IP limit as sign-in. Every other session ends; this one stays.
+   */
+  async changePassword(auth: AuthContext, input: PasswordChangeInput, client: ClientInfo): Promise<void> {
+    const { account } = auth;
+    if (this.limiter.isBlocked(client.ip)) {
+      await this.event('sign_in_rate_limited', { accountId: account.id, ip: client.ip });
+      throw new HttpException(TOO_MANY_ATTEMPTS, HttpStatus.TOO_MANY_REQUESTS);
+    }
+    if (!(await argon2.verify(account.passwordHash, input.currentPassword))) {
+      this.limiter.recordFailure(client.ip);
+      await this.event('password_change_failed', { accountId: account.id, ip: client.ip });
+      throw new UnprocessableEntityException({
+        code: 'wrong_current_password',
+        message: 'Your current password is not right.',
+      });
+    }
+    if (input.newPassword === input.currentPassword) {
+      throw new UnprocessableEntityException({
+        code: 'same_password',
+        message: 'Choose a password that is different from your current one.',
+      });
+    }
+    const problem = passwordProblem(input.newPassword, account.email, await strictestMinLength(this.db, account.id));
+    if (problem) throw new UnprocessableEntityException({ code: 'weak_password', message: problem });
+
+    const passwordHash = await argon2.hash(input.newPassword, { type: argon2.argon2id });
+    await this.db.$transaction(async (tx) => {
+      await tx.account.update({
+        where: { id: account.id },
+        data: { passwordHash, failedAttempts: 0, lockedUntil: null },
+      });
+      // A pending second sign-in step began with the old password, so it ends too.
+      await tx.mfaChallenge.deleteMany({ where: { accountId: account.id } });
+      await endSignIns(tx, account.id, { sessionId: auth.session.id, deviceId: auth.session.deviceId });
+      // Tell the person, in case it wasn't them. Accounts with a username only have no email to tell.
+      if (account.email) {
+        await queuePlatformEmail(tx, {
+          to: account.email,
+          subject: 'Your FM Stead password was changed',
+          text: [
+            `Hello ${account.name},`,
+            '',
+            'The password for your FM Stead account was just changed, and any other devices were signed out.',
+            '',
+            'If it was you, there is nothing more to do. If it wasn’t, reset your password now:',
+            '',
+            `${appUrl()}/forgot-password`,
+            '',
+            'Then tell your administrator.',
+          ].join('\n'),
+        });
+      }
+    });
+    await this.event('password_changed', { accountId: account.id, ip: client.ip });
   }
 
   async event(type: string, data: { accountId?: string; tenantId?: string; identifier?: string; ip?: string }) {

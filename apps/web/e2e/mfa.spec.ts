@@ -110,6 +110,8 @@ test.describe('two-step verification', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/login\/mfa/);
     await expect(page.getByRole('heading', { name: 'Two-step verification' })).toBeVisible();
+    // The page is reached by a client-side navigation, which sets the title a moment after the heading appears.
+    await expect(page).toHaveTitle(/Two-step verification/);
     await noAxeViolations(page);
     await page.goto('/app');
     await expect(page).toHaveURL(/\/login/);

@@ -46,6 +46,8 @@ test('signing out clears the jobs from the phone', async ({ page }) => {
   await expect(page.getByRole('link', { name: /WO-10412/ })).toBeVisible();
   await page.getByRole('link', { name: 'Me', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Me' })).toBeVisible();
+  // Where someone on the phone app changes their password (issue 89).
+  await expect(page.getByRole('link', { name: 'Account security' })).toHaveAttribute('href', '/app/account/security');
   await assertAccessible(page);
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login/);
