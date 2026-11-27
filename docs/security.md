@@ -8,7 +8,7 @@ Set in `apps/web/next.config.ts` on every page:
 
 - `Strict-Transport-Security: max-age=31536000`. No `includeSubDomains` or `preload` yet: they are hard to undo, so they are the owner's call.
 - `Content-Security-Policy` (enforced): `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `object-src 'none'`.
-- `Content-Security-Policy-Report-Only`: the full policy. Scripts and styles still allow `'unsafe-inline'`, because Next.js needs nonces for its inline scripts. Moving to nonces, then enforcing the full policy, is the follow-up on issue #122.
+- `Content-Security-Policy-Report-Only`: the full policy, set per request in `apps/web/middleware.ts`. Scripts need a fresh nonce (`'nonce-…'` with `'strict-dynamic'`), with no `'unsafe-inline'`; styles still allow `'unsafe-inline'` because React sets style attributes. Enforcing it is the last step of issue #122, once the live site's reports show nothing is blocked. Every page renders on demand, because a nonce changes with each request.
 - `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy`.
 
 ## API request log

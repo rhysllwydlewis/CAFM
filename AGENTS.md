@@ -39,7 +39,7 @@ These stop two agents building the same thing and keep the tracker true. The **P
    - In the same PR, add a row to the "In progress" table in docs/PROGRESS.md: item, who (`Claude`, `Codex`, an agent ID or a name), branch, date, next step.
    - Push that first, before the real work.
    - CI fails the claim if the item is already done, is claimed on `main` by another branch, or is claimed by an older open PR.
-2. **Every PR has a `Progress:` line.** Use one of:
+2. **Every PR has a `Progress:` line.** The one exception is Dependabot's dependency PRs: the check lets those through without one, because the bot writes the description and they move no roadmap item. Use one of:
    - `Progress: P1-02 done`: the item is ticked `[x]` in this PR and its "In progress" row removed.
    - `Progress: P1-02 in progress`: the claim row is in this PR.
    - `Progress: none - <reason>`: a fix, test, docs or tooling change that doesn't move a roadmap item.
