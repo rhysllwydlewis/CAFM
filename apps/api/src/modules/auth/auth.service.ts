@@ -10,7 +10,9 @@ import {
   type AccountPreferences,
   type CurrentUser,
   type LoginRequest,
+  MFA_FAILED,
   type LoginResponse,
+  type MfaVerifyInput,
   type OrganisationOption,
 } from '@cafm/shared';
 import { demoLocked } from '../../core/access-rules';
@@ -18,6 +20,7 @@ import { PrismaService } from '../../core/prisma.service';
 import { sessionLifetimeMs } from '../../core/security-settings';
 import { type AuthContext, hashToken, newSessionToken } from '../../core/session';
 import { LoginRateLimiter } from './login-rate-limiter';
+import { MfaService } from './mfa.service';
 
 const MAX_FAILURES = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
@@ -25,6 +28,12 @@ const LOCKOUT_MS = 15 * 60 * 1000;
 export interface ClientInfo {
   ip?: string;
   userAgent?: string;
+}
+
+/** The password step passed and the account has MFA: nothing is signed in until the second step is done. */
+export interface ChallengeIssued {
+  token: string;
+  expiresAt: Date;
 }
 
 export interface SessionIssued {
@@ -41,6 +50,7 @@ export class AuthService {
   constructor(
     private readonly db: PrismaService,
     private readonly limiter: LoginRateLimiter,
+    private readonly mfa: MfaService,
   ) {}
 
   /**
@@ -51,7 +61,7 @@ export class AuthService {
     input: LoginRequest,
     client: ClientInfo,
     previousToken?: string,
-  ): Promise<{ response: LoginResponse; session: SessionIssued }> {
+  ): Promise<{ response: LoginResponse; session?: SessionIssued; challenge?: ChallengeIssued }> {
     if (this.limiter.isBlocked(client.ip)) {
       await this.event('sign_in_rate_limited', { ip: client.ip });
       throw new HttpException(TOO_MANY_ATTEMPTS, HttpStatus.TOO_MANY_REQUESTS);
@@ -87,17 +97,58 @@ export class AuthService {
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
     await this.db.account.update({ where: { id: account.id }, data: { failedAttempts: 0, lockedUntil: null } });
+
+    // A second step is due: no session exists until it is passed, and any session the browser had stays as it was.
+    if (await this.mfa.isEnabled(account.id)) {
+      const challenge = await this.mfa.startChallenge(account.id, input.keepSignedIn);
+      await this.event('mfa_challenge_started', { accountId: account.id, ip: client.ip });
+      return { response: { status: 'mfa_required' }, challenge };
+    }
+    return this.finishSignIn(account.id, organisations, input.keepSignedIn, client, previousToken);
+  }
+
+  /** Completes the second step, then signs in as the password step would have. */
+  async verifyMfa(
+    challengeToken: string | undefined,
+    input: MfaVerifyInput,
+    client: ClientInfo,
+    previousToken?: string,
+  ): Promise<{ response: LoginResponse; session: SessionIssued }> {
+    if (this.limiter.isBlocked(client.ip)) {
+      await this.event('sign_in_rate_limited', { ip: client.ip });
+      throw new HttpException(TOO_MANY_ATTEMPTS, HttpStatus.TOO_MANY_REQUESTS);
+    }
+    const passed = await this.mfa.completeChallenge(challengeToken, input, client);
+    if (!passed) {
+      this.limiter.recordFailure(client.ip);
+      throw new UnauthorizedException(MFA_FAILED);
+    }
+    const organisations = await this.organisations(passed.accountId);
+    if (organisations.length === 0) throw new UnauthorizedException(SIGN_IN_FAILED);
+    return (await this.finishSignIn(passed.accountId, organisations, passed.persistent, client, previousToken)) as {
+      response: LoginResponse;
+      session: SessionIssued;
+    };
+  }
+
+  private async finishSignIn(
+    accountId: string,
+    organisations: Awaited<ReturnType<AuthService['organisations']>>,
+    persistent: boolean,
+    client: ClientInfo,
+    previousToken?: string,
+  ): Promise<{ response: LoginResponse; session: SessionIssued }> {
     if (previousToken) await this.db.session.deleteMany({ where: { tokenHash: hashToken(previousToken) } });
 
     const only = organisations.length === 1 ? organisations[0] : undefined;
     const session = await this.issueSession(
-      account.id,
+      accountId,
       only?.membershipId ?? null,
       only?.tenantId ?? null,
-      input.keepSignedIn,
+      persistent,
       client,
     );
-    await this.event('sign_in', { accountId: account.id, tenantId: only?.tenantId, ip: client.ip });
+    await this.event('sign_in', { accountId, tenantId: only?.tenantId, ip: client.ip });
 
     const response: LoginResponse = only
       ? { status: 'signed_in', landingPage: only.landingPage }

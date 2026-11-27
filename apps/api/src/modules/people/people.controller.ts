@@ -3,10 +3,12 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  HttpCode,
   NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Req,
   Res,
   UseGuards,
@@ -181,5 +183,40 @@ export class PeopleController {
       });
     }
     return { membershipId: result.id, role: result.role, status: result.status };
+  }
+
+  /**
+   * Resets someone's MFA (doc 06): their authenticator and recovery codes are removed, and they enrol again at their
+   * next sign-in. Same guardrails as changing their role: not yourself, and only people you may administer.
+   */
+  @Post(':membershipId/mfa/reset')
+  @HttpCode(200)
+  @RequirePermission('people.manage')
+  async resetMfa(@Param('membershipId', ParseUUIDPipe) membershipId: string, @Req() req: Request) {
+    const auth = req.auth!;
+    const actor = auth.membership!;
+    if (membershipId === actor.id) throw new ForbiddenException({ code: 'cannot_change_self' });
+    const accountId = await withTenant(this.db, actor.tenantId, async (tx) => {
+      const target = await tx.membership.findFirst({
+        where: { id: membershipId, tenantId: actor.tenantId },
+        include: { account: { select: { id: true, isDemo: true } } },
+      });
+      if (!target) throw new NotFoundException();
+      await assertAdministrable(tx, auth, target.id);
+      assertNotDemoLocked(target.account.isDemo);
+      await audit(
+        tx,
+        auth,
+        { action: 'membership.mfa_reset', entityType: 'membership', entityId: target.id, changes: {} },
+        req.ip,
+      );
+      return target.account.id;
+    });
+    await this.db.$transaction([
+      this.db.accountMfa.deleteMany({ where: { accountId } }),
+      this.db.mfaRecoveryCode.deleteMany({ where: { accountId } }),
+      this.db.mfaChallenge.deleteMany({ where: { accountId } }),
+    ]);
+    return { membershipId, mfa: false };
   }
 }

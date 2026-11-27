@@ -19,7 +19,9 @@ export interface OrganisationOption {
 }
 
 export type LoginResponse =
-  { status: 'signed_in'; landingPage: string } | { status: 'choose_organisation'; organisations: OrganisationOption[] };
+  | { status: 'signed_in'; landingPage: string }
+  | { status: 'choose_organisation'; organisations: OrganisationOption[] }
+  | { status: 'mfa_required' };
 
 /** A person's own display choices. Every key is optional: an unset one means "use the default". */
 export const accountPreferencesSchema = z
@@ -208,3 +210,37 @@ export const createTeamSchema = z.object({
   memberIds: z.array(z.string().uuid()).max(500).default([]),
 });
 export const updateTeamSchema = createTeamSchema.partial();
+
+/** A password was right and the account has MFA: the second step is next. */
+export const mfaVerifySchema = z
+  .object({
+    /** Six digits from the authenticator app. */
+    code: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, 'Enter the 6-digit code.')
+      .optional(),
+    /** One of the single-use recovery codes. */
+    recoveryCode: z.string().trim().min(8, 'Enter the recovery code.').max(32).optional(),
+  })
+  .refine((v) => (v.code === undefined) !== (v.recoveryCode === undefined), { message: 'Enter a code.' });
+export type MfaVerifyInput = z.infer<typeof mfaVerifySchema>;
+
+export const mfaConfirmSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code.'),
+});
+export const mfaPasswordSchema = z.object({ password: z.string().min(1, 'Enter your password.').max(512) });
+
+export interface MfaStatus {
+  enabled: boolean;
+  /** Recovery codes still unused. */
+  recoveryCodesLeft: number;
+}
+export interface MfaEnrolment {
+  secret: string;
+  otpauthUri: string;
+}
+export const MFA_FAILED = 'That code is not right. Check the app and try again.';
