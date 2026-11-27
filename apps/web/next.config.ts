@@ -12,6 +12,8 @@ const reportOnlyCsp = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
+  // The homepage film plays its clips from blob: URLs, so a seek never waits on the network.
+  "media-src 'self' blob:",
   "font-src 'self' data:",
   "connect-src 'self'",
   "worker-src 'self' blob:",
