@@ -5,7 +5,7 @@
 //   node scripts/progress.mjs check      the page is consistent (CI runs this)
 //   node scripts/progress.mjs pr-check   a pull request follows the progress rules (CI runs this)
 //
-// pr-check reads PR_TITLE, PR_BODY, PR_NUMBER, HEAD_REF and BASE_SHA from the
+// pr-check reads PR_TITLE, PR_BODY, PR_NUMBER, PR_AUTHOR, HEAD_REF and BASE_SHA from the
 // environment. With GITHUB_TOKEN and GITHUB_REPOSITORY it also refuses an item
 // that another open PR has already claimed. The rules are in AGENTS.md.
 import { execFileSync } from 'node:child_process';
@@ -157,10 +157,13 @@ export function progressLines(body) {
 }
 
 /** Problems with a pull request against the progress rules (AGENTS.md § Progress rules). */
-export function prProblems({ body, base, head, headRef, otherClaims = [], ownerHandover = false }) {
+export function prProblems({ body, base, head, headRef, otherClaims = [], ownerHandover = false, bot = false }) {
   const problems = [];
   const lines = progressLines(body);
   if (!lines.length) {
+    // A dependency update from Dependabot moves no roadmap item and its description is written by the bot,
+    // so it cannot carry a "Progress:" line. Only the bot's own pull requests are let through.
+    if (bot) return [];
     return [
       'The PR description needs a "Progress:" line: "Progress: P1-02 done", "Progress: P1-02 in progress" or "Progress: none - <reason>".',
     ];
@@ -267,7 +270,7 @@ async function main() {
   }
 
   if (command === 'pr-check') {
-    const { PR_BODY, PR_NUMBER, HEAD_REF, BASE_SHA, OWNER_HANDOVER } = process.env;
+    const { PR_BODY, PR_NUMBER, PR_AUTHOR, HEAD_REF, BASE_SHA, OWNER_HANDOVER } = process.env;
     let base = '';
     try {
       base = git('show', `${BASE_SHA ?? 'origin/main'}:${PROGRESS_PATH}`);
@@ -282,6 +285,7 @@ async function main() {
       headRef: HEAD_REF,
       otherClaims,
       ownerHandover: OWNER_HANDOVER === 'true',
+      bot: PR_AUTHOR === 'dependabot[bot]',
     });
     for (const p of problems) console.error(`::error title=Progress::${p} See AGENTS.md § Progress rules.`);
     if (problems.length) process.exit(1);
