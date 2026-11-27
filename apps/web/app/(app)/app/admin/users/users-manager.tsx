@@ -255,6 +255,21 @@ export function UsersManager({
                         <Button
                           variant="secondary"
                           disabled={busy}
+                          aria-label={`Reset two-step verification for ${u.name}`}
+                          onClick={() =>
+                            run(
+                              () => adminWrite('/people/' + u.membershipId + '/mfa/reset', {}),
+                              `Two-step verification reset for ${u.name}. They set it up again at their next sign-in if it is required.`,
+                            )
+                          }
+                        >
+                          Reset two-step
+                        </Button>
+                      )}
+                      {!self && (
+                        <Button
+                          variant="secondary"
+                          disabled={busy}
                           onClick={() =>
                             run(
                               () =>

@@ -22,7 +22,7 @@ import {
 import { assertNotDemoLocked } from '../../core/access-rules';
 import { SessionGuard } from '../../core/auth.guards';
 import { parse } from '../../core/validation';
-import { clientInfo as client, cookieOptions, sessionToken, setSessionCookie } from '../../core/cookies';
+import { clientInfo as client, cookieOptions, sessionToken, setMfaCookie, setSessionCookie } from '../../core/cookies';
 import { SESSION_COOKIE } from '../../core/session';
 import { AuthService } from './auth.service';
 
@@ -33,12 +33,13 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const { response, session } = await this.auth.login(
+    const { response, session, challenge } = await this.auth.login(
       parse(loginRequestSchema, body),
       client(req),
       sessionToken(req),
     );
-    setSessionCookie(res, session);
+    if (session) setSessionCookie(res, session);
+    if (challenge) setMfaCookie(res, challenge);
     return response;
   }
 

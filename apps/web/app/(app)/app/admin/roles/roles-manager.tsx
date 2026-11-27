@@ -34,7 +34,11 @@ const MODULE_LABELS: Record<string, string> = {
   reports: 'Reports',
 };
 
-const SCOPE_LABELS: Record<string, string> = { all: 'All records', own: 'Own records only' };
+const SCOPE_LABELS: Record<string, string> = {
+  all: 'All records',
+  team: 'My team’s records',
+  own: 'Own records only',
+};
 
 const ENTRIES = (Object.entries(PERMISSIONS) as [Permission, (typeof PERMISSIONS)[Permission]][]).map(
   ([key, meta]) => ({ key, label: meta.label, module: meta.module as string }),

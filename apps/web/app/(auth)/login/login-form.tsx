@@ -76,6 +76,10 @@ export function LoginForm({
       const res = await postJson('/auth/login', { identifier, password, keepSignedIn, organisation });
       if (res.ok) {
         const body = (await res.json()) as LoginResponse;
+        if (body.status === 'mfa_required') {
+          router.push('/login/mfa' + (next ? '?next=' + encodeURIComponent(next) : ''));
+          return;
+        }
         router.push(
           body.status === 'signed_in'
             ? (next ?? body.landingPage)

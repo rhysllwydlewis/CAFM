@@ -19,7 +19,7 @@ Everything here is tenant-scoped (RLS), and each change is written to the audit 
 
 `/app/admin/roles` (needs `roles.read`; changes need `roles.manage`) lists every role with how many people hold it. Pick a role to see its name, description, data scope and a checkbox for each permission, grouped by area. You can create a role, duplicate one, edit it and delete a custom role nobody holds.
 
-The screen uses the existing `/api/roles` endpoints, so the guard rails stay: you can only grant permissions you hold yourself, the Super User role can't be edited, built-in roles are locked in the demo, and every change is audited. Data scope is "all records" or "own records only"; scoping by site or team is not built yet.
+The screen uses the existing `/api/roles` endpoints, so the guard rails stay: you can only grant permissions you hold yourself, the Super User role can't be edited, built-in roles are locked in the demo, and every change is audited. Data scope is "all records", "my team’s records" or "own records only". Team scope shows a person their own records and those of the people they share a team with: people lists, requests and work orders follow it. A scope the system does not recognise is treated as "own records only", so it can never show more. Anyone below "all records" is also limited to the sites they have been given. Scoping by site is set on the person (site access).
 
 ## Teams
 
@@ -73,7 +73,13 @@ Not built yet: the organisation setting "Allow view as user" (the mockup `admin-
 
 ## Branding
 
-`/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is shown on the organisation's own sign-in page (`/t/<organisation>/login`), read without a session from `GET /api/public/sign-in-message/<organisation>`. That answer is `{ "message": null }` for an unknown or suspended organisation, one without the branding feature and one with no message, so the page can't be used to find out which organisations exist. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). The logo, custom domain and email sender in the mockup are not built yet.
+`/app/admin/branding` (Enterprise plan, `settings.manage`) sets an accent colour and a sign-in message. The accent is applied across the app; the message is shown on the organisation's own sign-in page (`/t/<organisation>/login`), read without a session from `GET /api/public/sign-in-message/<organisation>`. That answer is `{ "message": null }` for an unknown or suspended organisation, one without the branding feature and one with no message, so the page can't be used to find out which organisations exist. The accent is used for buttons and is rejected unless white text on it has a contrast of at least 4.5:1 (WCAG AA); the check runs in the screen and again in the API. Leave both boxes empty to keep the standard look. `GET /api/branding` is readable by anyone signed in, and `GET` and `PUT /api/admin/branding` read and save it, audited as `settings.branding_updated`, stored in `tenant_branding` (row-level security). 
+
+**Logo.** Upload a square PNG, JPEG or WebP image of 64 KB or smaller on the Branding screen. It replaces the initials tile beside your organisation's name in the menu, and **Remove logo** puts the initials back. SVG is refused, because an SVG can carry script, and the API checks that the file really is the type it claims. `PUT` and `DELETE /api/admin/branding/logo` change it (audited as `settings.branding_logo_updated` and `settings.branding_logo_removed`); any signed-in member can `GET /api/branding/logo`, which is served with `nosniff` and a sandbox policy.
+
+**Email sender name.** The name people see on emails from the system (for example "Demo Estates facilities"). Letters, numbers, spaces and `. , & ' ( ) -` only, 60 characters at most. The sending address stays the platform's, so the email still passes SPF and DKIM. Leave it empty for "FM Stead".
+
+**Custom domain and your own sender address** need DNS records and domain verification, so they are set up with your account manager and are not on this screen yet.
 
 ## Custom fields
 
@@ -107,7 +113,7 @@ Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`
 
 **Export CSV** downloads the events that match the filters you last searched for: up to 5,000, newest first, with times in UTC and the changes as JSON. Cells that start with `=`, `+`, `-` or `@` are prefixed with an apostrophe so a spreadsheet won't run them. Each export is itself recorded as `audit.exported`, with the filters and the number of rows.
 
-API (all need `audit.read`, and only ever show your own organisation): `GET /api/admin/audit` with `action`, `entityType`, `entityId`, `actor` (a membership id), `from`, `to` and `cursor`; `GET /api/admin/audit/actors` (the people who appear in the log); `GET /api/admin/audit/export` (the same filters, as CSV). A start date after the end date answers `400`. Not built yet: MFA enforced at sign-in (with P1-12).
+API (all need `audit.read`, and only ever show your own organisation): `GET /api/admin/audit` with `action`, `entityType`, `entityId`, `actor` (a membership id), `from`, `to` and `cursor`; `GET /api/admin/audit/actors` (the people who appear in the log); `GET /api/admin/audit/export` (the same filters, as CSV). A start date after the end date answers `400`.
 
 ## Username-only accounts
 
@@ -117,3 +123,15 @@ For staff without an email address, such as operatives on shared devices. On the
 - There is no email, so there is no "Forgot password" link. Choose **Reset password** on the same card: it makes a new password, signs the person out everywhere and clears any lockout.
 - Creating and resetting need `people.manage`, and, as with invitations, only organisation-wide administrators can create an account. The role you give is limited by the same no-privilege-escalation rule as a role change, and full-licence roles use a seat.
 - Anyone with an email address resets their own password from the link in an email, so the reset here refuses them.
+
+
+## Two-step verification
+
+Anyone can turn on two-step verification from the name at the foot of the side menu, then "Two-step verification". It uses an authenticator app (Microsoft Authenticator, Google Authenticator, 1Password and others): scan the code, or type the key, then enter the 6-digit code the app shows. Ten single-use recovery codes are shown once. After that, signing in asks for a code from the app, or a recovery code, once the password is right.
+
+- **Required for everyone:** the "Require MFA" setting under Security and sign-in. Until a person has set it up, every other page and API call in that organisation is refused, and they are taken to the set-up page. The shared demo accounts are exempt, because their password is public and they can't change MFA. Someone who belongs to several organisations is only held in the one that requires it.
+- **Turning it off, or making new recovery codes,** asks for the password again.
+- **Lost phone and recovery codes:** an administrator with the "change people's roles" permission uses "Reset two-step" on the Users screen. The person's authenticator and recovery codes are removed and the reset is recorded in the audit log. They set it up again at their next sign-in if it is required.
+- **Safeguards:** a code can be used once (the app's code for the same 30 seconds is refused a second time), five wrong codes end the sign-in attempt and the person starts again from the password, and the secret is stored encrypted. Set `MFA_ENCRYPTION_KEY` (a long random value) on any real deployment; the API refuses to enrol anyone in production without it.
+
+API (all for the signed-in person): `GET /api/auth/mfa`, `POST /api/auth/mfa/enrol`, `/confirm`, `/recovery-codes` and `/disable`; the sign-in step is `POST /api/auth/mfa/verify`. An administrator's reset is `POST /api/people/:membershipId/mfa/reset` (`people.manage`). Passkeys come in Phase 2A and SMS codes are not offered (SIM-swap risk).

@@ -5,6 +5,7 @@ import { loadAccess } from '../../core/access';
 import { assertAccess } from '../../core/auth.guards';
 import type { AuthContext } from '../../core/session';
 import { locationScope } from '../locations/location-tree';
+import { dataScope, visibleMembers } from '../../core/data-scope';
 
 export const reportLocationSelect = { id: true, name: true, code: true } as const;
 export const reportAssetSelect = { id: true, name: true, number: true, locationId: true } as const;
@@ -29,7 +30,9 @@ export function requestScope(auth: AuthContext, own: boolean): Prisma.ServiceReq
       ? { requesterId: member.id }
       : {
           location: locationScope(auth),
-          ...(auth.access?.scope === 'own' ? { OR: [{ requesterId: member.id }, { assigneeId: member.id }] } : {}),
+          ...(dataScope(auth) === 'all'
+            ? {}
+            : { OR: [{ requester: visibleMembers(auth) }, { assignee: visibleMembers(auth) }] }),
         }),
   };
 }

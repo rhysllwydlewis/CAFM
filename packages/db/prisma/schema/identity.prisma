@@ -67,25 +67,28 @@ model Tenant {
 
 /// A person who can sign in. Global; one account can belong to several tenants.
 model Account {
-  id              String          @id @default(uuid(7)) @db.Uuid
-  email           String?         @unique
-  username        String?         @unique
-  name            String
-  passwordHash    String          @map("password_hash")
-  failedAttempts  Int             @default(0) @map("failed_attempts")
-  lockedUntil     DateTime?       @map("locked_until") @db.Timestamptz(3)
-  isDemo          Boolean         @default(false) @map("is_demo")
+  id               String            @id @default(uuid(7)) @db.Uuid
+  email            String?           @unique
+  username         String?           @unique
+  name             String
+  passwordHash     String            @map("password_hash")
+  failedAttempts   Int               @default(0) @map("failed_attempts")
+  lockedUntil      DateTime?         @map("locked_until") @db.Timestamptz(3)
+  isDemo           Boolean           @default(false) @map("is_demo")
   /// Version of the terms of service accepted, and when (doc 06: accept-invite).
-  termsVersion    String?         @map("terms_version")
-  termsAcceptedAt DateTime?       @map("terms_accepted_at") @db.Timestamptz(3)
+  termsVersion     String?           @map("terms_version")
+  termsAcceptedAt  DateTime?         @map("terms_accepted_at") @db.Timestamptz(3)
   /// The person's own display choices, such as a collapsed side menu. Validated with accountPreferencesSchema.
-  preferences     Json            @default("{}")
-  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  memberships     Membership[]
-  sessions        Session[]
-  passwordResets  PasswordReset[]
-  mobileDevices   MobileDevice[]
-  oauthCodes      OauthCode[]
+  preferences      Json              @default("{}")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships      Membership[]
+  sessions         Session[]
+  passwordResets   PasswordReset[]
+  mobileDevices    MobileDevice[]
+  oauthCodes       OauthCode[]
+  mfa              AccountMfa?
+  mfaRecoveryCodes MfaRecoveryCode[]
+  mfaChallenges    MfaChallenge[]
 
   @@map("account")
 }
@@ -261,4 +264,47 @@ model CapturedEmail {
 
   @@index([to, createdAt])
   @@map("captured_email")
+}
+
+/// A person's authenticator-app (TOTP) enrolment (P1-12). Global like the account, so no tenant. The secret is kept
+/// encrypted. `enabledAt` stays empty until the person proves the app works with a first code.
+model AccountMfa {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  accountId    String    @unique @map("account_id") @db.Uuid
+  secretCipher String    @map("secret_cipher")
+  enabledAt    DateTime? @map("enabled_at") @db.Timestamptz(3)
+  /// The newest 30-second step already accepted, so a code can't be used twice.
+  lastStep     Int       @default(0) @map("last_step")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("account_mfa")
+}
+
+/// One single-use recovery code. Only a hash is stored.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  accountId String    @map("account_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("mfa_recovery_code")
+}
+
+/// A password has been checked and the second step is pending. Short-lived, single use, five wrong codes end it.
+model MfaChallenge {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  tokenHash      String   @unique @map("token_hash")
+  accountId      String   @map("account_id") @db.Uuid
+  persistent     Boolean  @default(false)
+  failedAttempts Int      @default(0) @map("failed_attempts")
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("mfa_challenge")
 }

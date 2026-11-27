@@ -3,14 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, TextInput } from '@fmstead/ui';
-import { contrastWithWhite, type BrandingView } from '@fmstead/shared';
+import { contrastWithWhite, LOGO_TYPES, MAX_LOGO_BYTES, type BrandingView } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 
-/** Branding: the accent colour for buttons, and the message on the sign-in screen. */
+/** Branding: the accent colour for buttons, the sign-in message, the logo and the name emails come from. */
 export function BrandingManager({ branding }: { branding: BrandingView }) {
   const router = useRouter();
   const [accent, setAccent] = useState(branding.accentColour ?? '');
   const [message, setMessage] = useState(branding.loginMessage ?? '');
+  const [sender, setSender] = useState(branding.senderName ?? '');
+  const [hasLogo, setHasLogo] = useState(branding.hasLogo);
+  const [logoVersion, setLogoVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
 
@@ -31,13 +34,56 @@ export function BrandingManager({ branding }: { branding: BrandingView }) {
     try {
       await adminWrite(
         '/admin/branding',
-        { accentColour: trimmed || null, loginMessage: message.trim() || null },
+        { accentColour: trimmed || null, loginMessage: message.trim() || null, senderName: sender.trim() || null },
         'PUT',
       );
       setFeedback({ text: 'Branding saved. Buttons now use your colour for everyone in your organisation.' });
       router.refresh();
     } catch (error) {
       setFeedback({ text: error instanceof Error ? error.message : 'Could not save your changes.', error: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function chooseLogo(file: File | undefined) {
+    if (!file) return;
+    setFeedback(undefined);
+    if (!(LOGO_TYPES as readonly string[]).includes(file.type)) {
+      setFeedback({ text: 'Use a PNG, JPEG or WebP image.', error: true });
+      return;
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      setFeedback({ text: 'The logo must be 64 KB or smaller.', error: true });
+      return;
+    }
+    setBusy(true);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = '';
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      await adminWrite('/admin/branding/logo', { contentType: file.type, dataBase64: btoa(binary) }, 'PUT');
+      setHasLogo(true);
+      setLogoVersion((v) => v + 1);
+      setFeedback({ text: 'Logo saved. It now shows in the menu.' });
+      router.refresh();
+    } catch (error) {
+      setFeedback({ text: error instanceof Error ? error.message : 'Could not save the logo.', error: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeLogo() {
+    setBusy(true);
+    setFeedback(undefined);
+    try {
+      await adminWrite('/admin/branding/logo', undefined, 'DELETE');
+      setHasLogo(false);
+      setFeedback({ text: 'Logo removed.' });
+      router.refresh();
+    } catch (error) {
+      setFeedback({ text: error instanceof Error ? error.message : 'Could not remove the logo.', error: true });
     } finally {
       setBusy(false);
     }
@@ -55,8 +101,8 @@ export function BrandingManager({ branding }: { branding: BrandingView }) {
       </div>
       <div className="card-b stack g3">
         <p className="muted">
-          How the system looks for your organisation. Leave a box empty to keep the standard look. Logo, custom domain
-          and email sender are not built yet.
+          How the system looks for your organisation. Leave a box empty to keep the standard look. A custom domain and a
+          verified email sender address are set up with your account manager.
         </p>
         <Field label="Accent colour" htmlFor="brand-accent" error={accentError}>
           <TextInput
@@ -84,6 +130,51 @@ export function BrandingManager({ branding }: { branding: BrandingView }) {
           />
         </Field>
         <p className="faint sm">The message is saved now. It will appear on the sign-in screen in a later release.</p>
+        <Field label="Email sender name" htmlFor="brand-sender">
+          <TextInput
+            id="brand-sender"
+            value={sender}
+            maxLength={60}
+            placeholder="Demo Estates facilities"
+            aria-describedby="brand-sender-hint"
+            onChange={(e) => setSender(e.target.value)}
+            disabled={busy}
+          />
+        </Field>
+        <p className="faint sm" id="brand-sender-hint">
+          The name people see on emails from the system. The sending address stays the same. Leave empty for "FM Stead".
+        </p>
+        <div className="stack g2">
+          <label htmlFor="brand-logo" className="label">
+            Logo
+          </label>
+          {hasLogo ? (
+            <img src={'/api/branding/logo?v=' + logoVersion} alt="Your current logo" width={64} height={64} />
+          ) : (
+            <p className="muted">No logo yet. The menu shows your organisation's initials.</p>
+          )}
+          <input
+            id="brand-logo"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            aria-describedby="brand-logo-hint"
+            disabled={busy}
+            onChange={(e) => {
+              void chooseLogo(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+          <p className="faint sm" id="brand-logo-hint">
+            A square PNG, JPEG or WebP image of 64 KB or smaller. SVG is not accepted.
+          </p>
+          {hasLogo && (
+            <div>
+              <Button variant="ghost" onClick={removeLogo} disabled={busy}>
+                Remove logo
+              </Button>
+            </div>
+          )}
+        </div>
         <p role="status" className={feedback?.error ? 'field-error' : 'muted'}>
           {feedback?.text}
         </p>

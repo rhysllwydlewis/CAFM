@@ -167,6 +167,7 @@ export class UsernameAccountsController {
       return member;
     });
     await this.db.session.deleteMany({ where: { accountId: target.accountId } });
+    await this.db.mfaChallenge.deleteMany({ where: { accountId: target.accountId } });
     // A phone signed in earlier would otherwise renew itself with its refresh token.
     await this.db.mobileDevice.updateMany({
       where: { accountId: target.accountId, revokedAt: null },

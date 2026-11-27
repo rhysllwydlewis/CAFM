@@ -27,3 +27,15 @@ export function setSessionCookie(res: Response, s: IssuedSession): void {
 export function clientInfo(req: Request): { ip?: string; userAgent?: string } {
   return { ip: req.ip, userAgent: req.get('user-agent') };
 }
+
+/** The short-lived cookie that carries a pending second sign-in step. It never grants access on its own. */
+export const MFA_COOKIE = 'fmstead_mfa';
+
+export function mfaChallengeToken(req: Request): string | undefined {
+  const token: unknown = req.cookies?.[MFA_COOKIE];
+  return typeof token === 'string' && token ? token : undefined;
+}
+
+export function setMfaCookie(res: Response, c: { token: string; expiresAt: Date }): void {
+  res.cookie(MFA_COOKIE, c.token, { ...cookieOptions(), expires: c.expiresAt });
+}

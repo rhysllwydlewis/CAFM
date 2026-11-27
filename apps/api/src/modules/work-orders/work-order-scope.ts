@@ -5,6 +5,7 @@ import { loadAccess } from '../../core/access';
 import { assertAccess } from '../../core/auth.guards';
 import type { AuthContext } from '../../core/session';
 import { locationScope } from '../locations/location-tree';
+import { dataScope, visibleMembers } from '../../core/data-scope';
 
 /**
  * A job is visible when its location is. Someone limited to their own work (a technician)
@@ -15,7 +16,7 @@ export function workOrderScope(auth: AuthContext): Prisma.WorkOrderWhereInput {
   return {
     tenantId: member.tenantId,
     location: locationScope(auth),
-    ...(auth.access?.scope === 'own' ? { assigneeId: member.id } : {}),
+    ...(dataScope(auth) === 'all' ? {} : { assignee: visibleMembers(auth) }),
   };
 }
 

@@ -3,10 +3,12 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  HttpCode,
   NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Req,
   Res,
   UseGuards,
@@ -26,6 +28,7 @@ import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '.
 import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { visibleMembers } from '../../core/data-scope';
 
 @Controller('people')
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
@@ -43,7 +46,7 @@ export class PeopleController {
   async list(@Req() req: Request) {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
-    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
+    const own = visibleMembers(auth);
     return withTenant(this.db, tenantId, async (tx) => {
       const allowed = await administrableMembers(tx, auth);
       const [rows, roles] = await Promise.all([
@@ -76,7 +79,7 @@ export class PeopleController {
   async exportCsv(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
-    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
+    const own = visibleMembers(auth);
     const csv = await withTenant(this.db, tenantId, async (tx) => {
       const allowed = await administrableMembers(tx, auth);
       const rows = await tx.membership.findMany({
@@ -180,5 +183,45 @@ export class PeopleController {
       });
     }
     return { membershipId: result.id, role: result.role, status: result.status };
+  }
+
+  /**
+   * Resets someone's MFA (doc 06): their authenticator and recovery codes are removed, and they enrol again at their
+   * next sign-in. Same guardrails as changing their role: not yourself, and only people you may administer.
+   */
+  @Post(':membershipId/mfa/reset')
+  @HttpCode(200)
+  @RequirePermission('people.manage')
+  async resetMfa(@Param('membershipId', ParseUUIDPipe) membershipId: string, @Req() req: Request) {
+    const auth = req.auth!;
+    const actor = auth.membership!;
+    if (membershipId === actor.id) throw new ForbiddenException({ code: 'cannot_change_self' });
+    const accountId = await withTenant(this.db, actor.tenantId, async (tx) => {
+      const target = await tx.membership.findFirst({
+        where: { id: membershipId, tenantId: actor.tenantId },
+        include: { account: { select: { id: true, isDemo: true } } },
+      });
+      if (!target) throw new NotFoundException();
+      await assertAdministrable(tx, auth, target.id);
+      assertNotDemoLocked(target.account.isDemo);
+      // Taking away someone's second step is a power over them: not over a role with more than the actor holds.
+      const role = await tx.role.findUnique({
+        where: { tenantId_key: { tenantId: actor.tenantId, key: target.role } },
+      });
+      assertCanGrant(auth.access!, actor.role, role?.permissions ?? []);
+      await audit(
+        tx,
+        auth,
+        { action: 'membership.mfa_reset', entityType: 'membership', entityId: target.id, changes: {} },
+        req.ip,
+      );
+      return target.account.id;
+    });
+    await this.db.$transaction([
+      this.db.accountMfa.deleteMany({ where: { accountId } }),
+      this.db.mfaRecoveryCode.deleteMany({ where: { accountId } }),
+      this.db.mfaChallenge.deleteMany({ where: { accountId } }),
+    ]);
+    return { membershipId, mfa: false };
   }
 }

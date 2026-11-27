@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   applyDisplay,
@@ -33,10 +34,18 @@ async function brandingSettings(): Promise<BrandingView | undefined> {
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
+  // The organisation requires two-step verification and this person hasn't set it up: nothing else is open.
+  if (user.mfaSetupRequired) redirect('/mfa-setup');
   const [orgs, display, branding] = await Promise.all([organisations(), displaySettings(), brandingSettings()]);
   // The accent only applies on plans that include branding, and only colours that passed the contrast check.
   const accent =
     branding?.accentColour && feature(user.entitlements, 'custom_domain') ? branding.accentColour : undefined;
+
+  // The organisation and logo version are in the address so a replaced logo, or another organisation's, is fetched again.
+  const logoUrl =
+    branding?.hasLogo && feature(user.entitlements, 'custom_domain')
+      ? `/api/branding/logo?t=${encodeURIComponent(user.tenant.id)}&v=${branding.logoVersion ?? 0}`
+      : undefined;
 
   // Menu items the member's role allows (can()); locked if the plan doesn't include them (feature()).
   const sections: ShellNavSection[] = NAV.map((section) => ({
@@ -71,6 +80,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <AppShell
         sections={sections}
         tenantName={user.tenant.name}
+        logoUrl={logoUrl}
         planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
         demo={user.tenant.demo}
         preferencesLocked={user.preferencesLocked}

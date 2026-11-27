@@ -2,6 +2,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient } from '@fmstead/db';
+import { codeFor, encryptSecret, newSecret, stepAt } from '../src/core/totp';
 import { DEMO_PASSWORD } from '@fmstead/shared';
 import {
   createTestAccount,
@@ -80,6 +81,31 @@ describe('password reset', () => {
       await signIn(app, t.email, NEW_PASSWORD);
       await http().post('/api/auth/password-reset/confirm').send({ token, password: OTHER_PASSWORD }).expect(410);
       expect((await http().get(`/api/auth/password-reset/${token}`).expect(200)).body).toEqual({ valid: false });
+    } finally {
+      await t.cleanup();
+    }
+  });
+
+  it('ends a pending second sign-in step, so the old password cannot finish signing in', async () => {
+    const t = await createTestAccount(db, [DEMO_TENANT]);
+    try {
+      const secret = newSecret();
+      await owner.accountMfa.create({
+        data: { accountId: t.account.id, secretCipher: encryptSecret(secret), enabledAt: new Date() },
+      });
+      const pending = request.agent(app.getHttpServer());
+      const login = await pending.post('/api/auth/login').send({ identifier: t.email, password: t.password });
+      expect(login.body).toEqual({ status: 'mfa_required' });
+
+      await http().post('/api/auth/password-reset').send({ identifier: t.email }).expect(202);
+      const token = linkToken((await latestEmail(t.email))!.text, 'reset-password');
+      await http().post('/api/auth/password-reset/confirm').send({ token, password: NEW_PASSWORD }).expect(204);
+
+      await pending
+        .post('/api/auth/mfa/verify')
+        .send({ code: codeFor(secret, stepAt(Date.now())) })
+        .expect(401);
+      await pending.get('/api/auth/me').expect(401);
     } finally {
       await t.cleanup();
     }

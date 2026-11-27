@@ -11,6 +11,8 @@ import type { ShellNavSection, ShellOrganisation } from './types';
 interface Props {
   sections: ShellNavSection[];
   tenantName: string;
+  /** The organisation's uploaded logo, if it has one. */
+  logoUrl?: string;
   planLabel: string;
   user: { name: string; email: string | null; roleLabel: string };
   organisations: ShellOrganisation[];
@@ -33,6 +35,7 @@ function navLabel(item: { label: string; locked: boolean }): string {
 export function SideNav({
   sections,
   tenantName,
+  logoUrl,
   planLabel,
   user,
   organisations,
@@ -79,7 +82,13 @@ export function SideNav({
             </button>
           </div>
           <div className="tenant">
-            <span className="t-logo">{initials(tenantName)}</span>
+            {logoUrl ? (
+              <span className="t-logo t-logo-image">
+                <img src={logoUrl} alt="" />
+              </span>
+            ) : (
+              <span className="t-logo">{initials(tenantName)}</span>
+            )}
             <div className="grow">
               <div className="t-name">{tenantName}</div>
               <div className="t-sub">{planLabel}</div>
