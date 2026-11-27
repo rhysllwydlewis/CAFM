@@ -69,7 +69,7 @@ All need `ppm.read` and show what the person can see (those limited to some site
 
 ## Not built yet
 
-- A calendar view and drag to reschedule, forecast against a capacity or a budget, and compliance by site or contract.
+- Drag to reschedule, forecast against a capacity or a budget, and compliance by site or contract. (The calendar view is built: see [saved views](views.md).)
 - SFG20 import, condition-based schedules, seasonal rules, shutdown and outage planning.
 - Combining tasks into one visit (nested frequencies, such as a 12-monthly visit replacing that month's monthly one), grouping by route or contractor, and one job for several assets.
 - Contractor assignment of PPM jobs (jobs go to a person), missed-visit reasons, custom fields on schedules, and recording asset condition at each visit.

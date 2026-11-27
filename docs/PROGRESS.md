@@ -28,6 +28,16 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 
 The percentage is weighted by each phase's planned length in doc 08, because the later items are much bigger than Phase 0's. Recalculate it when a phase finishes.
 
+## Deferred
+
+Items the product owner has chosen to put off, with the reason. Agents don't build these and don't wait on them. They stay unticked until the reason goes away. (Added 27 Nov 2026. The Phase 2A gate stays closed until the Phase 1 audit and its mop-up PR are merged.)
+
+- P1-13, first design-partner tenants live: deferred. There are no design partners yet.
+- P1-09d, custom domain and own sender address: deferred. There is no domain yet. Build it when a customer needs one.
+- P1-09d, configurable statuses: deferred. They need the workflow engine (P2A-06), which is in Phase 2A.
+
+These stay unticked in the Phase 1 checklist below, so the tracker stays true.
+
 ## Waiting on the product owner
 
 These are decisions or paid resources, so agents don't do them:
@@ -37,6 +47,7 @@ These are decisions or paid resources, so agents don't do them:
 - [ ] **Railway PR environments** (Project Settings › Environments). These give each PR a preview link. The app is ready for them; see `docs/deploy/railway.md`.
 - [ ] **Custom domain and own email sender address (P1-09d).** Needs DNS records and domain verification for each customer, so it is done by the owner with the customer.
 - [ ] **GitGuardian:** mark the flagged test passwords from PR #22 as test credentials. They're generated test fixtures, not real secrets.
+- [ ] **Parts on the technician's complete screen.** Technicians don't hold `costs.read`, so the phone app can't record parts used. Decide whether to give them a limited way to add parts (see `docs/mobile.md`).
 
 ## How to use this page
 
