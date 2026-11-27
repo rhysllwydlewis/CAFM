@@ -53,9 +53,10 @@ export function isAdminPermission(permission: Permission): boolean {
 
 /**
  * Data scope (doc 03): which records a role's permissions apply to.
- * `sites` and `team` arrive with locations and teams in Phase 1.
+ * `team` is the person's own records plus those of people they share a team with. Site limits are
+ * a separate setting on the person (site access).
  */
-export const SCOPES = ['all', 'own'] as const;
+export const SCOPES = ['all', 'team', 'own'] as const;
 export type Scope = (typeof SCOPES)[number];
 
 export interface BuiltinRole {

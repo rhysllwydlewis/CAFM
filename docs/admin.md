@@ -19,7 +19,7 @@ Everything here is tenant-scoped (RLS), and each change is written to the audit 
 
 `/app/admin/roles` (needs `roles.read`; changes need `roles.manage`) lists every role with how many people hold it. Pick a role to see its name, description, data scope and a checkbox for each permission, grouped by area. You can create a role, duplicate one, edit it and delete a custom role nobody holds.
 
-The screen uses the existing `/api/roles` endpoints, so the guard rails stay: you can only grant permissions you hold yourself, the Super User role can't be edited, built-in roles are locked in the demo, and every change is audited. Data scope is "all records" or "own records only"; scoping by site or team is not built yet.
+The screen uses the existing `/api/roles` endpoints, so the guard rails stay: you can only grant permissions you hold yourself, the Super User role can't be edited, built-in roles are locked in the demo, and every change is audited. Data scope is "all records", "my team’s records" or "own records only". Team scope shows a person their own records and those of the people they share a team with: people lists, requests and work orders follow it. A scope the system does not recognise is treated as "own records only", so it can never show more. Anyone below "all records" is also limited to the sites they have been given. Scoping by site is set on the person (site access).
 
 ## Teams
 

@@ -26,6 +26,7 @@ import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '.
 import { toCsv } from '../../core/csv';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { visibleMembers } from '../../core/data-scope';
 
 @Controller('people')
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
@@ -43,7 +44,7 @@ export class PeopleController {
   async list(@Req() req: Request) {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
-    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
+    const own = visibleMembers(auth);
     return withTenant(this.db, tenantId, async (tx) => {
       const allowed = await administrableMembers(tx, auth);
       const [rows, roles] = await Promise.all([
@@ -76,7 +77,7 @@ export class PeopleController {
   async exportCsv(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
-    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
+    const own = visibleMembers(auth);
     const csv = await withTenant(this.db, tenantId, async (tx) => {
       const allowed = await administrableMembers(tx, auth);
       const rows = await tx.membership.findMany({

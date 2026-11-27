@@ -15,6 +15,7 @@ import { administrableMembers, isDelegated } from '../../core/delegation';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
+import { visibleMembers } from '../../core/data-scope';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -88,7 +89,7 @@ export class AdminController {
     const auth = req.auth!;
     const tenantId = auth.membership!.tenantId;
     // A role with data scope "own" sees only itself, as in the people list.
-    const own = auth.access!.scope === 'own' ? { id: auth.membership!.id } : {};
+    const own = visibleMembers(auth);
     return withTenant(this.db, tenantId, async (tx) => {
       // A delegated admin sees themself and the people inside their own sites.
       const allowed = await administrableMembers(tx, auth);
