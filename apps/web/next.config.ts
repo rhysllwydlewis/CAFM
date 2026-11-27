@@ -4,6 +4,22 @@ import type { NextConfig } from 'next';
 // start script runs the API on 127.0.0.1:4000 in the same container.
 const apiUrl = process.env.API_URL ?? 'http://127.0.0.1:4000';
 
+// Enforced now: the directives no page depends on. The full policy is report-only first (doc 09, issue #122):
+// Next.js needs nonces for its inline scripts before script-src can drop 'unsafe-inline' and be enforced.
+const enforcedCsp = "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
+const reportOnlyCsp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "frame-src 'none'",
+  enforcedCsp,
+].join('; ');
+
 const config: NextConfig = {
   transpilePackages: ['@fmstead/ui'],
   poweredByHeader: false,
@@ -13,6 +29,9 @@ const config: NextConfig = {
       {
         source: '/:path*',
         headers: [
+          { key: 'Content-Security-Policy', value: enforcedCsp },
+          { key: 'Content-Security-Policy-Report-Only', value: reportOnlyCsp },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
