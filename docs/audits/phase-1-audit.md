@@ -42,6 +42,24 @@ Phase 1 is in better shape than the tracker alone could show. Every ticked item 
    For each one, say build now, defer to a named later phase, or drop. The deferred ones then go on the list in `docs/PROGRESS.md`.
 6. **Parts used on the technician's complete screen.** The phone app cannot record parts because technicians don't hold the cost permission. The guide says this waits for an owner decision. It is now on the "Waiting on the product owner" list.
 
+## Second pass: the code itself
+
+A second pass read the code and exercised the running app (current `main`, built and seeded locally). It listed all 253 route handlers against their guards, applied every migration to an empty database and asked Postgres which tables lack row security, requested every page and list route as all 16 demo personas, sent malformed input to every route, and ran `pnpm audit`. Lint, types, formatting, the 564 unit and API tests and the build all pass, and there are no TODOs, two lint suppressions, and three skipped end-to-end tests that each say why (phone-only or desktop-only).
+
+Raised as issues:
+
+- Issue 127: a NUL character in text input gives a 500 error.
+- Issue 128: dependencies with known advisories (1 critical, 6 high, 2 moderate).
+- Issue 129: three tenant tables without row security, and the exemption isn't recorded.
+- Issue 130: saved views have no cross-tenant API test.
+- Issue 131: a locked account answers faster than an unlocked one.
+- Issue 132: money custom fields ask people to type pence.
+- Issue 133: list and summary endpoints that load every row.
+- Issue 134: recording time at the maximum labour rate gives a 500 error.
+- Issue 135: role and team names can be duplicated, and a custom role can copy a built-in name.
+
+What held up: every route has the guards and permission it should (the exceptions are the sign-in, password reset, invite, contractor link and inbound mail routes, which are public by design), lists and detail pages agree on what each persona may see, cross-organisation requests are refused, and no page returned a server error for any persona.
+
 ## Already open
 
 - Issue 120: force a password change at first sign-in for generated passwords (a known gap on P1-09f).
@@ -49,6 +67,6 @@ Phase 1 is in better shape than the tracker alone could show. Every ticked item 
 
 ## Not checked
 
-- I did not read every one of the 252 routes, and I did not confirm that each endpoint has its own cross-tenant denial test. The tests that exist pass, and the database-level policies are checked for every table, but the plan asks for a denial test per endpoint and that is not proven here.
+- I did not read every route's code line by line. The second pass checked each route's guards and tested them as every persona, and matched every controller to a cross-tenant test (only saved views lacked one, issue 130), but it did not hand-check every query. The tests that exist pass, and the database-level policies are checked for every table, but the plan asks for a denial test per endpoint and that is not proven here.
 - I did not open every screen next to its mockup at phone and desktop width in light and dark. The end-to-end suite and its axe checks cover a lot of that, but not every screen.
 - Nothing was checked on the live demo or on Railway, so the deployment's health is unchecked.
