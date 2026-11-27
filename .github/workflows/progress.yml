@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Test the progress script
@@ -32,6 +32,7 @@ jobs:
           # Passed through the environment, never interpolated into the script.
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           OWNER_HANDOVER: ${{ github.event.pull_request.author_association == 'OWNER' && github.event.pull_request.user.login == github.event.repository.owner.login && github.event.pull_request.head.repo.full_name == github.repository }}
