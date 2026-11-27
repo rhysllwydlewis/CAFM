@@ -39,8 +39,8 @@ jobs:
       API_URL: http://localhost:4000
       WEB_ORIGIN: http://localhost:3000
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -60,7 +60,7 @@ jobs:
           cat app.log
           exit 1
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: http://localhost:3000
           fail_action: false
