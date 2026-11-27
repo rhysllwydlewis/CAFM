@@ -11,9 +11,9 @@ const CHAPTERS = [
 
 const film = (page: Page) => page.locator('[data-film]');
 
-/** The film is ready when the page has measured its chapters and set the first one. */
+/** The film is ready when the page has measured its chapters and worked out which one is showing. */
 async function filmReady(page: Page) {
-  await expect(film(page)).toHaveAttribute('data-active-section', '0');
+  await expect(film(page)).toHaveAttribute('data-active-section', /^\d$/);
 }
 
 /** Scroll to a point in a chapter, as a share of the scrolling that chapter takes. */

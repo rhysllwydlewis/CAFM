@@ -201,7 +201,9 @@
   color: var(--ink-faint);
   font: inherit;
   font-size: 13px;
-  text-shadow: 0 1px 10px rgb(0 0 0 / 0.6);
+  text-shadow:
+    0 0 12px rgb(0 0 0 / 0.85),
+    0 1px 3px rgb(0 0 0 / 0.7);
   cursor: pointer;
   transition: color 0.3s;
 }
@@ -251,13 +253,19 @@
   width: min(40rem, 48vw);
   pointer-events: auto;
 }
-/* A soft backing so the words stay readable over the brightest frames */
+/* A soft backing so the words stay readable over the brightest frames. It is fully clear at its edges, so no edge shows. */
 .copy::before {
   position: absolute;
-  inset: -3rem -5rem;
+  inset: -4rem -6rem;
   z-index: -1;
   content: '';
-  background: radial-gradient(ellipse at center, rgb(8 11 16 / 0.82) 0%, rgb(8 11 16 / 0.58) 55%, rgb(8 11 16 / 0) 78%);
+  background: radial-gradient(
+    closest-side,
+    rgb(8 11 16 / 0.8) 0%,
+    rgb(8 11 16 / 0.6) 45%,
+    rgb(8 11 16 / 0.22) 78%,
+    rgb(8 11 16 / 0) 100%
+  );
   pointer-events: none;
 }
 .title {
