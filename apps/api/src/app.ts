@@ -5,6 +5,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { json } from 'express';
 import { AppModule } from './app.module';
+import { requestLogEnabled, requestLogger } from './core/request-log';
 
 /** Builds the configured app. Tests may pass a module that imports AppModule plus extras. */
 export async function createApp(rootModule: Type<unknown> = AppModule): Promise<NestExpressApplication> {
@@ -13,6 +14,7 @@ export async function createApp(rootModule: Type<unknown> = AppModule): Promise<
     bodyParser: false,
   });
   app.setGlobalPrefix('api');
+  if (requestLogEnabled()) app.use(requestLogger());
   // Imports send a CSV file as JSON text (up to 90,000 characters), and JSON escaping can multiply its size
   // by six, so the import routes read bodies up to 600 kB. Every other route keeps the 100 kB default.
   app.use('/api/locations/import', json({ limit: '600kb' }));
