@@ -1,8 +1,16 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import argon2 from 'argon2';
 import type { Account } from '@fmstead/db';
-import { MFA_FAILED, type MfaEnrolment, type MfaStatus, type MfaVerifyInput, SIGN_IN_FAILED } from '@fmstead/shared';
+import {
+  MFA_FAILED,
+  type MfaEnrolment,
+  type MfaStatus,
+  type MfaVerifyInput,
+  SIGN_IN_FAILED,
+  TOO_MANY_ATTEMPTS,
+} from '@fmstead/shared';
 import { PrismaService } from '../../core/prisma.service';
+import { LoginRateLimiter } from './login-rate-limiter';
 import { hashToken, newSessionToken } from '../../core/session';
 import {
   decryptSecret,
@@ -23,7 +31,10 @@ interface Client {
 
 @Injectable()
 export class MfaService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly limiter: LoginRateLimiter,
+  ) {}
 
   async isEnabled(accountId: string): Promise<boolean> {
     return (await this.db.accountMfa.count({ where: { accountId, enabledAt: { not: null } } })) > 0;
@@ -65,7 +76,7 @@ export class MfaService {
   }
 
   async regenerateRecoveryCodes(account: Account, password: string, client: Client): Promise<string[]> {
-    await this.assertPassword(account, password);
+    await this.assertPassword(account, password, client);
     if (!(await this.isEnabled(account.id))) throw new ConflictException({ code: 'mfa_not_enabled' });
     const codes = await this.replaceRecoveryCodes(account.id);
     await this.event('mfa_recovery_codes_regenerated', account.id, client);
@@ -74,7 +85,7 @@ export class MfaService {
 
   /** Turns MFA off for the person themselves. Needs the password again. */
   async disable(account: Account, password: string, client: Client): Promise<void> {
-    await this.assertPassword(account, password);
+    await this.assertPassword(account, password, client);
     await this.remove(account.id);
     await this.event('mfa_disabled', account.id, client);
   }
@@ -169,8 +180,20 @@ export class MfaService {
     return codes;
   }
 
-  private async assertPassword(account: Account, password: string): Promise<void> {
-    if (!(await argon2.verify(account.passwordHash, password))) throw new UnauthorizedException(SIGN_IN_FAILED);
+  /**
+   * The password check behind disabling MFA and replacing recovery codes. A wrong password counts against the same
+   * per-IP limit as sign-in, so a stolen session can't be used to guess the password here.
+   */
+  private async assertPassword(account: Account, password: string, client: Client): Promise<void> {
+    if (this.limiter.isBlocked(client.ip)) {
+      await this.event('sign_in_rate_limited', account.id, client);
+      throw new HttpException(TOO_MANY_ATTEMPTS, HttpStatus.TOO_MANY_REQUESTS);
+    }
+    if (!(await argon2.verify(account.passwordHash, password))) {
+      this.limiter.recordFailure(client.ip);
+      await this.event('mfa_password_failed', account.id, client);
+      throw new UnauthorizedException(SIGN_IN_FAILED);
+    }
   }
 
   private async event(type: string, accountId: string, client: Client): Promise<void> {
