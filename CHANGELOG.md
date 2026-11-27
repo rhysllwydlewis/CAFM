@@ -6,6 +6,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
+- Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
 - Security hardening, first part: the site now sends HSTS and a content security policy (the parts that stop other sites framing it enforced, the full policy in report-only mode while scripts are tidied), and the API writes one structured log line per request with a request ID and the organisation it was for. See [security notes](docs/security.md).
 - Security and sign-in has an **Allow view as user** setting. It is on by default; switch it off and nobody can start a view-as-user session in your organisation. See [view as user](docs/admin.md#view-as-user).
 - Account security: anyone signed in can change their own password from the name at the foot of the side menu. People with a username only can now replace the password an administrator generated for them. Every other device, phones and tablets included, is signed out, people with an email address are told by email, and wrong attempts count towards the sign-in limit. On the phone app it is under "Me". See [changing your password](docs/admin.md#changing-your-password).
