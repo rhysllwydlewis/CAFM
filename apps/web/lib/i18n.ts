@@ -19,6 +19,7 @@ const enGB = {
   'shell.expandNav': 'Expand side menu',
   'shell.userMenu': 'Account and settings:',
   'shell.organisation': 'Organisation',
+  'shell.twoStep': 'Two-step verification',
   'shell.theme': 'Theme',
   'shell.themeLight': 'Light',
   'shell.themeDark': 'Dark',

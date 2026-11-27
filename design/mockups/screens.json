@@ -104,6 +104,22 @@
     "file": "01-auth-home.js"
   },
   {
+    "id": "auth-06-mfa-setup",
+    "group": "Sign in",
+    "title": "Set up two-step verification",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
+    "id": "auth-07-mfa-recovery-codes",
+    "group": "Sign in",
+    "title": "Recovery codes",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
     "id": "auth-05-select-org",
     "group": "Sign in",
     "title": "Choose organisation",

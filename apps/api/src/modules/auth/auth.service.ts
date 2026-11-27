@@ -206,6 +206,7 @@ export class AuthService {
       // there (from before this rule) is ignored too.
       preferences: demoLocked(auth.account.isDemo) ? {} : readPreferences(auth.account.preferences),
       preferencesLocked: demoLocked(auth.account.isDemo),
+      mfaSetupRequired: auth.mfaSetupRequired,
     };
   }
 

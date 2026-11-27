@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient, withTenant } from '@cafm/db';
 import { base32Encode, codeFor, stepAt, verifyCode } from '../src/core/totp';
 import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp } from './helpers';
 
@@ -215,6 +215,44 @@ describe('an administrator resets someone’s MFA', () => {
       await outsider.cleanup();
       await other.cleanup();
       await person.cleanup();
+    }
+  });
+});
+
+describe('an organisation that requires MFA', () => {
+  it('holds a person without it to the set-up until they have it, and not another organisation', async () => {
+    const required = await createTestTenant(db);
+    const relaxed = await createTestTenant(db);
+    await withTenant(db, required.tenant.id, (tx) =>
+      tx.tenantSecurity.create({ data: { tenantId: required.tenant.id, mfaRequired: true } }),
+    );
+    const person = await createTestAccount(db, [required.tenant.id, relaxed.tenant.id], undefined, 'super_user');
+    try {
+      const { agent } = await signIn(app, person.email, person.password);
+      // Two organisations: choose the one that requires it.
+      await agent.post('/api/auth/select-organisation').send({ membershipId: person.memberships[0] }).expect(200);
+
+      expect((await agent.get('/api/auth/me').expect(200)).body.mfaSetupRequired).toBe(true);
+      const held = await agent.get('/api/people').expect(403);
+      expect(held.body.code).toBe('mfa_setup_required');
+      await agent.get('/api/admin/security').expect(403);
+
+      const { secret } = (await agent.post('/api/auth/mfa/enrol').send({}).expect(200)).body as { secret: string };
+      await agent
+        .post('/api/auth/mfa/confirm')
+        .send({ code: codeFor(secret, now()) })
+        .expect(200);
+      expect((await agent.get('/api/auth/me').expect(200)).body.mfaSetupRequired).toBe(false);
+      await agent.get('/api/people').expect(200);
+
+      // The other organisation never asked for it.
+      await agent.post('/api/auth/select-organisation').send({ membershipId: person.memberships[1] }).expect(200);
+      expect((await agent.get('/api/auth/me').expect(200)).body.mfaSetupRequired).toBe(false);
+    } finally {
+      await person.cleanup();
+      await owner.tenantSecurity.deleteMany({ where: { tenantId: required.tenant.id } });
+      await required.cleanup();
+      await relaxed.cleanup();
     }
   });
 });

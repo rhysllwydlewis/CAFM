@@ -67,6 +67,8 @@ export interface CurrentUser {
   preferences: AccountPreferences;
   /** True for a shared demo persona: no choices are kept for them, so they last only until the page is reloaded. */
   preferencesLocked: boolean;
+  /** The organisation requires MFA and this person hasn't set it up: only the set-up page is open. */
+  mfaSetupRequired: boolean;
 }
 
 export const startImpersonationSchema = z.object({
