@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Icon, initials } from '@cafm/ui';
-import { PLAN_LABELS, type Plan } from '@cafm/shared';
+import { Icon, initials } from '@fmstead/ui';
+import { PLAN_LABELS, type Plan } from '@fmstead/shared';
 import { postJson } from '@/lib/client';
 import { t } from '@/lib/i18n';
 import { applyTheme, readTheme, type ThemeChoice } from '@/lib/theme';

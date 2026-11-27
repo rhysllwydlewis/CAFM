@@ -62,7 +62,7 @@ pnpm db:migrate
 pnpm db:seed
 
 step 'Build the shared packages'
-pnpm turbo run build --filter=@cafm/shared --filter=@cafm/db --filter=@cafm/config-engine >/dev/null
+pnpm turbo run build --filter=@fmstead/shared --filter=@fmstead/db --filter=@fmstead/config-engine >/dev/null
 
 step 'Ready. Next: read docs/PROGRESS.md (where the build is) and CLAUDE.md (the rules).'
 echo 'Checks: pnpm lint && pnpm typecheck && pnpm test   Run: pnpm dev (http://localhost:3000)'

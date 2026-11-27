@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { Button, Field, Icon, TextInput } from '@cafm/ui';
-import type { MfaEnrolment, MfaStatus } from '@cafm/shared';
+import { Button, Field, Icon, TextInput } from '@fmstead/ui';
+import type { MfaEnrolment, MfaStatus } from '@fmstead/shared';
 import { postJson } from '@/lib/client';
 
 async function problem(res: Response): Promise<string> {

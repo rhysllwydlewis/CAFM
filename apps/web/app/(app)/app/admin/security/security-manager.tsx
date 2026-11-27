@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Checkbox, Field, TextInput } from '@cafm/ui';
+import { Button, Checkbox, Field, TextInput } from '@fmstead/ui';
 import {
   PASSWORD_MIN_CEILING,
   PASSWORD_MIN_FLOOR,
   SESSION_HOURS_MAX,
   SESSION_HOURS_MIN,
   type SecuritySettingsView,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 
 /** Security and sign-in: password length, how long a sign-in lasts, and MFA (admin-08-security). */

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import { dataScope } from '../src/core/data-scope';
 import type { AuthContext } from '../src/core/session';
 import { createTestAccount, createTestTenant, signIn, startApp, testPassword } from './helpers';

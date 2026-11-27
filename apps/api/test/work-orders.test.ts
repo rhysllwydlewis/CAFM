@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { DEFAULT_SITE_CALENDAR } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { DEFAULT_SITE_CALENDAR } from '@fmstead/shared';
 import { requestDeadline } from '../src/modules/helpdesk/request-sla';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 

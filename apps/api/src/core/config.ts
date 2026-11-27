@@ -1,6 +1,6 @@
 import { UnprocessableEntityException } from '@nestjs/common';
-import type { Prisma, Tx } from '@cafm/db';
-import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
+import type { Prisma, Tx } from '@fmstead/db';
+import { validateCustom, type FieldDefinition } from '@fmstead/config-engine';
 import type { AuthContext } from './session';
 
 /** The definition as the validator and clients need it. */
@@ -52,7 +52,7 @@ export async function recordVersion(
   return version;
 }
 
-export { nextNumber } from '@cafm/db';
+export { nextNumber } from '@fmstead/db';
 
 /** The active custom fields for an entity type, by key (doc 02 § 0). */
 export async function activeCustomFields(

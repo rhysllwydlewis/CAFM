@@ -1,6 +1,6 @@
-import { validateCustom, type FieldDefinition } from '@cafm/config-engine';
-import type { Tx } from '@cafm/db';
-import { canContain, createLocationSchema, LOCATION_KINDS, type LocationKind } from '@cafm/shared';
+import { validateCustom, type FieldDefinition } from '@fmstead/config-engine';
+import type { Tx } from '@fmstead/db';
+import { canContain, createLocationSchema, LOCATION_KINDS, type LocationKind } from '@fmstead/shared';
 import { coerceCustomCell, customKey, type ImportIssue } from '../../core/import-fields';
 import { CsvError, parseCsv } from '../../core/csv-parse';
 import { IMPORT_MAX_ROWS } from '../../core/import-fields';

@@ -1,4 +1,4 @@
-import type { MobilePackJob, OutboxChange, OutboxEntry } from '@cafm/shared';
+import type { MobilePackJob, OutboxChange, OutboxEntry } from '@fmstead/shared';
 
 /** The technician app's offline store: the jobs on the phone and the sync token. Cleared on sign out. */
 const DB_NAME = 'cafm-mobile';

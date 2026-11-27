@@ -1,5 +1,5 @@
-import type { Tx } from '@cafm/db';
-import { resolveEntitlements, roleLabel } from '@cafm/shared';
+import type { Tx } from '@fmstead/db';
+import { resolveEntitlements, roleLabel } from '@fmstead/shared';
 import type { Access } from './session';
 
 /**

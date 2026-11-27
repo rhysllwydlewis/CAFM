@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { can, feature, type CurrentUser } from '@cafm/shared';
+import { can, feature, type CurrentUser } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { reportLocation } from '@/lib/helpdesk';
 import { locationDetail, route, validLocationId } from '../../(app)/app/locations/location-data';

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { TOO_MANY_ATTEMPTS } from '@cafm/shared';
+import { TOO_MANY_ATTEMPTS } from '@fmstead/shared';
 import { startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -25,7 +25,7 @@ describe('per-IP limit on failed sign-ins', () => {
     }
     const res = await http()
       .post('/api/auth/login')
-      .send({ identifier: 'superuser@demo.example', password: 'CafmDemo!2026' })
+      .send({ identifier: 'superuser@demo.example', password: 'FmsDemo!2026' })
       .expect(429);
     expect(res.body.message).toBe(TOO_MANY_ATTEMPTS);
   });

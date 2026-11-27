@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { ADMIN_CALENDARS_PAGE_SIZE, DEFAULT_SITE_CALENDAR } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { ADMIN_CALENDARS_PAGE_SIZE, DEFAULT_SITE_CALENDAR } from '@fmstead/shared';
 import { createTestAccount, createTestTenant, signIn, startApp, testPassword } from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });

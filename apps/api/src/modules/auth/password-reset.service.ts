@@ -7,8 +7,8 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import argon2 from 'argon2';
-import { newToken, hashToken } from '@cafm/db';
-import { passwordProblem } from '@cafm/shared';
+import { newToken, hashToken } from '@fmstead/db';
+import { passwordProblem } from '@fmstead/shared';
 import type { ClientInfo } from './auth.service';
 import { AuthService } from './auth.service';
 import { ResetRateLimiter } from './login-rate-limiter';

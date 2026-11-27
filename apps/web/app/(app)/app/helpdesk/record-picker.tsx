@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { Field, TextInput } from '@cafm/ui';
+import { Field, TextInput } from '@fmstead/ui';
 import styles from './helpdesk.module.css';
 
 type Option = { id: string; name: string; code?: string; number?: string };

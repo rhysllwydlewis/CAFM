@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { mfaConfirmSchema, mfaPasswordSchema, mfaVerifySchema } from '@cafm/shared';
+import { mfaConfirmSchema, mfaPasswordSchema, mfaVerifySchema } from '@fmstead/shared';
 import { assertNotDemoLocked } from '../../core/access-rules';
 import { SessionGuard } from '../../core/auth.guards';
 import {

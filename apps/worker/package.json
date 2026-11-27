@@ -1,5 +1,5 @@
 {
-  "name": "@cafm/worker",
+  "name": "@fmstead/worker",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -11,8 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cafm/db": "workspace:*",
-    "@cafm/shared": "workspace:*",
+    "@fmstead/db": "workspace:*",
+    "@fmstead/shared": "workspace:*",
     "bullmq": "6.7.1",
     "ioredis": "6.0.0",
     "nodemailer": "10.3.1",

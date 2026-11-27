@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { scopedUsername, shortUsername } from '@cafm/shared';
+import { scopedUsername, shortUsername } from '@fmstead/shared';
 import { ownerDb, signIn, startApp } from './helpers';
 import { temporaryPassword } from '../src/modules/admin/username-accounts.controller';
 

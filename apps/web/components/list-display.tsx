@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { parseColumnKeys, type GroupOption, type ListColumn } from '@cafm/shared';
+import { parseColumnKeys, type GroupOption, type ListColumn } from '@fmstead/shared';
 
 /** The group and column fields for a list's filter form. They send with Apply filters, and the address keeps them. */
 export function ListDisplayFields({

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 import { createWorker } from './index';
 import { scheduleDemoReset } from './jobs/demo-reset';
 import { schedulePpmGeneration } from './jobs/ppm-generate';

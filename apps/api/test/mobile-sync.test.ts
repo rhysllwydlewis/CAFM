@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyMobileChanges, missingMobileJobIds, type MobileChanges, type MobilePackJob } from '@cafm/shared';
+import { applyMobileChanges, missingMobileJobIds, type MobileChanges, type MobilePackJob } from '@fmstead/shared';
 
 const job = (id: string, title: string): MobilePackJob => ({ id, title }) as MobilePackJob;
 const changes = (jobs: MobilePackJob[], jobIds: string[]): MobileChanges => ({

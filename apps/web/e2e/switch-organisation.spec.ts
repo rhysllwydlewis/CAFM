@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 
 const owner = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',
@@ -19,7 +19,7 @@ async function inviteToken(to: string): Promise<string> {
 
 async function inviteAs(request: APIRequestContext, persona: string) {
   const login = await request.post('/api/auth/login', {
-    data: { identifier: `${persona}@demo.example`, password: 'CafmDemo!2026' },
+    data: { identifier: `${persona}@demo.example`, password: 'FmsDemo!2026' },
   });
   expect(login.ok()).toBe(true);
   expect((await request.post('/api/people/invites', { data: { email, role: 'requester' } })).status()).toBe(201);

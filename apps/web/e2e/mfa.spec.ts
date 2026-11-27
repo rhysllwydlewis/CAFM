@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 
 const owner = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL ?? 'postgresql://cafm:cafm@localhost:5432/cafm_dev',

@@ -1,4 +1,4 @@
-import { can, VIEW_ENTITY_ACCESS, type ViewEntity } from '@cafm/shared';
+import { can, VIEW_ENTITY_ACCESS, type ViewEntity } from '@fmstead/shared';
 import { filtersFromQuery, savedViews } from '@/lib/views';
 import { ViewBar } from './view-bar';
 

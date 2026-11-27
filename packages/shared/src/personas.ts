@@ -87,4 +87,4 @@ export const DEMO_TENANTS: DemoTenant[] = [
 ];
 
 /** Demo password (doc 06). Only ever exposed when DEMO_MODE=true. */
-export const DEMO_PASSWORD = 'CafmDemo!2026';
+export const DEMO_PASSWORD = 'FmsDemo!2026';

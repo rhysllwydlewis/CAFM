@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import { t } from '@/lib/i18n';
 
 /** Minutes until the next 03:00 in London, when the demo resets (doc 06). */

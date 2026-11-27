@@ -16,7 +16,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Prisma, type Tx } from '@cafm/db';
+import { withTenant, type Prisma, type Tx } from '@fmstead/db';
 import {
   VIEW_ENTITIES,
   VIEW_ENTITY_ACCESS,
@@ -25,7 +25,7 @@ import {
   viewConfigSchema,
   type SavedView,
   type ViewEntity,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { assertAccess, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

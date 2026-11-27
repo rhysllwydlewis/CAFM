@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { TERMS_VERSION } from '@cafm/shared';
+import { TERMS_VERSION } from '@fmstead/shared';
 import { AuthCard } from '../auth-card';
 
 export const metadata: Metadata = { title: 'Terms of service' };

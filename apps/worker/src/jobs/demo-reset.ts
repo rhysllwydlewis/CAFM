@@ -1,5 +1,5 @@
 import type { Queue } from 'bullmq';
-import { type PrismaClient, resetDemo } from '@cafm/db';
+import { type PrismaClient, resetDemo } from '@fmstead/db';
 import { register } from '../handlers';
 import type { JobData } from '../index';
 

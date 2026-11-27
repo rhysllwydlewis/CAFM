@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { can, type AdminOverview } from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+import { can, type AdminOverview } from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import styles from './admin.module.css';

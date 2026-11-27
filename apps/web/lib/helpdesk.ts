@@ -1,6 +1,6 @@
 import 'server-only';
-import type { FieldDefinition } from '@cafm/config-engine';
-import type { ReportAsset, ReportLocation, RequestCatalogue, RequestPage, RequestRecord } from '@cafm/shared';
+import type { FieldDefinition } from '@fmstead/config-engine';
+import type { ReportAsset, ReportLocation, RequestCatalogue, RequestPage, RequestRecord } from '@fmstead/shared';
 import { apiGet } from './api';
 
 export async function readHelpdesk<T>(path: string): Promise<T> {

@@ -35,13 +35,13 @@ importers:
       '@aws-sdk/client-s3':
         specifier: 3.1175.0
         version: 3.1175.0
-      '@cafm/config-engine':
+      '@fmstead/config-engine':
         specifier: workspace:*
         version: link:../../packages/config-engine
-      '@cafm/db':
+      '@fmstead/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@cafm/shared':
+      '@fmstead/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@js-temporal/polyfill':
@@ -117,13 +117,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@cafm/config-engine':
+      '@fmstead/config-engine':
         specifier: workspace:*
         version: link:../../packages/config-engine
-      '@cafm/shared':
+      '@fmstead/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@cafm/ui':
+      '@fmstead/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@fontsource-variable/inter':
@@ -154,7 +154,7 @@ importers:
       '@axe-core/playwright':
         specifier: 4.14.0
         version: 4.14.0(playwright-core@1.63.0)
-      '@cafm/db':
+      '@fmstead/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@playwright/test':
@@ -178,10 +178,10 @@ importers:
 
   apps/worker:
     dependencies:
-      '@cafm/db':
+      '@fmstead/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@cafm/shared':
+      '@fmstead/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       bullmq:
@@ -225,10 +225,10 @@ importers:
 
   packages/db:
     dependencies:
-      '@cafm/config-engine':
+      '@fmstead/config-engine':
         specifier: workspace:*
         version: link:../config-engine
-      '@cafm/shared':
+      '@fmstead/shared':
         specifier: workspace:*
         version: link:../shared
       '@prisma/client':

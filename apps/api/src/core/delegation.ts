@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { hasAllLocationAccess, scopedLocations, type Tx } from '@cafm/db';
+import { hasAllLocationAccess, scopedLocations, type Tx } from '@fmstead/db';
 import type { AuthContext } from './session';
 import { dataScope } from './data-scope';
 

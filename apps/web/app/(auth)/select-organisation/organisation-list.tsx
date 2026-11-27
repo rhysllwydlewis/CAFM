@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { LoginResponse, OrganisationOption } from '@cafm/shared';
-import { Icon, initials } from '@cafm/ui';
+import type { LoginResponse, OrganisationOption } from '@fmstead/shared';
+import { Icon, initials } from '@fmstead/ui';
 import { postJson } from '@/lib/client';
 
 const PLAN_LABELS: Record<string, string> = {

@@ -1,4 +1,4 @@
-import type { Prisma, Tx } from '@cafm/db';
+import type { Prisma, Tx } from '@fmstead/db';
 import type { AuthContext } from './session';
 
 export interface AuditEntry {

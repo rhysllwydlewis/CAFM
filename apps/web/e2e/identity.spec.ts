@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 
 // Reads the emails the app queued (the worker isn't running in e2e), as the owner.
 const owner = new PrismaClient({

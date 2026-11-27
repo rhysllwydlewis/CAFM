@@ -1,5 +1,5 @@
 import 'server-only';
-import type { FieldDefinition } from '@cafm/config-engine';
+import type { FieldDefinition } from '@fmstead/config-engine';
 import type {
   AssetAttribute,
   AssetClassRecord,
@@ -8,7 +8,7 @@ import type {
   AssetRecord,
   AssetServesRecord,
   AssetSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 
 export type AssetDetail = AssetRecord & {

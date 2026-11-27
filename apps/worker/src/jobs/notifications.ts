@@ -1,6 +1,6 @@
 import webPush from 'web-push';
-import { scopedLocations, withTenant } from '@cafm/db';
-import { isBrowserPushEndpoint, resolveEntitlements } from '@cafm/shared';
+import { scopedLocations, withTenant } from '@fmstead/db';
+import { isBrowserPushEndpoint, resolveEntitlements } from '@fmstead/shared';
 import { register } from '../handlers';
 import { sendEmail } from './email';
 import { slaAlerts } from './work-order-alerts';
@@ -140,7 +140,7 @@ register('notification.deliver', async (raw, ctx) => {
         text: notice.body,
         capture: notice.tenant.demo,
         replyTo: mailbox?.active ? mailbox.address : undefined,
-        messageId: `<cafm-${notice.id}@cafm.invalid>`,
+        messageId: `<fmstead-${notice.id}@fmstead.invalid>`,
       },
       ctx,
     );

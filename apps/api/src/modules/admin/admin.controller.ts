@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
-import { scopedLocations, withTenant } from '@cafm/db';
+import { scopedLocations, withTenant } from '@fmstead/db';
 import {
   ADMIN_CALENDARS_PAGE_SIZE,
   adminCalendarsQuerySchema,
@@ -10,7 +10,7 @@ import {
   type AdminOverview,
   type AdminUser,
   type SiteAccessOverview,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { administrableMembers, isDelegated } from '../../core/delegation';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

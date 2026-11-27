@@ -9,8 +9,8 @@ import {
   PPM_CRITICALITIES,
   PPM_CRITICALITY_LABELS,
   PPM_SORTS,
-} from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+} from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { hours } from '@/lib/ppm-format';
 import { ppmAssignees, ppmForecast, ppmOverdue, ppmPlanner, ppmSchedules, ppmSummary } from '@/lib/ppm';
 import { BulkSelection } from '@/components/bulk-selection';

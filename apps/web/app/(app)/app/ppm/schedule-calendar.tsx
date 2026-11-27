@@ -1,4 +1,4 @@
-import type { PpmScheduleSummary } from '@cafm/shared';
+import type { PpmScheduleSummary } from '@fmstead/shared';
 import { DAY_MS, MonthCalendar, ukDay, type CalendarEvent } from '@/components/month-calendar';
 
 /** A schedule due within this many days is shown as due soon. */

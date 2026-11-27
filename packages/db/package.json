@@ -1,5 +1,5 @@
 {
-  "name": "@cafm/db",
+  "name": "@fmstead/db",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -15,8 +15,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cafm/config-engine": "workspace:*",
-    "@cafm/shared": "workspace:*",
+    "@fmstead/config-engine": "workspace:*",
+    "@fmstead/shared": "workspace:*",
     "@prisma/client": "6.19.3",
     "argon2": "0.45.1",
     "prisma": "6.19.3"

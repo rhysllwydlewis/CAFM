@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Icon } from '@cafm/ui';
-import { REQUEST_STATUS_LABELS, type RequestStatus as Status, type RequestSummary } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { REQUEST_STATUS_LABELS, type RequestStatus as Status, type RequestSummary } from '@fmstead/shared';
 import { PriorityBadge } from '../work-orders/work-order-parts';
 import { RequestSla } from './request-table';
 import styles from './helpdesk.module.css';

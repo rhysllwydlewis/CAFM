@@ -8,7 +8,7 @@ import type {
   PpmScheduleSummary,
   PpmSummary,
   PpmTaskTemplate,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { apiGet } from './api';
 
 async function read<T>(path: string): Promise<T> {

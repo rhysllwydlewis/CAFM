@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Icon, Logo, Wordmark, initials } from '@cafm/ui';
+import { Icon, Logo, Wordmark, initials } from '@fmstead/ui';
 import { t } from '@/lib/i18n';
 import { UserMenu } from './user-menu';
 import type { ShellNavSection, ShellOrganisation } from './types';

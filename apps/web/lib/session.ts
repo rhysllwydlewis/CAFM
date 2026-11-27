@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
-import type { CurrentUser } from '@cafm/shared';
+import type { CurrentUser } from '@fmstead/shared';
 import { apiGet } from './api';
 import { safeNext } from './next-path';
 

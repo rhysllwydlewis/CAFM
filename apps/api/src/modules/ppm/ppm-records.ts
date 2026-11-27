@@ -1,4 +1,4 @@
-import { hasAllLocationAccess, PPM_TIME_ZONE, type Prisma, type Tx } from '@cafm/db';
+import { hasAllLocationAccess, PPM_TIME_ZONE, type Prisma, type Tx } from '@fmstead/db';
 import {
   localDate,
   WORK_ORDER_FINISHED,
@@ -13,7 +13,7 @@ import {
   type PpmScheduleSummary,
   type PpmTaskTemplate,
   type PpmVisitState,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import type { AuthContext } from '../../core/session';
 import { assetScope } from '../assets/asset-scope';
 import { missingSchedule } from './ppm-scope';

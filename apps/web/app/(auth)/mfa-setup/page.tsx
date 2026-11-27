@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import type { MfaStatus } from '@cafm/shared';
+import type { MfaStatus } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { MfaSetup } from '../../(app)/app/account/security/mfa-setup';

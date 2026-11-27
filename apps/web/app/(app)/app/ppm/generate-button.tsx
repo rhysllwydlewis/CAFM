@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@cafm/ui';
+import { Button } from '@fmstead/ui';
 
 /** Raises the jobs that are due now, instead of waiting for the hourly run. `path` is for one schedule, or all of them. */
 export function GenerateButton({ path, label = 'Generate now' }: { path: string; label?: string }) {

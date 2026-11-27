@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Icon, Wordmark } from '@cafm/ui';
+import { Icon, Wordmark } from '@fmstead/ui';
 import '@fontsource-variable/inter/wght-italic.css';
 import { startFilm } from './film';
 import styles from './home.module.css';

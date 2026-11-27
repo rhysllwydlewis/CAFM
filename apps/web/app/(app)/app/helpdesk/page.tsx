@@ -10,8 +10,8 @@ import {
   REQUEST_SORTS,
   type ReportLocation,
   type RequestView,
-} from '@cafm/shared';
-import { Icon } from '@cafm/ui';
+} from '@fmstead/shared';
+import { Icon } from '@fmstead/ui';
 import { currentUser } from '@/lib/session';
 import { ListViewBar } from '@/components/list-view-bar';
 import { catalogue, readHelpdesk, requestPage } from '@/lib/helpdesk';

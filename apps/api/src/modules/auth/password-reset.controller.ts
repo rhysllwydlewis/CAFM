@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
-import { resetConfirmSchema, resetRequestSchema } from '@cafm/shared';
+import { resetConfirmSchema, resetRequestSchema } from '@fmstead/shared';
 import { clientInfo } from '../../core/cookies';
 import { parse } from '../../core/validation';
 import { PasswordResetService, RESET_REQUESTED } from './password-reset.service';

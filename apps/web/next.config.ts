@@ -5,7 +5,7 @@ import type { NextConfig } from 'next';
 const apiUrl = process.env.API_URL ?? 'http://127.0.0.1:4000';
 
 const config: NextConfig = {
-  transpilePackages: ['@cafm/ui'],
+  transpilePackages: ['@fmstead/ui'],
   poweredByHeader: false,
   // The API is served on the same site under /api so session cookies stay first-party (doc 06).
   async headers() {

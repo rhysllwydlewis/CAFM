@@ -3,8 +3,8 @@ import { inflateSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { PrismaClient, withTenant } from '@cafm/db';
-import { outstandingFor, checklistAnswerProblem } from '@cafm/shared';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { outstandingFor, checklistAnswerProblem } from '@fmstead/shared';
 import { pdfText } from '../src/modules/work-orders/job-sheet';
 import { createTestAccount, createTestTenant, ownerDb, startApp, signIn } from './helpers';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Field, TextInput } from '@cafm/ui';
+import { Field, TextInput } from '@fmstead/ui';
 
 /** New password and confirmation, with the rules stated up front. */
 export function NewPasswordFields({

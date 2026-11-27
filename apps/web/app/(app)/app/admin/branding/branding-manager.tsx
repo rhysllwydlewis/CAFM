@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
-import { contrastWithWhite, LOGO_TYPES, MAX_LOGO_BYTES, type BrandingView } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import { contrastWithWhite, LOGO_TYPES, MAX_LOGO_BYTES, type BrandingView } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 
 /** Branding: the accent colour for buttons, the sign-in message, the logo and the name emails come from. */

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, withTenant } from '@cafm/db';
+import { PrismaClient, withTenant } from '@fmstead/db';
 import {
   addDays,
   addMonths,
@@ -11,7 +11,7 @@ import {
   type PpmForecast,
   type PpmPlanner,
   type PpmSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;

@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 import { codeFor, encryptSecret, newSecret, stepAt } from '../src/core/totp';
-import { DEMO_PASSWORD } from '@cafm/shared';
+import { DEMO_PASSWORD } from '@fmstead/shared';
 import {
   createTestAccount,
   createTestTenant,

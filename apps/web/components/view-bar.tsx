@@ -1,8 +1,8 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Icon } from '@cafm/ui';
-import type { SavedView, ViewEntity, ViewLayout } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import type { SavedView, ViewEntity, ViewLayout } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 
 interface Props {

@@ -2,8 +2,8 @@
 
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@cafm/ui';
-import type { AdminUser, SiteAccessOverview } from '@cafm/shared';
+import { Button } from '@fmstead/ui';
+import type { AdminUser, SiteAccessOverview } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 

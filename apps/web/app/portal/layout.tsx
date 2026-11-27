@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { can, feature } from '@cafm/shared';
-import { Logo } from '@cafm/ui';
-import type { CurrentUser } from '@cafm/shared';
+import { can, feature } from '@fmstead/shared';
+import { Logo } from '@fmstead/ui';
+import type { CurrentUser } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 import { PortalNotifications } from './portal-notifications';
 import styles from '../(app)/app/helpdesk/helpdesk.module.css';

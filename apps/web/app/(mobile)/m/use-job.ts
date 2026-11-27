@@ -9,7 +9,7 @@ import {
   type MobilePackJob,
   type OutboxChange,
   type WorkOrderStatus,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { enqueue, readJob, readOutbox, type OutboxRecord } from '@/lib/mobile-store';
 import { flushOutbox, syncJobs } from '@/lib/mobile-sync-client';
 import { useMembershipId } from './mobile-shell';

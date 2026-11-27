@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Wordmark } from '@cafm/ui';
+import { Wordmark } from '@fmstead/ui';
 
 /** The centred card used by the sign-in side pages (pattern from auth-04 and auth-05). */
 export function AuthCard({ title, width = 440, children }: { title: string; width?: number; children: ReactNode }) {

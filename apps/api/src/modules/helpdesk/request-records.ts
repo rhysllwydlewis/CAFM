@@ -5,8 +5,8 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import type { FieldDefinition } from '@cafm/config-engine';
-import type { Prisma, Tx } from '@cafm/db';
+import type { FieldDefinition } from '@fmstead/config-engine';
+import type { Prisma, Tx } from '@fmstead/db';
 import {
   DEFAULT_SITE_CALENDAR,
   defaultRequestPriority,
@@ -18,7 +18,7 @@ import {
   type RequestRecord,
   type RequestStatus,
   type RequestSummary,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { activeCustomFields, mergeCustom, nextNumber, visibleCustom } from '../../core/config';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';

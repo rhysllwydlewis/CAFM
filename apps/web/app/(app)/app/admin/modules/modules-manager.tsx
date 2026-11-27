@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, TextInput } from '@cafm/ui';
-import { FEATURES, type ModuleSettingView } from '@cafm/shared';
+import { Button, TextInput } from '@fmstead/ui';
+import { FEATURES, type ModuleSettingView } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 

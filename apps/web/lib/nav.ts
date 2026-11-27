@@ -1,4 +1,4 @@
-import type { Feature, Permission } from '@cafm/shared';
+import type { Feature, Permission } from '@fmstead/shared';
 
 export interface NavItem {
   key: string;

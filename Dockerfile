@@ -1,6 +1,6 @@
 # Container image for the whole app (API, web and worker in one service), the
 # same shape as the Railway deploy. Keeps the app portable to any container
-# host (doc 04 § Hosting). Build: docker build -t cafm .
+# host (doc 04 § Hosting). Build: docker build -t fmstead .
 # Run: needs DATABASE_URL (owner) and APP_DB_PASSWORD; see docs/deploy/container.md.
 
 FROM node:22-bookworm-slim AS build

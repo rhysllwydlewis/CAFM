@@ -13,8 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant, type Prisma } from '@cafm/db';
-import { createAssetClassSchema, updateAssetClassSchema, type AssetClassRecord } from '@cafm/shared';
+import { withTenant, type Prisma } from '@fmstead/db';
+import { createAssetClassSchema, updateAssetClassSchema, type AssetClassRecord } from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { recordVersion } from '../../core/config';

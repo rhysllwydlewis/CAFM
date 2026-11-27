@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient } from '@cafm/db';
-import { SIGN_IN_FAILED } from '@cafm/shared';
+import { PrismaClient } from '@fmstead/db';
+import { SIGN_IN_FAILED } from '@fmstead/shared';
 import {
   createTestAccount,
   createTestTenant,
@@ -31,7 +31,7 @@ describe('POST /api/auth/login', () => {
     const { agent, res } = await signIn(app, 'Technician@demo.example');
     expect(res.body).toEqual({ status: 'signed_in', landingPage: '/app' });
     const cookie = String(res.headers['set-cookie']);
-    expect(cookie).toMatch(/cafm_session=/);
+    expect(cookie).toMatch(/fmstead_session=/);
     expect(cookie).toMatch(/HttpOnly/);
     expect(cookie).toMatch(/SameSite=Lax/);
     expect(cookie).not.toMatch(/Expires=/); // browser-session cookie unless "keep me signed in"
@@ -43,7 +43,7 @@ describe('POST /api/auth/login', () => {
   it('sets a 30-day cookie with "keep me signed in"', async () => {
     const res = await http()
       .post('/api/auth/login')
-      .send({ identifier: 'requester@demo.example', password: 'CafmDemo!2026', keepSignedIn: true })
+      .send({ identifier: 'requester@demo.example', password: 'FmsDemo!2026', keepSignedIn: true })
       .expect(200);
     expect(String(res.headers['set-cookie'])).toMatch(/Expires=/);
   });
@@ -92,9 +92,9 @@ describe('CSRF protection', () => {
   it('accepts a request from the site it was made to', async () => {
     await http()
       .post('/api/auth/login')
-      .set('Origin', 'https://cafm.example')
-      .set('X-Forwarded-Host', 'cafm.example')
-      .send({ identifier: 'executive@demo.example', password: 'CafmDemo!2026' })
+      .set('Origin', 'https://fmstead.example')
+      .set('X-Forwarded-Host', 'fmstead.example')
+      .send({ identifier: 'executive@demo.example', password: 'FmsDemo!2026' })
       .expect(200);
   });
 
@@ -102,8 +102,8 @@ describe('CSRF protection', () => {
     await http()
       .post('/api/auth/login')
       .set('Origin', 'https://evil.example')
-      .set('X-Forwarded-Host', 'cafm.example')
-      .send({ identifier: 'executive@demo.example', password: 'CafmDemo!2026' })
+      .set('X-Forwarded-Host', 'fmstead.example')
+      .send({ identifier: 'executive@demo.example', password: 'FmsDemo!2026' })
       .expect(403);
   });
 
@@ -111,7 +111,7 @@ describe('CSRF protection', () => {
     await http()
       .post('/api/auth/login')
       .set('Origin', 'https://evil.example')
-      .send({ identifier: 'superuser@demo.example', password: 'CafmDemo!2026' })
+      .send({ identifier: 'superuser@demo.example', password: 'FmsDemo!2026' })
       .expect(403);
   });
 });
@@ -176,7 +176,7 @@ describe('sessions', () => {
     const first = sessionCookie(res);
     await agent
       .post('/api/auth/login')
-      .send({ identifier: 'planner@demo.example', password: 'CafmDemo!2026' })
+      .send({ identifier: 'planner@demo.example', password: 'FmsDemo!2026' })
       .expect(200);
     await http().get('/api/auth/me').set('Cookie', first).expect(401);
     await agent.get('/api/auth/me').expect(200);
@@ -211,12 +211,12 @@ describe('POST /api/auth/logout', () => {
   it('ends the session and clears the cookie', async () => {
     const { agent } = await signIn(app, 'manager@demo.example');
     const res = await agent.post('/api/auth/logout').send({}).expect(204);
-    expect(String(res.headers['set-cookie'])).toMatch(/cafm_session=;.*Expires=Thu, 01 Jan 1970/);
+    expect(String(res.headers['set-cookie'])).toMatch(/fmstead_session=;.*Expires=Thu, 01 Jan 1970/);
     await agent.get('/api/auth/me').expect(401);
   });
 
   it('succeeds without a session, so signing out never gets stuck', async () => {
     await http().post('/api/auth/logout').send({}).expect(204);
-    await http().post('/api/auth/logout').set('Cookie', 'cafm_session=not-a-real-token').send({}).expect(204);
+    await http().post('/api/auth/logout').set('Cookie', 'fmstead_session=not-a-real-token').send({}).expect(204);
   });
 });

@@ -11,14 +11,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { withTenant } from '@cafm/db';
+import { withTenant } from '@fmstead/db';
 import {
   logoMatchesType,
   logoUploadSchema,
   MAX_LOGO_BYTES,
   updateBrandingSchema,
   type BrandingView,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';

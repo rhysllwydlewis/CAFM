@@ -1,6 +1,6 @@
 'use client';
 
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import { FixSla, PriorityBadge, StatusBadge } from '@/app/(app)/app/work-orders/work-order-parts';
 import { syncedText, useJobs } from './use-jobs';
 

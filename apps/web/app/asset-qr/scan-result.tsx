@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { assetScanSchema, type AssetScan } from '@cafm/shared';
+import { assetScanSchema, type AssetScan } from '@fmstead/shared';
 import { apiGet } from '@/lib/api';
 
 export async function ScanResult({ query }: { query: { id: string } | { code?: string } }) {

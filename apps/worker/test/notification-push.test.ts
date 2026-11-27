@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, expect, it, vi } from 'vitest';
-import { PrismaClient } from '@cafm/db';
+import { PrismaClient } from '@fmstead/db';
 import { handlers } from '../src/handlers';
 import '../src/jobs/notifications';
 

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Temporal } from '@js-temporal/polyfill';
-import { withTenant, type Prisma } from '@cafm/db';
+import { withTenant, type Prisma } from '@fmstead/db';
 import {
   AGE_BANDS,
   COST_KINDS,
@@ -24,7 +24,7 @@ import {
   type PpmComplianceReport,
   type SlaPerformanceReport,
   type WorkMixReport,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';

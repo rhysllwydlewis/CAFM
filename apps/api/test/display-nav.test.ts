@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MODULES, applyDisplay, termLabel, type DisplaySettings } from '@cafm/shared';
+import { MODULES, applyDisplay, termLabel, type DisplaySettings } from '@fmstead/shared';
 
 const items = [
   { key: 'home', label: 'Home' },

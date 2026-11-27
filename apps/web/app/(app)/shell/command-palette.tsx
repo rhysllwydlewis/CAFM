@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Icon } from '@cafm/ui';
+import { Icon } from '@fmstead/ui';
 import { t } from '@/lib/i18n';
 import type { ShellNavItem } from './types';
 

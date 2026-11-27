@@ -3,15 +3,15 @@
 The `Dockerfile` at the root builds the whole app (API, web app and worker) into one image, the same shape as the Railway service. This keeps the app portable to any container host, such as AWS ECS later (doc 04 § Hosting). CI builds it on every PR; it isn't pushed to a registry yet.
 
 ```bash
-docker build -t cafm .
+docker build -t fmstead .
 ```
 
 ```bash
 docker run --rm -p 3000:3000 \
   -e DATABASE_URL=postgresql://<owner>:<password>@<host>:5432/<database> \
   -e APP_DB_PASSWORD=<long random string> \
-  -e APP_URL=https://cafm.example.com \
-  cafm
+  -e APP_URL=https://fmstead.example.com \
+  fmstead
 ```
 
 At start, the container does the following:

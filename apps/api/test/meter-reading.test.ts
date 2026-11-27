@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Prisma } from '@cafm/db';
+import { Prisma } from '@fmstead/db';
 import { nextMeterTotal } from '../src/modules/assets/meter-reading';
 
 const decimal = (value: string) => new Prisma.Decimal(value);

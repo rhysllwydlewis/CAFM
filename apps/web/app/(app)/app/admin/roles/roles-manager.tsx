@@ -3,8 +3,8 @@
 import { useId, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
-import { PERMISSIONS, isAdminPermission, type Permission } from '@cafm/shared';
+import { Button, Field, TextInput } from '@fmstead/ui';
+import { PERMISSIONS, isAdminPermission, type Permission } from '@fmstead/shared';
 import { adminWrite } from '@/lib/admin-client';
 import styles from '../admin.module.css';
 

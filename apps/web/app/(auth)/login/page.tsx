@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { Wordmark } from '@cafm/ui';
+import { Wordmark } from '@fmstead/ui';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/next-path';
 import { LoginForm, type DemoAccounts } from './login-form';

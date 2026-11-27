@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Icon } from '@cafm/ui';
-import { matchScan, type MobilePackJob, type ScanMatch } from '@cafm/shared';
+import { Icon } from '@fmstead/ui';
+import { matchScan, type MobilePackJob, type ScanMatch } from '@fmstead/shared';
 import { addScan, clearIfNotOwner, enqueue, readJobs, readScans, type ScanRecord } from '@/lib/mobile-store';
 import { useMembershipId } from '../mobile-shell';
 import { flushOutbox } from '@/lib/mobile-sync-client';

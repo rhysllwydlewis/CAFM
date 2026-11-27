@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import argon2 from 'argon2';
-import { withAccount, type Account } from '@cafm/db';
+import { withAccount, type Account } from '@fmstead/db';
 import {
   readPreferences,
   roleLabel,
@@ -14,7 +14,7 @@ import {
   type LoginResponse,
   type MfaVerifyInput,
   type OrganisationOption,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { demoLocked } from '../../core/access-rules';
 import { PrismaService } from '../../core/prisma.service';
 import { sessionLifetimeMs } from '../../core/security-settings';

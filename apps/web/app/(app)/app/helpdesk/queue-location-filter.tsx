@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ReportLocation } from '@cafm/shared';
+import type { ReportLocation } from '@fmstead/shared';
 import { RecordPicker } from './record-picker';
 
 export function QueueLocationFilter({ initial }: { initial: ReportLocation | null }) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SITE_CALENDAR } from '@cafm/shared';
+import { DEFAULT_SITE_CALENDAR } from '@fmstead/shared';
 import { elapsedMinutes, requestDeadline } from '../src/modules/helpdesk/request-sla';
 
 it('consumes only open minutes, skipping bank holidays and custom closures', () => {

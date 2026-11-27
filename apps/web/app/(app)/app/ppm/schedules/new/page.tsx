@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { can, feature, localDate } from '@cafm/shared';
+import { can, feature, localDate } from '@fmstead/shared';
 import { ppmAssignees, ppmTemplates } from '@/lib/ppm';
 import { currentUser } from '@/lib/session';
 import { ScheduleForm } from '../../schedule-form';

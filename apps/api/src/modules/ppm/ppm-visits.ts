@@ -1,4 +1,4 @@
-import type { Tx } from '@cafm/db';
+import type { Tx } from '@fmstead/db';
 import {
   addInterval,
   nextOccurrenceAfter,
@@ -6,7 +6,7 @@ import {
   type PpmCalendarUnit,
   type PpmCompliance,
   type PpmVisitState,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import type { AuthContext } from '../../core/session';
 import { assetScope } from '../assets/asset-scope';
 

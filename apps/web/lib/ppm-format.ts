@@ -1,4 +1,4 @@
-import { PPM_CRITICALITY_LABELS, type PpmCriticality } from '@cafm/shared';
+import { PPM_CRITICALITY_LABELS, type PpmCriticality } from '@fmstead/shared';
 
 const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const dayYear = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });

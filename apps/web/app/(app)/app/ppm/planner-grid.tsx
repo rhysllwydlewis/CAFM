@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { isoWeek, frequencyText, type PpmPlanner, type PpmWeekCounts } from '@cafm/shared';
+import { isoWeek, frequencyText, type PpmPlanner, type PpmWeekCounts } from '@fmstead/shared';
 import { monthAbbr, shortDay, criticalityBadge, criticalityLabel } from '@/lib/ppm-format';
 import styles from './ppm.module.css';
 

@@ -5,7 +5,7 @@
  */
 import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
-import { ALL_FEATURES, BUILTIN_ROLES, DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS, FEATURES } from '@cafm/shared';
+import { ALL_FEATURES, BUILTIN_ROLES, DEMO_PASSWORD, DEMO_PERSONAS, DEMO_TENANTS, FEATURES } from '@fmstead/shared';
 import { seedId } from './ids';
 import { seedAssets } from './seed-assets';
 import { seedLocations } from './seed-locations';

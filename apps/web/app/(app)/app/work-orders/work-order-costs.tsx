@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import {
   COST_KIND_LABELS,
   COST_KINDS,
@@ -14,7 +14,7 @@ import {
   parseQuantityMilli,
   type CostKind,
   type WorkOrderCosts,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import styles from './work-orders.module.css';
 
 type Problem = { code?: string; message: string };

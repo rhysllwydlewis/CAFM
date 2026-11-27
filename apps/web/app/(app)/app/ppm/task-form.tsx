@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, TextInput } from '@cafm/ui';
+import { Button, Field, TextInput } from '@fmstead/ui';
 import {
   CHECKLIST_ITEM_KIND_LABELS,
   CHECKLIST_ITEM_KINDS,
@@ -12,7 +12,7 @@ import {
   type ChecklistItemKind,
   type PpmCriticality,
   type PpmTaskTemplate,
-} from '@cafm/shared';
+} from '@fmstead/shared';
 import { helpdeskWrite } from '@/lib/helpdesk-client';
 import styles from './ppm.module.css';
 
