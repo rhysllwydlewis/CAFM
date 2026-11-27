@@ -15,6 +15,7 @@ import type { ShellNavSection, ShellOrganisation } from './types';
 interface Props {
   sections: ShellNavSection[];
   tenantName: string;
+  logoUrl?: string;
   planLabel: string;
   demo: boolean;
   /** The account keeps no display choices (a shared demo persona), so they last only until the page is reloaded. */
@@ -31,6 +32,7 @@ interface Props {
 export function AppShell({
   sections,
   tenantName,
+  logoUrl,
   planLabel,
   demo,
   preferencesLocked,
@@ -77,6 +79,7 @@ export function AppShell({
       <SideNav
         sections={sections}
         tenantName={tenantName}
+        logoUrl={logoUrl}
         planLabel={planLabel}
         user={user}
         organisations={organisations}

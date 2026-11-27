@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from 'nodemailer';
+import { withTenant } from '@cafm/db';
 import { register, type JobContext } from '../handlers';
 
 export interface EmailPayload {
@@ -18,6 +19,21 @@ function smtp(): Transporter | null {
   if (transport === undefined)
     transport = process.env.SMTP_URL ? nodemailer.createTransport(process.env.SMTP_URL) : null;
   return transport;
+}
+
+/**
+ * The From header: the organisation's own sender name (Branding screen) on the platform's sending address, or the
+ * standard MAIL_FROM. The name is built as an address object, so it can never add headers or recipients.
+ */
+async function sender(ctx: JobContext): Promise<string | { name: string; address: string }> {
+  const standard = process.env.MAIL_FROM ?? 'FM Stead <no-reply@cafm.invalid>';
+  if (!ctx.tenantId) return standard;
+  const row = await withTenant(ctx.db, ctx.tenantId, (tx) =>
+    tx.tenantBranding.findUnique({ where: { tenantId: ctx.tenantId! }, select: { senderName: true } }),
+  );
+  if (!row?.senderName) return standard;
+  const address = /<([^<>]+)>\s*$/.exec(standard)?.[1] ?? standard;
+  return { name: row.senderName, address };
 }
 
 /**
@@ -42,7 +58,7 @@ export async function sendEmail(email: EmailPayload, ctx: JobContext) {
     return;
   }
   await server.sendMail({
-    from: process.env.MAIL_FROM ?? 'FM Stead <no-reply@cafm.invalid>',
+    from: await sender(ctx),
     to: email.to,
     subject: email.subject,
     text: email.text,

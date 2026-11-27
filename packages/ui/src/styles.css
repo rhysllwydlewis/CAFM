@@ -746,3 +746,14 @@ button.tb-icon:hover {
 .nav .btn.ghost.shell-nav-close {
   color: var(--nav-text-strong);
 }
+
+/* An organisation's uploaded logo in the menu's tenant tile (admin Branding screen) */
+.tenant .t-logo.t-logo-image {
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.tenant .t-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

@@ -38,6 +38,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const accent =
     branding?.accentColour && feature(user.entitlements, 'custom_domain') ? branding.accentColour : undefined;
 
+  const logoUrl = branding?.hasLogo && feature(user.entitlements, 'custom_domain') ? '/api/branding/logo' : undefined;
+
   // Menu items the member's role allows (can()); locked if the plan doesn't include them (feature()).
   const sections: ShellNavSection[] = NAV.map((section) => ({
     label: section.label,
@@ -71,6 +73,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <AppShell
         sections={sections}
         tenantName={user.tenant.name}
+        logoUrl={logoUrl}
         planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
         demo={user.tenant.demo}
         preferencesLocked={user.preferencesLocked}
