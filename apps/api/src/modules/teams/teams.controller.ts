@@ -17,7 +17,7 @@ import {
 import type { Request } from 'express';
 import { withTenant, type Tx } from '@cafm/db';
 import { createTeamSchema, updateTeamSchema, type Team } from '@cafm/shared';
-import { assertNotSiteLimited } from '../../core/delegation';
+import { administrableMembers, assertNotSiteLimited } from '../../core/delegation';
 import { audit } from '../../core/audit';
 import type { AuthContext } from '../../core/session';
 import { PermissionGuard, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
@@ -38,12 +38,15 @@ export class TeamsController {
   private async load(tx: Tx, auth: AuthContext, id?: string, scoped = true): Promise<Team[]> {
     const tenantId = auth.membership!.tenantId;
     const limited = scoped && dataScope(auth) !== 'all';
+    // The same site limit as the people lists, so teams are not a way round it.
+    const allowed = scoped ? await administrableMembers(tx, auth) : null;
+    const sites = allowed ? { id: { in: [...allowed, auth.membership!.id] } } : {};
     const [teams, roles] = await Promise.all([
       tx.team.findMany({
         where: { tenantId, ...(id ? { id } : {}) },
         include: {
           members: {
-            where: limited ? { membership: visibleMembers(auth) } : {},
+            where: { membership: { AND: [limited ? visibleMembers(auth) : {}, sites] } },
             include: { membership: { include: { account: true } } },
           },
         },

@@ -113,3 +113,45 @@ describe('the team data scope', () => {
     await request(app.getHttpServer()).post('/api/roles').send({}).expect(401);
   });
 });
+
+describe('team scope and team changes', () => {
+  it('stops a team-scoped person adding themself to a team', async () => {
+    const t = await createTestTenant(db);
+    try {
+      await withTenant(db, t.tenant.id, (tx) =>
+        tx.role.create({
+          data: {
+            tenantId: t.tenant.id,
+            key: 'custom_team_admin',
+            name: 'Team admin',
+            permissions: ['people.manage', 'people.read'],
+            scope: 'team',
+          },
+        }),
+      );
+      const password = testPassword();
+      const me = await createTestAccount(db, [t.tenant.id], password, 'custom_team_admin');
+      try {
+        const mine = await withTenant(db, t.tenant.id, (tx) =>
+          tx.membership.findFirstOrThrow({ where: { tenantId: t.tenant.id }, select: { id: true } }),
+        );
+        const team = await withTenant(db, t.tenant.id, (tx) =>
+          tx.team.create({ data: { tenantId: t.tenant.id, name: 'Elsewhere' } }),
+        );
+        const { agent } = await signIn(app, me.email, password);
+        await agent
+          .patch(`/api/teams/${team.id}`)
+          .send({ memberIds: [mine.id] })
+          .expect(403);
+        await agent
+          .post('/api/teams')
+          .send({ name: 'Mine', memberIds: [mine.id] })
+          .expect(403);
+      } finally {
+        await me.cleanup();
+      }
+    } finally {
+      await t.cleanup();
+    }
+  });
+});
