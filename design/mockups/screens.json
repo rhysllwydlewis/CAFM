@@ -120,6 +120,14 @@
     "file": "01-auth-home.js"
   },
   {
+    "id": "auth-08-account-security",
+    "group": "Sign in",
+    "title": "Account security: change password",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
     "id": "auth-05-select-org",
     "group": "Sign in",
     "title": "Choose organisation",

@@ -132,7 +132,7 @@ export function UserMenu({
           <div className="user-menu-section">
             <Link href="/app/account/security" className="menu-i user-menu-item" onClick={() => setOpen(false)}>
               <Icon name="security" size={14} />
-              <span className="grow">{t('shell.twoStep')}</span>
+              <span className="grow">{t('shell.accountSecurity')}</span>
             </Link>
           </div>
           <div className="user-menu-section">

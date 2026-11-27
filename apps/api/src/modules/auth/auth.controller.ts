@@ -16,6 +16,7 @@ import {
   DEMO_PASSWORD,
   DEMO_PERSONAS,
   loginRequestSchema,
+  passwordChangeSchema,
   selectOrganisationSchema,
   updatePreferencesSchema,
 } from '@fmstead/shared';
@@ -51,6 +52,16 @@ export class AuthController {
     const { response, session } = await this.auth.selectOrganisation(req.auth!, membershipId, client(req));
     setSessionCookie(res, session);
     return response;
+  }
+
+  /** The signed-in person changes their own password (issue #89). Needs the current one. */
+  @Post('password')
+  @HttpCode(204)
+  @UseGuards(SessionGuard)
+  async changePassword(@Body() body: unknown, @Req() req: Request): Promise<void> {
+    const auth = req.auth!;
+    assertNotDemoLocked(auth.account.isDemo);
+    await this.auth.changePassword(auth, parse(passwordChangeSchema, body), client(req));
   }
 
   @Get('organisations')

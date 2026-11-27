@@ -121,13 +121,24 @@ For staff without an email address, such as operatives on shared devices. On the
 
 - The person signs in at your organisation's own address, `/t/<organisation>/login`, with the username. The username only works inside your organisation, so two organisations can use the same one. It does not work on the general sign-in page.
 - There is no email, so there is no "Forgot password" link. Choose **Reset password** on the same card: it makes a new password, signs the person out everywhere and clears any lockout.
+- The person can change the generated password themselves, so you no longer need to know it: see [changing your password](#changing-your-password).
 - Creating and resetting need `people.manage`, and, as with invitations, only organisation-wide administrators can create an account. The role you give is limited by the same no-privilege-escalation rule as a role change, and full-licence roles use a seat.
 - Anyone with an email address resets their own password from the link in an email, so the reset here refuses them.
 
 
+## Changing your password
+
+Anyone signed in can change their own password from the name at the foot of the side menu, then "Account security", under "Change your password". Enter the current password, then the new one twice. The new password follows your organisation's password rules (at least 12 characters, longer if the organisation asks for it, and not a common password) and must differ from the current one.
+
+- **Other devices are signed out.** The device you change it on stays signed in. Any pending second step of sign-in ends too.
+- **A wrong current password counts as a failed sign-in** against the same limit per IP address, so someone holding a stolen session can't guess the password here. After too many, the change is refused for a few minutes.
+- **It is recorded.** Each change, and each failed attempt, is in the sign-in events for the account (`password_changed`, `password_change_failed`).
+- The shared demo accounts can't change their password, and nobody can change the password of a person they are viewing the app as.
+- `POST /api/auth/password` with `currentPassword` and `newPassword` (signed in; no other permission).
+
 ## Two-step verification
 
-Anyone can turn on two-step verification from the name at the foot of the side menu, then "Two-step verification". It uses an authenticator app (Microsoft Authenticator, Google Authenticator, 1Password and others): scan the code, or type the key, then enter the 6-digit code the app shows. Ten single-use recovery codes are shown once. After that, signing in asks for a code from the app, or a recovery code, once the password is right.
+Anyone can turn on two-step verification from the name at the foot of the side menu, then "Account security". It uses an authenticator app (Microsoft Authenticator, Google Authenticator, 1Password and others): scan the code, or type the key, then enter the 6-digit code the app shows. Ten single-use recovery codes are shown once. After that, signing in asks for a code from the app, or a recovery code, once the password is right.
 
 - **Required for everyone:** the "Require MFA" setting under Security and sign-in. Until a person has set it up, every other page and API call in that organisation is refused, and they are taken to the set-up page. The shared demo accounts are exempt, because their password is public and they can't change MFA. Someone who belongs to several organisations is only held in the one that requires it.
 - **Turning it off, or making new recovery codes,** asks for the password again.
