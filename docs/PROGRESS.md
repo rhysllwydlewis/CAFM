@@ -9,7 +9,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | | |
 |---|---|
 | **Current phase** | Phase 1 (Core CAFM MVP) is under way. Phase 0 (Foundations) is **done**. |
-| **Overall progress** | **About 17%** of the planned build (24 of 83 top-level roadmap items) |
+| **Overall progress** | **About 18%** of the planned build (25 of 83 top-level roadmap items) |
 | **Live demo** | https://cafm-production.up.railway.app: pick any demo account on the login page |
 | **Approved to build** | Phase 1, with the product owner's go-ahead |
 | **Next up** | Phase 1 admin console (P1-09) |
@@ -19,7 +19,7 @@ The one page to read first in any new session, by any agent (Claude, Codex or ot
 | Phase | Items done | Status |
 |---|---|---|
 | 0 · Foundations | 15 / 15 | Done (21 Nov 2026) |
-| 1 · Core CAFM MVP | 10 / 13 | In progress |
+| 1 · Core CAFM MVP | 11 / 13 | In progress |
 | 2A · Comply | 0 / 12 | Not started |
 | 2B · Commercial operations | 0 / 10 | Not started |
 | 3 · Workplace and sustainability | 0 / 7 | Not started |
@@ -154,7 +154,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [x] Password minimum length, longest sign-in and the MFA-required setting, with the screen. ([guide](admin.md#security-and-sign-in))
     - [x] Audit log viewer: newest first, search by event, details. ([guide](admin.md#audit-log))
     - [x] Audit log filters by person, record and date range, and CSV export. ([guide](admin.md#audit-log))
-    - [ ] MFA enforced at sign-in (with P1-12).
+    - [x] MFA enforced at sign-in (with P1-12).
   - [x] **P1-09f** Username-only accounts. ([guide](admin.md#username-only-accounts))
     - Known gap: a person can't change their own password yet (an administrator resets it); no forced change at first sign-in.
 - [x] **P1-10** Standard reports + role default dashboards (fixed widgets). ([guide](reports.md))
@@ -165,7 +165,8 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-11c** Asset import (same flow). ([guide](import-export.md#importing-assets))
   - [x] **P1-11d** People and PPM schedule imports. ([people](import-export.md#importing-people), [PPM schedules](import-export.md#importing-ppm-schedules))
   - [x] **P1-11e** Import screens with their mockup (`admin-14-import`): upload, check, error report, recent imports and undo. ([guide](import-export.md#the-screen))
-- [ ] **P1-12** MFA (TOTP).
+- [x] **P1-12** MFA (TOTP). ([guide](admin.md#two-step-verification))
+  - Authenticator app, recovery codes and the administrator reset are built. Passkeys come in Phase 2A.
 - [ ] **P1-13** First design-partner tenants live, invoiced manually.
 
 ### Phase 2A · Comply

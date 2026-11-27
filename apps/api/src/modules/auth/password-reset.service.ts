@@ -110,6 +110,8 @@ export class PasswordResetService {
         where: { id: reset.accountId },
         data: { passwordHash, failedAttempts: 0, lockedUntil: null },
       });
+      // A pending second sign-in step began with the old password, so it ends too.
+      await tx.mfaChallenge.deleteMany({ where: { accountId: reset.accountId } });
       // A new password signs the account out everywhere.
       await tx.session.deleteMany({
         where: { OR: [{ accountId: reset.accountId }, { impersonatorAccountId: reset.accountId }] },

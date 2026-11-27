@@ -24,6 +24,8 @@ export interface AuthContext {
   access: Access | null;
   /** Set while a Super User views the app as this member (P1-09c): who is really signed in. */
   impersonator: { accountId: string; membershipId: string; name: string } | null;
+  /** The organisation requires MFA and this person has not set it up yet (P1-12). */
+  mfaSetupRequired: boolean;
 }
 
 declare global {

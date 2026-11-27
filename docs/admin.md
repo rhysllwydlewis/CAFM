@@ -113,7 +113,7 @@ Administration > Audit log (needs "See the audit log"). Screen: `admin-09-audit`
 
 **Export CSV** downloads the events that match the filters you last searched for: up to 5,000, newest first, with times in UTC and the changes as JSON. Cells that start with `=`, `+`, `-` or `@` are prefixed with an apostrophe so a spreadsheet won't run them. Each export is itself recorded as `audit.exported`, with the filters and the number of rows.
 
-API (all need `audit.read`, and only ever show your own organisation): `GET /api/admin/audit` with `action`, `entityType`, `entityId`, `actor` (a membership id), `from`, `to` and `cursor`; `GET /api/admin/audit/actors` (the people who appear in the log); `GET /api/admin/audit/export` (the same filters, as CSV). A start date after the end date answers `400`. Not built yet: MFA enforced at sign-in (with P1-12).
+API (all need `audit.read`, and only ever show your own organisation): `GET /api/admin/audit` with `action`, `entityType`, `entityId`, `actor` (a membership id), `from`, `to` and `cursor`; `GET /api/admin/audit/actors` (the people who appear in the log); `GET /api/admin/audit/export` (the same filters, as CSV). A start date after the end date answers `400`.
 
 ## Username-only accounts
 
@@ -123,3 +123,15 @@ For staff without an email address, such as operatives on shared devices. On the
 - There is no email, so there is no "Forgot password" link. Choose **Reset password** on the same card: it makes a new password, signs the person out everywhere and clears any lockout.
 - Creating and resetting need `people.manage`, and, as with invitations, only organisation-wide administrators can create an account. The role you give is limited by the same no-privilege-escalation rule as a role change, and full-licence roles use a seat.
 - Anyone with an email address resets their own password from the link in an email, so the reset here refuses them.
+
+
+## Two-step verification
+
+Anyone can turn on two-step verification from the name at the foot of the side menu, then "Two-step verification". It uses an authenticator app (Microsoft Authenticator, Google Authenticator, 1Password and others): scan the code, or type the key, then enter the 6-digit code the app shows. Ten single-use recovery codes are shown once. After that, signing in asks for a code from the app, or a recovery code, once the password is right.
+
+- **Required for everyone:** the "Require MFA" setting under Security and sign-in. Until a person has set it up, every other page and API call in that organisation is refused, and they are taken to the set-up page. The shared demo accounts are exempt, because their password is public and they can't change MFA. Someone who belongs to several organisations is only held in the one that requires it.
+- **Turning it off, or making new recovery codes,** asks for the password again.
+- **Lost phone and recovery codes:** an administrator with the "change people's roles" permission uses "Reset two-step" on the Users screen. The person's authenticator and recovery codes are removed and the reset is recorded in the audit log. They set it up again at their next sign-in if it is required.
+- **Safeguards:** a code can be used once (the app's code for the same 30 seconds is refused a second time), five wrong codes end the sign-in attempt and the person starts again from the password, and the secret is stored encrypted. Set `MFA_ENCRYPTION_KEY` (a long random value) on any real deployment; the API refuses to enrol anyone in production without it.
+
+API (all for the signed-in person): `GET /api/auth/mfa`, `POST /api/auth/mfa/enrol`, `/confirm`, `/recovery-codes` and `/disable`; the sign-in step is `POST /api/auth/mfa/verify`. An administrator's reset is `POST /api/people/:membershipId/mfa/reset` (`people.manage`). Passkeys come in Phase 2A and SMS codes are not offered (SIM-swap risk).

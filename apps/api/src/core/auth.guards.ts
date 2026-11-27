@@ -15,6 +15,8 @@ import { PrismaService } from './prisma.service';
 import { hashToken, SESSION_COOKIE, type Access } from './session';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+/** What a person who must set up MFA can still reach: the MFA set-up itself, who they are, and signing out. */
+const MFA_SETUP_ALLOWED = /^\/api\/auth\/(mfa(\/|$)|me$|logout$|organisations$|select-organisation$)/;
 export const END_IMPERSONATION_PATH = '/api/admin/impersonation/end';
 
 /** Requires a valid, unexpired session. Attaches req.auth. */
@@ -63,12 +65,27 @@ export class SessionGuard implements CanActivate {
               const realAccess = real && (await loadAccess(tx, real.tenantId, real.role, membership.tenant.plan));
               if (!realAccess?.permissions.has('people.impersonate')) return 'revoked' as const;
             }
-            return { membership, access };
+            const security = await tx.tenantSecurity.findUnique({ where: { tenantId: membership.tenantId } });
+            return { membership, access, mfaRequired: security?.mfaRequired ?? false };
           })
         : null;
     if (tenantData === 'revoked') {
       await this.db.session.deleteMany({ where: { id: session.id } });
       throw new UnauthorizedException();
+    }
+    // The organisation asks everyone for a second step: until this person has one, only its set-up is open.
+    // The shared demo accounts have a public password and can't set one up, and "view as" shows what the other person sees, so neither is held.
+    const mfaSetupRequired =
+      !!tenantData &&
+      tenantData.mfaRequired &&
+      !impersonating &&
+      !account.isDemo &&
+      (await this.db.accountMfa.count({ where: { accountId: account.id, enabledAt: { not: null } } })) === 0;
+    if (mfaSetupRequired && !MFA_SETUP_ALLOWED.test(req.originalUrl.split('?')[0]!)) {
+      throw new ForbiddenException({
+        code: 'mfa_setup_required',
+        message: 'Your organisation requires two-step verification. Set it up to continue.',
+      });
     }
     const impersonator = impersonating
       ? await this.db.account.findUnique({ where: { id: session.impersonatorAccountId! }, select: { name: true } })
@@ -85,6 +102,7 @@ export class SessionGuard implements CanActivate {
       account,
       membership: tenantData?.membership ?? null,
       access: tenantData?.access ?? null,
+      mfaSetupRequired,
     };
     return true;
   }

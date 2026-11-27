@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon, initials } from '@cafm/ui';
 import { PLAN_LABELS, type Plan } from '@cafm/shared';
@@ -128,6 +129,12 @@ export function UserMenu({
               ))}
             </div>
           )}
+          <div className="user-menu-section">
+            <Link href="/app/account/security" className="menu-i user-menu-item" onClick={() => setOpen(false)}>
+              <Icon name="security" size={14} />
+              <span className="grow">{t('shell.twoStep')}</span>
+            </Link>
+          </div>
           <div className="user-menu-section">
             <div className="xs faint medium user-menu-label" id="theme-label">
               {t('shell.theme')}
