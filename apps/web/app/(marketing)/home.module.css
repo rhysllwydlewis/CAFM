@@ -38,7 +38,7 @@
 
 /* Navigation: the logo, Sign in and the one action */
 .masthead {
-  position: fixed;
+  position: absolute;
   inset: 0 0 auto;
   z-index: 60;
   display: flex;
@@ -46,6 +46,14 @@
   gap: var(--space-2);
   height: calc(76px + env(safe-area-inset-top, 0px));
   padding: env(safe-area-inset-top, 0px) var(--gutter-end) 0 var(--gutter);
+}
+/* Fixed once the page's script has run. The bar is clear over the film and solid over the words below it. */
+.masthead[data-enhanced='true'] {
+  position: fixed;
+}
+.masthead[data-solid='true'] {
+  border-bottom: 1px solid var(--line);
+  background: var(--graphite-950);
 }
 .mark {
   display: inline-flex;

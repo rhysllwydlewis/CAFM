@@ -18,6 +18,7 @@ One flight over a demo estate (a city square, up a tower, over the roof plant an
 
 1. Move `homepage.tsx`, `home.module.css`, `film.ts` and `film-content.ts` into `apps/web/app/(marketing)/`.
 2. Move `frames/` to `apps/web/public/homepage/frames/` and `homepage.spec.ts` to `apps/web/e2e/`.
-3. Remove the new homepage's files there first (`scroll-scrub.tsx`, `home-content.ts`) and restore the old `page.tsx` from git history (commit `c0a7b0b` is the last one before the replacement).
+3. Remove the new homepage's files there first (`scroll-scrub.tsx`, `home-content.ts`) and restore the old `page.tsx` from git history (`git show c0a7b0b:'apps/web/app/(marketing)/page.tsx'`: that is the last commit that changed it before the replacement).
+4. In `apps/web/e2e/login.spec.ts`, change `page.locator('#ground')` back to `page.locator('[data-hero]')`.
 
 The design mockups for it were `marketing-02-homepage` and `marketing-03-homepage-flight` in `design/mockups/screens/13-marketing.js`.

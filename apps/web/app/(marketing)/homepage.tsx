@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Icon, Wordmark } from '@fmstead/ui';
 import { AUDIENCES, CHAPTERS, SCREENS, STRENGTHS } from './home-content';
@@ -39,6 +39,7 @@ function Shot({ shot, className }: { shot: (typeof SCREENS)[keyof typeof SCREENS
 }
 
 export function Homepage({ demo }: { demo: boolean }) {
+  const masthead = useRef<HTMLElement>(null);
   const cta = demo ? { href: '/login#demo-heading', label: 'Try the demo' } : { href: '/login', label: 'Sign in' };
   // The chapters must keep the same identity from one render to the next, or the film would be rebuilt.
   const chapters = useMemo(
@@ -46,9 +47,36 @@ export function Homepage({ demo }: { demo: boolean }) {
     [demo],
   );
 
+  // The bar floats over the film. Once the film has gone it floats over words, so it gets a solid background then.
+  // Without JavaScript it is not fixed at all, so it never covers anything.
+  useEffect(() => {
+    const bar = masthead.current;
+    const film = document.querySelector('[data-film]');
+    if (!bar || !film) return;
+    bar.dataset.enhanced = 'true';
+    let pending = 0;
+    const update = () => {
+      pending = 0;
+      bar.dataset.solid = String(film.getBoundingClientRect().bottom <= bar.offsetHeight);
+    };
+    const onScroll = () => {
+      if (!pending) pending = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      window.cancelAnimationFrame(pending);
+      delete bar.dataset.enhanced;
+      delete bar.dataset.solid;
+    };
+  }, []);
+
   return (
     <>
-      <header className={styles.masthead}>
+      <header ref={masthead} className={styles.masthead}>
         <a className={styles.mark} href="#top" aria-label="FM Stead, back to the top">
           <Wordmark height={22} tone="current" />
         </a>

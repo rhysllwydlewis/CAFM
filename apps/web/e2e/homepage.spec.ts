@@ -48,6 +48,19 @@ test('the logo is the product wordmark, as everywhere else', async ({ page }) =>
   );
 });
 
+test('the top bar is clear over the film and solid over the words below it', async ({ page }) => {
+  await page.goto('/');
+  await filmReady(page);
+  const bar = page.locator('header');
+  const clear = 'rgba(0, 0, 0, 0)';
+  await expect(bar).toHaveCSS('position', 'fixed');
+  await expect(bar).toHaveCSS('background-color', clear);
+  await page.evaluate(() => document.getElementById('screens')!.scrollIntoView());
+  await expect(bar).not.toHaveCSS('background-color', clear);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(bar).toHaveCSS('background-color', clear);
+});
+
 test('the five chapters read in order, each with its own heading', async ({ page }) => {
   await page.goto('/');
   const headings = film(page).getByRole('heading');
@@ -223,6 +236,8 @@ test('without JavaScript the homepage shows the opening words, every chapter and
       '/login#demo-heading',
     );
     for (const chapter of CHAPTERS) await expect(page.getByRole('heading', { name: chapter.title })).toBeAttached();
+    // The bar scrolls away with the page, so it never sits on top of the words below the film.
+    await expect(page.locator('header')).toHaveCSS('position', 'absolute');
     await page.getByRole('link', { name: 'Skip to the demo' }).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: 'One login for every site you look after.' })).toBeInViewport();

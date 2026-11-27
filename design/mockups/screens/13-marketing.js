@@ -80,8 +80,10 @@ const strengths = [
 ];
 
 // Everything below the film: the product screens, who it is for, what sets it apart and the closing call to action.
+// The top bar is clear over the film and goes solid once the film has gone, so it never sits on top of the words.
 const product = `${css}
 <main id="top" class="home">
+  ${masthead.replace('<header class="masthead">', '<header class="masthead" data-solid="true">')}
   <section class="section" id="screens"><h2>Everything in one clear view.</h2>
     <p class="lede">From the morning overview to a single job on an engineer's phone, every screen works from the same live record.</p>
     <div class="shots">
