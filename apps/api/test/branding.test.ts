@@ -56,6 +56,9 @@ describe('branding access', () => {
     expect((await other.agent.get('/api/branding').expect(200)).body).toEqual({
       accentColour: null,
       loginMessage: null,
+      senderName: null,
+      hasLogo: false,
+      logoVersion: null,
     });
   });
 });
@@ -67,7 +70,13 @@ describe('saving branding', () => {
       .put('/api/admin/branding')
       .send({ accentColour: '#136676', loginMessage: 'Welcome to Demo Estates facilities.' })
       .expect(200);
-    expect(saved.body).toEqual({ accentColour: '#136676', loginMessage: 'Welcome to Demo Estates facilities.' });
+    expect(saved.body).toEqual({
+      accentColour: '#136676',
+      loginMessage: 'Welcome to Demo Estates facilities.',
+      senderName: null,
+      hasLogo: false,
+      logoVersion: null,
+    });
     const member = await signIn(app, 'requester@demo.example');
     expect((await member.agent.get('/api/branding').expect(200)).body.accentColour).toBe('#136676');
     const events = await withTenant(db, DEMO_TENANT, (tx) =>
@@ -80,15 +89,98 @@ describe('saving branding', () => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     await agent.put('/api/admin/branding').send({ accentColour: '#136676', loginMessage: 'Hi' }).expect(200);
     const res = await agent.put('/api/admin/branding').send({ accentColour: null, loginMessage: '' }).expect(200);
-    expect(res.body).toEqual({ accentColour: null, loginMessage: null });
+    expect(res.body).toEqual({
+      accentColour: null,
+      loginMessage: null,
+      senderName: null,
+      hasLogo: false,
+      logoVersion: null,
+    });
   });
 
   it.each([
     ['too light for white text', { accentColour: '#ffee88', loginMessage: null }],
     ['not a hex colour', { accentColour: 'teal', loginMessage: null }],
     ['a message that is too long', { accentColour: null, loginMessage: 'x'.repeat(201) }],
+    ['a sender name with a line break', { accentColour: null, loginMessage: null, senderName: 'Hi\r\nBcc: x@y.z' }],
+    ['a sender name with an address in it', { accentColour: null, loginMessage: null, senderName: 'a <b@c.d>' }],
   ])('rejects %s', async (_name, body) => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     await agent.put('/api/admin/branding').send(body).expect(400);
+  });
+});
+
+describe('sender name', () => {
+  it('is saved, kept when left out, and cleared when empty', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    const saved = await agent
+      .put('/api/admin/branding')
+      .send({ accentColour: null, loginMessage: null, senderName: 'Demo Estates (Facilities) & Co.' })
+      .expect(200);
+    expect(saved.body.senderName).toBe('Demo Estates (Facilities) & Co.');
+    const kept = await agent.put('/api/admin/branding').send({ accentColour: null, loginMessage: null }).expect(200);
+    expect(kept.body.senderName).toBe('Demo Estates (Facilities) & Co.');
+    const cleared = await agent
+      .put('/api/admin/branding')
+      .send({ accentColour: null, loginMessage: null, senderName: '' })
+      .expect(200);
+    expect(cleared.body.senderName).toBeNull();
+  });
+});
+
+describe('logo', () => {
+  // The smallest valid PNG and JPEG headers are enough: only the file signature is checked.
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40, 1)]);
+  const upload = { contentType: 'image/png', dataBase64: png.toString('base64') };
+
+  it('needs a session, settings.manage and the plan', async () => {
+    await request(app.getHttpServer()).get('/api/branding/logo').expect(401);
+    await request(app.getHttpServer()).put('/api/admin/branding/logo').send(upload).expect(401);
+    await request(app.getHttpServer()).delete('/api/admin/branding/logo').expect(401);
+    const member = await signIn(app, 'requester@demo.example');
+    await member.agent.put('/api/admin/branding/logo').send(upload).expect(403);
+    await member.agent.delete('/api/admin/branding/logo').expect(403);
+    const starter = await signIn(app, 'starter@demo.example');
+    expect([402, 403]).toContain((await starter.agent.put('/api/admin/branding/logo').send(upload)).status);
+  });
+
+  it('is stored, served with safe headers to members, audited, and removed', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    await agent.get('/api/branding/logo').expect(404);
+    const saved = await agent.put('/api/admin/branding/logo').send(upload).expect(200);
+    expect(saved.body.hasLogo).toBe(true);
+    const member = await signIn(app, 'requester@demo.example');
+    const res = await member.agent.get('/api/branding/logo').expect(200);
+    expect(res.headers['content-type']).toBe('image/png');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(Buffer.from(res.body).equals(png)).toBe(true);
+    const events = await withTenant(db, DEMO_TENANT, (tx) =>
+      tx.auditEvent.count({ where: { action: 'settings.branding_logo_updated' } }),
+    );
+    expect(events).toBeGreaterThan(0);
+    const removed = await agent.delete('/api/admin/branding/logo').expect(200);
+    expect(removed.body.hasLogo).toBe(false);
+    await agent.get('/api/branding/logo').expect(404);
+  });
+
+  it('never shows one organisation the logo of another', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    await agent.put('/api/admin/branding/logo').send(upload).expect(200);
+    const other = await signIn(app, 'starter@demo.example');
+    await other.agent.get('/api/branding/logo').expect(404);
+  });
+
+  it.each([
+    ['an SVG', { contentType: 'image/svg+xml', dataBase64: Buffer.from('<svg onload="x()"/>').toString('base64') }],
+    ['a file that is not the type it claims', { contentType: 'image/jpeg', dataBase64: png.toString('base64') }],
+    ['an empty file', { contentType: 'image/png', dataBase64: '' }],
+    ['text that is not base64', { contentType: 'image/png', dataBase64: 'not base64!!' }],
+    [
+      'a file over 64 KB',
+      { contentType: 'image/png', dataBase64: Buffer.concat([png, Buffer.alloc(70_000)]).toString('base64') },
+    ],
+  ])('rejects %s', async (_name, body) => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    await agent.put('/api/admin/branding/logo').send(body).expect(400);
   });
 });

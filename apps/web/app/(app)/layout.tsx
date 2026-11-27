@@ -38,6 +38,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const accent =
     branding?.accentColour && feature(user.entitlements, 'custom_domain') ? branding.accentColour : undefined;
 
+  // The organisation and logo version are in the address so a replaced logo, or another organisation's, is fetched again.
+  const logoUrl =
+    branding?.hasLogo && feature(user.entitlements, 'custom_domain')
+      ? `/api/branding/logo?t=${encodeURIComponent(user.tenant.id)}&v=${branding.logoVersion ?? 0}`
+      : undefined;
+
   // Menu items the member's role allows (can()); locked if the plan doesn't include them (feature()).
   const sections: ShellNavSection[] = NAV.map((section) => ({
     label: section.label,
@@ -71,6 +77,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <AppShell
         sections={sections}
         tenantName={user.tenant.name}
+        logoUrl={logoUrl}
         planLabel={PLAN_LABELS[user.tenant.plan as Plan] ?? user.tenant.plan}
         demo={user.tenant.demo}
         preferencesLocked={user.preferencesLocked}

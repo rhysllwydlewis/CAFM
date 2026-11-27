@@ -69,6 +69,11 @@ model TenantBranding {
   accentColour String?  @map("accent_colour")
   /// Shown on the requester portal's sign-in screen.
   loginMessage String?  @map("login_message")
+  /// The display name emails are sent from. The sending address stays the platform's.
+  senderName   String?  @map("sender_name")
+  /// The logo image (PNG, JPEG or WebP, 64 KB at most) and its type. Never SVG.
+  logo         Bytes?
+  logoType     String?  @map("logo_type")
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
 

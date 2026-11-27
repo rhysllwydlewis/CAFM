@@ -357,9 +357,31 @@ test('a Super User checks the contrast of an accent colour, saves it and puts th
   try {
     await accent.fill('#136676');
     await page.getByLabel('Sign-in message').fill('Welcome to Demo Estates facilities.');
+    await page.getByLabel('Email sender name').fill('Demo Estates facilities');
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText(/Branding saved/)).toBeVisible();
     await assertAccessible(page);
+
+    // A logo: SVG is refused, a PNG is shown in the menu, and it can be removed.
+    await page.getByLabel('Logo', { exact: true }).setInputFiles({
+      name: 'logo.svg',
+      mimeType: 'image/svg+xml',
+      buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'),
+    });
+    await expect(page.getByText('Use a PNG, JPEG or WebP image.')).toBeVisible();
+    await page.getByLabel('Logo', { exact: true }).setInputFiles({
+      name: 'logo.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+    });
+    await expect(page.getByText(/Logo saved/)).toBeVisible();
+    await expect(page.locator('.tenant .t-logo img')).toHaveCount(1);
+    await assertAccessible(page);
+    await page.getByRole('button', { name: 'Remove logo' }).click();
+    await expect(page.getByText('Logo removed.')).toBeVisible();
 
     // The message shows on the organisation's own sign-in page, to someone who is not signed in.
     const anonymous = await browser.newContext({ baseURL: test.info().project.use.baseURL });
@@ -375,6 +397,7 @@ test('a Super User checks the contrast of an accent colour, saves it and puts th
     // Leave the demo organisation as it was seeded.
     await accent.fill('');
     await page.getByLabel('Sign-in message').fill('');
+    await page.getByLabel('Email sender name').fill('');
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText(/Branding saved/)).toBeVisible();
   }
