@@ -88,6 +88,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Fixed
 
+- Phone app: the QR scanner can now use the camera. The site was telling the browser to keep the camera off for everyone, so the scan screen only ever offered typing the number.
 - Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
 
 - Two-step verification: a wrong password when turning it off or replacing recovery codes now counts towards the same limit on failed attempts as signing in, so a stolen session can’t be used to guess the password.

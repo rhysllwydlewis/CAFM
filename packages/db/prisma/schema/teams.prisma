@@ -88,7 +88,7 @@ model TenantSecurity {
   passwordMinLength   Int      @default(12) @map("password_min_length")
   /// Longest a sign-in lasts, in hours. Null keeps the standard (12 hours, or 30 days with "keep me signed in").
   sessionTimeoutHours Int?     @map("session_timeout_hours")
-  /// Saved now, enforced when authenticator-app sign-in (P1-12) ships.
+  /// When true, everyone in the organisation must have two-step verification set up (enforced at sign-in, P1-12).
   mfaRequired         Boolean  @default(false) @map("mfa_required")
   /// Whether people holding `people.impersonate` can use "view as user" in this organisation. On by default.
   allowViewAsUser     Boolean  @default(true) @map("allow_view_as_user")

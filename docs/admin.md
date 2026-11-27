@@ -1,6 +1,6 @@
 # Administration
 
-The Super User console lives at `/app/admin`. This first part has the overview and the users screen. More screens follow in later batches of P1-09.
+The Super User console lives at `/app/admin`. It has the overview, users and licences, roles, modules, branding, custom fields, service levels, business calendars, security settings, the audit log and the import screen. The sections below cover each one.
 
 ## Overview
 
@@ -37,7 +37,7 @@ The users screen has a **Site access** card. Pick a person, then choose "Every s
 - can't invite people, see invitations, or create, edit or delete teams (`403`), because neither has a site. An organisation-wide admin does those;
 - are still held by the no-privilege-escalation rule: they can't grant or manage a role with permissions they don't hold.
 
-Scoping by team is not built yet.
+A role can also limit people, requests and work orders to the person's own records and their teammates' (data scope "team"); the roles screen sets it.
 
 ## Modules and navigation
 
@@ -103,7 +103,7 @@ Administration > Security and sign-in (needs the "Change organisation settings" 
 
 - **Minimum password length:** 12 to 64. 12 is the platform floor and can only be raised. It applies when someone accepts an invitation or resets a password. A person who belongs to several organisations gets the strictest minimum among them when they reset a password.
 - **Longest sign-in:** 1 to 720 hours, or empty for the standard (12 hours, or 30 days with "Keep me signed in"). It only shortens a new sign-in. Existing sign-ins are not changed.
-- **Require multi-factor authentication:** saved now and enforced when authenticator-app sign-in (P1-12) ships.
+- **Require multi-factor authentication:** enforced. Until a person has set up an authenticator app, every other page and API call in that organisation is refused and they are taken to set it up (see Two-step verification below).
 
 Not built yet: single sign-on, IP allow-lists, breached-password checks, separate idle timeout. Every save is recorded in the audit log as `settings.security_updated` with the before and after values. API: `GET` and `PUT /api/admin/security`.
 
