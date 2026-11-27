@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@fmstead/db';
 import { BUILTIN_ROLES } from '@fmstead/shared';
@@ -53,6 +53,43 @@ describe('view as user needs a session and the permission', () => {
       const { agent } = await signIn(app, email);
       await agent.post('/api/admin/impersonation').send({ membershipId: tom, reason }).expect(403);
     }
+  });
+});
+
+describe('the organisation setting "Allow view as user"', () => {
+  afterEach(async () => {
+    await withTenant(db, DEMO_TENANT, (tx) => tx.tenantSecurity.deleteMany({}));
+    await withTenant(db, STARTER_TENANT, (tx) => tx.tenantSecurity.deleteMany({}));
+  });
+
+  it('is on by default, and refuses a new session with a clear message once it is switched off', async () => {
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    const tom = await memberId('technician@demo.example');
+    const security = { passwordMinLength: 12, sessionTimeoutHours: null, mfaRequired: false };
+    await agent
+      .put('/api/admin/security')
+      .send({ ...security, allowViewAsUser: false })
+      .expect(200);
+    const refused = await agent.post('/api/admin/impersonation').send({ membershipId: tom, reason }).expect(403);
+    expect(refused.body.code).toBe('impersonation_disabled');
+    expect(refused.body.message).toMatch(/switched off/);
+    // Still the Super User, not a viewing session.
+    expect((await agent.get('/api/auth/me').expect(200)).body.impersonation).toBeNull();
+
+    await agent
+      .put('/api/admin/security')
+      .send({ ...security, allowViewAsUser: true })
+      .expect(200);
+    await agent.post('/api/admin/impersonation').send({ membershipId: tom, reason }).expect(200);
+  });
+
+  it('is per organisation: switching it off elsewhere changes nothing here', async () => {
+    await withTenant(db, STARTER_TENANT, (tx) =>
+      tx.tenantSecurity.create({ data: { tenantId: STARTER_TENANT, allowViewAsUser: false } }),
+    );
+    const { agent } = await signIn(app, 'superuser@demo.example');
+    const tom = await memberId('technician@demo.example');
+    await agent.post('/api/admin/impersonation').send({ membershipId: tom, reason }).expect(200);
   });
 });
 

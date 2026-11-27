@@ -20,7 +20,7 @@ afterAll(async () => {
   await db.$disconnect();
 });
 
-const settings = { passwordMinLength: 16, sessionTimeoutHours: 2, mfaRequired: true };
+const settings = { passwordMinLength: 16, sessionTimeoutHours: 2, mfaRequired: true, allowViewAsUser: false };
 
 describe('passwordProblem', () => {
   it('never allows fewer than 12 characters and honours a longer organisation minimum', () => {
@@ -52,6 +52,7 @@ describe('security settings access', () => {
       passwordMinLength: 12,
       sessionTimeoutHours: null,
       mfaRequired: false,
+      allowViewAsUser: true,
     });
   });
 
@@ -76,6 +77,8 @@ describe('security settings access', () => {
     { ...settings, sessionTimeoutHours: 0 },
     { ...settings, sessionTimeoutHours: 721 },
     { ...settings, mfaRequired: 'yes' },
+    { ...settings, allowViewAsUser: 'no' },
+    { passwordMinLength: 12, sessionTimeoutHours: null, mfaRequired: false },
   ])('rejects %j', async (body) => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     await agent.put('/api/admin/security').send(body).expect(400);

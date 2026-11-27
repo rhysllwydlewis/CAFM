@@ -15,12 +15,15 @@ export interface SecuritySettingsView {
   /** Null keeps the standard sign-in length. */
   sessionTimeoutHours: number | null;
   mfaRequired: boolean;
+  /** Whether "view as user" can be started in this organisation. */
+  allowViewAsUser: boolean;
 }
 
 export const DEFAULT_SECURITY_SETTINGS: SecuritySettingsView = {
   passwordMinLength: PASSWORD_MIN_FLOOR,
   sessionTimeoutHours: null,
   mfaRequired: false,
+  allowViewAsUser: true,
 };
 
 export const updateSecuritySchema = z.object({
@@ -36,6 +39,7 @@ export const updateSecuritySchema = z.object({
     .max(SESSION_HOURS_MAX, 'Use 720 hours (30 days) or fewer.')
     .nullable(),
   mfaRequired: z.boolean(),
+  allowViewAsUser: z.boolean(),
 });
 export type UpdateSecurityInput = z.infer<typeof updateSecuritySchema>;
 
