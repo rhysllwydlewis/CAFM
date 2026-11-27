@@ -38,6 +38,11 @@ it("sends from the organisation's sender name on the platform's address, and fro
       address: 'no-reply@fmstead.invalid',
     });
 
+    // A plan without branding stops the saved name applying.
+    await owner.tenant.update({ where: { id: tenant.id }, data: { plan: 'starter' } });
+    await sendEmail(email, ctx(tenant.id));
+    expect(sendMail.mock.calls.at(-1)![0].from).toBe('FM Stead <no-reply@fmstead.invalid>');
+
     // Another organisation's name is never used, and platform mail (no tenant) is always the standard sender.
     await sendEmail(email, ctx(other.id));
     expect(sendMail.mock.calls.at(-1)![0].from).toBe('FM Stead <no-reply@fmstead.invalid>');

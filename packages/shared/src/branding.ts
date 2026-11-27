@@ -12,6 +12,8 @@ export interface BrandingView {
   senderName: string | null;
   /** Whether a logo has been uploaded. It is served at /api/branding/logo. */
   hasLogo: boolean;
+  /** Changes whenever the branding is saved, so a replaced logo is fetched again. Null with no logo. */
+  logoVersion: number | null;
 }
 
 /** The largest logo, in bytes. Small enough to travel as JSON and to keep every page light. */

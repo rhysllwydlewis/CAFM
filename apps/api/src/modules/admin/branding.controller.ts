@@ -38,6 +38,7 @@ export class BrandingController {
         loginMessage: row?.loginMessage ?? null,
         senderName: row?.senderName ?? null,
         hasLogo: !!row?.logo,
+        logoVersion: row?.logo ? row.updatedAt.getTime() : null,
       };
     });
   }
@@ -67,7 +68,11 @@ export class BrandingController {
       const before = await tx.tenantBranding.findUnique({ where: { tenantId } });
       const senderName = input.senderName === undefined ? (before?.senderName ?? null) : input.senderName || null;
       const data = { accentColour: input.accentColour, loginMessage, senderName };
-      await tx.tenantBranding.upsert({ where: { tenantId }, create: { tenantId, ...data }, update: data });
+      const saved = await tx.tenantBranding.upsert({
+        where: { tenantId },
+        create: { tenantId, ...data },
+        update: data,
+      });
       await audit(
         tx,
         auth,
@@ -85,7 +90,11 @@ export class BrandingController {
         },
         req.ip,
       );
-      return { ...data, hasLogo: !!before?.logo };
+      return {
+        ...data,
+        hasLogo: !!before?.logo,
+        logoVersion: before?.logo ? saved.updatedAt.getTime() : null,
+      };
     });
   }
 

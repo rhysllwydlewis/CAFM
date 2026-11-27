@@ -58,6 +58,7 @@ describe('branding access', () => {
       loginMessage: null,
       senderName: null,
       hasLogo: false,
+      logoVersion: null,
     });
   });
 });
@@ -74,6 +75,7 @@ describe('saving branding', () => {
       loginMessage: 'Welcome to Demo Estates facilities.',
       senderName: null,
       hasLogo: false,
+      logoVersion: null,
     });
     const member = await signIn(app, 'requester@demo.example');
     expect((await member.agent.get('/api/branding').expect(200)).body.accentColour).toBe('#136676');
@@ -87,7 +89,13 @@ describe('saving branding', () => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     await agent.put('/api/admin/branding').send({ accentColour: '#136676', loginMessage: 'Hi' }).expect(200);
     const res = await agent.put('/api/admin/branding').send({ accentColour: null, loginMessage: '' }).expect(200);
-    expect(res.body).toEqual({ accentColour: null, loginMessage: null, senderName: null, hasLogo: false });
+    expect(res.body).toEqual({
+      accentColour: null,
+      loginMessage: null,
+      senderName: null,
+      hasLogo: false,
+      logoVersion: null,
+    });
   });
 
   it.each([
