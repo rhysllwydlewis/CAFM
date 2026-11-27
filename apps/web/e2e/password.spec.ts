@@ -60,24 +60,37 @@ test.describe('changing your own password', () => {
     await expect(page.getByRole('heading', { name: 'Change your password' })).toBeVisible();
     await noAxeViolations(page);
 
+    await expect(page.getByText('At least 12 characters. Avoid common passwords.')).toBeVisible();
+    // "Show passwords" reveals what was typed, for all three fields at once.
+    await page.getByLabel('New password', { exact: true }).fill('typed-to-check');
+    await expect(page.getByLabel('New password', { exact: true })).toHaveAttribute('type', 'password');
+    await page.getByLabel('Show passwords').check();
+    for (const label of ['Current password', 'New password', 'Confirm new password']) {
+      await expect(page.getByLabel(label, { exact: true })).toHaveAttribute('type', 'text');
+    }
+    await page.getByLabel('Show passwords').uncheck();
+    await expect(page.getByLabel('New password', { exact: true })).toHaveAttribute('type', 'password');
+
     const change = page.getByRole('button', { name: 'Change password' });
     // The two new passwords must match.
     await page.getByLabel('Current password').fill(PASSWORD);
     await page.getByLabel('New password', { exact: true }).fill(NEXT_PASSWORD);
     await page.getByLabel('Confirm new password').fill(NEXT_PASSWORD + 'x');
     await change.click();
-    await expect(page.locator('#password-error')).toContainText('The new passwords don’t match.');
+    await expect(page.locator('#password-confirm-error')).toContainText('The new passwords don’t match.');
+    await expect(page.getByLabel('Confirm new password')).toBeFocused();
 
     // A wrong current password, then a weak new one, are each refused with the reason.
     await page.getByLabel('Current password').fill('not-my-password');
     await page.getByLabel('Confirm new password').fill(NEXT_PASSWORD);
     await change.click();
-    await expect(page.locator('#password-error')).toContainText('Your current password is not right.');
+    await expect(page.locator('#password-current-error')).toContainText('Your current password is not right.');
+    await expect(page.getByLabel('Current password')).toBeFocused();
     await page.getByLabel('Current password').fill(PASSWORD);
     await page.getByLabel('New password', { exact: true }).fill('short');
     await page.getByLabel('Confirm new password').fill('short');
     await change.click();
-    await expect(page.locator('#password-error')).toContainText('Use at least 12 characters');
+    await expect(page.locator('#password-new-error')).toContainText('Use at least 12 characters');
     await noAxeViolations(page);
 
     // The right values change it, and this device stays signed in.

@@ -12,6 +12,7 @@ import { passwordProblem } from '@fmstead/shared';
 import type { ClientInfo } from './auth.service';
 import { AuthService } from './auth.service';
 import { ResetRateLimiter } from './login-rate-limiter';
+import { endSignIns } from '../../core/end-sign-ins';
 import { strictestMinLength } from '../../core/security-settings';
 import { PrismaService } from '../../core/prisma.service';
 import { appUrl, queuePlatformEmail } from '../../core/mail';
@@ -112,10 +113,8 @@ export class PasswordResetService {
       });
       // A pending second sign-in step began with the old password, so it ends too.
       await tx.mfaChallenge.deleteMany({ where: { accountId: reset.accountId } });
-      // A new password signs the account out everywhere.
-      await tx.session.deleteMany({
-        where: { OR: [{ accountId: reset.accountId }, { impersonatorAccountId: reset.accountId }] },
-      });
+      // A new password signs the account out everywhere, phones and tablets included.
+      await endSignIns(tx, reset.accountId);
     });
     await this.auth.event('password_reset', { accountId: reset.accountId, ip: client.ip });
   }

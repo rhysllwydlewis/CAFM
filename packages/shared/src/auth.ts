@@ -240,6 +240,10 @@ export const passwordChangeSchema = z.object({
   newPassword: z.string().min(1, 'Enter a new password.').max(512),
 });
 export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
+/** What a new password has to meet for this person: the longest minimum among their organisations. */
+export interface PasswordPolicy {
+  minLength: number;
+}
 export const mfaPasswordSchema = z.object({ password: z.string().min(1, 'Enter your password.').max(512) });
 
 export interface MfaStatus {

@@ -3,7 +3,17 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@fmstead/db';
 import { DEMO_PASSWORD } from '@fmstead/shared';
-import { createTestAccount, createTestTenant, DEMO_TENANT, ownerDb, signIn, startApp, testPassword } from './helpers';
+import {
+  createTestAccount,
+  createTestTenant,
+  DEMO_TENANT,
+  ownerDb,
+  pairDevice,
+  refreshDevice,
+  signIn,
+  startApp,
+  testPassword,
+} from './helpers';
 
 const db = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
 const owner = ownerDb();
@@ -22,6 +32,12 @@ const login = (identifier: string, password: string) =>
   request(app.getHttpServer()).post('/api/auth/login').send({ identifier, password });
 
 describe('changing your own password', () => {
+  it('tells a signed-in person the rules a new password must meet, and needs a session', async () => {
+    await request(app.getHttpServer()).get('/api/auth/password-policy').expect(401);
+    const { agent } = await signIn(app, 'requester@demo.example');
+    expect((await agent.get('/api/auth/password-policy').expect(200)).body).toEqual({ minLength: 12 });
+  });
+
   it('needs a session', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/password')
@@ -99,6 +115,25 @@ describe('changing your own password', () => {
     }
   });
 
+  it('signs out other phones as well, but not the phone it is changed from', async () => {
+    const person = await createTestAccount(db, [DEMO_TENANT]);
+    try {
+      const other = await pairDevice(app, person.email, person.password);
+      const here = await pairDevice(app, person.email, person.password);
+
+      // Changed from a phone: the other phone's refresh token stops working, this phone's still does.
+      await request(app.getHttpServer())
+        .post('/api/auth/password')
+        .set('Authorization', `Bearer ${here.accessToken}`)
+        .send({ currentPassword: person.password, newPassword: testPassword() })
+        .expect(204);
+      await refreshDevice(app, other.refreshToken).expect(400);
+      await refreshDevice(app, here.refreshToken).expect(200);
+    } finally {
+      await person.cleanup();
+    }
+  });
+
   it('emails the person to say it changed, and not before it has', async () => {
     const person = await createTestAccount(db, [DEMO_TENANT]);
     const sent = () =>
@@ -131,6 +166,7 @@ describe('changing your own password', () => {
         tx.tenantSecurity.create({ data: { tenantId: t.tenant.id, passwordMinLength: 20 } }),
       );
       const { agent } = await signIn(app, person.email, person.password);
+      expect((await agent.get('/api/auth/password-policy').expect(200)).body).toEqual({ minLength: 20 });
       const twelve = 'Abcdefg-12345';
       const refused = await agent
         .post('/api/auth/password')

@@ -17,6 +17,7 @@ import {
   DEMO_PERSONAS,
   loginRequestSchema,
   passwordChangeSchema,
+  type PasswordPolicy,
   selectOrganisationSchema,
   updatePreferencesSchema,
 } from '@fmstead/shared';
@@ -52,6 +53,13 @@ export class AuthController {
     const { response, session } = await this.auth.selectOrganisation(req.auth!, membershipId, client(req));
     setSessionCookie(res, session);
     return response;
+  }
+
+  /** The rules a new password must meet for this person, so the form can say so before they try. */
+  @Get('password-policy')
+  @UseGuards(SessionGuard)
+  passwordPolicy(@Req() req: Request): Promise<PasswordPolicy> {
+    return this.auth.passwordPolicy(req.auth!.account.id);
   }
 
   /** The signed-in person changes their own password (issue #89). Needs the current one. */

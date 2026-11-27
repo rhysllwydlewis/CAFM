@@ -128,14 +128,14 @@ For staff without an email address, such as operatives on shared devices. On the
 
 ## Changing your password
 
-Anyone signed in can change their own password from the name at the foot of the side menu, then "Account security", under "Change your password". On the phone app, open the "Me" tab and choose "Account security". Enter the current password, then the new one twice. The new password follows your organisation's password rules (at least 12 characters, longer if the organisation asks for it, and not a common password) and must differ from the current one.
+Anyone signed in can change their own password from the name at the foot of the side menu, then "Account security", under "Change your password". On the phone app, open the "Me" tab and choose "Account security". Enter the current password, then the new one twice; "Show passwords" reveals what you typed. The form says how long the new password must be: at least 12 characters, or longer if any organisation you belong to asks for it. It can't be a common password and must differ from the current one.
 
-- **Other devices are signed out.** The device you change it on stays signed in. Any pending second step of sign-in ends too.
+- **Other devices are signed out.** The device you change it on stays signed in. That includes phones and tablets signed in to the phone app, which can't get back in on their saved sign-in, and any pending second step of sign-in. A password reset by email does the same.
 - **A wrong current password counts as a failed sign-in** against the same limit per IP address, so someone holding a stolen session can't guess the password here. After too many, the change is refused for a few minutes.
 - **They are emailed.** A person with an email address gets a message saying the password changed, with a link to reset it if it wasn't them. Accounts with a username only have no email, so there is no message.
 - **It is recorded.** Each change, and each failed attempt, is in the sign-in events for the account (`password_changed`, `password_change_failed`).
 - The shared demo accounts can't change their password, and nobody can change the password of a person they are viewing the app as.
-- `POST /api/auth/password` with `currentPassword` and `newPassword` (signed in; no other permission).
+- `POST /api/auth/password` with `currentPassword` and `newPassword` (signed in; no other permission). `GET /api/auth/password-policy` returns the `minLength` that applies to the signed-in person.
 
 ## Two-step verification
 

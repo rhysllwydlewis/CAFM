@@ -6,7 +6,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
-- Account security: anyone signed in can change their own password from the name at the foot of the side menu. People with a username only can now replace the password an administrator generated for them. Every other device is signed out, people with an email address are told by email, and wrong attempts count towards the sign-in limit. On the phone app it is under "Me". See [changing your password](docs/admin.md#changing-your-password).
+- Account security: anyone signed in can change their own password from the name at the foot of the side menu. People with a username only can now replace the password an administrator generated for them. Every other device, phones and tablets included, is signed out, people with an email address are told by email, and wrong attempts count towards the sign-in limit. On the phone app it is under "Me". See [changing your password](docs/admin.md#changing-your-password).
 - Two-step verification with an authenticator app. Turn it on from the account menu, sign in with a code (or a single-use recovery code), and let administrators reset it for someone who has lost their phone. The "Require MFA" security setting now holds people to the set-up until they have it. See [two-step verification](docs/admin.md#two-step-verification).
 - Branding: upload your logo (PNG, JPEG or WebP, 64 KB or smaller) to show in the menu, and set the name your emails come from. See [branding](docs/admin.md#branding).
 - Roles: a new data scope, "my team’s records". People with it see their own records and those of the people they share a team with, in people lists, requests and work orders. See [roles and permissions](docs/admin.md#roles-and-permissions).
@@ -85,6 +85,8 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 - Work orders: reactive jobs with a lifecycle from Logged to Closed, assignment to people who can do the job at that location, notes, and a history of every change. A Helpdesk request can be turned into one or more jobs, which keep the request's priority and targets, and the request is completed and the requester told when all the work is done. There is a list, a board and a page for each job, and a panel on Helpdesk requests to raise work. A job can be sent to an outside contractor by an emailed link, with no account needed: they accept it, update its progress and add notes. SLA clocks, costs, checklists and job sheets follow. See [Work orders](docs/work-orders.md).
 
 ### Fixed
+
+- Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
 
 - Two-step verification: a wrong password when turning it off or replacing recovery codes now counts towards the same limit on failed attempts as signing in, so a stolen session can’t be used to guess the password.
 

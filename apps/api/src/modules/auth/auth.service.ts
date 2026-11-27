@@ -22,8 +22,10 @@ import {
   type MfaVerifyInput,
   type OrganisationOption,
   type PasswordChangeInput,
+  type PasswordPolicy,
 } from '@fmstead/shared';
 import { demoLocked } from '../../core/access-rules';
+import { endSignIns } from '../../core/end-sign-ins';
 import { appUrl, queuePlatformEmail } from '../../core/mail';
 import { PrismaService } from '../../core/prisma.service';
 import { sessionLifetimeMs, strictestMinLength } from '../../core/security-settings';
@@ -288,6 +290,10 @@ export class AuthService {
     await this.event(lock ? 'account_locked' : 'sign_in_failed', { accountId: account.id, ip: client.ip });
   }
 
+  async passwordPolicy(accountId: string): Promise<PasswordPolicy> {
+    return { minLength: Math.max(12, await strictestMinLength(this.db, accountId)) };
+  }
+
   /**
    * A signed-in person changes their own password. It needs the current one, so a stolen session can't set a new
    * one, and wrong guesses count against the same per-IP limit as sign-in. Every other session ends; this one stays.
@@ -323,12 +329,7 @@ export class AuthService {
       });
       // A pending second sign-in step began with the old password, so it ends too.
       await tx.mfaChallenge.deleteMany({ where: { accountId: account.id } });
-      await tx.session.deleteMany({
-        where: {
-          id: { not: auth.session.id },
-          OR: [{ accountId: account.id }, { impersonatorAccountId: account.id }],
-        },
-      });
+      await endSignIns(tx, account.id, { sessionId: auth.session.id, deviceId: auth.session.deviceId });
       // Tell the person, in case it wasn't them. Accounts with a username only have no email to tell.
       if (account.email) {
         await queuePlatformEmail(tx, {

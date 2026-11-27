@@ -1,10 +1,10 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import argon2 from 'argon2';
 import request from 'supertest';
 import type { Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, seedId, withTenant } from '@fmstead/db';
-import { BUILTIN_ROLES, DEMO_PASSWORD } from '@fmstead/shared';
+import { BUILTIN_ROLES, DEMO_PASSWORD, MOBILE_CLIENT_ID } from '@fmstead/shared';
 import { createApp } from '../src/app';
 
 export { seedId };
@@ -146,3 +146,35 @@ export async function createTestAccount(
   };
   return { email, password, account, memberships, cleanup };
 }
+
+/** Pairs a phone with an account, by the browser approval and code exchange the mobile app uses. */
+export async function pairDevice(app: NestExpressApplication, identifier: string, password = DEMO_PASSWORD) {
+  const { agent } = await signIn(app, identifier, password);
+  const verifier = randomBytes(48).toString('base64url');
+  const challenge = createHash('sha256').update(verifier).digest('base64url');
+  const approved = await agent
+    .post('/api/oauth/authorize')
+    .send({
+      client_id: MOBILE_CLIENT_ID,
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      device_name: 'Phone',
+    })
+    .expect(200);
+  const tokens = await request(app.getHttpServer())
+    .post('/api/oauth/token')
+    .send({
+      grant_type: 'authorization_code',
+      client_id: MOBILE_CLIENT_ID,
+      code: approved.body.code,
+      code_verifier: verifier,
+    })
+    .expect(200);
+  return { accessToken: tokens.body.access_token as string, refreshToken: tokens.body.refresh_token as string };
+}
+
+/** Swaps a refresh token for new tokens. Resolves with the response so a test can check it was refused. */
+export const refreshDevice = (app: NestExpressApplication, refreshToken: string) =>
+  request(app.getHttpServer())
+    .post('/api/oauth/token')
+    .send({ grant_type: 'refresh_token', client_id: MOBILE_CLIENT_ID, refresh_token: refreshToken });

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { MfaStatus } from '@fmstead/shared';
+import type { MfaStatus, PasswordPolicy } from '@fmstead/shared';
 import { currentUser } from '@/lib/session';
 import { readAdmin } from '@/lib/admin';
 import { MfaSetup } from './mfa-setup';
@@ -9,7 +9,10 @@ export const metadata: Metadata = { title: 'Account security' };
 
 export default async function AccountSecurityPage() {
   const user = await currentUser();
-  const status = await readAdmin<MfaStatus>('/auth/mfa');
+  const [status, policy] = await Promise.all([
+    readAdmin<MfaStatus>('/auth/mfa'),
+    readAdmin<PasswordPolicy>('/auth/password-policy'),
+  ]);
   return (
     <div className="page stack g4">
       <div className="page-head">
@@ -19,7 +22,7 @@ export default async function AccountSecurityPage() {
         </div>
       </div>
       <div className="stack g4" style={{ maxWidth: 640 }}>
-        <PasswordChange locked={user.preferencesLocked} />
+        <PasswordChange locked={user.preferencesLocked} minLength={policy.minLength} />
         <MfaSetup status={status} locked={user.preferencesLocked} />
       </div>
     </div>
