@@ -1,0 +1,67 @@
+name: ZAP baseline
+
+# A passive OWASP ZAP baseline scan of the built app with demo data. It reports
+# and never attacks: it does not fail the build, the report is the output.
+on:
+  schedule:
+    - cron: '41 3 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: ZAP baseline scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cafm
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: cafm_dev
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cafm" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Local CI credentials only, for the throwaway service container.
+      DATABASE_URL: postgresql://cafm@localhost:5432/cafm_dev
+      APP_DATABASE_URL: postgresql://cafm_app:cafm_app@localhost:5432/cafm_dev
+      DEMO_MODE: 'true'
+      REDIS_URL: redis://localhost:6379
+      API_URL: http://localhost:4000
+      WEB_ORIGIN: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f infra/postgres/init.sql
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm build
+      - name: Start the app
+        run: |
+          pnpm dev > app.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fs http://localhost:3000 > /dev/null && exit 0
+            sleep 2
+          done
+          cat app.log
+          exit 1
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:3000
+          fail_action: false
+          allow_issue_writing: false
