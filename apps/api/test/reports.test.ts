@@ -74,6 +74,30 @@ it('counts open jobs into age bands', async () => {
   }
 });
 
+it('puts a job in an age band by its whole days, at each edge of the bands', async () => {
+  const f = await fixture();
+  try {
+    const hours = [0, 47, 49, 191, 193, 743, 745];
+    const jobs: { id: string }[] = [];
+    for (let i = 0; i < hours.length; i++) jobs.push(await f.makeJob());
+    await withTenant(db, f.tenant.id, async (tx) => {
+      for (const [i, h] of hours.entries()) {
+        await tx.workOrder.update({
+          where: { id: jobs[i]!.id },
+          data: { createdAt: new Date(Date.now() - h * 3_600_000) },
+        });
+      }
+    });
+    const res = await f.m.get(`${base}/open-jobs-by-age`).expect(200);
+    expect(res.body.total).toBe(7);
+    const counts = Object.fromEntries(res.body.bands.map((b: { key: string; count: number }) => [b.key, b.count]));
+    // Under 2 days: 0 and 47 hours. 2 to 7 days: 49 and 191 hours. 8 to 30 days: 193 and 743 hours. Over 30: 745.
+    expect(counts).toEqual({ '0-1': 2, '2-7': 2, '8-30': 2, '31+': 1 });
+  } finally {
+    await f.cleanup();
+  }
+});
+
 it('measures SLA performance for jobs completed in the period', async () => {
   const f = await fixture();
   try {
