@@ -1,5 +1,6 @@
+import argon2 from 'argon2';
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient } from '@fmstead/db';
 import { SIGN_IN_FAILED } from '@fmstead/shared';
@@ -71,6 +72,25 @@ describe('POST /api/auth/login', () => {
       await http().post('/api/auth/login').send({ identifier: t.email, password: t.password }).expect(401);
       const events = await db.authEvent.findMany({ where: { accountId: t.account.id }, select: { type: true } });
       expect(events.map((e) => e.type)).toContain('account_locked');
+    } finally {
+      await t.cleanup();
+    }
+  });
+
+  it('does a password check for a locked account too, so timing does not show it is locked', async () => {
+    const t = await createTestAccount(db, [DEMO_TENANT]);
+    try {
+      await db.account.update({ where: { id: t.account.id }, data: { lockedUntil: new Date(Date.now() + 60_000) } });
+      const verify = vi.spyOn(argon2, 'verify');
+      try {
+        await http().post('/api/auth/login').send({ identifier: t.email, password: t.password }).expect(401);
+        // The same one check a wrong password on a normal account costs.
+        expect(verify).toHaveBeenCalledTimes(1);
+      } finally {
+        verify.mockRestore();
+      }
+      const events = await db.authEvent.findMany({ where: { accountId: t.account.id }, select: { type: true } });
+      expect(events.map((e) => e.type)).toContain('sign_in_locked');
     } finally {
       await t.cleanup();
     }
