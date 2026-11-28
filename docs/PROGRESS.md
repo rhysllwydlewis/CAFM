@@ -167,7 +167,6 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [x] Audit log filters by person, record and date range, and CSV export. ([guide](admin.md#audit-log))
     - [x] MFA enforced at sign-in (with P1-12).
   - [x] **P1-09f** Username-only accounts. ([guide](admin.md#username-only-accounts))
-    - Known gap: no forced password change at first sign-in. People can change their own password from Account security.
 - [x] **P1-10** Standard reports + role default dashboards (fixed widgets). ([guide](reports.md))
   - Reports for contractor performance, compliance status and asset history arrive with the modules that hold their data.
 - [x] **P1-11** Import/export for locations, assets, users, PPM schedules.

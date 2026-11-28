@@ -79,7 +79,7 @@ export class UsernameAccountsController {
         throw new ConflictException({ code: 'username_taken', message: 'That username is already in use.' });
       }
       const account = await tx.account
-        .create({ data: { username: stored, name: input.name, passwordHash } })
+        .create({ data: { username: stored, name: input.name, passwordHash, mustChangePassword: true } })
         .catch((error: unknown) => {
           // Two requests for the same name at once: the unique index decides, and the loser is told so.
           if ((error as { code?: string }).code === 'P2002') {
@@ -156,7 +156,7 @@ export class UsernameAccountsController {
       }
       await tx.account.update({
         where: { id: member.accountId },
-        data: { passwordHash, failedAttempts: 0, lockedUntil: null },
+        data: { passwordHash, failedAttempts: 0, lockedUntil: null, mustChangePassword: true },
       });
       await audit(
         tx,

@@ -69,6 +69,8 @@ export interface CurrentUser {
   preferencesLocked: boolean;
   /** The organisation requires MFA and this person hasn't set it up: only the set-up page is open. */
   mfaSetupRequired: boolean;
+  /** An administrator set this person's password: only the change-password step is open until they choose their own. */
+  passwordChangeRequired: boolean;
 }
 
 export const startImpersonationSchema = z.object({

@@ -121,7 +121,7 @@ For staff without an email address, such as operatives on shared devices. On the
 
 - The person signs in at your organisation's own address, `/t/<organisation>/login`, with the username. The username only works inside your organisation, so two organisations can use the same one. It does not work on the general sign-in page.
 - There is no email, so there is no "Forgot password" link. Choose **Reset password** on the same card: it makes a new password, signs the person out everywhere and clears any lockout.
-- The person can change the generated password themselves, so you no longer need to know it: see [changing your password](#changing-your-password).
+- **The person must choose their own password before anything else opens.** After you create the account, or reset it, the first sign-in takes them to a **Choose your own password** page. They type the password you gave them as the current one, then pick a new one. Until they do, every other page and API call is refused (the web app, the requester portal and the phone app all send them there); signing out is always possible. See [changing your password](#changing-your-password) for the rules the new password must meet.
 - Creating and resetting need `people.manage`, and, as with invitations, only organisation-wide administrators can create an account. The role you give is limited by the same no-privilege-escalation rule as a role change, and full-licence roles use a seat.
 - Anyone with an email address resets their own password from the link in an email, so the reset here refuses them.
 
@@ -134,7 +134,8 @@ Anyone signed in can change their own password from the name at the foot of the 
 - **A wrong current password counts as a failed sign-in** against the same limit per IP address, so someone holding a stolen session can't guess the password here. After too many, the change is refused for a few minutes.
 - **They are emailed.** A person with an email address gets a message saying the password changed, with a link to reset it if it wasn't them. Accounts with a username only have no email, so there is no message.
 - **It is recorded.** Each change, and each failed attempt, is in the sign-in events for the account (`password_changed`, `password_change_failed`).
-- The shared demo accounts can't change their password, and nobody can change the password of a person they are viewing the app as.
+- The shared demo accounts can't change their password, and nobody can change the password of a person they are viewing the app as. Neither is ever held on the change-password step.
+- **Held until it is done.** An account with a password an administrator generated or reset has `mustChangePassword` set. `GET /api/auth/me` returns `passwordChangeRequired: true`, and every endpoint except `POST /api/auth/password`, `GET /api/auth/password-policy`, `GET /api/auth/me`, sign-out and choosing an organisation answers `403` with the code `password_change_required`. Changing the password clears it.
 - `POST /api/auth/password` with `currentPassword` and `newPassword` (signed in; no other permission). `GET /api/auth/password-policy` returns the `minLength` that applies to the signed-in person.
 
 ## Two-step verification
