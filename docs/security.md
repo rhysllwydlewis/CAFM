@@ -28,11 +28,10 @@ Every API request writes one JSON line to standard output when it finishes:
 
 ## Dependency advisories
 
-`pnpm audit --prod` is the check. Four advisories are cleared with overrides in `pnpm-workspace.yaml`, where another package pins a version that has one (issue #128):
+`pnpm audit --prod` is the check. Three advisories are cleared with overrides in `pnpm-workspace.yaml`, where another package pins a version that has one (issue #128):
 
 | Override | Why | Remove when |
 | --- | --- | --- |
-| `multer` 2.5.0 | denial of service in an upload hook; reached through `@nestjs/platform-express` | NestJS ships a `multer` at 2.5.0 or later |
 | `next>postcss` | file read through source map comments; Next pins an old `postcss` | Next ships `postcss` 8.5.18 or later |
 | `@prisma/config>effect`, `@prisma/config>deepmerge-ts` | regular expression and stack exhaustion issues in two build-time helpers of the Prisma CLI | Prisma ships with fixed versions (they are build and command-line only, never in the running API) |
 
