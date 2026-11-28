@@ -66,7 +66,11 @@ export function ViewBar({ entity, route, filters, layout, views, canShare, activ
         visibility: shared ? 'shared' : 'private',
         config: { layout, filters, sort: null, group: null, columns: [] },
       });
-      if (created) router.push(viewHref(route, created));
+      if (created) {
+        router.push(viewHref(route, created));
+        // The browser keeps the last render of each address it has shown; ask for a fresh one so the list has the new view.
+        router.refresh();
+      }
     });
     if (saved) {
       setSaving(false);
@@ -77,7 +81,11 @@ export function ViewBar({ entity, route, filters, layout, views, canShare, activ
 
   async function remove(view: SavedView) {
     const removed = await run(() => adminWrite('/views/' + view.id, undefined, 'DELETE'));
-    if (removed) router.push(route);
+    if (removed) {
+      router.push(route);
+      // Without this the browser can show its kept render of the list from before the delete, with the view still in it.
+      router.refresh();
+    }
   }
 
   return (

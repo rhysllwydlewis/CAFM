@@ -104,6 +104,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 - Business calendars: the warning for a site with no calendar now says what its service level clocks really use, the default hours (Monday to Friday, 09:00 to 17:00, UK time), instead of saying they run around the clock. The screen also pages through organisations with more than 100 sites, instead of stopping silently at 500, and its count of sites without a calendar covers every site.
 
 - Roles and permissions: the confirmation after creating, duplicating or deleting a role now stays on screen. It used to vanish if the page reloaded first.
+- Deleting a saved view could, now and then, leave it in the Saved view list until you reloaded the page, and a view you had just saved could be missing from the list. The list is now refreshed after saving or deleting a view.
 
 ### Changed
 
