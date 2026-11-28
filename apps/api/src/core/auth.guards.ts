@@ -84,19 +84,24 @@ export class SessionGuard implements CanActivate {
       !impersonating &&
       !account.isDemo &&
       (await this.db.accountMfa.count({ where: { accountId: account.id, enabledAt: { not: null } } })) === 0;
-    if (mfaSetupRequired && !MFA_SETUP_ALLOWED.test(req.originalUrl.split('?')[0]!)) {
-      throw new ForbiddenException({
-        code: 'mfa_setup_required',
-        message: 'Your organisation requires two-step verification. Set it up to continue.',
-      });
-    }
     // An administrator generated this password, so only changing it is open until the person has chosen their own.
     // The shared demo accounts can't change theirs, and "view as" shows what the other person sees, so neither is held.
     const passwordChangeRequired = account.mustChangePassword && !impersonating && !account.isDemo;
-    if (passwordChangeRequired && !PASSWORD_CHANGE_ALLOWED.test(req.originalUrl.split('?')[0]!)) {
+    const path = req.originalUrl.split('?')[0]!;
+    // When both are due, the password comes first. Each step opens only its own routes, so applying both checks to
+    // one request would leave neither able to finish: while the password is due its routes are open, and the second
+    // step's set-up opens once it has been changed.
+    if (passwordChangeRequired) {
+      if (!PASSWORD_CHANGE_ALLOWED.test(path)) {
+        throw new ForbiddenException({
+          code: 'password_change_required',
+          message: 'An administrator set your password. Choose your own to continue.',
+        });
+      }
+    } else if (mfaSetupRequired && !MFA_SETUP_ALLOWED.test(path)) {
       throw new ForbiddenException({
-        code: 'password_change_required',
-        message: 'An administrator set your password. Choose your own to continue.',
+        code: 'mfa_setup_required',
+        message: 'Your organisation requires two-step verification. Set it up to continue.',
       });
     }
     const impersonator = impersonating

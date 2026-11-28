@@ -132,6 +132,7 @@ export class OauthService {
     let device = await this.db.mobileDevice.findUnique({ where: { refreshHash: hash } });
     // The hash the device must still hold for this refresh to go through (compare-and-swap below).
     let expectedHash = hash;
+    let retry = false;
     if (!device) {
       const previous = await this.db.mobileDevice.findFirst({ where: { previousHash: hash, revokedAt: null } });
       if (!previous) throw invalidGrant();
@@ -146,6 +147,7 @@ export class OauthService {
       await this.event('mobile_refresh_retry', previous.accountId, undefined, client.ip);
       device = previous;
       expectedHash = previous.refreshHash;
+      retry = true;
     }
     if (device.revokedAt || device.refreshExpiresAt <= new Date()) throw invalidGrant();
     const membership = await this.activeMembership(device.accountId, device.membershipId);
@@ -159,8 +161,10 @@ export class OauthService {
       where: { id: device.id, refreshHash: expectedHash, revokedAt: null },
       data: {
         refreshHash: next.tokenHash,
-        previousHash: expectedHash,
-        refreshRotatedAt: new Date(),
+        // The token the phone presented stays the one remembered, and a retry leaves the window as it was, so if
+        // the answer to the retry is lost too, the phone can try the same token again until the window ends.
+        previousHash: hash,
+        ...(retry ? {} : { refreshRotatedAt: new Date() }),
         refreshExpiresAt: new Date(Date.now() + REFRESH_MS),
         lastSeenAt: new Date(),
         lastIp: client.ip,

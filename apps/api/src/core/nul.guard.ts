@@ -1,20 +1,28 @@
 import { BadRequestException, type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 
-/** The most values one request is searched through, so a deeply nested body can't make this slow. */
-const MAX_VALUES = 20_000;
+/**
+ * The most values one request is searched through. A body is at most 600 kB and a value takes at least two bytes,
+ * so no real body comes near this; past it the request is refused, never waved through unsearched.
+ */
+const MAX_VALUES = 1_000_000;
 
-/** True when any string in the value, or any key of an object in it, holds a NUL character. */
+/**
+ * True when any string in the value, or any key of an object in it, holds a NUL character, or when the value is
+ * too large to search completely.
+ */
 export function holdsNul(root: unknown): boolean {
   const stack: unknown[] = [root];
   let seen = 0;
-  while (stack.length > 0 && seen < MAX_VALUES) {
+  while (stack.length > 0) {
     const value = stack.pop();
     seen += 1;
+    if (seen > MAX_VALUES) return true;
     if (typeof value === 'string') {
       if (value.includes('\u0000')) return true;
     } else if (Array.isArray(value)) {
-      stack.push(...value);
+      // One at a time: spreading a long array into push() overflows the call stack.
+      for (const inner of value) stack.push(inner);
     } else if (typeof value === 'object' && value !== null) {
       for (const [key, inner] of Object.entries(value)) {
         if (key.includes('\u0000')) return true;
