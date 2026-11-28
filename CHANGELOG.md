@@ -108,6 +108,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 - Business calendars: the warning for a site with no calendar now says what its service level clocks really use, the default hours (Monday to Friday, 09:00 to 17:00, UK time), instead of saying they run around the clock. The screen also pages through organisations with more than 100 sites, instead of stopping silently at 500, and its count of sites without a calendar covers every site.
 
 - Roles and permissions: the confirmation after creating, duplicating or deleting a role now stays on screen. It used to vanish if the page reloaded first.
+- Labour rates are now capped at £400,000 an hour, so recording a whole day of time at the highest rate can no longer fail with an error. If a rate saved earlier is still too high for the time recorded, the technician now sees a message that points at the rate instead of a server error.
 - Role and team names can no longer be duplicated by case: "north region" is refused when "North Region" exists, and a custom role can't take the name of a built-in role such as Technician (or another custom role) when it is created or renamed. A team that differs from an older one only by case is renamed with a suffix by the update, so nothing is lost.
 
 ### Changed
