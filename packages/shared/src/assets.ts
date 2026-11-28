@@ -96,8 +96,8 @@ const fields = {
   replacementCost: money.nullable(),
   criticality: z.enum(ASSET_CRITICALITIES),
   condition: z.enum(ASSET_CONDITIONS).nullable(),
-  attributes: z.record(z.unknown()),
-  custom: z.record(z.unknown()),
+  attributes: z.record(z.string(), z.unknown()),
+  custom: z.record(z.string(), z.unknown()),
 };
 
 export const createAssetSchema = z

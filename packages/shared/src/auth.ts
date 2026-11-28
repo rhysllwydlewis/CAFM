@@ -147,7 +147,7 @@ export const inviteCreateSchema = z.object({
 export const acceptInviteSchema = z.object({
   name: z.string().trim().min(1, 'Enter your name').max(120).optional(),
   password: z.string().max(512).optional(),
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Accept the terms to continue' }) }),
+  acceptTerms: z.literal(true, { error: 'Accept the terms to continue' }),
 });
 
 export interface InviteDetails {

@@ -45,7 +45,7 @@ const details = z.object({
   name: z.string().trim().min(1, 'Enter a location name').max(120),
   code: z.string().trim().toUpperCase().min(1, 'Enter a location code').max(32),
   status: z.enum(LOCATION_STATUSES),
-  custom: z.record(z.unknown()),
+  custom: z.record(z.string(), z.unknown()),
   details: locationDetailsSchema.optional(),
   siteCalendar: siteCalendarSchema.optional(),
   restrictedAccess: z.string().trim().max(600).nullable().optional(),
