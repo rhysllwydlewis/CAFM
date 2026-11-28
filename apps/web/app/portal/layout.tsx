@@ -13,6 +13,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   if (!response.ok) return children;
   const user = (await response.json()) as CurrentUser;
   if (user.mfaSetupRequired) redirect('/mfa-setup');
+  if (user.passwordChangeRequired) redirect('/password-change');
   const allowed = feature(user.entitlements, 'helpdesk') && can(user, 'requests.create');
   return (
     <div>

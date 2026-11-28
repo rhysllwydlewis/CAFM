@@ -16,6 +16,7 @@ import { currentUser } from '@/lib/session';
 import { AppShell } from './shell/app-shell';
 import type { ShellNavSection } from './shell/types';
 import { SignOutButton } from './sign-out-button';
+import { exportable, importable } from './app/admin/import/kinds';
 
 async function organisations(): Promise<OrganisationOption[]> {
   const res = await apiGet('/auth/organisations');
@@ -36,6 +37,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
   // The organisation requires two-step verification and this person hasn't set it up: nothing else is open.
   if (user.mfaSetupRequired) redirect('/mfa-setup');
+  // An administrator set this person's password: nothing else is open until they choose their own.
+  if (user.passwordChangeRequired) redirect('/password-change');
   const [orgs, display, branding] = await Promise.all([organisations(), displaySettings(), brandingSettings()]);
   // The accent only applies on plans that include branding, and only colours that passed the contrast check.
   const accent =
@@ -64,6 +67,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       display,
     ),
   })).filter((s) => s.items.length > 0);
+
+  // Import and export is open to anyone who can import or export a kind of data. That includes people with no
+  // Administration item (a Planner, for example), who would otherwise have no way to find the screen (issue #104).
+  if (importable(user).length + exportable(user).length > 0) {
+    const entry = {
+      key: 'import-export',
+      label: 'Import and export',
+      icon: 'export',
+      href: '/app/admin/import',
+      locked: false,
+    };
+    const more = sections.find((s) => s.label === 'More');
+    if (more) more.items.push(entry);
+    else sections.push({ label: 'More', items: [entry] });
+  }
 
   return (
     <div

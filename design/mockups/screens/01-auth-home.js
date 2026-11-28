@@ -81,6 +81,9 @@ const accountSecurity = shell({
   body: [`<div class="stack g4" style="max-width:640px"><section class="card"><div class="card-h"><h2 class="card-t">Change your password</h2></div><div class="card-b stack g3"><p class="muted">You will stay signed in here. Every other device is signed out.</p>${field('Current password', input('', { lg: true }))}${field('New password', input('', { lg: true }), { hint: 'At least 12 characters. Avoid common passwords.' })}${field('Confirm new password', input('', { lg: true }))}<span class="row">${cb(false)}Show passwords</span><div>${btn('Change password', { v: 'primary' })}</div></div></section><section class="card"><div class="card-h"><h2 class="card-t">Two-step verification</h2></div><div class="card-b stack g3"><p class="muted">Off. Turn it on to ask for a code from an authenticator app each time you sign in, so a stolen password is not enough.</p><div>${btn('Set up', { v: 'primary' })}</div></div></section></div>`],
 });
 
+// An administrator generated this person's password (a username-only account, or a reset): nothing else is open until
+// they choose their own (issue #120). The card is the one on Account security, on its own page like the MFA set-up.
+const passwordChangeRequired = `<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg-app)"><div style="width:520px"><h1 class="page-title">Choose your own password</h1><p class="muted" style="margin:8px 0 16px">An administrator set your password for Demo Estates Ltd. Choose one only you know to continue.</p><section class="card" style="box-shadow:var(--shadow-md)"><div class="card-h"><h2 class="card-t">Change your password</h2></div><div class="card-b stack g3"><p class="muted">Type the password you were given as your current password. Other devices you are signed in on are signed out.</p>${field('Current password', input('', { lg: true }))}${field('New password', input('', { lg: true }), { hint: 'At least 12 characters. Avoid common passwords.' })}${field('Confirm new password', input('', { lg: true }))}<span class="row">${cb(false)}Show passwords</span><div>${btn('Change password', { v: 'primary' })}</div></div></section></div></div>`;
 
 export default [
   { id: 'auth-01-login', group: 'Sign in', title: 'Login with demo accounts', html: login(-1) },
@@ -90,6 +93,7 @@ export default [
   { id: 'auth-06-mfa-setup', group: 'Sign in', title: 'Set up two-step verification', html: mfaSetup },
   { id: 'auth-07-mfa-recovery-codes', group: 'Sign in', title: 'Recovery codes', html: mfaCodes },
   { id: 'auth-08-account-security', group: 'Sign in', title: 'Account security: change password', html: accountSecurity },
+  { id: 'auth-09-password-change-required', group: 'Sign in', title: 'Choose your own password (set by an administrator)', html: passwordChangeRequired },
   { id: 'auth-05-select-org', group: 'Sign in', title: 'Choose organisation', html: selectOrg },
   { id: 'home-01-dashboard', group: 'Home & navigation', title: 'Home dashboard (FM manager)', html: home },
   { id: 'home-02-executive', group: 'Home & navigation', title: 'Executive dashboard', html: exec },

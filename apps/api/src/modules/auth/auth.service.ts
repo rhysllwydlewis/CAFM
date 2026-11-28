@@ -218,6 +218,7 @@ export class AuthService {
       preferences: demoLocked(auth.account.isDemo) ? {} : readPreferences(auth.account.preferences),
       preferencesLocked: demoLocked(auth.account.isDemo),
       mfaSetupRequired: auth.mfaSetupRequired,
+      passwordChangeRequired: auth.passwordChangeRequired,
     };
   }
 
@@ -325,7 +326,7 @@ export class AuthService {
     await this.db.$transaction(async (tx) => {
       await tx.account.update({
         where: { id: account.id },
-        data: { passwordHash, failedAttempts: 0, lockedUntil: null },
+        data: { passwordHash, failedAttempts: 0, lockedUntil: null, mustChangePassword: false },
       });
       // A pending second sign-in step began with the old password, so it ends too.
       await tx.mfaChallenge.deleteMany({ where: { accountId: account.id } });

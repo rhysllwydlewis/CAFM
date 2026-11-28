@@ -67,28 +67,31 @@ model Tenant {
 
 /// A person who can sign in. Global; one account can belong to several tenants.
 model Account {
-  id               String            @id @default(uuid(7)) @db.Uuid
-  email            String?           @unique
-  username         String?           @unique
-  name             String
-  passwordHash     String            @map("password_hash")
-  failedAttempts   Int               @default(0) @map("failed_attempts")
-  lockedUntil      DateTime?         @map("locked_until") @db.Timestamptz(3)
-  isDemo           Boolean           @default(false) @map("is_demo")
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  email              String?           @unique
+  username           String?           @unique
+  name               String
+  passwordHash       String            @map("password_hash")
+  failedAttempts     Int               @default(0) @map("failed_attempts")
+  lockedUntil        DateTime?         @map("locked_until") @db.Timestamptz(3)
+  isDemo             Boolean           @default(false) @map("is_demo")
+  /// Set when an administrator generates or resets the password: the person is held on a change-password step
+  /// until they set their own (issue #120). Cleared by POST /auth/password.
+  mustChangePassword Boolean           @default(false) @map("must_change_password")
   /// Version of the terms of service accepted, and when (doc 06: accept-invite).
-  termsVersion     String?           @map("terms_version")
-  termsAcceptedAt  DateTime?         @map("terms_accepted_at") @db.Timestamptz(3)
+  termsVersion       String?           @map("terms_version")
+  termsAcceptedAt    DateTime?         @map("terms_accepted_at") @db.Timestamptz(3)
   /// The person's own display choices, such as a collapsed side menu. Validated with accountPreferencesSchema.
-  preferences      Json              @default("{}")
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  memberships      Membership[]
-  sessions         Session[]
-  passwordResets   PasswordReset[]
-  mobileDevices    MobileDevice[]
-  oauthCodes       OauthCode[]
-  mfa              AccountMfa?
-  mfaRecoveryCodes MfaRecoveryCode[]
-  mfaChallenges    MfaChallenge[]
+  preferences        Json              @default("{}")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships        Membership[]
+  sessions           Session[]
+  passwordResets     PasswordReset[]
+  mobileDevices      MobileDevice[]
+  oauthCodes         OauthCode[]
+  mfa                AccountMfa?
+  mfaRecoveryCodes   MfaRecoveryCode[]
+  mfaChallenges      MfaChallenge[]
 
   @@map("account")
 }
