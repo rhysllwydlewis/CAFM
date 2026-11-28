@@ -41,7 +41,7 @@ const updateSchema = z.object({
   maxLength: z.number().int().positive().max(10000).nullable().optional(),
   position: z.number().int().min(0).max(1000).optional(),
 });
-const validateSchema = z.object({ entityType: z.enum(ENTITY_TYPES), values: z.record(z.unknown()) });
+const validateSchema = z.object({ entityType: z.enum(ENTITY_TYPES), values: z.record(z.string(), z.unknown()) });
 
 type Row = Prisma.FieldDefinitionGetPayload<object>;
 

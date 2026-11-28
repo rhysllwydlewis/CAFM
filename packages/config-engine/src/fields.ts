@@ -119,7 +119,7 @@ function valueSchema(f: FieldDefinition): z.ZodTypeAny {
       return f.required ? text.refine((value) => value.trim().length > 0, `Enter ${f.label}`) : text;
     }
     case 'number': {
-      let s = z.number({ invalid_type_error: `${f.label} must be a number` }).finite();
+      let s = z.number({ error: `${f.label} must be a number` }).finite();
       if (f.min != null) s = s.min(f.min, `${f.label} must be at least ${f.min}`);
       if (f.max != null) s = s.max(f.max, `${f.label} must be at most ${f.max}`);
       return s;
@@ -128,7 +128,7 @@ function valueSchema(f: FieldDefinition): z.ZodTypeAny {
       // Money is integer minor units plus a currency code, never floats (CLAUDE.md).
       return z.object({
         amount: z
-          .number({ invalid_type_error: `${f.label} must be an amount, like 1250.00` })
+          .number({ error: `${f.label} must be an amount, like 1250.00` })
           .int(`${f.label} must be a whole number of pence`),
         currency: z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code'),
       });
@@ -175,7 +175,7 @@ export type CustomValidation =
 
 /** Validates custom field values; errors are keyed by field, with plain-English messages. */
 export function validateCustom(fields: readonly FieldDefinition[], values: unknown): CustomValidation {
-  const result = buildCustomSchema(fields).safeParse(values ?? {});
+  const result = buildCustomSchema(fields).safeParse(values ?? {}, { reportInput: true });
   if (result.success) return { success: true, data: result.data };
   const errors: Record<string, string> = {};
   for (const issue of result.error.issues) {
@@ -186,7 +186,7 @@ export function validateCustom(fields: readonly FieldDefinition[], values: unkno
     }
     if (errors[key]) continue;
     const label = fields.find((f) => f.key === key)?.label ?? key;
-    const missing = issue.code === 'invalid_type' && (issue.received === 'undefined' || issue.received === 'null');
+    const missing = issue.code === 'invalid_type' && (issue.input === undefined || issue.input === null);
     errors[key] = missing ? `Enter ${label}` : issue.message;
   }
   return { success: false, errors };

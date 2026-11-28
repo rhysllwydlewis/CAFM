@@ -130,7 +130,7 @@ export const createWorkOrderSchema = z
     impact: level,
     urgency: level,
     assigneeId: uuid.nullable().default(null),
-    custom: z.record(z.unknown()).default({}),
+    custom: z.record(z.string(), z.unknown()).default({}),
   })
   .strict();
 export type CreateWorkOrder = z.infer<typeof createWorkOrderSchema>;
@@ -192,7 +192,7 @@ export const changeWorkOrderSchema = z
     assetId: uuid.nullable().optional(),
     impact: level.optional(),
     urgency: level.optional(),
-    custom: z.record(z.unknown()).optional(),
+    custom: z.record(z.string(), z.unknown()).optional(),
   })
   .strict()
   .refine(

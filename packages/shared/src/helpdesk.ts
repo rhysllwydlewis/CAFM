@@ -126,8 +126,8 @@ export const createRequestSchema = z
     channel: z.enum(['portal', 'qr', 'phone']).default('portal'),
     impact: level.optional(),
     urgency: level.optional(),
-    answers: z.record(z.boolean()).default({}),
-    custom: z.record(z.unknown()).default({}),
+    answers: z.record(z.string(), z.boolean()).default({}),
+    custom: z.record(z.string(), z.unknown()).default({}),
   })
   .strict();
 export type CreateRequest = z.infer<typeof createRequestSchema>;
