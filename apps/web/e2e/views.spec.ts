@@ -13,7 +13,8 @@ async function signInAs(page: Page, persona: string) {
 test('a manager saves the work order filters as a view, reopens it and deletes it', async ({ page }) => {
   await signInAs(page, 'manager');
   await page.goto('/app/work-orders?view=all&priority=1');
-  const name = 'Emergency ' + Date.now();
+  // Parallel runs share this persona, and a view's name is unique for it, so the name must be too.
+  const name = `Emergency ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   await page.getByRole('button', { name: 'Save current filters as a view' }).click();
   await page.getByLabel('Name').fill(name);
   await page.getByRole('button', { name: 'Save view' }).click();

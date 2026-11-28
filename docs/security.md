@@ -8,7 +8,7 @@ Set in `apps/web/next.config.ts` on every page:
 
 - `Strict-Transport-Security: max-age=31536000`. No `includeSubDomains` or `preload` yet: they are hard to undo, so they are the owner's call.
 - `Content-Security-Policy` (enforced): `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `object-src 'none'`.
-- `Content-Security-Policy-Report-Only`: the full policy, set per request in `apps/web/middleware.ts`. Scripts need a fresh nonce (`'nonce-…'` with `'strict-dynamic'`), with no `'unsafe-inline'`; styles still allow `'unsafe-inline'` because React sets style attributes. It names `report-uri /csp-report`: browsers post each violation there (`apps/web/app/csp-report/route.ts`), and the route writes one `csp-violation` log line (directive, blocked origin, page origin, never a path or query string; bodies over 8 KB are refused and reports are capped per minute). Enforcing it is the last step of issue #122, once those log lines on the live site show nothing is blocked. Every page renders on demand, because a nonce changes with each request.
+- `Content-Security-Policy-Report-Only`: the full policy, set per request in `apps/web/middleware.ts`. Scripts need a fresh nonce (`'nonce-…'` with `'strict-dynamic'`), with no `'unsafe-inline'`; styles still allow `'unsafe-inline'` because React sets style attributes. It names `report-uri /csp-report`: browsers post each violation there (`apps/web/app/csp-report/route.ts`), and the route writes one `csp-violation` log line (directive, blocked origin, page origin, never a path or query string; bodies over 8 KB are refused and reports are capped at 120 a minute per instance, or `CSP_REPORT_MAX_PER_MINUTE`). Enforcing it is the last step of issue #122, once those log lines on the live site show nothing is blocked. Every page renders on demand, because a nonce changes with each request.
 - `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy`.
 
 ## API request log
@@ -28,11 +28,10 @@ Every API request writes one JSON line to standard output when it finishes:
 
 ## Dependency advisories
 
-`pnpm audit --prod` is the check. Four advisories are cleared with overrides in `pnpm-workspace.yaml`, where another package pins a version that has one (issue #128):
+`pnpm audit --prod` is the check. Three advisories are cleared with overrides in `pnpm-workspace.yaml`, where another package pins a version that has one (issue #128):
 
 | Override | Why | Remove when |
 | --- | --- | --- |
-| `multer` 2.5.0 | denial of service in an upload hook; reached through `@nestjs/platform-express` | NestJS ships a `multer` at 2.5.0 or later |
 | `next>postcss` | file read through source map comments; Next pins an old `postcss` | Next ships `postcss` 8.5.18 or later |
 | `@prisma/config>effect`, `@prisma/config>deepmerge-ts` | regular expression and stack exhaustion issues in two build-time helpers of the Prisma CLI | Prisma ships with fixed versions (they are build and command-line only, never in the running API) |
 

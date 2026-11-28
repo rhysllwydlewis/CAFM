@@ -14,7 +14,14 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant } from '@fmstead/db';
-import { localDate, MAX_TIME_PER_JOB, recordTimeSchema, timeCostMinor, UK_TIME_ZONE } from '@fmstead/shared';
+import {
+  localDate,
+  MAX_JOB_COST_MINOR,
+  MAX_TIME_PER_JOB,
+  recordTimeSchema,
+  timeCostMinor,
+  UK_TIME_ZONE,
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -73,6 +80,12 @@ export class WorkOrderTimeController {
         throw new UnprocessableEntityException('This work order already has the most time entries it can hold.');
       }
       const rate = await rateFor(tx, tenantId, input.labourType, role);
+      // A rate typed with a few zeros too many would make a cost no job can hold; say so instead of failing.
+      if (rate && timeCostMinor(input.minutes, rate.rateMinor) > MAX_JOB_COST_MINOR) {
+        throw new UnprocessableEntityException(
+          'The labour rate makes this time cost more than a job can hold. Ask Finance to check the rate.',
+        );
+      }
       const time = await tx.workOrderTime.create({
         data: {
           tenantId,

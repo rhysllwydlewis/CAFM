@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LABOUR_TYPES, MAX_UNIT_COST_MINOR } from './work-order-costs';
+import { LABOUR_TYPES, MAX_HOURLY_RATE_MINOR } from './work-order-costs';
 
 /** One entry is at most a day, so a slip of the keyboard (900 for 90) is caught. */
 export const MAX_TIME_MINUTES = 1440;
@@ -29,7 +29,7 @@ export const setLabourRateSchema = z
       .max(60)
       .regex(/^[a-z0-9_]*$/)
       .default(''),
-    rateMinor: z.number().int().min(0).max(MAX_UNIT_COST_MINOR),
+    rateMinor: z.number().int().min(0).max(MAX_HOURLY_RATE_MINOR),
   })
   .strict();
 
