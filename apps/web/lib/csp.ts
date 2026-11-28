@@ -18,5 +18,7 @@ export function buildReportOnlyCsp(nonce: string): string {
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
+    // Violations are posted to /csp-report, which logs them, so the live site shows what enforcing would block.
+    'report-uri /csp-report',
   ].join('; ');
 }
