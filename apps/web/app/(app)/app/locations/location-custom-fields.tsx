@@ -1,5 +1,6 @@
 import { Field, TextInput } from '@fmstead/ui';
 import type { FieldDefinition } from '@fmstead/config-engine';
+import { currencyDigits, minorToMoney, moneyToMinor } from '@/lib/money';
 import styles from './locations.module.css';
 
 const fieldName = (field: FieldDefinition) => 'custom-' + field.key;
@@ -30,11 +31,13 @@ export function readCustomFields(fields: FieldDefinition[], data: FormData) {
       const raw = String(data.get(name) ?? '');
       let value: unknown = raw || null;
       if (field.type === 'currency') {
-        const amount = data.get(name + '-amount');
-        const currency = data.get(name + '-currency');
+        const amount = String(data.get(name + '-amount') ?? '').trim();
+        const currency = String(data.get(name + '-currency') ?? '').toUpperCase();
+        // Typed as pounds and pence (or the currency's own units); held as whole minor units.
+        // Text that is not an amount goes on as it is, so the API can say so by the field's name.
         value =
           amount || currency
-            ? { amount: amount ? Number(amount) : null, currency: String(currency).toUpperCase() }
+            ? { amount: amount ? (moneyToMinor(amount, currencyDigits(currency)) ?? amount) : null, currency }
             : null;
       } else if (field.type === 'multi_select') value = data.getAll(name);
       else if (field.type === 'number' && raw) value = Number(raw);
@@ -64,13 +67,18 @@ export function LocationCustomFields({
           if (field.type === 'currency') {
             return (
               <div className="stack g2" key={field.key} role="group" aria-label={field.label}>
-                <Field label="Amount in minor units" htmlFor={id + '-amount'}>
+                <Field label="Amount" htmlFor={id + '-amount'}>
                   <TextInput
                     id={id + '-amount'}
                     name={id + '-amount'}
-                    type="number"
-                    step={1}
-                    defaultValue={isCurrency(value) ? value.amount : undefined}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="1250.00"
+                    pattern="[£$€]?[0-9,]+(\.[0-9]+)?"
+                    title="An amount such as 1250.00"
+                    defaultValue={
+                      isCurrency(value) ? minorToMoney(value.amount, currencyDigits(value.currency)) : undefined
+                    }
                     required={field.required}
                   />
                 </Field>

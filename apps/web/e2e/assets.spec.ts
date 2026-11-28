@@ -150,6 +150,12 @@ test('adds, edits and decommissions an asset, with a component, class details an
       type: 'text',
       required: true,
     });
+    await post('/config/fields', {
+      entityType: 'asset',
+      key: 'service_budget',
+      label: 'Service budget',
+      type: 'currency',
+    });
 
     // Accepting the invitation signed this browser in.
     await page.goto('/app/assets');
@@ -179,6 +185,14 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await page.getByRole('button', { name: 'Add asset' }).click();
     await expect(page.getByText('Enter the replacement cost as a plain amount')).toBeVisible();
     await page.getByLabel('Replacement cost (£)').fill('£18,500.50');
+    // A Money custom field is typed in pounds and pence too, not as pence.
+    const budget = page.getByRole('group', { name: 'Service budget' });
+    await expect(budget.getByLabel('Amount')).toBeVisible();
+    await budget.getByLabel('Currency code').fill('gbp');
+    await budget.getByLabel('Amount').fill('12.345');
+    await page.getByRole('button', { name: 'Add asset' }).click();
+    await expect(page.getByText('Service budget must be an amount, like 1250.00')).toBeVisible();
+    await budget.getByLabel('Amount').fill('1,250.5');
     await page.getByRole('button', { name: 'Add asset' }).click();
 
     await expect(page.getByRole('heading', { level: 1, name: 'Boiler A' })).toBeVisible();
@@ -187,17 +201,20 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await expect(page.getByText('Gas', { exact: true })).toBeVisible();
     await expect(page.getByText('£18,500.50').first()).toBeVisible();
     await expect(page.getByText('CC-410')).toBeVisible();
+    await expect(page.getByText('£1,250.50')).toBeVisible();
     await expect(page.getByText('Test site › Plant room')).toBeVisible();
     await assertAccessible(page);
     // Money is stored as whole pence.
     const stored = await db.asset.findFirstOrThrow({ where });
     expect([stored.replacementCostMinor, stored.currency]).toEqual([1_850_050, 'GBP']);
+    expect(stored.custom).toMatchObject({ service_budget: { amount: 125_050, currency: 'GBP' } });
 
     // Edit: the form starts from what was saved.
     await page.getByRole('link', { name: 'Edit', exact: true }).click();
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Boiler A');
     await expect(page.getByLabel('Output (kW)')).toHaveValue('254');
     await expect(page.getByLabel('Replacement cost (£)')).toHaveValue('18500.50');
+    await expect(page.getByRole('group', { name: 'Service budget' }).getByLabel('Amount')).toHaveValue('1250.50');
     await assertAccessible(page);
     await page.getByLabel('Name', { exact: true }).fill('Boiler A (main)');
     await page.getByLabel('Condition', { exact: true }).selectOption('B');

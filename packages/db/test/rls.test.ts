@@ -239,6 +239,30 @@ describe('row-level security on access, audit and outbox tables', () => {
     expect(again.find((c) => c.id === msg.id)).toBeUndefined();
   });
 
+  it('audit events and entitlement overrides are visible only to their own organisation', async () => {
+    const event = await withTenant(db, starter, (tx) =>
+      tx.auditEvent.create({ data: { tenantId: starter, action: 'test.rls.isolation', entityType: 'test' } }),
+    );
+    const seen = (tx: Tx) => tx.auditEvent.findMany({ where: { id: event.id } });
+    expect(await withTenant(db, starter, seen)).toHaveLength(1);
+    expect(await withTenant(db, demo, seen)).toEqual([]);
+    expect(await seen(db)).toEqual([]);
+    // Overrides are written by the owner role (the platform CLI); the app reads only its own organisation's.
+    const owner = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+    try {
+      const row = await owner.tenantEntitlement.create({
+        data: { tenantId: starter, feature: 'rls_isolation_check', enabled: true },
+      });
+      const found = (tx: Tx) => tx.tenantEntitlement.findMany({ where: { id: row.id } });
+      expect(await withTenant(db, starter, found)).toHaveLength(1);
+      expect(await withTenant(db, demo, found)).toEqual([]);
+      expect(await found(db)).toEqual([]);
+      await owner.tenantEntitlement.delete({ where: { id: row.id } });
+    } finally {
+      await owner.$disconnect();
+    }
+  });
+
   it('entitlement overrides are read-only for the app', async () => {
     const write = withTenant(db, starter, (tx) =>
       tx.tenantEntitlement.create({ data: { tenantId: starter, feature: 'space', enabled: true } }),

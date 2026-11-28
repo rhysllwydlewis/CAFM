@@ -75,6 +75,11 @@ describe('custom field values', () => {
     });
   });
 
+  it('says a money amount that is not a number is not an amount', () => {
+    const result = validateCustom(fields, { contract_ref: 'C-1', budget: { amount: '12.345', currency: 'GBP' } });
+    expect(result).toMatchObject({ success: false, errors: { budget: 'Budget must be an amount, like 1250.00' } });
+  });
+
   it('allows optional fields to be empty', () => {
     expect(validateCustom(fields, { contract_ref: 'C-1', notes: null })).toMatchObject({ success: true });
   });

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { CoreModule } from './core/core.module';
 import { CsrfGuard } from './core/csrf.guard';
+import { NulGuard } from './core/nul.guard';
 import { HealthController } from './core/health.controller';
 import { AuditModule } from './modules/audit/audit.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -39,6 +40,9 @@ import { RolesModule } from './modules/roles/roles.module';
     ReportsModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: CsrfGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: CsrfGuard },
+    { provide: APP_GUARD, useClass: NulGuard },
+  ],
 })
 export class AppModule {}
