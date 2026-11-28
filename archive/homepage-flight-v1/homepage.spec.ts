@@ -11,8 +11,10 @@ async function scrollFilm(page: Page, share: number) {
 }
 
 // A headline is two block lines with no space between them in the text, so match the words with optional space.
+// Every character that means something in a regular expression, backslash included, is escaped first.
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const chapter = (page: Page, text: string) =>
-  page.locator('[data-chapter]').filter({ hasText: new RegExp(text.replace(/[.,]/g, '\\$&').replace(/ /g, '\\s*')) });
+  page.locator('[data-chapter]').filter({ hasText: new RegExp(escapeRegExp(text).replace(/ /g, '\\s*')) });
 const tag = (page: Page, text: string) => page.locator('[data-tag]').filter({ hasText: text });
 const altitude = (page: Page) => page.locator('[data-altitude-number]');
 
