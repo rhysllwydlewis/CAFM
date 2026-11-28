@@ -857,6 +857,7 @@ it('isolates labour rates and recorded time and refuses what the API never produ
     );
   await expect(rate(demo, { labourType: 'holiday' })).rejects.toThrow(/labour_rate_type_valid/);
   await expect(rate(demo, { rateMinor: -1 })).rejects.toThrow(/labour_rate_amount_valid/);
+  await expect(rate(demo, { rateMinor: 40_000_001 })).rejects.toThrow(/labour_rate_amount_valid/);
   await expect(rate(demo, { currency: 'pounds' })).rejects.toThrow(/labour_rate_currency_valid/);
   await expect(rate(demo, { labourType: 'on_site', roleKey: '' })).rejects.toThrow(/Unique constraint/);
 
@@ -881,6 +882,7 @@ it('isolates labour rates and recorded time and refuses what the API never produ
   await expect(time(demo, { minutes: 1441 })).rejects.toThrow(/work_order_time_minutes_valid/);
   await expect(time(demo, { labourType: 'holiday' })).rejects.toThrow(/work_order_time_type_valid/);
   await expect(time(demo, { rateMinor: -5 })).rejects.toThrow(/work_order_time_rate_valid/);
+  await expect(time(demo, { rateMinor: 40_000_001 })).rejects.toThrow(/work_order_time_rate_valid/);
 });
 
 it('isolates teams and their members, and rejects a cross-tenant member', async () => {

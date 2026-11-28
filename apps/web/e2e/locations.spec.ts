@@ -21,6 +21,10 @@ async function assertAccessible(page: Page) {
 
 test('searches and opens a site, filters the portfolio and prints matching QR labels', async ({ page }) => {
   test.setTimeout(60_000);
+  const workerErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /worker/i.test(message.text())) workerErrors.push(message.text());
+  });
   await page.route('https://tile.openstreetmap.org/**', (route) =>
     route.fulfill({
       contentType: 'image/png',
@@ -45,6 +49,10 @@ test('searches and opens a site, filters the portfolio and prints matching QR la
   await page.getByRole('link', { name: 'Portfolio map' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Portfolio map' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Site map' })).toBeVisible();
+  // The map draws, and its worker (a separate file since maplibre-gl 6) loaded.
+  await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect(workerErrors).toEqual([]);
   await assertAccessible(page);
   await page.getByRole('searchbox', { name: 'Filter sites' }).fill('Cardiff HQ');
   await page.getByLabel('Site status').selectOption('closed');
