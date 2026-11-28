@@ -1017,3 +1017,30 @@ it('isolates saved list views and refuses a view owned by another organisationâ€
     await withTenant(db, demo, (tx) => tx.savedView.deleteMany({ where: { id: created.id } }));
   }
 });
+
+it('has row-level security on every table with a tenant_id, except the three recorded in doc 05', async () => {
+  // A table that carries tenant_id but has row security off is a way for one organisation to read another's rows.
+  // Three are exempt on purpose (docs/plan/05-data-model.md, "Tables without row-level security"). Any new one must
+  // either get policies, or be added to that list with its reason and to this one.
+  const rows = await db.$queryRaw<{ table: string }[]>`
+    SELECT c.relname AS "table"
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid
+    WHERE n.nspname = 'public' AND c.relkind = 'r' AND a.attname = 'tenant_id'
+      AND a.attnum > 0 AND NOT a.attisdropped AND NOT c.relrowsecurity
+    ORDER BY 1`;
+  expect(rows.map((r) => r.table)).toEqual(['auth_event', 'captured_email', 'session']);
+});
+
+it('has at least one policy on every table that has row-level security switched on', async () => {
+  const rows = await db.$queryRaw<{ table: string }[]>`
+    SELECT c.relname AS "table"
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity
+      AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid)
+    ORDER BY 1`;
+  // Row security on with no policy denies everything: a table that nothing can read or write.
+  expect(rows.map((r) => r.table)).toEqual([]);
+});
