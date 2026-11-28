@@ -104,6 +104,17 @@ test('a PR must say what it progresses', () => {
   assert.deepEqual(prProblems({ body: 'Progress: none - updates the README wording', base: head, head }), []);
 });
 
+test("a pull request without a Progress line fails, except Dependabot's own", () => {
+  const base = tracker();
+  assert.match(
+    prProblems({ body: 'Bumps lodash from 4.17.20 to 4.17.21.', base, head: base })[0],
+    /needs a "Progress:" line/,
+  );
+  assert.deepEqual(prProblems({ body: 'Bumps lodash from 4.17.20 to 4.17.21.', base, head: base, bot: true }), []);
+  // A bot-opened pull request that does write a Progress line is still checked like any other.
+  assert.match(prProblems({ body: 'Progress: P1-01 done', base, head: base, bot: true })[0], /tick it/);
+});
+
 test('done means ticked, and in progress means claimed', () => {
   const base = tracker();
   assert.match(prProblems({ body: 'Progress: P1-01 done', base, head: base })[0], /tick it/);

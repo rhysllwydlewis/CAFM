@@ -18,7 +18,7 @@
     "@fmstead/config-engine": "workspace:*",
     "@fmstead/shared": "workspace:*",
     "@prisma/client": "6.19.3",
-    "argon2": "0.45.1",
+    "argon2": "0.45.2",
     "prisma": "6.19.3"
   },
   "devDependencies": {
