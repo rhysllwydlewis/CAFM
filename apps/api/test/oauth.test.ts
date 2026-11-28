@@ -2,10 +2,12 @@ import { createHash, randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { MOBILE_CLIENT_ID } from '@fmstead/shared';
-import { signIn, startApp } from './helpers';
+import { MOBILE_CLIENT_ID, MOBILE_DEVICE_LIMIT } from '@fmstead/shared';
+import { hashToken } from '../src/core/session';
+import { ownerDb, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
+const owner = ownerDb();
 const http = () => request(app.getHttpServer());
 
 beforeAll(async () => {
@@ -13,6 +15,7 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await app.close();
+  await owner.$disconnect();
 });
 
 function pkce() {
@@ -115,7 +118,7 @@ describe('mobile OAuth with PKCE', () => {
       .expect(400);
   });
 
-  it('rotates refresh tokens and signs the device out if an old one is replayed', async () => {
+  it('rotates refresh tokens, and answers a retry of the last one with a fresh pair', async () => {
     const { res } = await pairDevice('technician@demo.example');
     const first = res.body;
     const second = await refresh(first.refresh_token);
@@ -125,11 +128,76 @@ describe('mobile OAuth with PKCE', () => {
     await http().get('/api/auth/me').set('Authorization', `Bearer ${first.access_token}`).expect(401);
     await http().get('/api/auth/me').set('Authorization', `Bearer ${second.body.access_token}`).expect(200);
 
+    // The answer to that refresh may never have reached the phone, so it retries with the old token. Within a short
+    // window that is a retry, not theft: it gets a working pair and is not signed out.
+    const retry = await refresh(first.refresh_token);
+    expect(retry.status).toBe(200);
+    expect(retry.body.refresh_token).not.toBe(second.body.refresh_token);
+    await http().get('/api/auth/me').set('Authorization', `Bearer ${retry.body.access_token}`).expect(200);
+    expect((await refresh(retry.body.refresh_token)).status).toBe(200);
+  });
+
+  it('signs the device out when the previous token is replayed after the window, and refuses older ones', async () => {
+    const { res } = await pairDevice('technician@demo.example');
+    const first = res.body;
+    const second = await refresh(first.refresh_token);
+    expect(second.status).toBe(200);
+    // Make that change look two minutes old: past the window.
+    await owner.mobileDevice.updateMany({
+      where: { previousHash: hashToken(first.refresh_token) },
+      data: { refreshRotatedAt: new Date(Date.now() - 2 * 60 * 1000) },
+    });
     const replay = await refresh(first.refresh_token);
     expect(replay.status).toBe(400);
     // The replay revoked the whole device, including the newest tokens.
     await http().get('/api/auth/me').set('Authorization', `Bearer ${second.body.access_token}`).expect(401);
     expect((await refresh(second.body.refresh_token)).status).toBe(400);
+
+    // A token from two changes back is refused too, though only the previous one is remembered, so it is not a sign-out.
+    const other = await pairDevice('technician@demo.example');
+    const a = other.res.body;
+    const b = await refresh(a.refresh_token);
+    const c = await refresh(b.body.refresh_token);
+    expect(c.status).toBe(200);
+    expect((await refresh(a.refresh_token)).status).toBe(400);
+    await http().get('/api/auth/me').set('Authorization', `Bearer ${c.body.access_token}`).expect(200);
+  });
+
+  it('keeps at most ten phones signed in for a person, signing out the least recently used', async () => {
+    const account = await owner.account.findUniqueOrThrow({ where: { email: 'planner@demo.example' } });
+    await owner.session.deleteMany({ where: { accountId: account.id, deviceId: { not: null } } });
+    await owner.mobileDevice.deleteMany({ where: { accountId: account.id } });
+    const phones = [];
+    for (let i = 0; i < MOBILE_DEVICE_LIMIT + 2; i += 1)
+      phones.push(await pairDevice('planner@demo.example', `Phone ${i}`));
+    const active = await owner.mobileDevice.count({ where: { accountId: account.id, revokedAt: null } });
+    expect(active).toBe(MOBILE_DEVICE_LIMIT);
+    // The newest works; the two that were never used since are the ones signed out.
+    await http()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${phones.at(-1)!.res.body.access_token}`)
+      .expect(200);
+    await http().get('/api/auth/me').set('Authorization', `Bearer ${phones[0]!.res.body.access_token}`).expect(401);
+    expect((await refresh(phones[0]!.res.body.refresh_token)).status).toBe(400);
+    await owner.session.deleteMany({ where: { accountId: account.id, deviceId: { not: null } } });
+    await owner.mobileDevice.deleteMany({ where: { accountId: account.id } });
+  });
+
+  it('clears expired approval codes when another is approved', async () => {
+    const account = await owner.account.findUniqueOrThrow({ where: { email: 'technician@demo.example' } });
+    const membership = await owner.membership.findFirstOrThrow({ where: { accountId: account.id } });
+    const stale = await owner.oauthCode.create({
+      data: {
+        codeHash: `stale-${randomBytes(8).toString('hex')}`,
+        codeChallenge: 'x',
+        accountId: account.id,
+        membershipId: membership.id,
+        deviceName: 'Old approval',
+        expiresAt: new Date(Date.now() - 60 * 60 * 1000),
+      },
+    });
+    await pairDevice('technician@demo.example');
+    expect(await owner.oauthCode.findUnique({ where: { id: stale.id } })).toBeNull();
   });
 
   it('lists a person’s own devices and lets them sign one out', async () => {
