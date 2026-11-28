@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon, Logo, Wordmark, initials } from '@fmstead/ui';
 import { t } from '@/lib/i18n';
+import { activeNavItem } from './active-nav';
 import { UserMenu } from './user-menu';
 import type { ShellNavSection, ShellOrganisation } from './types';
 
@@ -46,6 +47,10 @@ export function SideNav({
   onToggleCollapsed,
 }: Props) {
   const pathname = usePathname();
+  const activeHref = activeNavItem(
+    sections.flatMap((s) => s.items),
+    pathname,
+  )?.href;
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -100,7 +105,7 @@ export function SideNav({
             <div className="nav-sec" key={section.label || 'main'}>
               {section.label && <div className="nav-label">{section.label}</div>}
               {section.items.map((item) => {
-                const active = item.href === '/app' ? pathname === '/app' : pathname.startsWith(item.href);
+                const active = item.href === activeHref;
                 return (
                   <Link
                     key={item.key}

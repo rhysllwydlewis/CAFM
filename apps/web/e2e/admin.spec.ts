@@ -508,7 +508,11 @@ test('a Super User makes a username-only account, which signs in on the organisa
 test('a Super User checks, imports and undoes a locations file', async ({ page }) => {
   await signInAs(page, 'superuser');
   await page.goto('/app/admin');
-  await page.getByRole('link', { name: 'Import and export' }).click();
+  // The side menu has an Import and export entry too, so say which menu this means.
+  await page
+    .getByRole('navigation', { name: 'Administration' })
+    .getByRole('link', { name: 'Import and export' })
+    .click();
   await expect(page).toHaveURL(/\/app\/admin\/import$/);
   await expect(page.getByRole('heading', { name: 'Import from CSV' })).toBeVisible();
   await assertAccessible(page);

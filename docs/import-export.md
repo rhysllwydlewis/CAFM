@@ -4,7 +4,7 @@ Estate data can be downloaded as CSV files. Locations, assets and people can be 
 
 ## The screen
 
-Administration, **Import and export** (`/app/admin/import`) holds all of it. Pick what to import, download the template, choose your file and it is checked straight away. Problems are listed by line and column, with a button for the full error report as a file. The **Import** button works only when the file has no problems. **Recent imports** lists the last imports of each kind with an **Undo** button. **Export to CSV** downloads the files described next. You see only the kinds you have permission for (and your plan includes).
+Administration, **Import and export** (`/app/admin/import`) holds all of it. It has its own entry in the side menu, under More, shown to anyone who can import or export any kind of data. That includes a Planner, who has no Administration item. Pick what to import, download the template, choose your file and it is checked straight away. Problems are listed by line and column, with a button for the full error report as a file. The **Import** button works only when the file has no problems. **Recent imports** lists the last imports of each kind with an **Undo** button. **Export to CSV** downloads the files described next. You see only the kinds you have permission for (and your plan includes).
 
 ## Exports
 
