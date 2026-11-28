@@ -38,3 +38,6 @@ Every API request writes one JSON line to standard output when it finishes:
 
 Two advisories are left, because each needs a major upgrade with code changes and its own pull request: `zod` 3 to 4 (memory use on very large arrays; request bodies are already capped at 100 kB) and `maplibre-gl` 5 to 6 (a sanitiser bypass in a function this app does not call). Both are tracked on issue #128.
 
+## Null characters
+
+Postgres cannot store a NUL character (U+0000), so one in a search term or a saved name used to reach the database and come back as a `500`. A global guard (`apps/api/src/core/nul.guard.ts`) now refuses a request with one in its address, query string, route parameters or JSON body (keys included) with `400` and the code `invalid_character`. It covers every route at once, including ones that read the query themselves. It runs before the session check, so an unauthenticated request with one gets the `400` too. Uploaded files are not searched.
