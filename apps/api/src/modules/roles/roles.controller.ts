@@ -15,7 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { withTenant } from '@fmstead/db';
+import { withTenant, type Tx } from '@fmstead/db';
 import { createRoleSchema, updateRoleSchema } from '@fmstead/shared';
 import { assertCanGrant, assertNotDemoLocked } from '../../core/access-rules';
 import { audit } from '../../core/audit';
@@ -32,6 +32,18 @@ function slug(name: string): string {
       .replace(/^_|_$/g, '')
       .slice(0, 48)
   );
+}
+
+/**
+ * Role names are shown side by side in pickers, so no two may match, whatever the case. The check covers the
+ * built-in roles as well, which stops a custom role passing for one of them.
+ */
+async function assertNameFree(tx: Tx, tenantId: string, name: string, exceptId?: string): Promise<void> {
+  const clash = await tx.role.findFirst({
+    where: { tenantId, name: { equals: name, mode: 'insensitive' }, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { id: true },
+  });
+  if (clash) throw new ConflictException({ code: 'role_exists', message: 'A role with that name already exists.' });
 }
 
 /** Roles inside the current organisation (doc 03). */
@@ -71,6 +83,7 @@ export class RolesController {
     assertCanGrant(auth.access!, auth.membership!.role, input.permissions);
     const tenantId = auth.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
+      await assertNameFree(tx, tenantId, input.name);
       const key = slug(input.name);
       if (await tx.role.findUnique({ where: { tenantId_key: { tenantId, key } } })) {
         throw new ConflictException({ code: 'role_exists', message: 'A role with that name already exists.' });
@@ -106,6 +119,7 @@ export class RolesController {
       if (!role) throw new NotFoundException();
       if (role.key === 'super_user') throw new ForbiddenException({ code: 'super_user_role_locked' });
       assertNotDemoLocked(role.builtin);
+      if (input.name !== undefined) await assertNameFree(tx, tenantId, input.name, id);
       // Editing a role is granting its permissions: check both the old and the new set.
       assertCanGrant(auth.access!, auth.membership!.role, role.permissions);
       if (input.permissions) assertCanGrant(auth.access!, auth.membership!.role, input.permissions);
