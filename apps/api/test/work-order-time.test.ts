@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@fmstead/db';
 import { formatMinutes, timeCostMinor } from '@fmstead/shared';
@@ -100,6 +100,37 @@ async function fixture() {
     entry,
   };
 }
+
+describe('the day time is filed on', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('is the London day, so work just after midnight in summer is not filed on the day before', async () => {
+    const { cleanup, accounts, tech, job, entry } = await fixture();
+    try {
+      const mine = await job(accounts.tech.memberships[0]!);
+      const url = `/api/work-orders/${mine.id}/time`;
+      // 23:30 UTC on 14 July is 00:30 on the 15th in London. Only the clock is faked, so sign-in and the database
+      // carry on as normal.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-07-14T23:30:00Z'));
+      const made = (
+        await tech
+          .post(url)
+          .send(entry({ workedOn: '2026-07-15' }))
+          .expect(201)
+      ).body;
+      expect(made.items[0].workedOn).toBe('2026-07-15');
+      // Still not in the future by London's clock: the 16th is.
+      await tech
+        .post(url)
+        .send(entry({ workedOn: '2026-07-16' }))
+        .expect(422);
+    } finally {
+      vi.useRealTimers();
+      await cleanup();
+    }
+  });
+});
 
 describe('labour rates', () => {
   it('are set by the people who hold the permission and seen by those who can see costs', async () => {
