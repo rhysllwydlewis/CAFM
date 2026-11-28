@@ -6,6 +6,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
+- Security: dependencies with known advisories were updated or pinned to fixed versions (file uploads, the page builder's CSS tooling and two helpers of the database command-line tool). Seven of the nine advisories found in the code audit are cleared; the two that remain need major upgrades and are tracked separately. Nothing changes for people using the product.
 - A person whose password an administrator generated, such as a new username-only account or a reset, must now choose their own password at their first sign-in. Until they do, they are taken to a Choose your own password page and nothing else opens. See [Username-only accounts](docs/admin.md#username-only-accounts).
 - Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
 - The full content security policy in report-only mode now sends violation reports to the site, which logs each one without any page path or query string, so we can see what enforcing it would block. Nothing changes for people using the product.
