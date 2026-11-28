@@ -128,6 +128,14 @@
     "file": "01-auth-home.js"
   },
   {
+    "id": "auth-09-password-change-required",
+    "group": "Sign in",
+    "title": "Choose your own password (set by an administrator)",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "01-auth-home.js"
+  },
+  {
     "id": "auth-05-select-org",
     "group": "Sign in",
     "title": "Choose organisation",

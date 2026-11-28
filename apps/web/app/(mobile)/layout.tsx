@@ -18,6 +18,8 @@ export default async function MobileLayout({ children }: { children: ReactNode }
   const user = await currentUser('/m');
   // The job sync is refused until two-step verification is set up, so send the person to set it up first.
   if (user.mfaSetupRequired) redirect('/mfa-setup');
+  // The job sync is refused until the person has chosen their own password too.
+  if (user.passwordChangeRequired) redirect('/password-change');
   return (
     <MobileShell membershipId={user.membershipId}>
       {user.impersonation && <ImpersonationBanner viewing={user.name} {...user.impersonation} />}
