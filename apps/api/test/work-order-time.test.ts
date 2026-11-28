@@ -2,7 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@fmstead/db';
-import { formatMinutes, MAX_HOURLY_RATE_MINOR, MAX_JOB_COST_MINOR, timeCostMinor } from '@fmstead/shared';
+import {
+  formatMinutes,
+  MAX_HOURLY_RATE_MINOR,
+  MAX_JOB_COST_MINOR,
+  timeCostMinor,
+  timeCostTooLarge,
+} from '@fmstead/shared';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -27,6 +33,13 @@ describe('time arithmetic', () => {
     // A whole day at the highest rate allowed always fits in one job's cost.
     expect(timeCostMinor(1440, MAX_HOURLY_RATE_MINOR)).toBe(960_000_000);
     expect(timeCostMinor(1440, MAX_HOURLY_RATE_MINOR)).toBeLessThanOrEqual(MAX_JOB_COST_MINOR);
+  });
+  it('refuses a rate that can no longer be used, including one saved before the ceiling came down', () => {
+    expect(timeCostTooLarge(1440, MAX_HOURLY_RATE_MINOR)).toBe(false);
+    // £500,000 an hour: allowed once, and not copyable onto a new entry now, even for an hour whose cost would fit.
+    expect(timeCostTooLarge(60, 50_000_000)).toBe(true);
+    expect(timeCostTooLarge(1440, 100_000_000)).toBe(true);
+    expect(timeCostTooLarge(60, 4_800)).toBe(false);
   });
   it('shows minutes plainly', () => {
     expect([formatMinutes(45), formatMinutes(60), formatMinutes(90), formatMinutes(0)]).toEqual([

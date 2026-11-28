@@ -28,13 +28,18 @@ import { dataScope, visibleMembers } from '../../core/data-scope';
 const teamExists = () =>
   new ConflictException({ code: 'team_exists', message: 'A team with that name already exists.' });
 
-/** Team names are compared without regard to case, so "North Region" and "north region" are one team. */
+/**
+ * Team names are compared without regard to case, so "North Region" and "north region" are one team. It is a plain
+ * lower-case equality: the `insensitive` filter would treat `%` and `_` in a name as wildcards.
+ */
 async function assertNameFree(tx: Tx, tenantId: string, name: string, exceptId?: string): Promise<void> {
-  const clash = await tx.team.findFirst({
-    where: { tenantId, name: { equals: name, mode: 'insensitive' }, ...(exceptId ? { id: { not: exceptId } } : {}) },
-    select: { id: true },
-  });
-  if (clash) throw teamExists();
+  const except = exceptId ?? null;
+  const clash = await tx.$queryRaw<{ id: string }[]>`
+    SELECT id FROM team
+    WHERE tenant_id = ${tenantId}::uuid AND lower(name) = lower(${name})
+      AND (${except}::uuid IS NULL OR id <> ${except}::uuid)
+    LIMIT 1`;
+  if (clash.length > 0) throw teamExists();
 }
 
 /** Two requests with the same name at once: the unique index decides, and the loser is told so. */

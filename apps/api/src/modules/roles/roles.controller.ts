@@ -39,11 +39,15 @@ function slug(name: string): string {
  * built-in roles as well, which stops a custom role passing for one of them.
  */
 async function assertNameFree(tx: Tx, tenantId: string, name: string, exceptId?: string): Promise<void> {
-  const clash = await tx.role.findFirst({
-    where: { tenantId, name: { equals: name, mode: 'insensitive' }, ...(exceptId ? { id: { not: exceptId } } : {}) },
-    select: { id: true },
-  });
-  if (clash) throw new ConflictException({ code: 'role_exists', message: 'A role with that name already exists.' });
+  // A plain lower-case equality: the `insensitive` filter would treat `%` and `_` in a name as wildcards.
+  const except = exceptId ?? null;
+  const clash = await tx.$queryRaw<{ id: string }[]>`
+    SELECT id FROM role
+    WHERE tenant_id = ${tenantId}::uuid AND lower(name) = lower(${name})
+      AND (${except}::uuid IS NULL OR id <> ${except}::uuid)
+    LIMIT 1`;
+  if (clash.length > 0)
+    throw new ConflictException({ code: 'role_exists', message: 'A role with that name already exists.' });
 }
 
 /** Roles inside the current organisation (doc 03). */

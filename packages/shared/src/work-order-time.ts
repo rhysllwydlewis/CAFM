@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LABOUR_TYPES, MAX_HOURLY_RATE_MINOR } from './work-order-costs';
+import { LABOUR_TYPES, MAX_HOURLY_RATE_MINOR, MAX_JOB_COST_MINOR } from './work-order-costs';
 
 /** One entry is at most a day, so a slip of the keyboard (900 for 90) is caught. */
 export const MAX_TIME_MINUTES = 1440;
@@ -36,6 +36,14 @@ export const setLabourRateSchema = z
 /** Minutes at an hourly rate in whole minor units, rounded half up. */
 export function timeCostMinor(minutes: number, hourlyRateMinor: number): number {
   return Math.floor((minutes * hourlyRateMinor + 30) / 60);
+}
+
+/**
+ * True when a rate can't be used for this time: it is above today's ceiling (a rate saved before the ceiling was
+ * lowered, which the database would refuse to copy onto a new entry), or the cost is more than one job can hold.
+ */
+export function timeCostTooLarge(minutes: number, hourlyRateMinor: number): boolean {
+  return hourlyRateMinor > MAX_HOURLY_RATE_MINOR || timeCostMinor(minutes, hourlyRateMinor) > MAX_JOB_COST_MINOR;
 }
 
 /** "1 h 30 min", "45 min". */

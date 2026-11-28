@@ -16,7 +16,7 @@ Errors follow RFC 6749: `400 { "error": "invalid_grant" }`. A failed code or ref
 
 ### Stolen and lost devices
 
-- **A lost answer is forgiven; a copied token is not.** If the previous refresh token is used again within 60 seconds of the change, the phone most likely never received the answer (poor signal). It is treated as a retry and answered with a fresh pair, and the device stays signed in (`mobile_refresh_retry`). If the previous token is used again after that, the device was copied: the whole device is signed out, and the person signs in again (`mobile_refresh_reuse`). This is deliberate. A token from two changes back is simply refused.
+- **A lost answer is forgiven; a copied token is not.** If the previous refresh token is used again within 60 seconds of the change, the phone most likely never received the answer (poor signal). It is treated as a retry and answered with a fresh pair, and the device stays signed in (`mobile_refresh_retry`). If the previous token is used again after that, the device was copied: the whole device is signed out, and the person signs in again (`mobile_refresh_reuse`). This is deliberate. The retry can be repeated for as long as the 60 seconds last, counted from the first change, so a second lost answer does not strand the phone. A token from two changes back is simply refused.
 - **At most 10 phones per person.** Approving an eleventh signs out the one used least recently (`mobile_device_limit`).
 - `GET /api/oauth/devices` lists your devices. `DELETE /api/oauth/devices/:id` signs one out at once. You can only see and remove your own.
 - `POST /api/oauth/revoke` with a refresh token signs that device out. It always answers 200, so tokens can't be probed.

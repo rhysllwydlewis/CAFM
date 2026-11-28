@@ -20,6 +20,17 @@ describe('looking for a NUL character', () => {
     expect(holdsNul({ 'na\u0000me': 'ok' })).toBe(true);
     expect(holdsNul({ a: [{ b: ['fine', { c: 'x\u0000' }] }] })).toBe(true);
   });
+  it('finds one behind a long array, which used to overflow the stack or use up the search', () => {
+    const padding = Array.from({ length: 300_000 }, () => 0);
+    // A long array of numbers is searched without error, and is not a NUL.
+    expect(holdsNul({ padding })).toBe(false);
+    // A NUL after plenty of padding is still found, whichever key comes first.
+    expect(holdsNul({ padding, name: 'a\u0000b' })).toBe(true);
+    expect(holdsNul({ name: 'a\u0000b', padding })).toBe(true);
+  });
+  it('refuses a value too large to search completely, rather than passing it unsearched', () => {
+    expect(holdsNul(Array.from({ length: 1_000_001 }, () => 0))).toBe(true);
+  });
   it('leaves ordinary text, numbers and empty values alone', () => {
     for (const value of [
       'plain',
