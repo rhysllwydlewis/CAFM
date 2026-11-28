@@ -49,6 +49,22 @@ const navScrollHint = shell({
   toggle: true,
 }).replace('<div class="app', '<div style="height:100vh;min-height:0;grid-template-rows:minmax(0,1fr)" class="app');
 
+// A Planner has no Administration item, but can import and export planned maintenance schedules, so the menu offers
+// Import and export on its own (issue #104). Anyone with an Administration item sees both.
+const navImportExport = shell({
+  active: 'import-export',
+  crumbs: ['Demo Estates Ltd', 'Import and export'],
+  title: 'Import and export',
+  sub: 'Bring data in from a spreadsheet, or take a copy out.',
+  user: { user: 'Priya Shah', role: 'Planner', admin: false, importExport: true },
+  body: [
+    card(
+      'What you can move',
+      `<div class="muted">You can import and export planned maintenance schedules. Locations, assets and people are not in your role.</div>`,
+    ),
+  ],
+});
+
 const placeholder = (active, title, crumbs, icon, heading, text, extra = '') =>
   shell({
     active,
@@ -103,4 +119,5 @@ export default [
   { id: 'shell-05-nav-expanded', group: 'App shell', title: 'Side menu with a collapse button', desc: 'On a desktop the side menu has a button beside the logo that collapses it to a slim icon rail. Not shown on a phone, where the menu is a drawer.', html: navExpanded },
   { id: 'shell-06-nav-collapsed', group: 'App shell', title: 'Side menu collapsed', desc: 'A 64px rail of icons that leaves more room for the page. Hover or focus an icon to see its name beside the rail (shown here on Helpdesk); the button under the logo opens the menu again. The choice is remembered.', html: navCollapsed },
   { id: 'shell-07-nav-scroll-hint', group: 'App shell', title: 'Side menu that scrolls', desc: 'When the menu is longer than the window, a soft glow on its lower edge shows there is more below. It moves to the top edge once you have scrolled, and disappears at each end. The scrollbar itself still fades in on hover.', viewport: 'short', html: navScrollHint },
+  { id: 'shell-08-nav-import-export', group: 'App shell', title: 'Side menu with Import and export', desc: 'People who can import or export data, but have no Administration item (a Planner, for example), get an Import and export entry in the menu. People who have both see both. The entry opens the same screen as Administration, Import and export.', html: navImportExport },
 ];
