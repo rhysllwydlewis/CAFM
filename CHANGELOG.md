@@ -6,6 +6,9 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
+- Phone app: a poor signal no longer signs a technician out. If the answer to a sign-in refresh is lost, the phone's retry within a minute is answered with a fresh sign-in instead of being treated as a stolen device. A person can also have at most 10 phones signed in, and expired approval codes are cleared automatically. See [mobile](docs/mobile.md#stolen-and-lost-devices).
+- Time recorded on a phone is filed on the London day, so work between midnight and 1am in summer is no longer filed on the day before.
+- The Business calendars screen counts only closures that are still ahead, and the roles screen no longer shows its confirmation again when the page is reloaded.
 - Import and export now has its own entry in the side menu, shown to anyone who can import or export data. Before, people such as Planners, who have no Administration item, and FM Managers, who are sent back from the Administration page, had no way to find it. When it is open, only Import and export is marked as the current item.
 - A person whose password an administrator generated, such as a new username-only account or a reset, must now choose their own password at their first sign-in. Until they do, they are taken to a Choose your own password page and nothing else opens. See [Username-only accounts](docs/admin.md#username-only-accounts).
 - Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
@@ -93,7 +96,6 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Fixed
 
-- Labour rates are now capped at £400,000 an hour, so recording a whole day of time at the highest rate can no longer fail with an error. If a rate saved earlier is still too high for the time recorded, the technician now sees a message that points at the rate instead of a server error.
 - Phone app: the QR scanner can now use the camera. The site was telling the browser to keep the camera off for everyone, so the scan screen only ever offered typing the number.
 - Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
 
@@ -102,6 +104,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 - Business calendars: the warning for a site with no calendar now says what its service level clocks really use, the default hours (Monday to Friday, 09:00 to 17:00, UK time), instead of saying they run around the clock. The screen also pages through organisations with more than 100 sites, instead of stopping silently at 500, and its count of sites without a calendar covers every site.
 
 - Roles and permissions: the confirmation after creating, duplicating or deleting a role now stays on screen. It used to vanish if the page reloaded first.
+- Labour rates are now capped at £400,000 an hour, so recording a whole day of time at the highest rate can no longer fail with an error. If a rate saved earlier is still too high for the time recorded, the technician now sees a message that points at the rate instead of a server error.
 
 ### Changed
 

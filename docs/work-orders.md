@@ -81,7 +81,7 @@ The job page has a **Costs** card for what the job has cost, and the work order 
 
 ## Time and labour rates
 
-People record the time they spend on a job (`POST /api/work-orders/:id/time`): the kind of labour (on site, travel or overtime), the minutes (1 to 1,440), the date worked and an optional note. Each entry carries a `submission` id made by the screen or phone, so a retry records it once. Time is removed, not edited, and a person removes their own (anyone with `work_orders.edit` can remove any). A closed or cancelled job takes no more time.
+People record the time they spend on a job (`POST /api/work-orders/:id/time`): the kind of labour (on site, travel or overtime), the minutes (1 to 1,440), the date worked and an optional note. The date is a London day, not a UTC one, and it cannot be in the future by London's clock: the phone files time on the London day, so time worked just after midnight in summer is not filed on the day before. Each entry carries a `submission` id made by the screen or phone, so a retry records it once. Time is removed, not edited, and a person removes their own (anyone with `work_orders.edit` can remove any). A closed or cancelled job takes no more time.
 
 **Who decides what.** The organisation controls this with roles, so it can be switched on or off and shared out as it likes:
 

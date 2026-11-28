@@ -5,6 +5,7 @@ import {
   bankHolidays,
   can,
   DEFAULT_SITE_CALENDAR,
+  localDate,
   SITE_JURISDICTIONS,
   WEEKDAYS,
   type AdminCalendars,
@@ -32,6 +33,12 @@ function describeHours(hours: SiteCalendar['hours']): string {
   if (same && consecutive)
     return `${days.length === 1 ? short(days[0]!) : `${short(days[0]!)} to ${short(days.at(-1)!)}`}, ${windows(days[0]!)}`;
   return days.map((day) => `${short(day)} ${windows(day)}`).join(', ');
+}
+
+/** Closures that have not finished yet, by the calendar's own time zone: one that is over is history, not a closure. */
+function upcoming(calendar: SiteCalendar): number {
+  const today = localDate(new Date(), calendar.timeZone);
+  return calendar.closures.filter((closure) => closure.to >= today).length;
 }
 
 const pageHref = (page: number) => (page === 1 ? '/app/admin/calendars' : `/app/admin/calendars?page=${page}`);
@@ -99,9 +106,9 @@ export default async function AdminCalendarsPage({ searchParams }: { searchParam
                         </td>
                         <td>{describeHours(calendar.hours)}</td>
                         <td>
-                          {calendar.closures.length === 0
+                          {upcoming(calendar) === 0
                             ? 'None'
-                            : `${calendar.closures.length} ${calendar.closures.length === 1 ? 'closure' : 'closures'}`}
+                            : `${upcoming(calendar)} ${upcoming(calendar) === 1 ? 'closure' : 'closures'} ahead`}
                         </td>
                         <td>{calendar.timeZone}</td>
                       </>

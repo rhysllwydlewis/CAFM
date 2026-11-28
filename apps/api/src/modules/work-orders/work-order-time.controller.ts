@@ -14,7 +14,11 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant } from '@fmstead/db';
+<<<<<<< HEAD
 import { MAX_JOB_COST_MINOR, MAX_TIME_PER_JOB, recordTimeSchema, timeCostMinor } from '@fmstead/shared';
+=======
+import { localDate, MAX_TIME_PER_JOB, recordTimeSchema, timeCostMinor, UK_TIME_ZONE } from '@fmstead/shared';
+>>>>>>> origin/main
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
@@ -66,7 +70,8 @@ export class WorkOrderTimeController {
       if (LOCKED.includes(job.status)) {
         throw new UnprocessableEntityException('Time can’t be added to a closed or cancelled work order.');
       }
-      const today = new Date().toISOString().slice(0, 10);
+      // The day is the site's, not UTC's: in summer, time worked just after midnight is already tomorrow in UTC terms.
+      const today = localDate(new Date(), UK_TIME_ZONE);
       if (input.workedOn > today) throw new UnprocessableEntityException('Enter a date that is not in the future.');
       if ((await tx.workOrderTime.count({ where: { tenantId, workOrderId: id } })) >= MAX_TIME_PER_JOB) {
         throw new UnprocessableEntityException('This work order already has the most time entries it can hold.');

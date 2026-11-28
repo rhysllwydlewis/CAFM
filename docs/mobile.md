@@ -16,11 +16,12 @@ Errors follow RFC 6749: `400 { "error": "invalid_grant" }`. A failed code or ref
 
 ### Stolen and lost devices
 
-- If an old refresh token is used again, the device was copied or a response was lost. The whole device is signed out, and the person signs in again. This is deliberate.
+- **A lost answer is forgiven; a copied token is not.** If the previous refresh token is used again within 60 seconds of the change, the phone most likely never received the answer (poor signal). It is treated as a retry and answered with a fresh pair, and the device stays signed in (`mobile_refresh_retry`). If the previous token is used again after that, the device was copied: the whole device is signed out, and the person signs in again (`mobile_refresh_reuse`). This is deliberate. A token from two changes back is simply refused.
+- **At most 10 phones per person.** Approving an eleventh signs out the one used least recently (`mobile_device_limit`).
 - `GET /api/oauth/devices` lists your devices. `DELETE /api/oauth/devices/:id` signs one out at once. You can only see and remove your own.
 - `POST /api/oauth/revoke` with a refresh token signs that device out. It always answers 200, so tokens can't be probed.
 - A device is also signed out if the person's membership or the organisation is no longer active.
-- Sign-ins, sign-outs and replays are recorded as sign-in events (`mobile_sign_in`, `mobile_device_signed_out`, `mobile_device_revoked`, `mobile_refresh_reuse`).
+- Sign-ins, sign-outs and replays are recorded as sign-in events (`mobile_sign_in`, `mobile_device_signed_out`, `mobile_device_revoked`, `mobile_refresh_reuse`, `mobile_refresh_retry`, `mobile_device_limit`).
 
 The tables (`mobile_device`, `oauth_code`) are global like sessions (ADR 0004). They name a membership and hold only hashes of tokens.
 
