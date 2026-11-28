@@ -12,8 +12,9 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   const response = await apiGet('/auth/me');
   if (!response.ok) return children;
   const user = (await response.json()) as CurrentUser;
-  if (user.mfaSetupRequired) redirect('/mfa-setup');
   if (user.passwordChangeRequired) redirect('/password-change');
+  // If two-step set-up is also due, it comes after the password.
+  if (user.mfaSetupRequired) redirect('/mfa-setup');
   const allowed = feature(user.entitlements, 'helpdesk') && can(user, 'requests.create');
   return (
     <div>

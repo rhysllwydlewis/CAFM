@@ -104,6 +104,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 - Two-step verification: a wrong password when turning it off or replacing recovery codes now counts towards the same limit on failed attempts as signing in, so a stolen session can’t be used to guess the password.
 - Money custom fields are now typed in pounds and pence (or the currency's own units), like the replacement cost on an asset, instead of asking for the amount in pence. The amount is still stored as whole minor units.
+- Fixes from the automated review of three recent changes: a new username-only account in an organisation that requires two-step verification could no longer finish either step (the password comes first now, then the two-step set-up); a phone whose answer was lost twice in a row could be left signed out inside the 60-second retry window; and a very long list in a request could slip past the check for null characters or cause a server error.
 
 - Business calendars: the warning for a site with no calendar now says what its service level clocks really use, the default hours (Monday to Friday, 09:00 to 17:00, UK time), instead of saying they run around the clock. The screen also pages through organisations with more than 100 sites, instead of stopping silently at 500, and its count of sites without a calendar covers every site.
 

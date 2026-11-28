@@ -137,6 +137,28 @@ describe('mobile OAuth with PKCE', () => {
     expect((await refresh(retry.body.refresh_token)).status).toBe(200);
   });
 
+  it('keeps answering the same retry for the whole window, even when the answer to the retry is lost too', async () => {
+    const { res } = await pairDevice('technician@demo.example');
+    const a = res.body;
+    const b = await refresh(a.refresh_token);
+    expect(b.status).toBe(200);
+    // Nothing reached the phone, so it tries the same token again, and again.
+    const c = await refresh(a.refresh_token);
+    const d = await refresh(a.refresh_token);
+    expect([c.status, d.status]).toEqual([200, 200]);
+    // Only the newest pair works, and the earlier ones are refused without signing the device out.
+    expect((await refresh(b.body.refresh_token)).status).toBe(400);
+    expect((await refresh(c.body.refresh_token)).status).toBe(400);
+    await http().get('/api/auth/me').set('Authorization', `Bearer ${d.body.access_token}`).expect(200);
+    // The window runs from the first change, so a retry does not stretch it: after it, the token is a replay.
+    await owner.mobileDevice.updateMany({
+      where: { previousHash: hashToken(a.refresh_token) },
+      data: { refreshRotatedAt: new Date(Date.now() - 2 * 60 * 1000) },
+    });
+    expect((await refresh(a.refresh_token)).status).toBe(400);
+    await http().get('/api/auth/me').set('Authorization', `Bearer ${d.body.access_token}`).expect(401);
+  });
+
   it('signs the device out when the previous token is replayed after the window, and refuses older ones', async () => {
     const { res } = await pairDevice('technician@demo.example');
     const first = res.body;

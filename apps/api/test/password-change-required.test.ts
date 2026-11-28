@@ -1,12 +1,14 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { ownerDb, signIn, startApp } from './helpers';
+import { PrismaClient, withTenant } from '@fmstead/db';
+import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
 // Issue #120: a person whose password an administrator generated or reset is held on a change-password step until they
 // choose their own.
 
 const owner = ownerDb();
+const appDb = new PrismaClient({ datasourceUrl: process.env.APP_DATABASE_URL });
 let app: NestExpressApplication;
 const made: string[] = [];
 beforeAll(async () => {
@@ -23,6 +25,7 @@ afterAll(async () => {
   await owner.account.deleteMany({ where: { id: { in: ids } } });
   await app.close();
   await owner.$disconnect();
+  await appDb.$disconnect();
 });
 
 const unique = () => {
@@ -118,5 +121,34 @@ describe('a password an administrator generated', () => {
     // Their own flag is still set: nothing the other organisation did cleared it.
     const agent = await person.login(person.temporaryPassword);
     expect((await agent.get('/api/auth/me').expect(200)).body.passwordChangeRequired).toBe(true);
+  });
+});
+
+describe('when the organisation also asks for two-step verification', () => {
+  it('lets the person change the password first and then set up the second step, so neither blocks the other', async () => {
+    const { tenant, cleanup } = await createTestTenant(appDb);
+    try {
+      await withTenant(appDb, tenant.id, (tx) =>
+        tx.tenantSecurity.create({ data: { tenantId: tenant.id, mfaRequired: true } }),
+      );
+      const person = await createTestAccount(appDb, [tenant.id], undefined, 'technician');
+      await owner.account.update({ where: { id: person.account.id }, data: { mustChangePassword: true } });
+      const { agent } = await signIn(app, person.email, person.password);
+      const me = (await agent.get('/api/auth/me').expect(200)).body;
+      expect([me.passwordChangeRequired, me.mfaSetupRequired]).toEqual([true, true]);
+      // The password step is open and the second step's routes are not yet.
+      await agent.get('/api/auth/password-policy').expect(200);
+      expect((await agent.get('/api/auth/mfa').expect(403)).body.code).toBe('password_change_required');
+      await agent
+        .post('/api/auth/password')
+        .send({ currentPassword: person.password, newPassword: CHOSEN })
+        .expect(204);
+      // With the password chosen, the second step's set-up opens, and nothing else does until it is done.
+      await agent.get('/api/auth/mfa').expect(200);
+      expect((await agent.get('/api/display').expect(403)).body.code).toBe('mfa_setup_required');
+    } finally {
+      await owner.tenantSecurity.deleteMany({ where: { tenantId: tenant.id } });
+      await cleanup();
+    }
   });
 });
