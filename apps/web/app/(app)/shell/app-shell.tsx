@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@fmstead/ui';
 import { t } from '@/lib/i18n';
+import { activeNavItem } from './active-nav';
 import { CommandPalette } from './command-palette';
 import { DemoResetBanner } from './demo-banner';
 import { ImpersonationBanner } from './impersonation-banner';
@@ -49,7 +50,7 @@ export function AppShell({
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const items = sections.flatMap((s) => s.items);
-  const current = items.find((i) => (i.href === '/app' ? pathname === '/app' : pathname.startsWith(i.href)));
+  const current = activeNavItem(items, pathname);
 
   // Close the phone menu when the page changes.
   useEffect(() => setNavOpen(false), [pathname]);
