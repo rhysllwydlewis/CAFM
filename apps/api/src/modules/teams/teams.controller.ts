@@ -25,6 +25,24 @@ import { PrismaService } from '../../core/prisma.service';
 import { parse } from '../../core/validation';
 import { dataScope, visibleMembers } from '../../core/data-scope';
 
+const teamExists = () =>
+  new ConflictException({ code: 'team_exists', message: 'A team with that name already exists.' });
+
+/** Team names are compared without regard to case, so "North Region" and "north region" are one team. */
+async function assertNameFree(tx: Tx, tenantId: string, name: string, exceptId?: string): Promise<void> {
+  const clash = await tx.team.findFirst({
+    where: { tenantId, name: { equals: name, mode: 'insensitive' }, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { id: true },
+  });
+  if (clash) throw teamExists();
+}
+
+/** Two requests with the same name at once: the unique index decides, and the loser is told so. */
+const onDuplicateName = (error: unknown): never => {
+  if ((error as { code?: string }).code === 'P2002') throw teamExists();
+  throw error;
+};
+
 /** Teams and groups inside the current organisation (doc 03), used for assignment and scoping. */
 @Controller('teams')
 @UseGuards(SessionGuard, TenantGuard, PermissionGuard)
@@ -99,17 +117,17 @@ export class TeamsController {
     assertNotSiteLimited(auth);
     const tenantId = auth.membership!.tenantId;
     return withTenant(this.db, tenantId, async (tx) => {
-      if (await tx.team.findUnique({ where: { tenantId_name: { tenantId, name: input.name } } })) {
-        throw new ConflictException({ code: 'team_exists', message: 'A team with that name already exists.' });
-      }
+      await assertNameFree(tx, tenantId, input.name);
       const memberIds = await this.assertMembers(tx, tenantId, input.memberIds);
-      const team = await tx.team.create({
-        data: {
-          tenantId,
-          name: input.name,
-          description: input.description,
-        },
-      });
+      const team = await tx.team
+        .create({
+          data: {
+            tenantId,
+            name: input.name,
+            description: input.description,
+          },
+        })
+        .catch(onDuplicateName);
       await tx.teamMember.createMany({
         data: memberIds.map((membershipId) => ({ tenantId, teamId: team.id, membershipId })),
       });
@@ -133,18 +151,16 @@ export class TeamsController {
     return withTenant(this.db, tenantId, async (tx) => {
       const [before] = await this.load(tx, auth, id, false);
       if (!before) throw new NotFoundException();
-      if (input.name && input.name !== before.name) {
-        if (await tx.team.findUnique({ where: { tenantId_name: { tenantId, name: input.name } } })) {
-          throw new ConflictException({ code: 'team_exists', message: 'A team with that name already exists.' });
-        }
-      }
-      await tx.team.update({
-        where: { id },
-        data: {
-          ...(input.name !== undefined ? { name: input.name } : {}),
-          ...(input.description !== undefined ? { description: input.description } : {}),
-        },
-      });
+      if (input.name) await assertNameFree(tx, tenantId, input.name, id);
+      await tx.team
+        .update({
+          where: { id },
+          data: {
+            ...(input.name !== undefined ? { name: input.name } : {}),
+            ...(input.description !== undefined ? { description: input.description } : {}),
+          },
+        })
+        .catch(onDuplicateName);
       let memberIds: string[] | undefined;
       if (input.memberIds) {
         memberIds = await this.assertMembers(
