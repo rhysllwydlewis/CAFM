@@ -120,6 +120,34 @@ describe('roles', () => {
     }
   });
 
+  it('refuses a custom role named like any other role, whatever the case, when made or renamed', async () => {
+    const { tenant, cleanup } = await createTestTenant(db);
+    try {
+      const admin = await createTestAccount(db, [tenant.id], undefined, 'super_user');
+      const { agent } = await signIn(app, admin.email, admin.password);
+      // A built-in role's name, so pickers would show two of them and only one has the real permissions.
+      for (const name of ['Technician', 'technician', ' TECHNICIAN ', 'Super User']) {
+        await agent.post('/api/roles').send({ name, permissions: [] }).expect(409);
+      }
+      const made = (await agent.post('/api/roles').send({ name: 'Site lead', permissions: [] }).expect(201)).body;
+      await agent.post('/api/roles').send({ name: 'site LEAD', permissions: [] }).expect(409);
+      const other = (await agent.post('/api/roles').send({ name: 'Estates liaison', permissions: [] }).expect(201))
+        .body;
+      // Renaming is held to the same rule; changing only the case of its own name is fine.
+      await agent.patch(`/api/roles/${other.id}`).send({ name: 'technician' }).expect(409);
+      await agent.patch(`/api/roles/${other.id}`).send({ name: 'SITE lead' }).expect(409);
+      await agent.patch(`/api/roles/${made.id}`).send({ name: 'SITE LEAD' }).expect(200);
+      await agent.patch(`/api/roles/${made.id}`).send({ description: 'Leads a site' }).expect(200);
+      expect(
+        await withTenant(db, tenant.id, (tx) =>
+          tx.role.count({ where: { name: { contains: 'echnician', mode: 'insensitive' } } }),
+        ),
+      ).toBe(1);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('nobody can grant a permission they don’t hold', async () => {
     const { agent } = await signIn(app, 'admin@demo.example'); // Administrator: no billing.manage
     const res = await agent

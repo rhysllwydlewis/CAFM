@@ -8,3 +8,10 @@ onlyBuiltDependencies:
   - argon2
   - esbuild
   - prisma
+# Fixed versions of packages that other packages pin to a version with a known advisory (issue #128). Each is the
+# smallest change that clears it; zod 4 and maplibre-gl 6 are major upgrades and are handled separately.
+overrides:
+  multer: 2.5.0
+  'next>postcss': ^8.5.18
+  '@prisma/config>effect': ^3.22.1
+  '@prisma/config>deepmerge-ts': ^8.0.0

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import request from 'supertest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@fmstead/db';
+import { countJobsOverLimit } from '../src/modules/reports/home.controller';
 import { createTestAccount, createTestTenant, ownerDb, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -155,6 +156,39 @@ it('never counts another organisation’s work (cross-tenant)', async () => {
   } finally {
     await a.cleanup();
     await b.cleanup();
+  }
+});
+
+it('counts jobs over their limit the same way however many pages it reads them in', async () => {
+  const f = await fixture();
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    // Five jobs with a £10 limit; the first, third and fifth have £15 of cost, the others £5.
+    for (const [i, spent] of [1500, 500, 1500, 500, 1500].entries()) {
+      const job = await f.job();
+      const current = (await f.manager.get(`/api/work-orders/${job.id}`).expect(200)).body;
+      await f.manager
+        .put(`/api/work-orders/${job.id}/costs/limit`)
+        .send({ nteMinor: 1000, version: current.version })
+        .expect(200);
+      await f.manager
+        .post(`/api/work-orders/${job.id}/costs`)
+        .send({
+          kind: 'expense',
+          description: `Parts ${i}`,
+          amountMinor: spent,
+          incurredOn: today,
+          ...(spent > 1000 ? { overNteReason: 'Extra parts' } : {}),
+        })
+        .expect(201);
+    }
+    const count = (pageSize?: number) =>
+      withTenant(db, f.tenant.id, (tx) => countJobsOverLimit(tx, { tenantId: f.tenant.id }, pageSize));
+    // Pages of 2 (2, 2, then 1), of exactly 5 (one full page, then an empty one), and the default.
+    expect(await Promise.all([count(2), count(5), count(1), count()])).toEqual([3, 3, 3, 3]);
+    expect((await f.finance.get(url).expect(200)).body.spend.overLimitJobs).toBe(3);
+  } finally {
+    await f.cleanup();
   }
 });
 

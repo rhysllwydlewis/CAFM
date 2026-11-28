@@ -50,26 +50,28 @@ export class ReportsController {
     const input = parse(reportQuerySchema, query);
     const now = Date.now();
     return withTenant(this.db, auth.membership!.tenantId, async (tx): Promise<OpenJobsByAgeReport> => {
-      const rows = await tx.workOrder.findMany({
-        where: {
-          AND: [
-            workOrderScope(auth),
-            { status: { notIn: [...WORK_ORDER_FINISHED] } },
-            ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
-          ],
-        },
-        select: { createdAt: true },
-      });
-      const counts = AGE_BANDS.map(() => 0);
-      for (const { createdAt } of rows) {
-        const days = Math.floor((now - createdAt.getTime()) / DAY_MS);
-        const index = AGE_BANDS.findIndex((band) => band.maxDays === null || days <= band.maxDays);
-        counts[index] = (counts[index] ?? 0) + 1;
-      }
+      const open = [
+        workOrderScope(auth),
+        { status: { notIn: [...WORK_ORDER_FINISHED] } },
+        ...(input.locationId ? [{ location: { ancestors: { some: { ancestorId: input.locationId } } } }] : []),
+      ];
+      // One count per band, so the database does the counting and no job is loaded. A job is in a band by its
+      // whole days of age (rounded down), so band n holds ages from the day after the previous band up to its own.
+      const counts = await Promise.all(
+        AGE_BANDS.map((band, i) => {
+          const previous = AGE_BANDS[i - 1]?.maxDays;
+          const age = {
+            ...(previous != null ? { lte: new Date(now - (previous + 1) * DAY_MS) } : {}),
+            ...(band.maxDays !== null ? { gt: new Date(now - (band.maxDays + 1) * DAY_MS) } : {}),
+          };
+          return tx.workOrder.count({ where: { AND: [...open, { createdAt: age }] } });
+        }),
+      );
+      const total = counts.reduce((sum, n) => sum + n, 0);
       return {
         key: 'open_jobs_by_age',
         generatedAt: new Date(now).toISOString(),
-        total: rows.length,
+        total,
         bands: AGE_BANDS.map((band, i) => ({ key: band.key, label: band.label, count: counts[i] ?? 0 })),
       };
     });

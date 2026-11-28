@@ -75,6 +75,31 @@ describe('teams', () => {
     );
   });
 
+  it('treats team names that differ only by case as one name, even when created at once', async () => {
+    const { tenant, cleanup } = await createTestTenant(db);
+    try {
+      const admin = await createTestAccount(db, [tenant.id], undefined, 'super_user');
+      const { agent } = await signIn(app, admin.email, admin.password);
+      const first = (await agent.post('/api/teams').send({ name: 'North Region' }).expect(201)).body;
+      await agent.post('/api/teams').send({ name: 'north region' }).expect(409);
+      await agent.post('/api/teams').send({ name: ' NORTH REGION ' }).expect(409);
+      const other = (await agent.post('/api/teams').send({ name: 'South Region' }).expect(201)).body;
+      // Renaming onto another team's name is refused whatever the case; changing only your own case is fine.
+      await agent.patch(`/api/teams/${other.id}`).send({ name: 'NORTH region' }).expect(409);
+      await agent.patch(`/api/teams/${first.id}`).send({ name: 'NORTH REGION' }).expect(200);
+      // Five requests for one new name at once: one wins and the rest are told it exists, with no server error.
+      const names = ['Night shift', 'night SHIFT', 'Night Shift', 'NIGHT shift', 'night shift'];
+      const statuses = (await Promise.all(names.map((name) => agent.post('/api/teams').send({ name })))).map(
+        (response) => response.status,
+      );
+      expect(statuses.filter((status) => status === 201)).toHaveLength(1);
+      expect(statuses.filter((status) => status === 409)).toHaveLength(4);
+      expect(await withTenant(db, tenant.id, (tx) => tx.team.count())).toBe(3);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('rejects a name that is empty or members from nowhere', async () => {
     const { agent } = await signIn(app, 'superuser@demo.example');
     await agent.post('/api/teams').send({ name: ' ' }).expect(400);
