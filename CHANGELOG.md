@@ -93,6 +93,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Fixed
 
+- A locked account now takes as long to refuse a sign-in as any other wrong password, so the time taken no longer shows which accounts exist and are locked. Nothing changes in what people see.
 - Phone app: the QR scanner can now use the camera. The site was telling the browser to keep the camera off for everyone, so the scan screen only ever offered typing the number.
 - Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
 

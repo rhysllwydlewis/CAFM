@@ -92,6 +92,8 @@ export class AuthService {
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
     if (account.lockedUntil && account.lockedUntil > new Date()) {
+      // Take as long as a real check, so timing doesn't show which accounts exist and are locked.
+      await argon2.verify(await this.dummyHash, input.password);
       this.limiter.recordFailure(client.ip);
       await this.event('sign_in_locked', { accountId: account.id, ip: client.ip });
       throw new UnauthorizedException(SIGN_IN_FAILED);
