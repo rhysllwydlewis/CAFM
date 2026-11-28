@@ -16,10 +16,10 @@ import type { Request } from 'express';
 import { withTenant } from '@fmstead/db';
 import {
   localDate,
-  MAX_JOB_COST_MINOR,
   MAX_TIME_PER_JOB,
   recordTimeSchema,
   timeCostMinor,
+  timeCostTooLarge,
   UK_TIME_ZONE,
 } from '@fmstead/shared';
 import { audit } from '../../core/audit';
@@ -80,10 +80,10 @@ export class WorkOrderTimeController {
         throw new UnprocessableEntityException('This work order already has the most time entries it can hold.');
       }
       const rate = await rateFor(tx, tenantId, input.labourType, role);
-      // A rate typed with a few zeros too many would make a cost no job can hold; say so instead of failing.
-      if (rate && timeCostMinor(input.minutes, rate.rateMinor) > MAX_JOB_COST_MINOR) {
+      // A rate typed with a few zeros too many, or saved before the ceiling came down, can't be used: say so instead of failing.
+      if (rate && timeCostTooLarge(input.minutes, rate.rateMinor)) {
         throw new UnprocessableEntityException(
-          'The labour rate makes this time cost more than a job can hold. Ask Finance to check the rate.',
+          'The labour rate is too high to record time at. Ask Finance to check the rate.',
         );
       }
       const time = await tx.workOrderTime.create({

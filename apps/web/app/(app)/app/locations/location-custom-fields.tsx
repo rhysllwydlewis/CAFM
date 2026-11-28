@@ -3,6 +3,13 @@ import type { FieldDefinition } from '@fmstead/config-engine';
 import { currencyDigits, minorToMoney, moneyToMinor } from '@/lib/money';
 import styles from './locations.module.css';
 
+/** A custom money amount may be negative (a credit), unlike an asset's cost. Null when it isn't an amount. */
+function signedMoneyToMinor(text: string, digits: number): number | null {
+  const negative = text.startsWith('-');
+  const minor = moneyToMinor(negative ? text.slice(1) : text, digits);
+  return minor === null ? null : negative && minor !== 0 ? -minor : minor;
+}
+
 const fieldName = (field: FieldDefinition) => 'custom-' + field.key;
 const isCurrency = (value: unknown): value is { amount: number; currency: string } =>
   typeof value === 'object' &&
@@ -37,7 +44,7 @@ export function readCustomFields(fields: FieldDefinition[], data: FormData) {
         // Text that is not an amount goes on as it is, so the API can say so by the field's name.
         value =
           amount || currency
-            ? { amount: amount ? (moneyToMinor(amount, currencyDigits(currency)) ?? amount) : null, currency }
+            ? { amount: amount ? (signedMoneyToMinor(amount, currencyDigits(currency)) ?? amount) : null, currency }
             : null;
       } else if (field.type === 'multi_select') value = data.getAll(name);
       else if (field.type === 'number' && raw) value = Number(raw);
@@ -74,7 +81,7 @@ export function LocationCustomFields({
                     inputMode="decimal"
                     autoComplete="off"
                     placeholder="1250.00"
-                    pattern="[£$€]?[0-9,]+(\.[0-9]+)?"
+                    pattern="-?[£$€]?[0-9,]+(\.[0-9]+)?"
                     title="An amount such as 1250.00"
                     defaultValue={
                       isCurrency(value) ? minorToMoney(value.amount, currencyDigits(value.currency)) : undefined
