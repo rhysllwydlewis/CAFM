@@ -59,6 +59,8 @@ export function MapCanvas({ sites, compact = false }: { sites: MappedSite[]; com
     void import('maplibre-gl')
       .then((library) => {
         if (disposed || !container.current) return;
+        // maplibre-gl 6 keeps its worker in a separate file, which the bundler has to emit and be told about.
+        library.setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).toString());
         const tokens = getComputedStyle(container.current);
         const colour = (name: string) => tokens.getPropertyValue(name).trim();
         const current = new library.Map({
