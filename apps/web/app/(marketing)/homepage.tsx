@@ -1,17 +1,16 @@
 'use client';
 
-import { Fragment, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Icon, Wordmark } from '@fmstead/ui';
-import { startFilm } from './film';
-import { CHAPTERS, FRAMES, STOPS } from './film-content';
+import { AUDIENCES, CHAPTERS, SCREENS, STRENGTHS } from './home-content';
+import { ScrollScrub } from './scroll-scrub';
 import styles from './home.module.css';
 
 /** The calls to action. A demo site offers the demo first. A real one has only sign in. */
-function Actions({ demo, where }: { demo: boolean; where?: 'hero' | 'close' }) {
-  const marker = where === 'hero' ? { 'data-hero-actions': '' } : where === 'close' ? { 'data-close-actions': '' } : {};
+function Actions({ demo }: { demo: boolean }) {
   return (
-    <div className={styles.actions} {...marker}>
+    <div className={styles.actions}>
       {demo ? (
         <>
           <Link className={`btn primary lg ${styles.big}`} href="/login#demo-heading">
@@ -30,15 +29,54 @@ function Actions({ demo, where }: { demo: boolean; where?: 'hero' | 'close' }) {
   );
 }
 
-export function Homepage({ demo }: { demo: boolean }) {
-  const film = useRef<HTMLElement>(null);
-  useEffect(() => (film.current ? startFilm(film.current) : undefined), []);
+function Shot({ shot, className }: { shot: (typeof SCREENS)[keyof typeof SCREENS]; className?: string }) {
+  return (
+    <figure className={`${styles.shot} ${className ?? ''}`}>
+      <img src={shot.src} alt={shot.alt} width={shot.width} height={shot.height} loading="lazy" decoding="async" />
+      <figcaption>{shot.caption}</figcaption>
+    </figure>
+  );
+}
 
+export function Homepage({ demo }: { demo: boolean }) {
+  const masthead = useRef<HTMLElement>(null);
   const cta = demo ? { href: '/login#demo-heading', label: 'Try the demo' } : { href: '/login', label: 'Sign in' };
+  // The chapters must keep the same identity from one render to the next, or the film would be rebuilt.
+  const chapters = useMemo(
+    () => CHAPTERS.map((chapter, i) => (i === 0 ? { ...chapter, actions: <Actions demo={demo} /> } : chapter)),
+    [demo],
+  );
+
+  // The bar floats over the film. Once the film has gone it floats over words, so it gets a solid background then.
+  // Without JavaScript it is not fixed at all, so it never covers anything.
+  useEffect(() => {
+    const bar = masthead.current;
+    const film = document.querySelector('[data-film]');
+    if (!bar || !film) return;
+    bar.dataset.enhanced = 'true';
+    let pending = 0;
+    const update = () => {
+      pending = 0;
+      bar.dataset.solid = String(film.getBoundingClientRect().bottom <= bar.offsetHeight);
+    };
+    const onScroll = () => {
+      if (!pending) pending = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      window.cancelAnimationFrame(pending);
+      delete bar.dataset.enhanced;
+      delete bar.dataset.solid;
+    };
+  }, []);
 
   return (
     <>
-      <header className={styles.masthead}>
+      <header ref={masthead} className={styles.masthead}>
         <a className={styles.mark} href="#top" aria-label="FM Stead, back to the top">
           <Wordmark height={22} tone="current" />
         </a>
@@ -52,124 +90,51 @@ export function Homepage({ demo }: { demo: boolean }) {
         </Link>
       </header>
 
-      <section ref={film} className={styles.film} data-film-section aria-labelledby="film-title">
-        <div className={styles.stage} data-film-stage>
-          {/* The first frame, until the film draws */}
-          <img className={styles.poster} src={`${FRAMES.path}/f0001.webp`} alt="" fetchPriority="high" />
-          <canvas className={styles.canvas} data-canvas aria-hidden="true" />
-          <div className={styles.shade} data-shade data-mode="opening" aria-hidden="true" />
-          <div className={styles.grain} aria-hidden="true" />
+      <ScrollScrub chapters={chapters} />
 
-          <div className="sr-only">
-            <h2 id="film-title">One flight over a demo estate</h2>
-            <ol>
-              {STOPS.map((stop, i) => {
-                const chapter = CHAPTERS.find((c) => c.stop === i);
-                return (
-                  <li key={stop.name}>
-                    {stop.says}
-                    {chapter ? ` ${chapter.lines.join(' ')}` : ''}
-                  </li>
-                );
-              })}
-            </ol>
+      <section className={styles.section} id="screens" aria-labelledby="screens-title">
+        <h2 id="screens-title">Everything in one clear view.</h2>
+        <p className={styles.lede}>
+          From the morning overview to a single job on an engineer&apos;s phone, every screen works from the same live
+          record.
+        </p>
+        <div className={styles.shots}>
+          <Shot shot={SCREENS.overview} />
+          <div className={styles.shotRow}>
+            <Shot shot={SCREENS.workOrder} />
+            <Shot shot={SCREENS.compliance} />
           </div>
-
-          <div className={`${styles.layer} ${styles.hero}`} data-hero data-on="true">
-            <h1>
-              Run every <em>building.</em>
-            </h1>
-            <p className={styles.lede}>Facilities management software.</p>
-            <Actions demo={demo} where="hero" />
-          </div>
-          <p className={styles.hint} data-hint data-on="true" aria-hidden="true">
-            Scroll
-          </p>
-
-          <div className={`${styles.layer} ${styles.altitude}`} data-altitude aria-hidden="true">
-            <p>
-              <span data-altitude-number>0</span>
-              <small>m</small>
-            </p>
-          </div>
-          <div className={`${styles.layer} ${styles.rail}`} aria-hidden="true">
-            <b data-rail-fill />
-            {STOPS.map((stop, i) => (
-              <Fragment key={stop.name}>
-                <i
-                  className={styles.railDot}
-                  data-rail-dot
-                  style={{ top: `calc(${(i / (STOPS.length - 1)) * 100}% - 4px)` }}
-                />
-                <span
-                  className={styles.railLabel}
-                  data-rail-label
-                  style={{ top: `${(i / (STOPS.length - 1)) * 100}%` }}
-                >
-                  {stop.name}
-                </span>
-              </Fragment>
-            ))}
-          </div>
-
-          <div aria-hidden="true">
-            {CHAPTERS.map((chapter) => (
-              <div
-                key={chapter.stop}
-                className={`${styles.layer} ${styles.chapter} ${chapter.side === 'right' ? styles.right : styles.left}`}
-                data-chapter
-                data-on="false"
-              >
-                <h2>
-                  <span className={styles.line}>
-                    <span>{chapter.lines[0]}</span>
-                  </span>
-                  <span className={styles.line}>
-                    <span>
-                      <em>{chapter.lines[1]}</em>
-                    </span>
-                  </span>
-                </h2>
-              </div>
-            ))}
-          </div>
-          <div aria-hidden="true">
-            {CHAPTERS.flatMap((chapter, i) =>
-              (chapter.tags ?? []).map((tag) => (
-                <div
-                  key={tag.title}
-                  className={styles.callout}
-                  data-tag
-                  data-tag-chapter={i}
-                  data-on="false"
-                  data-x={tag.x}
-                  data-y={tag.y}
-                >
-                  <i />
-                  <b>{tag.title}</b>
-                  <span>{tag.detail}</span>
-                </div>
-              )),
-            )}
-          </div>
-
-          <div className={`${styles.layer} ${styles.ending}`} data-close data-on="false">
-            <h2>
-              Every <em>day.</em>
-            </h2>
-            <Actions demo={demo} where="close" />
-          </div>
+          <Shot shot={SCREENS.technician} className={styles.device} />
         </div>
+        <p className={styles.footnote}>Design screens, shown with demo data.</p>
+      </section>
 
-        <div className={styles.loader} data-loader role="status" aria-label="Loading the film">
-          <Wordmark height={30} tone="current" />
-          <div className={styles.loadBar} aria-hidden="true">
-            <i data-loader-bar />
+      <section className={styles.section} aria-labelledby="who-title">
+        <h2 id="who-title">Made for UK estates and FM teams.</h2>
+        <ul className={styles.rows}>
+          {AUDIENCES.map((audience) => (
+            <li key={audience.name}>
+              <h3>{audience.name}</h3>
+              <p>{audience.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.section} aria-labelledby="apart-title">
+        <div className={styles.apart}>
+          <div className={styles.apartHead}>
+            <h2 id="apart-title">What sets it apart.</h2>
           </div>
+          <ul>
+            {STRENGTHS.map((strength) => (
+              <li key={strength.name}>
+                <h3>{strength.name}</h3>
+                <p>{strength.text}</p>
+              </li>
+            ))}
+          </ul>
         </div>
-        <noscript>
-          <style>{'[data-loader]{display:none}[data-film-section]{height:100svh!important}'}</style>
-        </noscript>
       </section>
 
       <section className={styles.final} id="start" aria-labelledby="final-title">
