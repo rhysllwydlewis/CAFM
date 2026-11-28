@@ -101,6 +101,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 - A locked account now takes as long to refuse a sign-in as any other wrong password, so the time taken no longer shows which accounts exist and are locked. Nothing changes in what people see.
 - Phone app: the QR scanner can now use the camera. The site was telling the browser to keep the camera off for everyone, so the scan screen only ever offered typing the number.
 - Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
+- Follow-up fixes from review: a role or team name containing `%` or `_` is no longer treated as matching a different name ("North_Region" is its own team, not a duplicate of "North Region"); recording time at an hourly rate saved before the £400,000 ceiling now gives a clear message instead of an error; and a Money custom field that already holds a negative amount (a credit) can still be edited and saved.
 
 - Two-step verification: a wrong password when turning it off or replacing recovery codes now counts towards the same limit on failed attempts as signing in, so a stolen session can’t be used to guess the password.
 - Money custom fields are now typed in pounds and pence (or the currency's own units), like the replacement cost on an asset, instead of asking for the amount in pence. The amount is still stored as whole minor units.

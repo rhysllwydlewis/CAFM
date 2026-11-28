@@ -129,6 +129,9 @@ describe('roles', () => {
       for (const name of ['Technician', 'technician', ' TECHNICIAN ', 'Super User']) {
         await agent.post('/api/roles').send({ name, permissions: [] }).expect(409);
       }
+      // `%` and `_` are ordinary characters in a name, not wildcards.
+      await agent.post('/api/roles').send({ name: 'Technic_an', permissions: [] }).expect(201);
+      await agent.post('/api/roles').send({ name: 'Tech%', permissions: [] }).expect(201);
       const made = (await agent.post('/api/roles').send({ name: 'Site lead', permissions: [] }).expect(201)).body;
       await agent.post('/api/roles').send({ name: 'site LEAD', permissions: [] }).expect(409);
       const other = (await agent.post('/api/roles').send({ name: 'Estates liaison', permissions: [] }).expect(201))

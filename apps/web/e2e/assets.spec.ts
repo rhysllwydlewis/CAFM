@@ -215,12 +215,17 @@ test('adds, edits and decommissions an asset, with a component, class details an
     await expect(page.getByLabel('Output (kW)')).toHaveValue('254');
     await expect(page.getByLabel('Replacement cost (£)')).toHaveValue('18500.50');
     await expect(page.getByRole('group', { name: 'Service budget' }).getByLabel('Amount')).toHaveValue('1250.50');
+    // A credit is a negative amount, which is still a valid money value and still editable.
+    await page.getByRole('group', { name: 'Service budget' }).getByLabel('Amount').fill('-12.50');
     await assertAccessible(page);
     await page.getByLabel('Name', { exact: true }).fill('Boiler A (main)');
     await page.getByLabel('Condition', { exact: true }).selectOption('B');
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Boiler A (main)' })).toBeVisible();
     await expect(page.getByText('Condition B')).toBeVisible();
+    expect((await db.asset.findFirstOrThrow({ where })).custom).toMatchObject({
+      service_budget: { amount: -1250, currency: 'GBP' },
+    });
 
     // A component starts from its parent and the parent's location.
     await page.getByRole('link', { name: 'Add component' }).click();

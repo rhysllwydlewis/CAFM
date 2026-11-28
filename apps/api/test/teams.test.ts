@@ -84,6 +84,10 @@ describe('teams', () => {
       await agent.post('/api/teams').send({ name: 'north region' }).expect(409);
       await agent.post('/api/teams').send({ name: ' NORTH REGION ' }).expect(409);
       const other = (await agent.post('/api/teams').send({ name: 'South Region' }).expect(201)).body;
+      // `%` and `_` are ordinary characters in a name, not wildcards: these are different teams.
+      await agent.post('/api/teams').send({ name: 'North_Region' }).expect(201);
+      await agent.post('/api/teams').send({ name: 'North%' }).expect(201);
+      await agent.post('/api/teams').send({ name: 'North_region' }).expect(409);
       // Renaming onto another team's name is refused whatever the case; changing only your own case is fine.
       await agent.patch(`/api/teams/${other.id}`).send({ name: 'NORTH region' }).expect(409);
       await agent.patch(`/api/teams/${first.id}`).send({ name: 'NORTH REGION' }).expect(200);
@@ -94,7 +98,7 @@ describe('teams', () => {
       );
       expect(statuses.filter((status) => status === 201)).toHaveLength(1);
       expect(statuses.filter((status) => status === 409)).toHaveLength(4);
-      expect(await withTenant(db, tenant.id, (tx) => tx.team.count())).toBe(3);
+      expect(await withTenant(db, tenant.id, (tx) => tx.team.count())).toBe(5);
     } finally {
       await cleanup();
     }
