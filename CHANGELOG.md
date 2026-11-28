@@ -7,6 +7,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 ### Added
 
 - Import and export now has its own entry in the side menu, shown to anyone who can import or export data. Before, people such as Planners, who have no Administration item, and FM Managers, who are sent back from the Administration page, had no way to find it. When it is open, only Import and export is marked as the current item.
+- A person whose password an administrator generated, such as a new username-only account or a reset, must now choose their own password at their first sign-in. Until they do, they are taken to a Choose your own password page and nothing else opens. See [Username-only accounts](docs/admin.md#username-only-accounts).
 - Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
 - The full content security policy in report-only mode now sends violation reports to the site, which logs each one without any page path or query string, so we can see what enforcing it would block. Nothing changes for people using the product.
 - The security policy report now gives each page its own script nonce, a step towards enforcing the full content security policy. Nothing changes for people using the product.

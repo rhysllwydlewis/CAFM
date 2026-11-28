@@ -37,6 +37,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await currentUser();
   // The organisation requires two-step verification and this person hasn't set it up: nothing else is open.
   if (user.mfaSetupRequired) redirect('/mfa-setup');
+  // An administrator set this person's password: nothing else is open until they choose their own.
+  if (user.passwordChangeRequired) redirect('/password-change');
   const [orgs, display, branding] = await Promise.all([organisations(), displaySettings(), brandingSettings()]);
   // The accent only applies on plans that include branding, and only colours that passed the contrast check.
   const accent =

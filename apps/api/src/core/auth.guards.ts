@@ -17,6 +17,9 @@ import { hashToken, SESSION_COOKIE, type Access } from './session';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 /** What a person who must set up MFA can still reach: the MFA set-up itself, who they are, and signing out. */
 const MFA_SETUP_ALLOWED = /^\/api\/auth\/(mfa(\/|$)|me$|logout$|organisations$|select-organisation$)/;
+/** What a person who must change their password can still reach: that, the password rules, who they are, signing out. */
+const PASSWORD_CHANGE_ALLOWED =
+  /^\/api\/auth\/(password$|password-policy$|me$|logout$|organisations$|select-organisation$)/;
 export const END_IMPERSONATION_PATH = '/api/admin/impersonation/end';
 
 /** Requires a valid, unexpired session. Attaches req.auth. */
@@ -87,6 +90,15 @@ export class SessionGuard implements CanActivate {
         message: 'Your organisation requires two-step verification. Set it up to continue.',
       });
     }
+    // An administrator generated this password, so only changing it is open until the person has chosen their own.
+    // The shared demo accounts can't change theirs, and "view as" shows what the other person sees, so neither is held.
+    const passwordChangeRequired = account.mustChangePassword && !impersonating && !account.isDemo;
+    if (passwordChangeRequired && !PASSWORD_CHANGE_ALLOWED.test(req.originalUrl.split('?')[0]!)) {
+      throw new ForbiddenException({
+        code: 'password_change_required',
+        message: 'An administrator set your password. Choose your own to continue.',
+      });
+    }
     const impersonator = impersonating
       ? await this.db.account.findUnique({ where: { id: session.impersonatorAccountId! }, select: { name: true } })
       : null;
@@ -103,6 +115,7 @@ export class SessionGuard implements CanActivate {
       membership: tenantData?.membership ?? null,
       access: tenantData?.access ?? null,
       mfaSetupRequired,
+      passwordChangeRequired,
     };
     return true;
   }

@@ -26,6 +26,8 @@ export interface AuthContext {
   impersonator: { accountId: string; membershipId: string; name: string } | null;
   /** The organisation requires MFA and this person has not set it up yet (P1-12). */
   mfaSetupRequired: boolean;
+  /** An administrator set this person's password and they have not yet chosen their own (issue #120). */
+  passwordChangeRequired: boolean;
 }
 
 declare global {
