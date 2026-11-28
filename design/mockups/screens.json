@@ -1032,5 +1032,14 @@
     "viewport": "short",
     "theme": "light",
     "file": "14-shell.js"
+  },
+  {
+    "id": "shell-08-nav-import-export",
+    "group": "App shell",
+    "title": "Side menu with Import and export",
+    "desc": "People who can import or export data, but have no Administration item (a Planner, for example), get an Import and export entry in the menu. People who have both see both. The entry opens the same screen as Administration, Import and export.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "14-shell.js"
   }
 ]
