@@ -97,6 +97,21 @@ The conceptual model. Physical schema lives in `packages/db/prisma/schema.prisma
 
 `booking`, `bookable_resource`, `visitor`, `visit`, `move_request`, `utility_meter`, `consumption`, `utility_bill`, `emission_factor`, `carbon_record`, `waste_record`, `property`, `lease`, `lease_event`, `rent_schedule`, `service_charge`, `project`, `project_task`, `capital_request`, `vehicle`, `key`, `key_issue`, `device`, `telemetry` (time-series), `alert_rule`, `alert`, `survey`, `survey_response`, `insurance_claim`, `lost_property`, `hazard_case` (housing: Awaab's Law/HHSRS), `void`, `ai_interaction`, `support_ticket`.
 
+## Tables without row-level security
+
+Every tenant-owned table has `tenant_id` and row-level security (RLS) policies (CLAUDE.md). Three tables carry a `tenant_id` and have RLS **off**, on purpose. `packages/db/test/rls.test.ts` fails if any other table does, so this list cannot grow by accident.
+
+| Table | Why it has no RLS | Rule for code that uses it |
+| --- | --- | --- |
+| `session` | A session is found by the hash of its token, before any organisation is known, so there is no tenant context to filter by. | Look it up only by token hash. Delete only by session, device or account id. Never list sessions in a tenant context without filtering on `tenant_id`. |
+| `auth_event` | It also records sign-ins that have no organisation (a failed attempt, a person with several organisations), so `tenant_id` can be empty. | Written by the API. Nothing reads it today. Anything that ever reads it must filter on `tenant_id` itself. |
+| `captured_email` | Email that was captured instead of sent: always for demo organisations (doc 06), and for any organisation while no mail server is configured. The worker writes it from a background job, not from a request. | Written by the email worker and cleared by the nightly demo reset. Nothing reads it today. Anything that ever reads it must filter on `tenant_id` itself. |
+
+Other things worth knowing when reading the schema:
+
+- **Tables with no `tenant_id` by design.** `account`, `oauth_code`, `mobile_device` and the other account tables belong to a person, not an organisation: one person can belong to several. They are reached by account id (`withAccount`), not by tenant.
+- **`FORCE ROW LEVEL SECURITY` is not set.** The API connects as `cafm_app`, which owns nothing and cannot bypass policies. The owner role `cafm` (migrations, seed, the platform CLI) does bypass them. That is why the API must never be pointed at the owner role.
+
 ## Relationship overview
 
 ```mermaid
