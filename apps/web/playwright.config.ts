@@ -7,6 +7,8 @@ const env = {
   API_PORT: '4000',
   API_URL: 'http://localhost:4000',
   WEB_ORIGIN: 'http://localhost:3000',
+  // The suite's own pages send policy reports; keep them from using up the cap the report endpoint test needs.
+  CSP_REPORT_MAX_PER_MINUTE: '100000',
 };
 
 export default defineConfig({
