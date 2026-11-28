@@ -96,11 +96,11 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Fixed
 
-- Money custom fields are now typed in pounds and pence (or the currency's own units), like the replacement cost on an asset, instead of asking for the amount in pence. The amount is still stored as whole minor units.
 - Phone app: the QR scanner can now use the camera. The site was telling the browser to keep the camera off for everyone, so the scan screen only ever offered typing the number.
 - Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
 
 - Two-step verification: a wrong password when turning it off or replacing recovery codes now counts towards the same limit on failed attempts as signing in, so a stolen session can’t be used to guess the password.
+- Money custom fields are now typed in pounds and pence (or the currency's own units), like the replacement cost on an asset, instead of asking for the amount in pence. The amount is still stored as whole minor units.
 
 - Business calendars: the warning for a site with no calendar now says what its service level clocks really use, the default hours (Monday to Friday, 09:00 to 17:00, UK time), instead of saying they run around the clock. The screen also pages through organisations with more than 100 sites, instead of stopping silently at 500, and its count of sites without a calendar covers every site.
 
