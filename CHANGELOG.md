@@ -6,6 +6,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
+- A null character (U+0000) in a search, a name or any other text now gets a clear "Text can’t contain a null character" error instead of a server error. Nothing changes for ordinary text.
 - Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
 - The full content security policy in report-only mode now sends violation reports to the site, which logs each one without any page path or query string, so we can see what enforcing it would block. Nothing changes for people using the product.
 - The security policy report now gives each page its own script nonce, a step towards enforcing the full content security policy. Nothing changes for people using the product.
