@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Field, TextInput } from '@fmstead/ui';
@@ -73,6 +73,14 @@ export function RolesManager({
     notice ? { text: notice } : undefined,
   );
   const [busy, setBusy] = useState(false);
+  // The confirmation travels in the address so it survives the screen starting afresh. Once shown, take it out of the
+  // address, so reloading the page does not show it again.
+  useEffect(() => {
+    if (!notice) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('notice');
+    window.history.replaceState(null, '', url.pathname + url.search);
+  }, [notice]);
   const locked = !canManage || role?.key === 'super_user';
 
   async function run<T>(action: () => Promise<T>, done: string): Promise<T | undefined> {
