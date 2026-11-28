@@ -37,3 +37,29 @@ test('the sign-in page raises no script policy violations', async ({ page }) => 
   violations.push(...(await page.evaluate(() => (window as unknown as { __csp?: string[] }).__csp ?? [])));
   expect(violations.filter((v) => v.startsWith('script-src'))).toEqual([]);
 });
+
+test('the report-only policy names the report endpoint, which logs a violation and keeps nothing else', async ({
+  request,
+}) => {
+  const res = await request.get('/login');
+  expect(res.headers()['content-security-policy-report-only']).toContain('report-uri /csp-report');
+  const sent = await request.post('/csp-report', {
+    headers: { 'content-type': 'application/csp-report' },
+    data: JSON.stringify({
+      'csp-report': {
+        'document-uri': 'https://example.test/login?token=secret',
+        'blocked-uri': 'https://cdn.example.test/x.js?k=1',
+        'effective-directive': 'script-src-elem',
+        disposition: 'report',
+      },
+    }),
+  });
+  expect(sent.status()).toBe(204);
+  const junk = await request.post('/csp-report', { headers: { 'content-type': 'application/json' }, data: 'not json' });
+  expect(junk.status()).toBe(204);
+  const big = await request.post('/csp-report', {
+    headers: { 'content-type': 'application/json' },
+    data: 'x'.repeat(9000),
+  });
+  expect(big.status()).toBe(413);
+});
