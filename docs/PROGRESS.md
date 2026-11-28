@@ -34,9 +34,10 @@ Items the product owner has chosen to put off, with the reason. Agents don't bui
 
 - P1-13, first design-partner tenants live: deferred. There are no design partners yet.
 - P1-09d, custom domain and own sender address: deferred. There is no domain yet. Build it when a customer needs one.
-- P1-09d, configurable statuses: deferred. They need the workflow engine (P2A-06), which is in Phase 2A.
 
 These stay unticked in the Phase 1 checklist below, so the tracker stays true.
+
+Configurable statuses are not deferred, they moved: on 27 Nov 2026 they went from P1-09d to P2A-06 (doc 08 changed first), because they need the workflow engine. They are no longer a Phase 1 item.
 
 ## Waiting on the product owner
 
@@ -66,7 +67,7 @@ Claim an item here before you start, in a draft PR you open straight away (see A
 
 | Item | Who | Branch | Started | Next step |
 |---|---|---|---|---|
-| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. Batch 7 (`claude/build-p1-09-security-settings`, draft PR): P1-09e security settings (password policy, session timeout, MFA enforcement setting, audit log viewer) in progress. Batch 7 merged (P1-09e). Batch 8 (`claude/build-p1-09-username-accounts`, draft PR): P1-09f username-only accounts built. Batch 8 merged. Batch 9 (`claude/build-p1-09-custom-fields-screen`, draft PR): custom fields screen built. Batch 9 merged. Batch 10 (`claude/build-p1-09-service-levels`, draft PR): service levels and categories screen in the admin console (reads the helpdesk priority matrix and request types). Batch 10 merged. Batch 11 (`claude/build-p1-09-audit-filters`, draft PR): audit log filters by person, record and date range, and CSV export. Batch 11 merged. Batch 12 (`claude/build-p1-09-signin-message`, draft PR): built, the saved sign-in message shown on the organisation's sign-in page (public lookup by slug, no enumeration). Batch 12 merged. Batch 13 (`claude/build-p1-09-calendars`, draft PR): business calendars admin screen built. Statuses stay fixed until the workflow engine. Batch 14 (`claude/build-p1-09-team-scope`, draft PR): team scope built (P1-09b done). Batch 15 (`claude/build-p1-09-logo-sender`, draft PR): logo upload and email sender name. Batch 15 built (logo, email sender name). P1-12 merged, so P1-09e is ticked. Left in P1-09: custom domain and own sender address (owner action: DNS and domain verification) and configurable statuses (needs the workflow engine, P2A-06, which is in an unapproved phase). Nothing more can be built for P1-09 in Phase 1; tick P1-09d and P1-09 once those two land. |
+| P1-09 | Claude (Builder routine) | claude/build-p1-09-* | 23 Nov 2026 | Batch 1 (P1-09a) merged. Batches 1 and 2 merged. Batch 3 merged (site access, delegated admin). Batch 4 (`claude/build-p1-09-impersonation-modules`): P1-09c modules on and off and terminology built; impersonation is the next batch. Batch 4 merged. Batch 5 (`claude/build-p1-09-impersonation`): impersonation built (P1-09c done). Batch 6 (`claude/build-p1-09-config-screens`, draft PR): branding built; next the custom fields screen, then statuses, SLA and calendars, categories. Batch 7 (`claude/build-p1-09-security-settings`, draft PR): P1-09e security settings (password policy, session timeout, MFA enforcement setting, audit log viewer) in progress. Batch 7 merged (P1-09e). Batch 8 (`claude/build-p1-09-username-accounts`, draft PR): P1-09f username-only accounts built. Batch 8 merged. Batch 9 (`claude/build-p1-09-custom-fields-screen`, draft PR): custom fields screen built. Batch 9 merged. Batch 10 (`claude/build-p1-09-service-levels`, draft PR): service levels and categories screen in the admin console (reads the helpdesk priority matrix and request types). Batch 10 merged. Batch 11 (`claude/build-p1-09-audit-filters`, draft PR): audit log filters by person, record and date range, and CSV export. Batch 11 merged. Batch 12 (`claude/build-p1-09-signin-message`, draft PR): built, the saved sign-in message shown on the organisation's sign-in page (public lookup by slug, no enumeration). Batch 12 merged. Batch 13 (`claude/build-p1-09-calendars`, draft PR): business calendars admin screen built. Statuses stay fixed until the workflow engine. Batch 14 (`claude/build-p1-09-team-scope`, draft PR): team scope built (P1-09b done). Batch 15 (`claude/build-p1-09-logo-sender`, draft PR): logo upload and email sender name. Batch 15 built (logo, email sender name). P1-12 merged, so P1-09e is ticked. Left in P1-09: custom domain and own sender address (owner action: DNS and domain verification). Configurable statuses moved to P2A-06 (Phase 2A), so they no longer hold P1-09 open. Nothing more can be built for P1-09 in Phase 1; tick P1-09d and P1-09 once the custom domain and sender address land. |
 
 ## Phase checklists
 
@@ -143,7 +144,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-08d** Kanban and calendar layouts.
     - [x] Work orders: board (earlier) and calendar. ([guide](views.md#calendar-layout-on-work-orders))
     - [x] Calendar on planned maintenance schedules, and a board on requests. ([guide](views.md#board-on-requests))
-- [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, statuses, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
+- [ ] **P1-09** Super User admin console v1: users and invites, username-only accounts, roles matrix, teams, scopes, delegated admin, impersonation, modules on/off, terminology, branding (logo/colours), custom fields, SLA/calendars, categories, password policy, MFA enforcement, session timeout, audit log viewer.
   - [x] **P1-09a** Admin console shell, overview (licences, seats, changes, setup checklist) and Users and licences (invite, withdraw, change role, deactivate). ([guide](admin.md))
   - [x] **P1-09b** Roles matrix screen, teams, scopes and delegated admin.
     - [x] Roles matrix screen and teams (table, API, screen). ([guide](admin.md#roles-and-permissions))
@@ -152,7 +153,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
   - [x] **P1-09c** Impersonation ("view as user"), modules on and off, terminology.
     - [x] Modules on and off, and terminology, with their admin screens and the menu applying them. ([guide](admin.md#modules-and-navigation))
     - [x] Impersonation ("view as user"), audited, with a visible banner, read-only and limited to an hour. ([guide](admin.md#view-as-user))
-  - [ ] **P1-09d** Branding, custom fields, statuses, SLA and calendars, categories screens.
+  - [ ] **P1-09d** Branding, custom fields, SLA and calendars, categories screens.
     - [x] Branding: accent colour with contrast check, applied across the app. ([guide](admin.md#branding))
     - [x] Branding: sign-in message shown on the organisation's sign-in page. ([guide](admin.md#branding))
     - [x] Branding: logo and email sender name. ([guide](admin.md#branding))
@@ -160,7 +161,6 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
     - [x] Custom fields screen: list, add, edit and deactivate, with the plan limit. ([guide](admin.md#custom-fields))
     - [x] SLA targets and categories: service levels screen (reads the helpdesk matrix and request types; edit in the request catalogue). ([guide](admin.md#service-levels-and-categories))
     - [x] Business calendars screen: every site's hours, bank holidays and closures, with a link to edit. ([guide](admin.md#business-calendars))
-    - [ ] Statuses (not configurable yet; comes with the workflow engine).
   - [x] **P1-09e** Security settings: password policy, MFA enforcement, session timeout, and the audit log viewer.
     - [x] Password minimum length, longest sign-in and the MFA-required setting, with the screen. ([guide](admin.md#security-and-sign-in))
     - [x] Audit log viewer: newest first, search by event, details. ([guide](admin.md#audit-log))
@@ -187,7 +187,7 @@ Done in PRs #3–#8, #22 and #23. Each item notes where it lives.
 - [ ] **P2A-03** Contractor management, accreditations/insurance, auto-suspension, **contractor portal**, quotes/RFQ, contractor site sign-in.
 - [ ] **P2A-04** **Permit to Work and RAMS** (moved forward from Phase 4: contractor work needs them).
 - [ ] **P2A-05** Documents module (versions, expiry, previews, external sharing).
-- [ ] **P2A-06** Workflow builder UI + automation rules + approvals engine; form designer.
+- [ ] **P2A-06** Workflow builder UI + automation rules + approvals engine; form designer. Includes configurable request and work order statuses, moved here from P1-09d because they need the workflow engine.
 - [ ] **P2A-07** Config history UI with diff and rollback; config export/import.
 - [ ] **P2A-08** Data retention policies, legal hold, DSAR export/erasure tools.
 - [ ] **P2A-09** Public REST API v1 + API keys + webhooks.
