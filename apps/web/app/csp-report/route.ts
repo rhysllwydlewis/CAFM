@@ -22,11 +22,31 @@ function allowed(): boolean {
   return count <= MAX_PER_WINDOW;
 }
 
+/** Reads the body up to the limit, cancelling the stream as soon as it is exceeded. Returns null when too large. */
+async function readLimited(request: Request): Promise<string | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return '';
+  const decoder = new TextDecoder();
+  let received = 0;
+  let out = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return out + decoder.decode();
+    received += value.byteLength;
+    if (received > MAX_REPORT_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    out += decoder.decode(value, { stream: true });
+  }
+}
+
 export async function POST(request: Request) {
   const declared = Number(request.headers.get('content-length') ?? 0);
   if (declared > MAX_REPORT_BYTES) return new NextResponse(null, { status: 413 });
   if (!allowed()) return new NextResponse(null, { status: 429 });
-  const body = (await request.text()).slice(0, MAX_REPORT_BYTES + 1);
+  const body = await readLimited(request);
+  if (body === null) return new NextResponse(null, { status: 413 });
   for (const violation of parseCspReports(body)) {
     console.log(JSON.stringify({ time: new Date().toISOString(), level: 'warn', msg: 'csp-violation', ...violation }));
   }

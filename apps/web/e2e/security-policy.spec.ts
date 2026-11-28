@@ -63,3 +63,22 @@ test('the report-only policy names the report endpoint, which logs a violation a
   });
   expect(big.status()).toBe(413);
 });
+
+test('the report endpoint refuses an oversized body that has no content length', async ({ baseURL }) => {
+  const chunk = new TextEncoder().encode('x'.repeat(4096));
+  let sent = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (sent >= 64) return controller.close();
+      sent += 1;
+      controller.enqueue(chunk);
+    },
+  });
+  const res = await fetch(`${baseURL}/csp-report`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+    duplex: 'half',
+  } as RequestInit);
+  expect(res.status).toBe(413);
+});
