@@ -25,3 +25,7 @@ Every API request writes one JSON line to standard output when it finishes:
 - **Dependabot** (`.github/dependabot.yml`) opens weekly pull requests for npm dependencies, and monthly ones for GitHub Actions, Docker and the design tooling.
 - **CodeQL** (`.github/workflows/codeql.yml`) scans the TypeScript and JavaScript on every pull request, on `main` and weekly. Results are under the repository's Security tab.
 - **OWASP ZAP baseline** (`.github/workflows/zap.yml`) runs weekly, and on request, against the demo build. It is passive and reports only; read the report in the run's artifacts.
+
+## Null characters
+
+Postgres cannot store a NUL character (U+0000), so one in a search term or a saved name used to reach the database and come back as a `500`. A global guard (`apps/api/src/core/nul.guard.ts`) now refuses a request with one in its address, query string, route parameters or JSON body (keys included) with `400` and the code `invalid_character`. It covers every route at once, including ones that read the query themselves. It runs before the session check, so an unauthenticated request with one gets the `400` too. Uploaded files are not searched.
