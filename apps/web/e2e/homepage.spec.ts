@@ -1,29 +1,40 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-/** Scroll to a point in the film, as a share of its length. */
-async function scrollFilm(page: Page, share: number) {
-  await expect(page.locator('[data-film="on"]')).toHaveCount(1);
-  await page.evaluate((s) => {
-    const film = document.querySelector<HTMLElement>('[data-film="on"]')!;
-    window.scrollTo(0, s * (film.offsetHeight - window.innerHeight));
-  }, share);
+const CHAPTERS = [
+  { id: 'ground', title: 'Run every building.' },
+  { id: 'facade', title: 'Every request, one queue.' },
+  { id: 'roof', title: 'Planned, not reactive.' },
+  { id: 'skyline', title: 'Compliance you can prove.' },
+  { id: 'estate', title: 'Every site, one login.' },
+] as const;
+
+const film = (page: Page) => page.locator('[data-film]');
+
+/** The film is ready when the page has measured its chapters and worked out which one is showing. */
+async function filmReady(page: Page) {
+  await expect(film(page)).toHaveAttribute('data-active-section', /^\d$/);
 }
 
-// A headline is two block lines with no space between them in the text, so match the words with optional space.
-const chapter = (page: Page, text: string) =>
-  page.locator('[data-chapter]').filter({ hasText: new RegExp(text.replace(/[.,]/g, '\\$&').replace(/ /g, '\\s*')) });
-const tag = (page: Page, text: string) => page.locator('[data-tag]').filter({ hasText: text });
-const altitude = (page: Page) => page.locator('[data-altitude-number]');
+/** Scroll to a point in a chapter, as a share of the scrolling that chapter takes. */
+async function scrollToChapter(page: Page, id: string, share = 0.5) {
+  await page.evaluate(
+    ([chapter, at]) => {
+      const band = document.getElementById(chapter as string)!;
+      const top = band.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, top + (at as number) * (band.offsetHeight - window.innerHeight));
+    },
+    [id, share] as const,
+  );
+}
 
 test('the opening says what FM Stead is and offers the demo and sign in', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Run every building.' })).toBeVisible();
-  const hero = page.locator('[data-hero]');
-  await expect(hero.getByText('Facilities management software.')).toBeVisible();
-  await expect(hero.getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/login#demo-heading');
-  await expect(hero.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login');
-  await expect(altitude(page)).toHaveText('0');
+  const opening = page.locator('#ground');
+  await expect(opening.getByText('Facilities management software for UK estates teams.')).toBeVisible();
+  await expect(opening.getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/login#demo-heading');
+  await expect(opening.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login');
 });
 
 test('the logo is the product wordmark, as everywhere else', async ({ page }) => {
@@ -37,122 +48,150 @@ test('the logo is the product wordmark, as everywhere else', async ({ page }) =>
   );
 });
 
-test('scrolling flies the camera: the altitude climbs and each chapter and callout appears in turn', async ({
-  page,
-}) => {
+test('the top bar is clear over the film and solid over the words below it', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('[data-loader][data-done]')).toHaveCount(1);
-
-  // Up the facade, past the technician.
-  await scrollFilm(page, 1 / 6);
-  await expect(chapter(page, 'Every asset.')).toHaveAttribute('data-on', 'true');
-  await expect(tag(page, 'Facade clean')).toHaveAttribute('data-on', 'true');
-  await expect(altitude(page)).toHaveText('118');
-  await expect(page.locator('[data-hero]')).toHaveAttribute('data-on', 'false');
-
-  // On the roof.
-  await scrollFilm(page, 2 / 6);
-  await expect(chapter(page, 'Planned, not reactive.')).toHaveAttribute('data-on', 'true');
-  await expect(tag(page, 'Chiller 2')).toHaveAttribute('data-on', 'true');
-  await expect(tag(page, 'Solar array')).toHaveAttribute('data-on', 'true');
-  await expect(chapter(page, 'Every asset.')).toHaveAttribute('data-on', 'false');
-
-  // Over the estate.
-  await scrollFilm(page, 4 / 6);
-  await expect(chapter(page, 'Twelve sites. One login.')).toHaveAttribute('data-on', 'true');
-  await expect(tag(page, 'Head office')).toHaveAttribute('data-on', 'true');
-  await expect(tag(page, 'Riverside depot')).toHaveAttribute('data-on', 'true');
-  await expect(altitude(page)).toHaveText('1,400');
-
-  // And back: scrolling up reverses it.
-  await scrollFilm(page, 1 / 6);
-  await expect(chapter(page, 'Every asset.')).toHaveAttribute('data-on', 'true');
-  await expect(chapter(page, 'Twelve sites. One login.')).toHaveAttribute('data-on', 'false');
-  await expect(altitude(page)).toHaveText('118');
+  await filmReady(page);
+  const bar = page.locator('header');
+  const clear = 'rgba(0, 0, 0, 0)';
+  await expect(bar).toHaveCSS('position', 'fixed');
+  await expect(bar).toHaveCSS('background-color', clear);
+  await page.evaluate(() => document.getElementById('screens')!.scrollIntoView());
+  await expect(bar).not.toHaveCSS('background-color', clear);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(bar).toHaveCSS('background-color', clear);
 });
 
-test('only one chapter is up at a time, and none between stops', async ({ page }) => {
+test('the five chapters read in order, each with its own heading', async ({ page }) => {
   await page.goto('/');
-  await scrollFilm(page, 0.25);
-  await expect(page.locator('[data-chapter][data-on="true"]')).toHaveCount(0);
-  await scrollFilm(page, 5 / 6);
-  await expect(page.locator('[data-chapter][data-on="true"]')).toHaveCount(1);
-  await expect(chapter(page, 'Every job, connected.')).toHaveAttribute('data-on', 'true');
+  const headings = film(page).getByRole('heading');
+  await expect(headings).toHaveText(CHAPTERS.map((chapter) => chapter.title));
+  await expect(headings.first()).toHaveJSProperty('tagName', 'H1');
+  await expect(page.locator('#facade').getByText('Helpdesk', { exact: true })).toBeVisible();
 });
 
-test('the loading screen lets taps through once it is done', async ({ page }) => {
+test('scrolling moves through the chapters, and scrolling back reverses it', async ({ page }) => {
   await page.goto('/');
-  const loader = page.locator('[data-loader]');
-  await expect(loader).toHaveAttribute('data-done', '');
-  await expect(loader).toHaveCSS('pointer-events', 'none');
+  await filmReady(page);
+  for (const [index, chapter] of CHAPTERS.entries()) {
+    await scrollToChapter(page, chapter.id);
+    await expect(film(page)).toHaveAttribute('data-active-section', String(index));
+  }
+  await scrollToChapter(page, 'facade');
+  await expect(film(page)).toHaveAttribute('data-active-section', '1');
+  await scrollToChapter(page, 'ground', 0);
+  await expect(film(page)).toHaveAttribute('data-active-section', '0');
 });
 
-test('the film draws the flight on its canvas', async ({ page }) => {
+test('the chapter navigation shows where you are and jumps to a chapter; phones scroll instead', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('[data-loader][data-done]')).toHaveCount(1);
-  await scrollFilm(page, 2 / 6);
-  await expect(page.locator('[data-film-stage][data-ready]')).toHaveCount(1);
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const canvas = document.querySelector<HTMLCanvasElement>('[data-canvas]')!;
-        const { data } = canvas.getContext('2d')!.getImageData(canvas.width / 2 - 20, canvas.height / 2 - 20, 40, 40);
-        let lit = 0;
-        for (let i = 0; i < data.length; i += 4) lit += data[i]! + data[i + 1]! + data[i + 2]!;
-        return lit > 0;
-      }),
-    )
-    .toBe(true);
+  await filmReady(page);
+  const nav = page.getByRole('navigation', { name: 'Chapters' });
+  const wide = (page.viewportSize()?.width ?? 0) > 860;
+  if (!wide) {
+    await expect(nav).toBeHidden();
+    return;
+  }
+  await expect(nav.getByRole('button')).toHaveCount(5);
+  await expect(nav.getByRole('button', { name: 'Street' })).toHaveAttribute('aria-current', 'step');
+  await nav.getByRole('button', { name: 'Compliance' }).click();
+  await expect(film(page)).toHaveAttribute('data-active-section', '3');
+  await expect(nav.getByRole('button', { name: 'Compliance' })).toHaveAttribute('aria-current', 'step');
+  await expect(nav.getByRole('button', { name: 'Street' })).not.toHaveAttribute('aria-current', 'step');
 });
 
-test('the opening and closing buttons leave the tab order when they are not on screen', async ({ page }) => {
+test('every clip is fetched up front on a computer, and the loading line finishes', async ({ page, isMobile }) => {
+  const clips = new Set<string>();
+  page.on('response', (response) => {
+    const { pathname } = new URL(response.url());
+    if (pathname.startsWith('/homepage/film/') && pathname.endsWith('.mp4') && response.ok()) clips.add(pathname);
+  });
   await page.goto('/');
-  const opening = page.locator('[data-hero-actions]');
-  const closing = page.locator('[data-close-actions]');
-  await expect(page.locator('[data-film="on"]')).toHaveCount(1);
-  await expect(opening).toHaveJSProperty('inert', false);
-  await expect(closing).toHaveJSProperty('inert', true);
-  await scrollFilm(page, 0.5);
-  await expect(opening).toHaveJSProperty('inert', true);
-  await expect(closing).toHaveJSProperty('inert', true);
-  await scrollFilm(page, 1);
-  await expect(opening).toHaveJSProperty('inert', true);
-  await expect(closing).toHaveJSProperty('inert', false);
-  await scrollFilm(page, 0);
-  await expect(opening).toHaveJSProperty('inert', false);
+  await filmReady(page);
+  // A computer fetches all five at once so a fast scroll never lands on a clip that is still downloading.
+  // A phone fetches only the ones near the reader, and its lighter versions.
+  if (!isMobile) {
+    await expect.poll(() => [...clips].sort()).toEqual(CHAPTERS.map((c) => `/homepage/film/${c.id}.mp4`).sort());
+    await expect
+      .poll(() => film(page).evaluate((el) => (el as HTMLElement).style.getPropertyValue('--loaded')))
+      .toBe('1');
+  } else {
+    await expect.poll(() => clips.size).toBeGreaterThan(0);
+    expect([...clips].every((path) => path.endsWith('-mobile.mp4'))).toBe(true);
+  }
 });
 
-test('the film ends with the demo and sign-in links', async ({ page }) => {
+test('with reduced motion no film is downloaded and every chapter still has its picture', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const clips: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().endsWith('.mp4')) clips.push(request.url());
+  });
   await page.goto('/');
-  await expect(page.locator('[data-film="on"]')).toHaveCount(1);
+  await filmReady(page);
+  await scrollToChapter(page, 'roof');
+  await expect(film(page)).toHaveAttribute('data-active-section', '2');
+  await expect(page.getByRole('heading', { name: 'Planned, not reactive.' })).toBeVisible();
+  expect(clips).toEqual([]);
+  // Five posters, one per chapter, and the first one shows.
+  await expect(film(page).locator('img')).toHaveCount(5);
+});
+
+test('at 320px the page fits the screen and has no accessibility violations', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await filmReady(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(axe.violations.map(({ id, nodes }) => ({ id, nodes: nodes.map((node) => node.target) }))).toEqual([]);
+  await scrollToChapter(page, 'skyline');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+});
+
+test('the product screens load, with a description each', async ({ page }) => {
+  await page.goto('/');
+  const section = page.getByRole('region', { name: 'Everything in one clear view.' });
+  await section.scrollIntoViewIfNeeded();
+  const screens = section.getByRole('img');
+  await expect(screens).toHaveCount(4);
+  for (const [index, name] of [
+    /dashboard/,
+    /work order for a boiler/,
+    /compliance matrix/,
+    /technician mobile app/,
+  ].entries()) {
+    const screen = screens.nth(index);
+    await screen.scrollIntoViewIfNeeded();
+    await expect(screen).toHaveAccessibleName(name);
+    await expect.poll(() => screen.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  }
+  await expect(section.getByText('Design screens, shown with demo data.')).toBeVisible();
+});
+
+test('it says who it is for and what sets it apart', async ({ page }) => {
+  await page.goto('/');
+  const who = page.getByRole('region', { name: 'Made for UK estates and FM teams.' });
+  await expect(who.getByRole('heading', { level: 3 })).toHaveText([
+    'FM service providers',
+    'Education',
+    'Commercial property',
+    'Housing associations',
+    'Healthcare and hospitality',
+  ]);
+  const apart = page.getByRole('region', { name: 'What sets it apart.' });
+  await expect(apart.getByRole('heading', { level: 3 })).toHaveCount(5);
+  await expect(apart.getByRole('heading', { name: 'UK compliance built in' })).toBeAttached();
+});
+
+test('the page ends with the demo and sign-in links', async ({ page }) => {
+  await page.goto('/');
+  await filmReady(page);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const final = page.getByRole('region', { name: 'One login for every site you look after.' });
   await expect(final.getByRole('heading', { name: 'One login for every site you look after.' })).toBeInViewport();
   await expect(final.getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/login#demo-heading');
   await expect(final.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login');
   await expect(final.getByText('Demo data only')).toBeVisible();
-});
-
-test('with reduced motion at 320px the film follows the scroll exactly and fits the screen', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.setViewportSize({ width: 320, height: 568 });
-  await page.goto('/');
-  await expect(page.locator('[data-hero]')).toHaveAttribute('data-on', 'true');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
-  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  expect(axe.violations.map(({ id, nodes }) => ({ id, nodes: nodes.map((node) => node.target) }))).toEqual([]);
-
-  await scrollFilm(page, 2 / 6);
-  await expect(chapter(page, 'Planned, not reactive.')).toHaveAttribute('data-on', 'true');
-  await expect(altitude(page)).toHaveText('168');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
-});
-
-test('the film has a written version for screen readers', async ({ page }) => {
-  await page.goto('/');
-  const film = page.getByRole('region', { name: 'One flight over a demo estate' });
-  await expect(film.getByRole('listitem')).toHaveCount(7);
-  await expect(film.getByRole('listitem').nth(2)).toContainText('roof deck with chillers');
 });
 
 test('the skip link jumps past the film', async ({ page }) => {
@@ -167,31 +206,38 @@ test('the skip link jumps past the film', async ({ page }) => {
 
 test('a link to the closing section lands on it once the film has its length', async ({ page }) => {
   await page.goto('/#start');
-  await expect(page.locator('[data-film="on"]')).toHaveCount(1);
+  await filmReady(page);
   await expect(page.getByRole('heading', { name: 'One login for every site you look after.' })).toBeInViewport();
 });
 
-test('reloading part-way through keeps the place in the flight', async ({ page }) => {
+test('search engines are told what the product is', async ({ page }) => {
   await page.goto('/');
-  await scrollFilm(page, 2 / 6);
-  await expect(altitude(page)).toHaveText('168');
-  await page.reload();
-  await expect(page.locator('[data-film="on"]')).toHaveCount(1);
-  await expect(altitude(page)).toHaveText('168', { timeout: 2000 });
+  const data = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}');
+  expect(data).toMatchObject({
+    '@type': 'SoftwareApplication',
+    name: 'FM Stead',
+    applicationCategory: 'BusinessApplication',
+  });
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /\/homepage\/og\.jpg$/);
+  await expect(page).toHaveTitle('FM Stead | Facilities management software');
 });
 
-test('without JavaScript the homepage shows the opening words and its links', async ({ browser, baseURL }) => {
+test('without JavaScript the homepage shows the opening words, every chapter and its links', async ({
+  browser,
+  baseURL,
+}) => {
   const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
   try {
     const page = await context.newPage();
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1, name: 'Run every building.' })).toBeVisible();
-    await expect(page.locator('[data-loader]')).toBeHidden();
-    await expect(page.getByRole('heading', { name: 'Every asset.' })).toBeHidden();
-    await expect(page.locator('[data-hero]').getByRole('link', { name: 'Try the demo' })).toHaveAttribute(
+    await expect(page.locator('#ground').getByRole('link', { name: 'Try the demo' })).toHaveAttribute(
       'href',
       '/login#demo-heading',
     );
+    for (const chapter of CHAPTERS) await expect(page.getByRole('heading', { name: chapter.title })).toBeAttached();
+    // The bar scrolls away with the page, so it never sits on top of the words below the film.
+    await expect(page.locator('header')).toHaveCSS('position', 'absolute');
     await page.getByRole('link', { name: 'Skip to the demo' }).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: 'One login for every site you look after.' })).toBeInViewport();

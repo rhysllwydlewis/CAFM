@@ -939,7 +939,7 @@
     "id": "marketing-02-homepage",
     "group": "Marketing site (Phase 5 draft)",
     "title": "FM Stead homepage",
-    "desc": "Public home: the opening of one flight over a demo estate, played by scrolling, with the demo and sign-in links.",
+    "desc": "Public home: the opening of one continuous film of a London street and the city, played by scrolling, with the demo and sign-in links and the chapter rail.",
     "viewport": "desktop",
     "theme": "light",
     "file": "13-marketing.js"
@@ -947,8 +947,17 @@
   {
     "id": "marketing-03-homepage-flight",
     "group": "Marketing site (Phase 5 draft)",
-    "title": "FM Stead homepage, mid-flight",
-    "desc": "Part-way through the flight: on the roof, with a short headline, callouts pinned to the plant, the altitude and the stage rail.",
+    "title": "FM Stead homepage, mid-film",
+    "desc": "Part-way through the film: the compliance chapter over the city, with its headline, sentence and tags on the right and the chapter rail showing where you are.",
+    "viewport": "desktop",
+    "theme": "light",
+    "file": "13-marketing.js"
+  },
+  {
+    "id": "marketing-04-homepage-product",
+    "group": "Marketing site (Phase 5 draft)",
+    "title": "FM Stead homepage, below the film",
+    "desc": "After the film: the product screens, who it is for, what sets it apart, and the closing call to action and footer.",
     "viewport": "desktop",
     "theme": "light",
     "file": "13-marketing.js"
