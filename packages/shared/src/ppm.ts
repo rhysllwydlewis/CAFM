@@ -159,6 +159,9 @@ export function endOfLocalDay(value: string, timeZone: string): Date {
 }
 
 /** The calendar day an instant falls on in a time zone. */
+/** The time zone every site's "today" is read in until sites carry their own (doc 08: UK estates). */
+export const UK_TIME_ZONE = 'Europe/London';
+
 export function localDate(instant: Date, timeZone: string): string {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })

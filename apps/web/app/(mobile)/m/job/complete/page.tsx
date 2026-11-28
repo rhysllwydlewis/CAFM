@@ -3,7 +3,14 @@
 import { Suspense, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@fmstead/ui';
-import { LABOUR_TYPES, LABOUR_TYPE_LABELS, MAX_TIME_MINUTES, type LabourType } from '@fmstead/shared';
+import {
+  LABOUR_TYPES,
+  LABOUR_TYPE_LABELS,
+  localDate,
+  MAX_TIME_MINUTES,
+  UK_TIME_ZONE,
+  type LabourType,
+} from '@fmstead/shared';
 import { SignaturePad } from '../../signature-pad';
 import { useJob } from '../../use-job';
 
@@ -94,7 +101,7 @@ function Complete() {
             payload: {
               labourType,
               minutes: spent,
-              workedOn: new Date().toISOString().slice(0, 10),
+              workedOn: localDate(new Date(), UK_TIME_ZONE),
               submission: crypto.randomUUID(),
             },
           },

@@ -55,6 +55,11 @@ test('a Super User edits a custom role in the roles matrix', async ({ page }) =>
   await page.getByRole('button', { name: 'Create role' }).click();
   await expect(page.getByRole('heading', { name: 'Role: ' + name })).toBeVisible();
   await expect(page.getByText('Role created.')).toBeVisible();
+  // The confirmation is taken out of the address once shown, so reloading the page does not show it again.
+  await expect(page).not.toHaveURL(/notice=/);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Role: ' + name })).toBeVisible();
+  await expect(page.getByText('Role created.')).toHaveCount(0);
   await page.getByLabel('See assets', { exact: true }).check();
   await page.getByRole('button', { name: 'Save role' }).click();
   await expect(page.getByText('Role saved.')).toBeVisible();
@@ -63,6 +68,7 @@ test('a Super User edits a custom role in the roles matrix', async ({ page }) =>
 
   await page.getByRole('button', { name: 'Delete role' }).click();
   await expect(page.getByText('Role deleted.')).toBeVisible();
+  await expect(page).not.toHaveURL(/notice=/);
 });
 
 test('a Super User creates and deletes a team', async ({ page }) => {

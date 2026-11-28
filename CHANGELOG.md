@@ -6,6 +6,9 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Added
 
+- Phone app: a poor signal no longer signs a technician out. If the answer to a sign-in refresh is lost, the phone's retry within a minute is answered with a fresh sign-in instead of being treated as a stolen device. A person can also have at most 10 phones signed in, and expired approval codes are cleared automatically. See [mobile](docs/mobile.md#stolen-and-lost-devices).
+- Time recorded on a phone is filed on the London day, so work between midnight and 1am in summer is no longer filed on the day before.
+- The Business calendars screen counts only closures that are still ahead, and the roles screen no longer shows its confirmation again when the page is reloaded.
 - Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
 - The full content security policy in report-only mode now sends violation reports to the site, which logs each one without any page path or query string, so we can see what enforcing it would block. Nothing changes for people using the product.
 - The security policy report now gives each page its own script nonce, a step towards enforcing the full content security policy. Nothing changes for people using the product.

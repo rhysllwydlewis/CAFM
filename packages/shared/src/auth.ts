@@ -161,6 +161,14 @@ export const MOBILE_CLIENT_ID = 'fmstead-pwa';
 /** Access tokens are short; the refresh token rotates on every use. */
 export const MOBILE_ACCESS_TOKEN_SECONDS = 15 * 60;
 export const MOBILE_AUTH_CODE_SECONDS = 60;
+/**
+ * A phone that never received the answer to a refresh retries with the old token. Within this many seconds of the
+ * change that is treated as a retry and answered with a fresh pair; later than that it is treated as a copied token
+ * and the device is signed out.
+ */
+export const MOBILE_REFRESH_GRACE_SECONDS = 60;
+/** How many phones one person can have signed in at once. Approving another signs out the least recently used. */
+export const MOBILE_DEVICE_LIMIT = 10;
 
 const pkceChallenge = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'The code challenge must be a base64url SHA-256 hash');
 const pkceVerifier = z

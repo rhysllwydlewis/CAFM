@@ -175,6 +175,8 @@ model MobileDevice {
   name             String
   refreshHash      String     @unique @map("refresh_hash")
   previousHash     String?    @map("previous_hash")
+  /// When the refresh token last changed. A replay of the previous token within a short window is a lost response, not theft.
+  refreshRotatedAt DateTime?  @map("refresh_rotated_at") @db.Timestamptz(3)
   refreshExpiresAt DateTime   @map("refresh_expires_at") @db.Timestamptz(3)
   lastSeenAt       DateTime   @default(now()) @map("last_seen_at") @db.Timestamptz(3)
   lastIp           String?    @map("last_ip")
