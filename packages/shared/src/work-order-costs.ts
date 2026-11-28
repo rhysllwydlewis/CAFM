@@ -27,6 +27,8 @@ export const LABOUR_TYPE_LABELS: Record<LabourType, string> = {
 export const MAX_QUANTITY_MILLI = 10_000_000;
 export const MAX_UNIT_COST_MINOR = 100_000_000;
 export const MAX_JOB_COST_MINOR = 1_000_000_000;
+/** An hourly labour rate is capped so a whole day of time (24 hours) never costs more than one job can hold. */
+export const MAX_HOURLY_RATE_MINOR = 40_000_000;
 
 /** A job holds at most this many cost entries, which is far more than a reactive job needs. */
 export const MAX_COSTS_PER_JOB = 200;

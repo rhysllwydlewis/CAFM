@@ -109,6 +109,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 - Roles and permissions: the confirmation after creating, duplicating or deleting a role now stays on screen. It used to vanish if the page reloaded first.
 - Deleting a saved view could, now and then, leave it in the Saved view list until you reloaded the page, and a view you had just saved could be missing from the list. The list is now refreshed after saving or deleting a view.
+- Labour rates are now capped at £400,000 an hour, so recording a whole day of time at the highest rate can no longer fail with an error. If a rate saved earlier is still too high for the time recorded, the technician now sees a message that points at the rate instead of a server error.
 - Role and team names can no longer be duplicated by case: "north region" is refused when "North Region" exists, and a custom role can't take the name of a built-in role such as Technician (or another custom role) when it is created or renamed. A team that differs from an older one only by case is renamed with a suffix by the update, so nothing is lost.
 
 ### Changed
