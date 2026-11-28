@@ -36,7 +36,7 @@ Every API request writes one JSON line to standard output when it finishes:
 | `next>postcss` | file read through source map comments; Next pins an old `postcss` | Next ships `postcss` 8.5.18 or later |
 | `@prisma/config>effect`, `@prisma/config>deepmerge-ts` | regular expression and stack exhaustion issues in two build-time helpers of the Prisma CLI | Prisma ships with fixed versions (they are build and command-line only, never in the running API) |
 
-Two advisories are left, because each needs a major upgrade with code changes and its own pull request: `zod` 3 to 4 (memory use on very large arrays; request bodies are already capped at 100 kB) and `maplibre-gl` 5 to 6 (a sanitiser bypass in a function this app does not call). Both are tracked on issue #128.
+One advisory is left, because it needs a major upgrade with code changes and its own pull request: `zod` 3 to 4 (memory use on very large arrays; request bodies are already capped at 100 kB). It is tracked on issue #128. `maplibre-gl` was moved to 6, which clears the other one; version 6 keeps its worker in a separate file, so the portfolio map points it there with `setWorkerUrl`.
 
 ## Null characters
 
