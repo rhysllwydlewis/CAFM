@@ -28,7 +28,19 @@ async function reason(res: Response): Promise<{ field: FieldName | null; message
 }
 
 /** The signed-in person changes their own password (mockup auth-08-account-security, issue #89). */
-export function PasswordChange({ locked, minLength }: { locked: boolean; minLength: number }) {
+export function PasswordChange({
+  locked,
+  minLength,
+  doneHref,
+  intro,
+}: {
+  locked: boolean;
+  minLength: number;
+  /** Where to go once the password is changed. Used when the person is held here until they choose their own. */
+  doneHref?: string;
+  /** Replaces the usual line above the form. */
+  intro?: string;
+}) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -62,6 +74,11 @@ export function PasswordChange({ locked, minLength }: { locked: boolean; minLeng
     try {
       const res = await postJson('/auth/password', { currentPassword: current, newPassword: next });
       if (res.ok) {
+        // A hard load, so every page is read again as a person who is no longer held.
+        if (doneHref) {
+          window.location.assign(doneHref);
+          return;
+        }
         setCurrent('');
         setNext('');
         setConfirm('');
@@ -93,7 +110,7 @@ export function PasswordChange({ locked, minLength }: { locked: boolean; minLeng
         </h2>
       </div>
       <form className="card-b stack g3" onSubmit={submit} noValidate>
-        <p className="muted">You will stay signed in here. Every other device is signed out.</p>
+        <p className="muted">{intro ?? 'You will stay signed in here. Every other device is signed out.'}</p>
         {locked && (
           <div className="callout" role="note">
             <Icon name="info" />
