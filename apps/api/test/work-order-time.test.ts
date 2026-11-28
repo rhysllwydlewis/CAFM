@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient, withTenant } from '@fmstead/db';
-import { formatMinutes, timeCostMinor } from '@fmstead/shared';
+import { formatMinutes, MAX_HOURLY_RATE_MINOR, MAX_JOB_COST_MINOR, timeCostMinor } from '@fmstead/shared';
 import { createTestAccount, createTestTenant, signIn, startApp } from './helpers';
 
 let app: NestExpressApplication;
@@ -24,7 +24,9 @@ describe('time arithmetic', () => {
     expect(timeCostMinor(1, 50)).toBe(1); // 0.83p rounds up
     expect(timeCostMinor(1, 30)).toBe(1); // 0.5p rounds up
     expect(timeCostMinor(1, 29)).toBe(0);
-    expect(timeCostMinor(1440, 100_000_000)).toBe(2_400_000_000);
+    // A whole day at the highest rate allowed always fits in one job's cost.
+    expect(timeCostMinor(1440, MAX_HOURLY_RATE_MINOR)).toBe(960_000_000);
+    expect(timeCostMinor(1440, MAX_HOURLY_RATE_MINOR)).toBeLessThanOrEqual(MAX_JOB_COST_MINOR);
   });
   it('shows minutes plainly', () => {
     expect([formatMinutes(45), formatMinutes(60), formatMinutes(90), formatMinutes(0)]).toEqual([
@@ -185,6 +187,39 @@ describe('time on a job', () => {
       );
       expect(audited).toHaveLength(1);
       expect(audited[0]!.changes).toMatchObject({ minutes: 90, costed: true, amountMinor: 7200 });
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('stops at a rate where a whole day of time still fits, and costs a day at that rate', async () => {
+    const { cleanup, accounts, finance, manager, tech, job, entry } = await fixture();
+    try {
+      const set = { labourType: 'on_site' };
+      // The old ceiling, £1,000,000 an hour, made a day cost more than a job can hold and ended in a 500.
+      await finance
+        .put('/api/labour-rates')
+        .send({ ...set, rateMinor: 100_000_000 })
+        .expect(400);
+      await finance
+        .put('/api/labour-rates')
+        .send({ ...set, rateMinor: MAX_HOURLY_RATE_MINOR + 1 })
+        .expect(400);
+      await finance
+        .put('/api/labour-rates')
+        .send({ ...set, rateMinor: MAX_HOURLY_RATE_MINOR })
+        .expect(200);
+      const mine = await job(accounts.tech.memberships[0]!);
+      await tech
+        .post(`/api/work-orders/${mine.id}/time`)
+        .send(entry({ minutes: 1440 }))
+        .expect(201);
+      const seen = (await manager.get(`/api/work-orders/${mine.id}/time`).expect(200)).body;
+      expect(seen.items[0]).toMatchObject({
+        minutes: 1440,
+        rateMinor: MAX_HOURLY_RATE_MINOR,
+        amountMinor: 960_000_000,
+      });
     } finally {
       await cleanup();
     }
