@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/.next/**',
       '**/.turbo/**',
       'design/**',
+      'archive/**',
       'docs/**',
       '**/next-env.d.ts',
       '**/playwright-report/**',

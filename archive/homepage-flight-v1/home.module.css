@@ -1,0 +1,571 @@
+/* The homepage is one fixed look in every theme: one flight over a demo estate, from a city square up a tower and out
+   across the district at night. Petrol is the only accent. The film is 1500vh long, so a screen of scrolling is a
+   fraction of the flight. */
+.home {
+  --gutter: max(var(--space-5), 4.4vw, env(safe-area-inset-left, 0px));
+  --gutter-end: max(var(--space-5), 4.4vw, env(safe-area-inset-right, 0px));
+  --ink: var(--graphite-0);
+  --ink-muted: rgb(255 255 255 / 0.78);
+  --ink-faint: rgb(255 255 255 / 0.66);
+  --rule: rgb(255 255 255 / 0.26);
+  --glass: rgb(12 16 22 / 0.56);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+  background: var(--graphite-950);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+}
+.home :focus-visible {
+  outline: 2px solid var(--petrol-300);
+  outline-offset: 4px;
+}
+.skip {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + var(--space-2));
+  left: var(--gutter);
+  z-index: 70;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--graphite-0);
+  color: var(--graphite-900);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+.skip:focus {
+  transform: none;
+}
+
+/* Navigation: the logo, Sign in and the one action */
+.masthead {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: calc(76px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--gutter-end) 0 var(--gutter);
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  margin-right: auto;
+  color: inherit;
+  text-decoration: none;
+}
+.link {
+  padding: 10px 12px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  text-decoration: none;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.5);
+  transition: color 0.3s;
+}
+.link:hover {
+  color: var(--ink);
+}
+
+/* Buttons: the design system's .btn, larger here, with a ghost for the dark film */
+.home a.big {
+  height: 52px;
+  padding: 0 24px;
+  font-size: 15.5px;
+}
+.home a.ghost {
+  background: rgb(12 16 22 / 0.4);
+  border-color: var(--rule);
+  box-shadow: none;
+  color: var(--ink);
+}
+.home a.ghost:hover {
+  background: rgb(255 255 255 / 0.14);
+  border-color: var(--ink);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* The film: a sticky stage, with the flight drawn on a canvas */
+.film {
+  position: relative;
+  height: 1500vh;
+}
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--graphite-950);
+}
+.poster,
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.poster {
+  object-fit: cover;
+}
+.stage[data-ready] .poster {
+  display: none;
+}
+.shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(130% 100% at 50% 50%, transparent 58%, rgb(4 7 11 / 0.5) 100%),
+    linear-gradient(0deg, rgb(6 9 14 / 0.72) 0%, rgb(6 9 14 / 0) 36%),
+    linear-gradient(180deg, rgb(6 9 14 / 0.55) 0%, rgb(6 9 14 / 0) 22%);
+}
+.shade[data-mode='left'] {
+  background:
+    radial-gradient(130% 100% at 50% 50%, transparent 58%, rgb(4 7 11 / 0.5) 100%),
+    linear-gradient(90deg, rgb(6 9 14 / 0.62) 0%, rgb(6 9 14 / 0) 52%),
+    linear-gradient(0deg, rgb(6 9 14 / 0.72) 0%, rgb(6 9 14 / 0) 36%),
+    linear-gradient(180deg, rgb(6 9 14 / 0.55) 0%, rgb(6 9 14 / 0) 22%);
+}
+.shade[data-mode='opening'] {
+  background:
+    radial-gradient(130% 100% at 50% 50%, transparent 50%, rgb(4 7 11 / 0.55) 100%),
+    linear-gradient(90deg, rgb(6 9 14 / 0.82) 0%, rgb(6 9 14 / 0.5) 38%, rgb(6 9 14 / 0) 66%),
+    linear-gradient(0deg, rgb(6 9 14 / 0.78) 0%, rgb(6 9 14 / 0) 42%),
+    linear-gradient(180deg, rgb(6 9 14 / 0.55) 0%, rgb(6 9 14 / 0) 22%);
+}
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.layer {
+  position: absolute;
+  z-index: 10;
+}
+
+/* Loading: the logo and a thin bar over the whole page, until enough frames have arrived */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 20px;
+  background: var(--graphite-950);
+  color: var(--ink);
+  transition:
+    opacity 0.8s var(--ease),
+    visibility 0.8s;
+}
+.loader[data-done] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.loadBar {
+  width: 160px;
+  height: 2px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.loadBar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--petrol-300);
+  transition: width 0.2s linear;
+}
+
+/* The opening */
+.hero {
+  left: var(--gutter);
+  right: var(--gutter-end);
+  bottom: 25%;
+  max-width: 1000px;
+  transition:
+    opacity 0.6s var(--ease),
+    transform 0.9s var(--ease),
+    filter 0.6s var(--ease),
+    visibility 0.6s;
+}
+.hero[data-on='false'] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-40px);
+  filter: blur(8px);
+  pointer-events: none;
+}
+.hero h1 {
+  max-width: 8em;
+  margin: 0;
+  font-size: clamp(48px, 7.6vw, 124px);
+  font-weight: 700;
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  text-shadow: 0 2px 40px rgb(0 0 0 / 0.35);
+}
+.hero em,
+.ending em,
+.chapter em {
+  color: var(--petrol-300);
+  font-style: normal;
+}
+.lede {
+  margin: 20px 0 30px;
+  color: var(--ink-muted);
+  font-size: clamp(16px, 1.5vw, 19px);
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.55);
+}
+.hero > * {
+  transition:
+    opacity 0.9s var(--ease),
+    transform 1.1s var(--ease);
+}
+.film[data-intro] .hero > * {
+  opacity: 0;
+  transform: translateY(22px);
+}
+.hero > :nth-child(2) {
+  transition-delay: 0.08s;
+}
+.hero > :nth-child(3) {
+  transition-delay: 0.16s;
+}
+.hint {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  z-index: 10;
+  margin: 0;
+  transform: translateX(-50%);
+  color: var(--ink-faint);
+  font: 500 12px/1.5 var(--font-sans);
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.7);
+  text-transform: uppercase;
+  transition: opacity 0.5s;
+}
+.hint::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 28px;
+  margin: 10px auto 0;
+  background: linear-gradient(var(--ink-faint), transparent);
+  animation: drip 1.8s var(--ease) infinite;
+}
+.hint[data-on='false'] {
+  opacity: 0;
+}
+@keyframes drip {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  51% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+/* The altitude readout and the stage rail */
+.altitude {
+  bottom: 40px;
+  left: var(--gutter);
+  transition: opacity 0.5s;
+}
+.altitude[data-off] {
+  opacity: 0;
+}
+.altitude p {
+  margin: 0;
+  font-size: clamp(44px, 6vw, 88px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 200;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-shadow: 0 2px 24px rgb(0 0 0 / 0.5);
+}
+.altitude small {
+  margin-left: 6px;
+  color: var(--ink-muted);
+  font-size: 0.32em;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.rail {
+  top: 50%;
+  right: var(--gutter-end);
+  width: 2px;
+  height: min(46vh, 420px);
+  transform: translateY(-50%);
+  background: var(--rule);
+}
+.rail b {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background: var(--petrol-300);
+  box-shadow: 0 0 14px var(--petrol-300);
+}
+.railDot {
+  position: absolute;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 50%;
+  background: var(--graphite-950);
+  transition:
+    background 0.4s,
+    border-color 0.4s;
+}
+.railDot[data-on] {
+  border-color: var(--petrol-300);
+  background: var(--petrol-300);
+}
+.railLabel {
+  position: absolute;
+  right: 18px;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  font: 500 11px/1.4 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.8);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.4s;
+}
+.railLabel[data-on] {
+  color: var(--ink);
+}
+
+/* Chapters: a headline and nothing else */
+.chapter {
+  top: 36%;
+  max-width: min(640px, 86vw);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.left {
+  left: var(--gutter);
+}
+.right {
+  right: calc(var(--gutter-end) + 150px);
+  text-align: right;
+}
+.chapter h2 {
+  margin: 0;
+  font-size: clamp(44px, 7vw, 112px);
+  font-weight: 700;
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  text-shadow: 0 2px 40px rgb(0 0 0 / 0.4);
+}
+.line {
+  display: block;
+  padding-bottom: 0.07em;
+  overflow: hidden;
+}
+.line > span {
+  display: block;
+  transform: translateY(112%);
+  transition: transform 1s var(--ease);
+}
+.line:nth-child(2) > span {
+  transition-delay: 0.09s;
+}
+.chapter[data-on='true'] .line > span {
+  transform: none;
+}
+
+/* Callouts pinned to things in the footage */
+.callout {
+  position: absolute;
+  z-index: 11;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  align-items: center;
+  padding: 10px 14px 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(1.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-6%, -50%) scale(0.96);
+  transition:
+    opacity 0.6s var(--ease),
+    transform 0.8s var(--ease),
+    visibility 0.6s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.callout[data-on='true'] {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-6%, -50%);
+}
+.callout i {
+  grid-row: span 2;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--petrol-300);
+  box-shadow: 0 0 0 4px rgb(120 188 198 / 0.28);
+  animation: ping 2.2s ease-out infinite;
+}
+.callout b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.callout span {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+@keyframes ping {
+  0% {
+    box-shadow: 0 0 0 0 rgb(120 188 198 / 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgb(120 188 198 / 0);
+  }
+}
+
+/* The closing words */
+.ending {
+  right: var(--gutter-end);
+  bottom: 14%;
+  left: var(--gutter);
+  max-width: 900px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(24px);
+  transition:
+    opacity 0.8s var(--ease),
+    transform 0.9s var(--ease),
+    visibility 0.8s;
+}
+.ending[data-on='true'] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.ending h2 {
+  margin: 0;
+  font-size: clamp(48px, 7.6vw, 124px);
+  font-weight: 700;
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  text-shadow: 0 2px 40px rgb(0 0 0 / 0.4);
+}
+.ending .actions {
+  margin-top: 28px;
+}
+
+/* Below the film */
+.final {
+  position: relative;
+  z-index: 2;
+  padding: clamp(80px, 12vw, 150px) var(--gutter-end) 40px var(--gutter);
+  background: var(--graphite-950);
+}
+.final h2 {
+  max-width: 760px;
+  margin: 0 0 32px;
+  font-size: clamp(30px, 4vw, 56px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  justify-content: space-between;
+  margin-top: 110px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+.footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.footer a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .rail {
+    height: 34vh;
+  }
+  .railLabel {
+    display: none;
+  }
+  .chapter {
+    top: 30%;
+    max-width: 78vw;
+  }
+  .right {
+    right: auto;
+    left: var(--gutter);
+    text-align: left;
+  }
+  .chapter h2 {
+    font-size: clamp(40px, 12.5vw, 68px);
+  }
+  .hero,
+  .ending {
+    bottom: 22%;
+  }
+  .altitude {
+    bottom: 28px;
+  }
+  .callout {
+    padding: 8px 12px 8px 10px;
+  }
+  .callout b {
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line > span,
+  .hero,
+  .hero > *,
+  .callout,
+  .ending,
+  .loader {
+    transition: none;
+  }
+  .hint::after,
+  .callout i {
+    animation: none;
+  }
+}
