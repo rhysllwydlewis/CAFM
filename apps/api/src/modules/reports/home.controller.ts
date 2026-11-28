@@ -1,7 +1,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { Temporal } from '@js-temporal/polyfill';
-import { withTenant } from '@fmstead/db';
+import { withTenant, type Prisma, type Tx } from '@fmstead/db';
 import { WORK_ORDER_FINISHED, type Feature, type HomeSummary, type Permission } from '@fmstead/shared';
 import type { Access } from '../../core/session';
 import { PermissionGuard, SessionGuard, TenantGuard } from '../../core/auth.guards';
@@ -78,19 +78,7 @@ export class HomeController {
           }),
         );
         // Over the limit now: total cost against the job's current limit, not the flag set when a cost was added.
-        const limited = await tx.workOrder.findMany({
-          where: { AND: [workOrderScope(auth), { nteMinor: { not: null } }] },
-          select: { id: true, nteMinor: true },
-        });
-        const sums = limited.length
-          ? await tx.workOrderCost.groupBy({
-              by: ['workOrderId'],
-              where: { workOrderId: { in: limited.map((j) => j.id) } },
-              _sum: { amountMinor: true },
-            })
-          : [];
-        const spent = new Map(sums.map((r) => [r.workOrderId, r._sum.amountMinor ?? 0]));
-        const overLimitJobs = limited.filter((j) => (spent.get(j.id) ?? 0) > j.nteMinor!).length;
+        const overLimitJobs = await countJobsOverLimit(tx, workOrderScope(auth));
         spend = {
           from,
           to: today.toString(),
@@ -100,6 +88,34 @@ export class HomeController {
       }
       return { generatedAt: now.toISOString(), jobs, requests, spend };
     });
+  }
+}
+
+/**
+ * Jobs whose total cost is over their own limit, worked out a page at a time (in id order) so a big organisation
+ * never sends one huge list of ids to the database or holds every job in memory.
+ */
+export async function countJobsOverLimit(tx: Tx, scope: Prisma.WorkOrderWhereInput, pageSize = 2000): Promise<number> {
+  const where: Prisma.WorkOrderWhereInput = { AND: [scope, { nteMinor: { not: null } }] };
+  let over = 0;
+  for (let after: string | undefined; ;) {
+    const page = await tx.workOrder.findMany({
+      where,
+      select: { id: true, nteMinor: true },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(after ? { cursor: { id: after }, skip: 1 } : {}),
+    });
+    if (!page.length) return over;
+    const sums = await tx.workOrderCost.groupBy({
+      by: ['workOrderId'],
+      where: { workOrderId: { in: page.map((job) => job.id) } },
+      _sum: { amountMinor: true },
+    });
+    const spent = new Map(sums.map((row) => [row.workOrderId, row._sum.amountMinor ?? 0]));
+    over += page.filter((job) => (spent.get(job.id) ?? 0) > job.nteMinor!).length;
+    if (page.length < pageSize) return over;
+    after = page[page.length - 1]!.id;
   }
 }
 

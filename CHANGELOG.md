@@ -15,6 +15,7 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 - Automated security scanning in the repository: weekly dependency update pull requests (Dependabot), CodeQL code scanning, and a weekly passive OWASP ZAP baseline scan of the demo build. Nothing changes in the product.
 - The full content security policy in report-only mode now sends violation reports to the site, which logs each one without any page path or query string, so we can see what enforcing it would block. Nothing changes for people using the product.
 - The security policy report now gives each page its own script nonce, a step towards enforcing the full content security policy. Nothing changes for people using the product.
+- Security: dependencies with known advisories were updated or pinned to fixed versions (file uploads, the page builder's CSS tooling and two helpers of the database command-line tool). Seven of the nine advisories found in the code audit are cleared; the two that remain need major upgrades and are tracked separately. Nothing changes for people using the product.
 - Security hardening, first part: the site now sends HSTS and a content security policy (the parts that stop other sites framing it enforced, the full policy in report-only mode while scripts are tidied), and the API writes one structured log line per request with a request ID and the organisation it was for. See [security notes](docs/security.md).
 - Security and sign-in has an **Allow view as user** setting. It is on by default; switch it off and nobody can start a view-as-user session in your organisation. See [view as user](docs/admin.md#view-as-user).
 - Account security: anyone signed in can change their own password from the name at the foot of the side menu. People with a username only can now replace the password an administrator generated for them. Every other device, phones and tablets included, is signed out, people with an email address are told by email, and wrong attempts count towards the sign-in limit. On the phone app it is under "Me". See [changing your password](docs/admin.md#changing-your-password).
@@ -97,15 +98,18 @@ What changed for people using FM Stead, newest first. Each pull request that cha
 
 ### Fixed
 
+- A locked account now takes as long to refuse a sign-in as any other wrong password, so the time taken no longer shows which accounts exist and are locked. Nothing changes in what people see.
 - Phone app: the QR scanner can now use the camera. The site was telling the browser to keep the camera off for everyone, so the scan screen only ever offered typing the number.
 - Password reset: resetting a password now also signs out phones and tablets signed in to the phone app. Before, they could keep refreshing their saved sign-in for up to 30 days.
 
 - Two-step verification: a wrong password when turning it off or replacing recovery codes now counts towards the same limit on failed attempts as signing in, so a stolen session can’t be used to guess the password.
+- Money custom fields are now typed in pounds and pence (or the currency's own units), like the replacement cost on an asset, instead of asking for the amount in pence. The amount is still stored as whole minor units.
 
 - Business calendars: the warning for a site with no calendar now says what its service level clocks really use, the default hours (Monday to Friday, 09:00 to 17:00, UK time), instead of saying they run around the clock. The screen also pages through organisations with more than 100 sites, instead of stopping silently at 500, and its count of sites without a calendar covers every site.
 
 - Roles and permissions: the confirmation after creating, duplicating or deleting a role now stays on screen. It used to vanish if the page reloaded first.
 - Deleting a saved view could, now and then, leave it in the Saved view list until you reloaded the page, and a view you had just saved could be missing from the list. The list is now refreshed after saving or deleting a view.
+- Role and team names can no longer be duplicated by case: "north region" is refused when "North Region" exists, and a custom role can't take the name of a built-in role such as Technician (or another custom role) when it is created or renamed. A team that differs from an older one only by case is renamed with a suffix by the update, so nothing is lost.
 
 ### Changed
 

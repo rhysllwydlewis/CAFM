@@ -127,7 +127,9 @@ function valueSchema(f: FieldDefinition): z.ZodTypeAny {
     case 'currency':
       // Money is integer minor units plus a currency code, never floats (CLAUDE.md).
       return z.object({
-        amount: z.number().int(`${f.label} must be a whole number of pence`),
+        amount: z
+          .number({ invalid_type_error: `${f.label} must be an amount, like 1250.00` })
+          .int(`${f.label} must be a whole number of pence`),
         currency: z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code'),
       });
     case 'date':
