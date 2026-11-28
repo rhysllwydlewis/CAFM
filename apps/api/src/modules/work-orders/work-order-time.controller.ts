@@ -14,11 +14,14 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { withTenant } from '@fmstead/db';
-<<<<<<< HEAD
-import { MAX_JOB_COST_MINOR, MAX_TIME_PER_JOB, recordTimeSchema, timeCostMinor } from '@fmstead/shared';
-=======
-import { localDate, MAX_TIME_PER_JOB, recordTimeSchema, timeCostMinor, UK_TIME_ZONE } from '@fmstead/shared';
->>>>>>> origin/main
+import {
+  localDate,
+  MAX_JOB_COST_MINOR,
+  MAX_TIME_PER_JOB,
+  recordTimeSchema,
+  timeCostMinor,
+  UK_TIME_ZONE,
+} from '@fmstead/shared';
 import { audit } from '../../core/audit';
 import { PermissionGuard, RequireFeature, RequirePermission, SessionGuard, TenantGuard } from '../../core/auth.guards';
 import { PrismaService } from '../../core/prisma.service';
