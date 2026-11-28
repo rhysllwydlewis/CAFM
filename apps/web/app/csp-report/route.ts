@@ -8,7 +8,9 @@ import { MAX_REPORT_BYTES, parseCspReports } from '@/lib/csp-report';
 export const dynamic = 'force-dynamic';
 
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 120;
+// 120 a minute by default. The browser test run sets CSP_REPORT_MAX_PER_MINUTE higher, because its own pages
+// send reports and would otherwise use the cap up before the test of this route runs.
+const MAX_PER_WINDOW = Number(process.env.CSP_REPORT_MAX_PER_MINUTE) || 120;
 let windowStart = 0;
 let count = 0;
 
